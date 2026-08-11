@@ -26,11 +26,11 @@ push 后 GitHub Actions 自动部署（约 1 分钟）。
 ## 结构
 
 ```
+data/crops.json        站点数据（由转换脚本生成，勿手改）
 page/
-├── index.html           主从分栏 SPA（列表 + 详情）
-├── detail.html          独立详情页（hash 深链接）
-└── data/crops.json      站点数据（由转换脚本生成，勿手改）
-scripts/convert_crops.py 源数据 → page/data/crops.json
+├── index.html         主从分栏 SPA（列表 + 详情）
+└── detail.html        独立详情页（hash 深链接）
+scripts/convert_crops.py   源数据 → data/crops.json
 ```
 
 ## 数据说明

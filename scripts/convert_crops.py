@@ -8,7 +8,7 @@ import json, re, sys
 from pathlib import Path
 
 SRC = Path(r"Z:\IdeaProjects\contrail_progeny\tampermonkey-project\data\ContrailCrops.json")
-DST = Path(__file__).resolve().parent.parent / "page" / "data" / "crops.json"
+DST = Path(__file__).resolve().parent.parent / "data" / "crops.json"
 
 PRICE_RE = re.compile(r"精选拍卖会价格[：:]\s*(\d+(?:\.\d+)?)e")
 TOTAL_RE = re.compile(r"总价\s*(\d+(?:\.\d+)?)([ew])")

@@ -247,7 +247,7 @@ document.querySelectorAll(".pill").forEach(p=>p.addEventListener("click",()=>{
 }));
 (async function init(){
   try{
-    const r=await fetch("data/crops.json");
+    const r=await fetch("../data/crops.json");
     if(!r.ok)throw new Error(r.status);
     HORSES=await r.json();
   }catch(e){

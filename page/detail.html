@@ -172,7 +172,7 @@ function render(h){
 (async function init(){
   const m=decodeURIComponent(location.hash.slice(1));
   try{
-    const r=await fetch("data/crops.json");
+    const r=await fetch("../data/crops.json");
     if(!r.ok)throw new Error(r.status);
     const hs=await r.json();
     render(hs.find(h=>h.馬名===m)||hs[0]);

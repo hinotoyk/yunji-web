@@ -27,11 +27,11 @@ GitHub Pages 托管的静态站：**铁鸟翱天（コントレイル）产驹�
 
 ```
 yunji-web/
+├── data/crops.json          ← 站点数据（278 匹，由转换脚本生成，勿手改）
 ├── page/
-│   ├── index.html            ← 主从分栏 SPA（fetch 加载 data/crops.json，hash 深链接）
-│   ├── detail.html           ← 独立详情页（深链接落地页，与 index 右侧同构，动态渲染）
-│   └── data/crops.json       ← 站点数据（278 匹，由转换脚本生成）
-├── scripts/convert_crops.py  ← 源数据 → page/data/crops.json 转换脚本
+│   ├── index.html           ← 主从分栏 SPA（fetch ../data/crops.json，hash 深链接）
+│   └── detail.html          ← 独立详情页（深链接落地页，与 index 右侧同构，动态渲染）
+├── scripts/convert_crops.py ← 源数据 → data/crops.json 转换脚本
 └── README.md
 ```
 
