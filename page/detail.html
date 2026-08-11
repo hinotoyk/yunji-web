@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世界顶峰 · 云迹</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4ee; --card:#ffffff; --card-soft:#fbf9f4;
+  --line:#ece6da; --line-2:#ddd5c4;
+  --ink:#34302a; --muted:#8d8678; --muted-2:#b3ab9a;
+  --green:#3f8f78; --green-soft:#eef5f1; --green-line:#d8e8e0;
+  --amber:#c98a3d; --amber-soft:#fbf4e6; --amber-line:#ecdcc0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,sans-serif;font-size:13.5px}
+nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 22px;border-bottom:1px solid var(--line);background:var(--card)}
+.logo{display:flex;align-items:center;gap:8px;font-family:'Noto Serif SC',serif;font-weight:800;font-size:15px;letter-spacing:1px}
+.logo .dot{width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block}
+.back{margin-left:auto;color:var(--muted);text-decoration:none;font-size:12.5px;border:1px solid var(--line-2);padding:5px 14px;border-radius:99px;background:var(--card-soft)}
+.back:hover{color:var(--ink);border-color:var(--muted-2)}
+main{max-width:900px;margin:0 auto;padding:26px 24px 60px}
+/* hero */
+.hero{display:flex;gap:26px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.photo{width:230px;flex:none;align-self:flex-start}
+.photo .frame{aspect-ratio:4/5;border-radius:12px;background:var(--green-soft);border:1.5px dashed var(--green-line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted)}
+.photo .frame .init{font-family:'Noto Serif SC',serif;font-size:56px;font-weight:800;color:var(--green)}
+.photo .frame .tip{font-size:11px;letter-spacing:2px}
+.photo .cap{margin-top:8px;text-align:center;font-size:10.5px;color:var(--muted-2);letter-spacing:1px}
+.hero-main{flex:1;min-width:0}
+.kicker{font-size:11px;letter-spacing:3px;color:var(--amber);font-weight:500}
+.d-title{display:flex;align-items:baseline;gap:14px;margin-top:8px;flex-wrap:wrap}
+.d-title h1{font-family:'Noto Serif SC',serif;font-size:34px;font-weight:800;letter-spacing:1px}
+.d-title .jp{font-size:14px;color:var(--muted)}
+.badges{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.badge{font-size:11.5px;padding:3px 11px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);background:var(--card-soft)}
+.badge.m{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
+.badge.f{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.badge.prize{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft);font-weight:700}
+.sum{margin-top:16px;background:var(--green-soft);border:1px solid var(--green-line);border-radius:12px;padding:13px 16px;font-size:13px;line-height:1.95;color:#3d4a44}
+/* pedigree */
+.pedi{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.pedi h3{font-size:10px;letter-spacing:2.5px;color:var(--muted-2);margin-bottom:12px;font-weight:500}
+.tree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;position:relative}
+.tcell{border:1px solid var(--green-line);border-radius:8px;background:var(--green-soft);padding:9px 12px;position:relative}
+.tcell .role{font-size:9px;color:var(--muted-2);letter-spacing:2px}
+.tcell .name{font-size:13px;font-weight:700;margin-top:3px}
+.tcell .name.jp{font-weight:400;color:var(--muted);font-size:11.5px}
+.tcell .role.sire{color:var(--green)}
+.conn{position:absolute;top:0;height:0;border-top:1px dashed var(--green-line)}
+.tree .c1{left:-1px;right:50%}.tree .c2{left:50%;right:-1px}
+/* facts */
+.facts{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.f{padding:11px 15px;background:var(--card)}
+.f .k{font-size:10px;color:var(--muted-2);letter-spacing:2px}
+.f .v{font-size:13.5px;font-weight:600;margin-top:4px}
+.f .v.jap{font-weight:400;color:var(--muted)}
+/* sections */
+.sec{margin-top:28px}
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sec-head .n{font-size:11px;color:var(--green);border:1px solid var(--green-line);background:var(--green-soft);border-radius:7px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex:none}
+.sec-head h2{font-size:15px;font-weight:700}
+.sec-head .hint{margin-left:auto;font-size:11px;color:var(--muted-2)}
+/* timeline */
+.tl{position:relative;padding-left:22px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line-2);border-radius:2px}
+.tl-item{position:relative;margin-bottom:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+.tl-item::before{content:"";position:absolute;left:-21px;top:18px;width:9px;height:9px;border-radius:50%;background:var(--green);border:2px solid var(--card)}
+.tl-item.date::before{background:var(--amber)}
+.tl-label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl-label b{font-size:13px;font-weight:700}
+.tl-label .tag{font-size:10.5px;padding:1px 9px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted)}
+.tl-label .tag.date{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft);font-weight:600}
+.tl-body{margin-top:8px;font-size:13px;line-height:1.95;color:#4d483e;white-space:pre-line}
+/* analysis */
+.sbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+.sbox p{font-size:13px;line-height:2.05;color:#4d483e;white-space:pre-line}
+.sig{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}
+.sig em{color:var(--amber);font-style:normal;font-weight:700}
+.note{background:var(--amber-soft);border-color:var(--amber-line)}
+.note p{color:#6b5736}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;color:var(--muted-2);font-size:11.5px}
+.empty{padding:40px 10px;text-align:center;color:var(--muted-2);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span class="dot"></span>云迹<em>铁鸟翱天产驹</em></div>
+  <a class="back" href="index.html">← 返回列表</a>
+</nav>
+
+<main id="dinner"></main>
+
+<footer>云迹 · 数据仅供分享交流，严禁用于赌博或违法行为</footer>
+
+<script>
+const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function parseKin(h){
+  return String(h.近况||"").split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
+    const nl=s.indexOf("\n");
+    const label=nl>=0?s.slice(0,nl).trim():s;
+    const body=nl>=0?s.slice(nl+1).trim():"";
+    return {label,body};
+  });
+}
+function render(h){
+  document.title=(h.译名||h.馬名)+" · 云迹";
+  const items=parseKin(h).map(it=>{
+    const isDate=DATE_RE.test(it.label);
+    return `<div class="tl-item${isDate?" date":""}">
+      <div class="tl-label"><b>${esc(it.label)}</b><span class="tag${isDate?" date":""}">${isDate?"近走":"来源"}</span></div>
+      ${it.body?`<div class="tl-body">${esc(it.body)}</div>`:""}
+    </div>`;
+  }).join("")||`<div class="empty" style="padding:14px">暂无近况更新</div>`;
+  document.getElementById("dinner").innerHTML=`
+    <div class="hero">
+      <div class="photo">
+        <div class="frame"><span class="init">${esc((h.译名||h.馬名)[0])}</span><span class="tip">照片待补</span></div>
+        <div class="cap">${esc(h.生产牧场)} 提供</div>
+      </div>
+      <div class="hero-main">
+        <div class="kicker">${esc(h._source)} 年生 · 资料页</div>
+        <div class="d-title"><h1>${esc(h.译名||h.馬名)}</h1>${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}</div>
+        <div class="badges">
+          ${h.性別?`<span class="badge ${h.性別==="牡"?"m":"f"}">${esc(h.性別)}</span>`:""}
+          ${h.毛色?`<span class="badge">${esc(h.毛色)}</span>`:""}
+          ${h.馬主?`<span class="badge">${esc(h.馬主)}</span>`:""}
+          ${h.价格&&h.价格!=="—"?`<span class="badge prize">${esc(h.价格)}</span>`:""}
+        </div>
+        ${h.评价?`<div class="sum">${esc(h.评价)}</div>`:""}
+      </div>
+    </div>
+
+    <div class="pedi">
+      <h3>血统 · PEDIGREE</h3>
+      <div class="tree">
+        <div class="tcell"><div class="role sire">父 Sire</div><div class="name">铁鸟翱天</div><div class="name jp">コントレイル</div></div>
+        <div class="tcell"><div class="role">母 Dam</div><div class="name">${esc(h.母名)}</div></div>
+        <div class="tcell"><div class="role">母父 Damsire</div><div class="name">${esc(h.母父名)}</div></div>
+        <div class="conn c1"></div><div class="conn c2"></div>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="f"><div class="k">生产牧场</div><div class="v jap">${esc(h.生产牧场)}</div></div>
+      <div class="f"><div class="k">管理调教师</div><div class="v">${esc(h.管理調教師)}</div></div>
+      <div class="f"><div class="k">马主</div><div class="v">${esc(h.馬主)}</div></div>
+      <div class="f"><div class="k">出生年</div><div class="v">${esc(h._source)}</div></div>
+    </div>
+
+    <section class="sec">
+      <div class="sec-head"><span class="n">1</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
+      <div class="tl">${items}</div>
+    </section>
+
+    ${h.血统分析?`
+    <section class="sec">
+      <div class="sec-head"><span class="n">2</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
+      <div class="sbox"><p>${esc(h.血统分析)}</p></div>
+    </section>`:""}
+
+    ${h.备考?`
+    <section class="sec">
+      <div class="sec-head"><span class="n">3</span><h2>备考</h2></div>
+      <div class="sbox note"><p>${esc(h.备考)}</p></div>
+    </section>`:""}`;
+}
+(async function init(){
+  const m=decodeURIComponent(location.hash.slice(1));
+  try{
+    const r=await fetch("data/crops.json");
+    if(!r.ok)throw new Error(r.status);
+    const hs=await r.json();
+    render(hs.find(h=>h.馬名===m)||hs[0]);
+  }catch(e){
+    document.getElementById("dinner").innerHTML=`<div class="empty" style="padding:40px">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
+  }
+})();
+</script>
+</body>
+</html>
