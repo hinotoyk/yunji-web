@@ -110,6 +110,14 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .sig em{color:var(--amber);font-style:normal;font-weight:700}
 .note{background:var(--amber-soft);border-color:var(--amber-line)}
 .note p{color:#6b5736}
+/* version switch + admin link */
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:10px}
+.ver{font-size:12px;color:var(--muted);border:1px solid var(--line-2);border-radius:8px;padding:4px 8px;background:var(--card);outline:none;cursor:pointer;font-family:inherit;max-width:190px}
+.ver:focus{border-color:var(--green)}
+.ver.hist{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.admin-link{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--line-2);padding:4px 10px;border-radius:8px;white-space:nowrap}
+.admin-link:hover{color:var(--green);border-color:var(--green)}
+.loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:99;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -119,6 +127,10 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
     <nav>
       <div class="logo"><span class="dot"></span>云迹<em>铁鸟翱天产驹</em></div>
       <span class="nav-count"><b id="count">278</b> 头</span>
+      <div class="nav-r">
+        <select id="ver" class="ver" title="切换历史版本"></select>
+        <a class="admin-link" href="admin.html">管理</a>
+      </div>
     </nav>
     <div class="pane-search">
       <div class="input">
@@ -140,8 +152,8 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 </div>
 
 <script>
-let HORSES=[],q="",y="all",sel=null;
-const list=document.getElementById("list"),count=document.getElementById("count");
+let HORSES=[],q="",y="all",sel=null,verSel=null;
+const list=document.getElementById("list"),count=document.getElementById("count"),verEl=document.getElementById("ver");
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function parseKin(h){
   return h.近况.split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
@@ -245,19 +257,43 @@ document.querySelectorAll(".pill").forEach(p=>p.addEventListener("click",()=>{
   document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
   p.classList.add("on");y=p.dataset.y;renderList();
 }));
+async function loadData(url){
+  const r=await fetch(url);
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return await r.json();
+}
+function applyData(hs,verLabel){
+  HORSES=hs;
+  const keep=HORSES.find(h=>h.馬名===sel);
+  sel=keep?keep.馬名:(HORSES[0]?.馬名||null);
+  renderList();
+  if(sel)renderDetail(HORSES.find(h=>h.馬名===sel));
+  else document.getElementById("dinner").innerHTML=`<div class="empty" style="padding:80px 0">当前版本没有产驹数据</div>`;
+}
 (async function init(){
   try{
-    const r=await fetch("../data/crops.json");
-    if(!r.ok)throw new Error(r.status);
-    HORSES=await r.json();
+    const mf=await loadData("../data/manifest.json");
+    const cur=mf.current||"";
+    verEl.innerHTML=[
+      `<option value="">当前版 (${cur})</option>`,
+      ...mf.versions.filter(v=>v.id!==cur).map(v=>
+        `<option value="${v.file}">历史 ${v.date} · ${v.count}匹${v.note?" · "+v.note:""}</option>`)
+    ].join("");
+    verEl.addEventListener("change",async()=>{
+      verEl.classList.toggle("hist",!!verEl.value);
+      try{
+        const hs=verEl.value?await loadData("../"+verEl.value):await loadData("../data/crops.json");
+        applyData(hs,verEl.value);
+      }catch(e){alert("版本加载失败: "+e.message);}
+    });
+    const hs=await loadData("../data/crops.json");
+    applyData(hs,"");
   }catch(e){
     list.innerHTML=`<div class="empty">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
-    return;
   }
   const m=location.hash.slice(1);
-  sel=HORSES.find(h=>h.馬名===decodeURIComponent(m))?.馬名||HORSES[0].馬名;
-  renderList();
-  renderDetail(HORSES.find(h=>h.馬名===sel));
+  const hit=HORSES.find(h=>h.馬名===decodeURIComponent(m));
+  if(hit){sel=hit.馬名;renderList();renderDetail(hit);}
 })();
 </script>
 </body>
