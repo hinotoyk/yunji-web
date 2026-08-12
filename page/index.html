@@ -156,7 +156,8 @@ let HORSES=[],q="",y="all",sel=null,verSel=null;
 const list=document.getElementById("list"),count=document.getElementById("count"),verEl=document.getElementById("ver");
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function parseKin(h){
-  return h.近况.split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
+  const src=String(h["近况更新/近走/牧场评价"]||h.近况||"");
+  return src.split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
     const nl=s.indexOf("\n");
     const label=nl>=0?s.slice(0,nl).trim():s;
     const body=nl>=0?s.slice(nl+1).trim():"";
@@ -271,12 +272,19 @@ function applyData(hs,verLabel){
   else document.getElementById("dinner").innerHTML=`<div class="empty" style="padding:80px 0">当前版本没有产驹数据</div>`;
 }
 (async function init(){
+  let mf,hs;
   try{
-    const mf=await loadData("../data/manifest.json");
+    mf=await loadData("../data/manifest.json");
+    hs=await loadData("../data/crops.json");
+  }catch(e){
+    list.innerHTML=`<div class="empty">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
+    return;
+  }
+  try{
     const cur=mf.current||"";
     verEl.innerHTML=[
       `<option value="">当前版 (${cur})</option>`,
-      ...mf.versions.filter(v=>v.id!==cur).map(v=>
+      ...(mf.versions||[]).filter(v=>v.id!==cur).map(v=>
         `<option value="${v.file}">历史 ${v.date} · ${v.count}匹${v.note?" · "+v.note:""}</option>`)
     ].join("");
     verEl.addEventListener("change",async()=>{
@@ -286,10 +294,10 @@ function applyData(hs,verLabel){
         applyData(hs,verEl.value);
       }catch(e){alert("版本加载失败: "+e.message);}
     });
-    const hs=await loadData("../data/crops.json");
     applyData(hs,"");
   }catch(e){
-    list.innerHTML=`<div class="empty">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
+    console.error(e);
+    list.innerHTML=`<div class="empty">渲染失败：${e.message}</div>`;
   }
   const m=location.hash.slice(1);
   const hit=HORSES.find(h=>h.馬名===decodeURIComponent(m));

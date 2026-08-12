@@ -100,7 +100,7 @@ footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;co
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
 function parseKin(h){
-  return String(h.近况||"").split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
+  return String(h["近况更新/近走/牧场评价"]||h.近况||"").split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
     const nl=s.indexOf("\n");
     const label=nl>=0?s.slice(0,nl).trim():s;
     const body=nl>=0?s.slice(nl+1).trim():"";
