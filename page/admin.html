@@ -250,20 +250,28 @@ function b64(s){
   return btoa(bin);
 }
 function ghHeaders(token){return {Authorization:`Bearer ${token}`,"X-GitHub-Api-Version":"2022-11-28",Accept:"application/vnd.github+json"};}
-async function ghGet(token,owner,repo,path){
-  const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{headers:ghHeaders(token)});
-  if(r.status===404)return null;
-  if(!r.ok)throw new Error(`GET ${path} → ${r.status}`);
+async function ghApi(token,owner,repo,path,method,body){
+  const opt={method,headers:ghHeaders(token)};
+  if(body!==undefined)opt.body=JSON.stringify(body);
+  const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/${path}`,opt);
+  if(!r.ok)throw new Error(`${method} ${path} → ${r.status}`);
   return await r.json();
 }
-async function ghPut(token,owner,repo,path,content,msg){
-  const existing=await ghGet(token,owner,repo,path);
-  const body={message:msg,content:b64(content)};
-  if(existing)body.sha=existing.sha;
-  const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
-    method:"PUT",headers:ghHeaders(token),body:JSON.stringify(body)
-  });
-  if(!r.ok)throw new Error(`PUT ${path} → ${r.status}`);
+async function ghCommitAll(token,owner,repo,files,msg){
+  // files: [{path, content}] → 单次 commit（Git Data API）
+  const repoInfo=await ghApi(token,owner,repo,"", "GET");
+  const branch=repoInfo.default_branch||"main";
+  const ref=await ghApi(token,owner,repo,`git/refs/heads/${branch}`,"GET");
+  const base=ref.object.sha;
+  const entries=[];
+  for(const f of files){
+    const blob=await ghApi(token,owner,repo,"git/blobs","POST",{content:b64(f.content),encoding:"base64"});
+    entries.push({path:f.path,mode:"100644",type:"blob",sha:blob.sha});
+  }
+  const tree=await ghApi(token,owner,repo,"git/trees","POST",{base_tree:base,tree:entries});
+  const commit=await ghApi(token,owner,repo,"git/commits","POST",{message:msg,tree:tree.sha,parents:[base]});
+  await ghApi(token,owner,repo,`git/refs/heads/${branch}`,"PATCH",{sha:commit.sha,force:false});
+  return branch;
 }
 function showLog(lines){
   const log=document.querySelector(".log");
@@ -279,13 +287,7 @@ async function commitToGithub(){
   const msg=`云迹数据更新 ${ts.toLocaleString("zh-CN")} (${HORSES.length}匹)`;
   const lines=[];
   try{
-    // 1. 当前数据
-    await ghPut(cfg.token,cfg.owner,cfg.repo,"data/crops.json",JSON.stringify(HORSES,null,2),`${msg} [crops.json]`);
-    lines.push({t:`已提交 data/crops.json（${HORSES.length} 匹）`,ok:true});
-    // 2. 历史快照
-    await ghPut(cfg.token,cfg.owner,cfg.repo,`history/${id}.json`,JSON.stringify(HORSES,null,2),`${msg} [快照 ${id}]`);
-    lines.push({t:`已提交历史快照 history/${id}.json`,ok:true});
-    // 3. 更新 manifest（客户端维护，最多保留 30 个版本）
+    // 构造 manifest（客户端维护，最多保留 30 个版本）
     let mf={current:id,versions:[]};
     try{
       const r=await fetch("../data/manifest.json");if(r.ok)mf=await r.json();
@@ -293,8 +295,14 @@ async function commitToGithub(){
     mf.versions=[{id,file:`history/${id}.json`,date:ts.toLocaleString("zh-CN"),count:HORSES.length,note:"管理页提交"}].concat(mf.versions.filter(v=>v.id!==id&&v.id!==mf.current));
     mf.versions=mf.versions.slice(0,30);
     mf.current=id;
-    await ghPut(cfg.token,cfg.owner,cfg.repo,"data/manifest.json",JSON.stringify(mf,null,2),`${msg} [manifest]`);
-    lines.push({t:"已提交 data/manifest.json",ok:true});
+    // 单次 commit 写入 3 个文件
+    const files=[
+      {path:"data/crops.json",content:JSON.stringify(HORSES,null,2)},
+      {path:`history/${id}.json`,content:JSON.stringify(HORSES,null,2)},
+      {path:"data/manifest.json",content:JSON.stringify(mf,null,2)}
+    ];
+    const branch=await ghCommitAll(cfg.token,cfg.owner,cfg.repo,files,msg);
+    lines.push({t:`已提交 1 个 commit（branch: ${branch}）· crops.json（${HORSES.length} 匹）+ 快照 + manifest`,ok:true});
     setDirty(false);
     lines.push({t:`完成。GitHub Actions 将自动部署（约 1 分钟内生效），可在仓库 Actions 页查看进度。`,ok:true});
   }catch(e){
