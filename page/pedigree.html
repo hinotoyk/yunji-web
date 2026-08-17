@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>血统 · PEDIGREE · 云迹</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4ee; --card:#ffffff; --card-soft:#fbf9f4;
+  --line:#ece6da; --line-2:#ddd5c4;
+  --ink:#34302a; --muted:#8d8678; --muted-2:#b3ab9a;
+  --green:#3f8f78; --green-soft:#eef5f1; --green-line:#d8e8e0;
+  --amber:#c98a3d; --amber-soft:#fbf4e6; --amber-line:#ecdcc0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,sans-serif;font-size:13.5px}
+nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 22px;border-bottom:1px solid var(--line);background:var(--card)}
+.logo{display:flex;align-items:center;gap:8px;font-family:'Noto Serif SC',serif;font-weight:800;font-size:15px;letter-spacing:1px}
+.logo .dot{width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block}
+.logo em{font-style:normal;font-family:'Noto Sans SC';font-weight:400;font-size:11px;color:var(--muted-2);margin-left:6px}
+.back{margin-left:auto;color:var(--muted);text-decoration:none;font-size:12.5px;border:1px solid var(--line-2);padding:5px 14px;border-radius:99px;background:var(--card-soft)}
+.back:hover{color:var(--ink);border-color:var(--muted-2)}
+main{max-width:960px;margin:0 auto;padding:26px 24px 60px}
+/* horse head */
+.hhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.hhead h1{font-family:'Noto Serif SC',serif;font-size:26px;font-weight:800;letter-spacing:1px}
+.hhead .jp{font-size:14px;color:var(--muted)}
+.hhead .tag{font-size:11.5px;padding:3px 11px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);background:var(--card-soft)}
+/* pedigree */
+.pedi{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.pedi h3{font-size:10px;letter-spacing:2.5px;color:var(--muted-2);margin-bottom:12px;font-weight:500}
+.pedi-scroll{overflow-x:auto;padding-bottom:6px}
+.pside{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:32px;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:640px}
+.pcell{min-width:0;background:#fff;padding:5px 10px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.pcell.m{background:#e9f1f7}
+.pcell.f{background:#f8eeee}
+.pcell.x{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.02) 6px,rgba(0,0,0,.02) 12px)}
+.pcell .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcell .meta{font-size:9px;color:var(--muted-2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pedi-foot{margin-top:10px;font-size:11px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+.pedi-foot span b{color:var(--amber);font-weight:600}
+.pedi-empty{margin-top:8px;font-size:12px;color:var(--muted-2)}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;color:var(--muted-2);font-size:11.5px}
+.empty{padding:40px 10px;text-align:center;color:var(--muted-2);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span class="dot"></span>云迹<em>血统表</em></div>
+  <a class="back" id="backLink" href="detail.html">← 返回详情</a>
+</nav>
+
+<main id="dinner"></main>
+
+<footer>云迹 · 数据仅供分享交流，严禁用于赌博或违法行为</footer>
+
+<script>
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function renderPedigree(h){
+  const p=h.pedigree||{};
+  const f=p.父||[],m=p.母||[];
+  if(!f.length&&!m.length)return`<h3>血统 · PEDIGREE <span style="font-weight:400;letter-spacing:0">${esc(h.馬名)} 5代血统表</span></h3><div class="pedi-empty">暂无血统数据</div>`;
+  const cell=(n,g,i,off)=>{
+    const rows=16/2**g;
+    const rs=off+1+i*rows,re=off+1+(i+1)*rows;
+    if(!n)return`<div class="pcell x" style="grid-row:${rs}/${re}"></div>`;
+    const fs=g<=1?13:g===2?12:11;
+    return `<div class="pcell${n.sex?` ${n.sex==="牝"?"f":"m"}`:""}" style="grid-row:${rs}/${re};font-size:${fs}px" title="${esc([n.name,n.year&&`${n.year}年生`,n.color].filter(Boolean).join(" · "))}">
+      <div class="name">${esc(n.name)}</div>
+      ${g<4&&(n.year||n.color)?`<div class="meta">${[n.year,n.color].filter(Boolean).join(" · ")}</div>`:""}
+    </div>`;
+  };
+  const tree=(arr,off)=>{const out=[];for(let g=0;g<5;g++){const row=arr[g]||[];for(let i=0;i<2**g;i++)out.push(cell(row[i]||null,g,i,off));}return out.join("");};
+  const foot=[];
+  if(h.fno)foot.push(`<span><b>FNo</b> ${esc(h.fno)}</span>`);
+  if(h.cross)foot.push(`<span><b>クロス</b> ${esc(h.cross)}</span>`);
+  return`<h3>血统 · PEDIGREE <span style="font-weight:400;letter-spacing:0">${esc(h.馬名)} 5代血统表</span></h3>
+    <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
+    ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
+}
+function render(h){
+  document.title=(h.译名||h.馬名)+" · 血统 · PEDIGREE · 云迹";
+  document.getElementById("backLink").href="detail.html#"+encodeURIComponent(h.馬名);
+  document.getElementById("dinner").innerHTML=`
+    <div class="hhead">
+      <h1>${esc(h.译名||h.馬名)}</h1>
+      ${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}
+      ${h.性別?`<span class="tag">${esc(h.性別)}</span>`:""}
+      ${h.生年?`<span class="tag">${esc(h.生年)}年生</span>`:""}
+    </div>
+    <div class="pedi">${renderPedigree(h)}</div>`;
+}
+(async function init(){
+  const m=decodeURIComponent(location.hash.slice(1));
+  try{
+    const r=await fetch("../data/crops.json");
+    if(!r.ok)throw new Error(r.status);
+    const hs=await r.json();
+    const hit=hs.find(h=>h.馬名===m);
+    if(!hit){document.getElementById("dinner").innerHTML=`<div class="empty">未找到该产驹的血统数据</div>`;return;}
+    render(hit);
+  }catch(e){
+    document.getElementById("dinner").innerHTML=`<div class="empty">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
+  }
+})();
+</script>
+</body>
+</html>

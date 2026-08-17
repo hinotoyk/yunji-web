@@ -1,0 +1,77 @@
+name: Sync yunji data
+
+on:
+  # 定时自动同步：每天 UTC 22:00（JST 07:00）拉比赛台账 → 重建 → 自动部署。
+  # 注意：仓库闲置 60 天定时任务会被 GitHub 暂停，届时手动 Run workflow 一次即恢复。
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 同步模式
+        type: choice
+        required: true
+        default: races
+        options:
+          - races    # 只拉比赛台账 + 重建（快，定时任务默认）
+          - all      # netkeiba 全量 + JBIS 血统 + 台账 + 重建（重，慎用）
+          - single   # 单匹更新（需填马名）
+      horse_name:
+        description: 马名（仅 single 模式，日文名）
+        type: string
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install requests beautifulsoup4 lxml
+
+      # ── 比赛数据（契约B）：数据源适配器 → ledger.csv（每日/每次必跑）──
+      - name: Pull race ledger
+        run: python scripts/pull_races.py
+
+      # ── 马匹数据（契约A）：仅手动模式才抓取源站 ──
+      - name: Scrape netkeiba (mode=all)
+        if: inputs.mode == 'all'
+        run: python scripts/scrape_netkeiba.py --all --sleep 1.0
+      - name: Scrape netkeiba (mode=single)
+        if: inputs.mode == 'single'
+        run: python scripts/scrape_netkeiba.py --name "${{ inputs.horse_name }}" --sleep 1.0
+      - name: Scrape JBIS (mode=all)
+        if: inputs.mode == 'all'
+        run: python scripts/scrape_jbis.py --all --sleep 1.2 || python scripts/scrape_jbis.py --fill --sleep 3.0
+      - name: Scrape JBIS (mode=single)
+        if: inputs.mode == 'single'
+        run: python scripts/scrape_jbis.py --horse "${{ inputs.horse_name }}" --sleep 1.2
+
+      # ── 构建（契约A + 契约B → crops.json）+ 契约校验 ──
+      - name: Build crops.json
+        run: python scripts/build-data.py --note "${{ inputs.mode || 'races' }} 同步"
+
+      - name: Contract & data test
+        run: python scripts/test-data.py
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "sync data (${{ inputs.mode || 'races' }})"
+          git push

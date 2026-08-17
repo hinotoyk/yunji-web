@@ -137,8 +137,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,
 </div>
 
 <script>
-const KEY_FIELDS=["馬名","译名","馬主","性別","毛色","母名","母父名","生产牧场","管理調教師","_source","价格"];
-const LONG_FIELDS=[["评价","评价"],["近况更新/近走/牧场评价","近况更新 / 近走 / 牧场评价"],["血统分析","血统分析"],["备考","备考"]];
+const KEY_FIELDS=["馬名","性別","生年月日","毛色","産地","馬主","生産牧場","調教師","母名","母父名","総賞金","登録状態","生年","n年"];
+const LONG_FIELDS=[["近况更新/近走/牧场评价","近况更新 / 近走 / 牧场评价"],["血统分析","血统分析"],["备考","备考"]];
 let HORSES=[],sel=null,q="",dirty=false;
 const listEl=document.getElementById("list"),editor=document.getElementById("editor"),
       statusEl=document.getElementById("status"),footEl=document.getElementById("paneFoot"),
@@ -150,7 +150,7 @@ function setDirty(d){dirty=d;statusEl.textContent=d?"有未保存修改":"已保
 
 function filtered(){
   return HORSES.filter(h=>{
-    const hay=[h.馬名,h.译名,h.母父名,h.生产牧场,h.管理調教師,h.馬主].join(" ");
+    const hay=[h.馬名,h.译名,h.母名,h.母父名,h.生産牧場,h.生产牧场,h.調教師,h.管理調教師,h.馬主,h.産地].join(" ");
     return !q||hay.includes(q);
   });
 }
@@ -161,13 +161,14 @@ function renderList(){
     const cn=h.译名||h.馬名;
     return `<div class="item${h.馬名===sel?" on":""}" data-k="${esc(h.馬名)}">
       <span class="cn">${esc(cn)}</span>${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}
-      <span class="b">${esc(h._source)}</span>
+      <span class="b">${esc(h.生年||h._source)}</span>
     </div>`;
   }).join("")||`<div class="empty">未找到匹配的产驹</div>`;
 }
 function renderEditor(h){
   const rows=KEY_FIELDS.map(f=>{
-    if(f==="_source")return `<div class="field"><label>世代</label><select data-f="_source"><option value="2023"${h._source==="2023"?" selected":""}>2023年生</option><option value="2024"${h._source==="2024"?" selected":""}>2024年生</option><option value=""${!h._source?" selected":""}>—</option></select></div>`;
+    if(f==="生年")return `<div class="field"><label>生年</label><select data-f="生年"><option value="2023"${h.生年==="2023"?" selected":""}>2023年生</option><option value="2024"${h.生年==="2024"?" selected":""}>2024年生</option><option value="2025"${h.生年==="2025"?" selected":""}>2025年生</option><option value=""${!h.生年?" selected":""}>—</option></select></div>`;
+    if(f==="n年")return `<div class="field"><label>备注字段预留</label><input disabled value="数据来自抓取，管理页仅可补录人工字段"></div>`;
     return `<div class="field"><label>${f}${f==="馬名"?" <b>*</b>":""}</label><input data-f="${f}" value="${esc(h[f]??"")}"></div>`;
   });
   const longs=LONG_FIELDS.map(([k,label])=>`<div class="field"><label>${label}</label><textarea data-f="${k}">${esc(h[k]??"")}</textarea></div>`).join("");
@@ -195,7 +196,7 @@ function renderEditor(h){
   document.getElementById("btnDel").addEventListener("click",delCur);
 }
 function addNew(){
-  const h={id:"",馬名:"",译名:"",馬主:"",性別:"",毛色:"",母名:"",母父名:"",生产牧场:"",管理調教師:"","_source":"2023",价格:"",评价:"","近况更新/近走/牧场评价":"","血统分析":"",备考:""};
+  const h={id:"",馬名:"",译名:"",性別:"",生年月日:"",毛色:"",産地:"",馬主:"",生産牧場:"",調教師:"",母名:"",母父名:"","生年":"2023",登録状態:"",総賞金:"","近况更新/近走/牧场评价":"","血统分析":"",备考:""};
   HORSES.unshift(h);sel="";setDirty(true);renderList();renderEditor(h);
   statusEl.textContent="已新建空条目（记得填马名）";
 }

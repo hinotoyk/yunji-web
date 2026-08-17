@@ -78,14 +78,17 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 /* pedigree */
 .pedi{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .pedi h3{font-size:10px;letter-spacing:2.5px;color:var(--muted-2);margin-bottom:12px;font-weight:500}
-.tree{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;position:relative}
-.tcell{border:1px solid var(--green-line);border-radius:8px;background:var(--green-soft);padding:9px 12px;position:relative}
-.tcell .role{font-size:9px;color:var(--muted-2);letter-spacing:2px}
-.tcell .name{font-size:13px;font-weight:700;margin-top:3px}
-.tcell .name.jp{font-weight:400;color:var(--muted);font-size:11.5px}
-.tcell .role.sire{color:var(--green)}
-.conn{position:absolute;height:0;border-top:1px dashed var(--green-line)}
-.tree .c1{left:-1px;right:50%}.tree .c2{left:50%;right:-1px}
+.pedi-scroll{overflow-x:auto;padding-bottom:6px}
+.pside{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:32px;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:640px}
+.pcell{min-width:0;background:#fff;padding:5px 10px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.pcell.m{background:#e9f1f7}
+.pcell.f{background:#f8eeee}
+.pcell.x{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.02) 6px,rgba(0,0,0,.02) 12px)}
+.pcell .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcell .meta{font-size:9px;color:var(--muted-2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pedi-foot{margin-top:10px;font-size:11px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+.pedi-foot span b{color:var(--amber);font-weight:600}
+.pedi-empty{margin-top:8px;font-size:12px;color:var(--muted-2)}
 /* sections */
 .sec{margin-top:28px}
 .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -142,6 +145,7 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
       <button class="pill on" data-y="all">全部</button>
       <button class="pill" data-y="2023">2023年生</button>
       <button class="pill" data-y="2024">2024年生</button>
+      <button class="pill" data-y="2025">2025年生</button>
     </div>
     <div class="list" id="list"></div>
   </aside>
@@ -166,8 +170,8 @@ function parseKin(h){
 }
 function filtered(){
   return HORSES.filter(h=>{
-    const hay=[h.馬名,h.译名,h.母父名,h.生产牧场,h.管理調教師,h.馬主].join(" ");
-    return (!q||hay.includes(q))&&(y==="all"||h._source===y);
+    const hay=[h.馬名,h.译名,h.母名,h.母父名,h.生産牧場,h.生产牧场,h.調教師,h.管理調教師,h.馬主,h.生年月日].join(" ");
+    return (!q||hay.includes(q))&&(y==="all"||(h.生年||h._source)===y);
   });
 }
 function renderList(){
@@ -184,7 +188,29 @@ function renderList(){
     </div>`;
   }).join("")||`<div class="empty">未找到匹配的产驹</div>`;
 }
-function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function renderPedigree(h){
+  const p=h.pedigree||{};
+  const f=p.父||[],m=p.母||[];
+  if(!f.length&&!m.length)return`<h3>血统 · PEDIGREE</h3><div class="pedi-empty">暂无血统数据</div>`;
+  const cell=(n,g,i,off)=>{
+    const rows=16/2**g;
+    const rs=off+1+i*rows,re=off+1+(i+1)*rows;
+    if(!n)return`<div class="pcell x" style="grid-row:${rs}/${re}"></div>`;
+    const fs=g<=1?13:g===2?12:11;
+    return `<div class="pcell${n.sex?` ${n.sex==="牝"?"f":"m"}`:""}" style="grid-row:${rs}/${re};font-size:${fs}px" title="${esc([n.name,n.year&&`${n.year}年生`,n.color].filter(Boolean).join(" · "))}">
+      <div class="name">${esc(n.name)}</div>
+      ${g<4&&(n.year||n.color)?`<div class="meta">${[n.year,n.color].filter(Boolean).join(" · ")}</div>`:""}
+    </div>`;
+  };
+  const tree=(arr,off)=>{const out=[];for(let g=0;g<5;g++){const row=arr[g]||[];for(let i=0;i<2**g;i++)out.push(cell(row[i]||null,g,i,off));}return out.join("");};
+  const foot=[] ;
+  if(h.fno)foot.push(`<span><b>FNo</b> ${esc(h.fno)}</span>`);
+  if(h.cross)foot.push(`<span><b>クロス</b> ${esc(h.cross)}</span>`);
+  return`<h3>血统 · PEDIGREE <span style="font-weight:400;letter-spacing:0">${esc(h.馬名)} 5代血统表（可横向滚动）</span></h3>
+    <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
+    ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
+}
 function renderDetail(h){
   sel=h.馬名;renderList();
   document.getElementById("detail").scrollTop=0;
@@ -199,52 +225,51 @@ function renderDetail(h){
     <div class="hero">
       <div class="photo">
         <div class="frame"><span class="init">${esc((h.译名||h.馬名)[0])}</span><span class="tip">照片待补</span></div>
-        <div class="cap">${esc(h.生产牧场)} 提供</div>
+        <div class="cap">${esc(h.生産牧場||h.生产牧场)} 提供</div>
       </div>
       <div class="hero-main">
-        <div class="kicker">${esc(h._source)} 年生 · 资料页</div>
+        <div class="kicker">${esc(h.生年||h._source)} 年生 · ${esc(h.登録状態||"")} ${h.馬齢?esc(h.馬齢):""}</div>
         <div class="d-title"><h1>${esc(h.译名||h.馬名)}</h1>${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}</div>
         <div class="badges">
           ${h.性別?`<span class="badge ${h.性別==="牡"?"m":"f"}">${esc(h.性別)}</span>`:""}
           ${h.毛色?`<span class="badge">${esc(h.毛色)}</span>`:""}
           ${h.馬主?`<span class="badge">${esc(h.馬主)}</span>`:""}
-          ${h.价格&&h.价格!=="—"?`<span class="badge prize">${esc(h.价格)}</span>`:""}
+          ${h.総賞金?`<span class="badge prize">${esc(h.総賞金)}万円</span>`:""}
         </div>
-        ${h.评价?`<div class="sum">${esc(h.评价)}</div>`:""}
+        ${h.通算成績?`<div class="sum">通算成绩 ${esc(h.通算成績)}${h.主な勝鞍?` · 主胜鞍 ${esc(h.主な勝鞍)}`:""}</div>`:""}
       </div>
     </div>
 
-    <div class="pedi">
-      <h3>血统 · PEDIGREE</h3>
-      <div class="tree">
-        <div class="tcell"><div class="role sire">父 Sire</div><div class="name">铁鸟翱天</div><div class="name jp">コントレイル</div></div>
-        <div class="tcell"><div class="role">母 Dam</div><div class="name">${esc(h.母名)}</div></div>
-        <div class="tcell"><div class="role">母父 Damsire</div><div class="name">${esc(h.母父名)}</div></div>
-        <div class="conn c1"></div><div class="conn c2"></div>
-      </div>
-    </div>
+    <div class="pedi">${renderPedigree(h)}</div>
 
     <div class="facts">
-      <div class="f"><div class="k">生产牧场</div><div class="v jap">${esc(h.生产牧场)}</div></div>
-      <div class="f"><div class="k">管理调教师</div><div class="v">${esc(h.管理調教師)}</div></div>
+      <div class="f"><div class="k">生产牧场</div><div class="v jap">${esc(h.生産牧場||h.生产牧场)}</div></div>
+      <div class="f"><div class="k">管理调教师</div><div class="v">${esc(h.調教師||h.管理調教師)}</div></div>
       <div class="f"><div class="k">马主</div><div class="v">${esc(h.馬主)}</div></div>
-      <div class="f"><div class="k">出生年</div><div class="v">${esc(h._source)}</div></div>
+      <div class="f"><div class="k">出生年月日</div><div class="v">${esc(h.生年月日)}</div></div>
+      <div class="f"><div class="k">产地</div><div class="v jap">${esc(h.産地)}</div></div>
+      <div class="f"><div class="k">母 · 母父</div><div class="v">${esc(h.母名)}${h.母父名?` / ${esc(h.母父名)}`:""}</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><span class="n">1</span><h2>数据源</h2><span class="hint">主源 netkeiba · 血统 netkeiba/JBIS 兜底</span></div>
+      <div class="sbox note"><p>${h.nk_id?`netkeiba: <a href="https://db.netkeiba.com/horse/${esc(h.nk_id)}/" target="_blank" rel="noreferrer" style="color:var(--green)">${esc(h.nk_id)}</a>`:""}${h.jbis_id?`${h.nk_id?" · ":""}JBIS: <a href="https://www.jbis.or.jp/horse/${esc(h.jbis_id)}/pedigree/" target="_blank" rel="noreferrer" style="color:var(--green)">${esc(h.jbis_id)}</a>`:""}</p></div>
     </div>
 
+    ${h.近况||h["近况更新/近走/牧场评价"]?`
     <div class="sec">
-      <div class="sec-head"><span class="n">1</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
+      <div class="sec-head"><span class="n">2</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
       <div class="tl">${items}</div>
-    </div>
+    </div>`:""}
 
     ${h.血统分析?`
     <div class="sec">
-      <div class="sec-head"><span class="n">2</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
+      <div class="sec-head"><span class="n">3</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
       <div class="sbox"><p>${esc(h.血统分析)}</p></div>
     </div>`:""}
 
     ${h.备考?`
     <div class="sec">
-      <div class="sec-head"><span class="n">3</span><h2>备考</h2></div>
+      <div class="sec-head"><span class="n">4</span><h2>备考</h2></div>
       <div class="sbox note"><p>${esc(h.备考)}</p></div>
     </div>`:""}`;
 }

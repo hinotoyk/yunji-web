@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云迹 · 阶段0数据预览</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --line: #e4e7ec; --text: #1f2430;
+    --muted: #6b7280; --accent: #1a6fb5; --accent-bg: #eaf2fa;
+    --good: #15803d; --warn: #b45309; --bad: #b91c1c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans", sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { background: linear-gradient(135deg, #12283f, #1a6fb5); color: #fff; padding: 14px 20px; }
+  header h1 { font-size: 18px; }
+  header p { font-size: 12px; opacity: .85; margin-top: 4px; }
+  .banner { background: #fff7e6; border-bottom: 1px solid #f0d9a8; color: var(--warn);
+            padding: 8px 20px; font-size: 13px; }
+  .wrap { display: flex; height: calc(100vh - 96px); }
+  .side { width: 340px; min-width: 280px; border-right: 1px solid var(--line);
+          background: var(--card); display: flex; flex-direction: column; }
+  .side .toolbar { padding: 10px; border-bottom: 1px solid var(--line); }
+  .side input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .side .tabs { display: flex; gap: 6px; margin-top: 8px; }
+  .side .tabs button { flex: 1; padding: 5px 0; border: 1px solid var(--line); border-radius: 6px;
+                       background: #fff; cursor: pointer; font-size: 12px; color: var(--muted); }
+  .side .tabs button.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .list { flex: 1; overflow-y: auto; }
+  .item { padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .item:hover { background: #f8fafc; }
+  .item.on { background: var(--accent-bg); }
+  .item .name { font-weight: 600; font-size: 14px; }
+  .item .meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .item .chip { display: inline-block; background: #eef2f7; border-radius: 4px; padding: 1px 6px;
+                font-size: 11px; margin-right: 4px; color: #374151; }
+  .main { flex: 1; overflow-y: auto; padding: 18px 22px; }
+  .main .empty { color: var(--muted); text-align: center; margin-top: 80px; font-size: 14px; }
+  .h-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .h-card h2 { font-size: 20px; }
+  .h-card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 14px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .kpi .v { font-size: 20px; font-weight: 700; }
+  .kpi .k { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .kpi.good .v { color: var(--good); }
+  .sec { background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin-top: 14px; }
+  .sec h3 { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: #fafbfc; color: var(--muted); font-weight: 600; position: sticky; top: 0; }
+  tr:hover td { background: #f8fafc; }
+  .pos1 { color: var(--good); font-weight: 700; }
+  .pos2 { color: var(--accent); font-weight: 600; }
+  .pos3 { color: var(--warn); font-weight: 600; }
+  .dnf { color: var(--bad); }
+  .tag { display: inline-block; border-radius: 4px; padding: 0 6px; font-size: 11px; margin-left: 6px; }
+  .tag.GI { background: #fde8e8; color: #b91c1c; }
+  .tag.GII { background: #fef3c7; color: #b45309; }
+  .tag.GIII { background: #e0f2fe; color: #0369a1; }
+  .tag.L { background: #ede9fe; color: #6d28d9; }
+  .tag.中央 { background: #e8f5e9; color: #15803d; }
+  .tag.地方 { background: #fff3e0; color: #b45309; }
+  .tag.海外 { background: #f3e8ff; color: #7c3aed; }
+  .mono { font-family: Consolas, monospace; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>云迹 · 比赛数据预览</h1>
+  <p>数据源：data/crops.json（契约C 正式产物 · 台账 648 条 / 135 匹已出赛）· 本页为临时核验页，正式 UI 见阶段2</p>
+</header>
+<div class="banner">⚠ 请重点核对：逐场履历字段、汇总统计、重赏记录。发现问题直接反馈，我改清洗/汇总规则后重新生成。</div>
+<div class="wrap">
+  <div class="side">
+    <div class="toolbar">
+      <input id="q" type="text" placeholder="搜索马名 / 母父 / 调教师…">
+      <div class="tabs">
+        <button data-f="all" class="on">全部</button>
+        <button data-f="raced">已出赛</button>
+        <button data-f="unraced">未出赛</button>
+        <button data-f="graded">重赏马</button>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </div>
+  <div class="main" id="main"><div class="empty">← 选择一匹马查看履历与汇总</div></div>
+</div>
+<script>
+const dataEl = document.getElementById('list'), mainEl = document.getElementById('main');
+let HORSES = [], filter = 'all', query = '', current = null;
+
+fetch('../data/crops.json').then(r => r.json()).then(d => {
+  HORSES = d;
+  renderList();
+}).catch(e => mainEl.innerHTML = '<div class="empty">加载失败：' + e.message + '</div>');
+
+function matches(h) {
+  if (filter === 'raced' && !(h.races && h.races.length)) return false;
+  if (filter === 'unraced' && h.races && h.races.length) return false;
+  if (filter === 'graded' && !(h.stats && h.stats.重賞出走)) return false;
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return [h.馬名, h.母父名, h.調教師, h.母名].some(v => (v || '').toLowerCase().includes(q));
+}
+
+function renderList() {
+  const list = HORSES.filter(matches);
+  dataEl.innerHTML = list.map(h => {
+    const s = h.stats || {};
+    const n = (h.races || []).length;
+    const chip = n ? `<span class="chip">${n}战 ${s.勝}胜</span><span class="chip">${(s.賞金合計/10000).toFixed(0)}万</span>`
+                   : `<span class="chip">未出赛</span>`;
+    return `<div class="item ${current === h ? 'on' : ''}" data-name="${h.馬名}">
+      <div class="name">${h.馬名}</div>
+      <div class="meta">${h.生年 || '?'}年生 · ${h.性別 || '?'} · ${h.母父名 || '?'}</div>
+      <div class="meta">${chip}</div>
+    </div>`;
+  }).join('') || '<div class="item" style="color:var(--muted)">无匹配</div>';
+  dataEl.querySelectorAll('.item[data-name]').forEach(el => el.onclick = () => {
+    current = HORSES.find(h => h.馬名 === el.dataset.name);
+    renderList(); renderDetail(current);
+  });
+}
+
+function kpi(v, k, cls) { return `<div class="kpi ${cls || ''}"><div class="v">${v}</div><div class="k">${k}</div></div>`; }
+
+function renderDetail(h) {
+  const s = h.stats || {}, races = h.races || [];
+  const graded = (s.重賞 || []).map(g => `${g.日付} <b>${g.競走名}</b> ${g.格} <span class="mono">${g.結果}着</span>`).join('<br>') || '—';
+  const venue = Object.entries(s.場地別 || {}).map(([k, v]) => `${k} ${v.出赛}战${v.勝}胜 ${(v.賞金/10000).toFixed(0)}万`).join(' · ') || '—';
+  const dist = Object.entries(s.距離別 || {}).map(([k, v]) => `${k} ${v.出赛}战${v.勝}胜`).join('，') || '—';
+  const cond = Object.entries(s.状態別 || {}).map(([k, v]) => `${k} ${v.出赛}战${v.勝}胜`).join('，') || '—';
+
+  mainEl.innerHTML = `
+  <div class="h-card">
+    <h2>${h.馬名} <span class="tag 中央">${h.生年 || '?'}年生</span> <span class="tag 中央">${h.性別 || '?'}</span>
+      ${s.重賞勝ち ? `<span class="tag GI">重赏${s.重賞勝ち}胜</span>` : ''}</h2>
+    <div class="sub">${[h.産地, h.生産牧場, h.馬主, h.調教師].filter(Boolean).join(' · ') || '基本信息待补'} · 母父 ${h.母父名 || '?'} · netkeiba通算 ${h.通算成績 || '—'}</div>
+  </div>
+  <div class="kpis">
+    ${kpi(races.length ? s.出賽数 : '未出赛', '出赛数')}
+    ${kpi(s.勝 ?? '—', '胜', s.勝 > 0 ? 'good' : '')}
+    ${kpi(s.連対率 ? (s.連対率*100).toFixed(1)+'%' : '—', '连对率')}
+    ${kpi(s.賞金合計 ? (s.賞金合計/10000).toFixed(0)+'万' : '—', '赏金合计(円)')}
+    ${kpi(s.重賞出走 ?? '—', '重赏出走')}
+    ${kpi(s.重賞勝ち ?? '—', '重赏胜', s.重賞勝ち > 0 ? 'good' : '')}
+  </div>
+  <div class="sec"><h3>重赏记录</h3><div style="padding:12px 16px;font-size:13px;line-height:1.9">${graded}</div></div>
+  <div class="sec"><h3>分项统计</h3><div style="padding:12px 16px;font-size:13px;line-height:2">
+    场地：${venue}<br>距离：${dist}<br>状态：${cond}<br>
+    初出走 ${s.初出走 || '—'} · 最终出走 ${s.最終出走 || '—'} · 中止${s.中止||0} 取消${s.取消||0} 除外${s.除外||0}</div></div>
+  <div class="sec"><h3>逐场履历（${races.length} 场）</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>日付</th><th>場</th><th>R</th><th>競走名</th><th>条件/格</th><th>距離</th><th>馬場</th><th>状態</th><th>頭数</th><th>人気</th><th>単勝</th><th>着順</th><th>タイム</th><th>着差</th><th>斤量</th><th>騎手</th><th>馬体重</th><th>賞金</th><th>調教師</th></tr></thead>
+      <tbody>${races.slice().reverse().map(r => {
+        const cls = r.結果 === 1 ? 'pos1' : r.結果 === 2 ? 'pos2' : r.結果 === 3 ? 'pos3' : (typeof r.結果 === 'string' ? 'dnf' : '');
+        const grd = r.格 ? `<span class="tag ${r.格}">${r.格}</span>` : '';
+        return `<tr><td class="mono">${r.日付}</td><td>${r.場名} <span class="tag ${r.venue_type}">${r.venue_type}</span></td>
+          <td>${r.R || ''}</td><td>${r.競走名}${grd}</td><td>${r.条件 || ''}</td><td class="mono">${r.距離 || ''}</td>
+          <td>${r.馬場 || ''}</td><td>${r.状態 || ''}</td><td>${r.頭数 ?? ''}</td><td>${r.人気 ?? ''}</td>
+          <td class="mono">${r.単勝 ?? ''}</td><td class="${cls}">${r.結果}</td><td class="mono">${r.タイム || ''}</td>
+          <td class="mono">${r.着差 || ''}</td><td class="mono">${r.斤量 ?? ''}</td><td>${r.騎手 || ''}</td>
+          <td>${r.馬体重 ?? ''}</td><td class="mono">${r.賞金 ? r.賞金.toLocaleString() : ''}</td><td>${r.管理調教師 || ''}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+
+document.getElementById('q').oninput = e => { query = e.target.value.trim(); renderList(); };
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on'); filter = b.dataset.f; renderList();
+});
+</script>
+</body>
+</html>
