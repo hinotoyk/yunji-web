@@ -87,6 +87,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,
 .modal p{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px}
 .modal .field{margin-top:10px}
 .modal .m-ops{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.al-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.al-row input{flex:1;border:1px solid var(--line-2);border-radius:8px;padding:6px 8px;font:inherit;font-size:12px;min-width:0;outline:none}
+.al-row input:focus{border-color:var(--green)}
+.al-row .al-tgt{flex:1.2}
+.al-row .al-note{flex:1.4}
+.al-row select{border:1px solid var(--line-2);border-radius:8px;padding:6px;font:inherit;font-size:12px;background:var(--card)}
 </style>
 </head>
 <body>
@@ -96,6 +102,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,
   <a href="index.html">← 返回查看</a>
   <span class="status" id="status"></span>
   <div class="top-actions">
+    <button class="btn small" id="btnAlias">别名</button>
     <button class="btn small" id="btnLocal" disabled>保存草稿</button>
     <button class="btn small" id="btnExport">导出 JSON</button>
     <button class="btn small primary" id="btnGithub" disabled>提交到 GitHub</button>
@@ -119,6 +126,21 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,
       <div class="empty" style="padding:80px 0">请选择或新建一匹产驹</div>
     </div>
   </section>
+</div>
+
+<!-- 马名别名维护 -->
+<div class="mask" id="alMask">
+  <div class="modal" style="width:700px">
+    <h2>马名别名维护</h2>
+    <p>台账马名 ↔ 仓库马名关联。动作「映射」：台账名按目标马名挂到仓库已有马；「自动建档」：台账独有马（如 Grand Warrior）自动生成档案。保存后随「提交到 GitHub」一起写入 data/aliases.json。</p>
+    <div id="alRows" style="max-height:300px;overflow-y:auto;margin-top:8px"></div>
+    <div class="m-ops">
+      <button class="btn small" id="alAdd">+ 新增条目</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="alClose">取消</button>
+      <button class="btn primary" id="alSave">保存</button>
+    </div>
+  </div>
 </div>
 
 <!-- GitHub 设置 -->
@@ -221,6 +243,46 @@ btnLocal.addEventListener("click",()=>{
   setDirty(false);statusEl.textContent="已保存草稿（本浏览器）";
 });
 
+/* ---------- 别名维护 ---------- */
+let ALIASES={},ALIAS_ROWS=[];
+const btnAlias=document.getElementById("btnAlias"),alMask=document.getElementById("alMask"),alRows=document.getElementById("alRows");
+function aliasRowsToObj(){
+  const o={};
+  ALIAS_ROWS.forEach(r=>{
+    const src=r.querySelector(".al-src").value.trim();
+    if(!src)return;
+    const act=r.querySelector(".al-act").value;
+    const tgt=r.querySelector(".al-tgt").value.trim();
+    const note=r.querySelector(".al-note").value.trim();
+    if(!act&&!tgt&&!note)return;
+    o[src]={action:act,target:tgt,note};
+  });
+  return o;
+}
+function renderAliasRows(){
+  alRows.innerHTML=ALIAS_ROWS.map(r=>`<div class="al-row">
+    <input class="al-src" value="${esc(r.src)}" placeholder="台账/海外马名">
+    <select class="al-act"><option value="">待确认</option><option value="map"${r.action==="map"?" selected":""}>映射</option><option value="create"${r.action==="create"?" selected":""}>自动建档</option></select>
+    <input class="al-tgt" value="${esc(r.target)}" placeholder="目标马名（映射时）">
+    <input class="al-note" value="${esc(r.note)}" placeholder="备注">
+    <button class="btn small danger al-del">删</button>
+  </div>`).join("")||`<div class="empty">暂无别名条目</div>`;
+  alRows.querySelectorAll(".al-del").forEach(b=>b.addEventListener("click",()=>b.closest(".al-row").remove()));
+}
+btnAlias.addEventListener("click",()=>{
+  ALIAS_ROWS=Object.entries(ALIASES).map(([src,v])=>({src,action:v.action||"",target:v.target||"",note:v.note||""}));
+  renderAliasRows();
+  alMask.classList.add("show");
+});
+document.getElementById("alClose").addEventListener("click",()=>alMask.classList.remove("show"));
+document.getElementById("alAdd").addEventListener("click",()=>{ALIAS_ROWS.push({src:"",action:"",target:"",note:""});renderAliasRows();});
+document.getElementById("alSave").addEventListener("click",()=>{
+  ALIASES=aliasRowsToObj();
+  setDirty(true);
+  alMask.classList.remove("show");
+  statusEl.textContent="别名已更新（提交时写入 data/aliases.json）";
+});
+
 /* ---------- 导出 ---------- */
 document.getElementById("btnExport").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify(HORSES,null,2)],{type:"application/json"});
@@ -296,14 +358,15 @@ async function commitToGithub(){
     mf.versions=[{id,file:`history/${id}.json`,date:ts.toLocaleString("zh-CN"),count:HORSES.length,note:"管理页提交"}].concat(mf.versions.filter(v=>v.id!==id&&v.id!==mf.current));
     mf.versions=mf.versions.slice(0,30);
     mf.current=id;
-    // 单次 commit 写入 3 个文件
+    // 单次 commit 写入文件（crops + 快照 + manifest + aliases）
     const files=[
       {path:"data/crops.json",content:JSON.stringify(HORSES,null,2)},
       {path:`history/${id}.json`,content:JSON.stringify(HORSES,null,2)},
-      {path:"data/manifest.json",content:JSON.stringify(mf,null,2)}
+      {path:"data/manifest.json",content:JSON.stringify(mf,null,2)},
+      {path:"data/aliases.json",content:JSON.stringify(ALIASES,null,2)}
     ];
     const branch=await ghCommitAll(cfg.token,cfg.owner,cfg.repo,files,msg);
-    lines.push({t:`已提交 1 个 commit（branch: ${branch}）· crops.json（${HORSES.length} 匹）+ 快照 + manifest`,ok:true});
+    lines.push({t:`已提交 1 个 commit（branch: ${branch}）· crops.json（${HORSES.length} 匹）+ 快照 + manifest + aliases`,ok:true});
     setDirty(false);
     lines.push({t:`完成。GitHub Actions 将自动部署（约 1 分钟内生效），可在仓库 Actions 页查看进度。`,ok:true});
   }catch(e){
@@ -326,6 +389,8 @@ async function commitToGithub(){
   // 若有草稿则提示可恢复
   const draft=localStorage.getItem(LS_DATA);
   footEl.textContent=`共 ${HORSES.length} 匹${draft?" · 有本地草稿":""}`;
+  // 加载别名表
+  try{const ar=await fetch("../data/aliases.json");if(ar.ok)ALIASES=await ar.json();}catch(e){}
   renderList();
   sel=HORSES[0]?.馬名||null;
   if(sel)renderEditor(HORSES.find(x=>x.馬名===sel));

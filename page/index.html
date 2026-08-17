@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -41,11 +41,15 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .item:hover{background:var(--card);border-color:var(--line)}
 .item.on{background:var(--card);border-color:var(--line-2);border-left:3px solid var(--green);box-shadow:0 1px 4px rgba(90,80,60,.06)}
 .thumb{width:38px;height:38px;flex:none;border-radius:9px;background:var(--green-soft);border:1px solid var(--green-line);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-weight:800;color:var(--green);font-size:15px}
-.item .cn{font-family:'Noto Serif SC',serif;font-size:14.5px;font-weight:600;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item .jp{font-size:10.5px;color:var(--muted-2);flex:none}
+.it-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.item .cn{font-family:'Noto Serif SC',serif;font-size:14.5px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .jp{font-size:10.5px;color:var(--muted-2);margin-left:6px}
+.item .mini{font-size:10.5px;color:var(--muted-2)}
+.item .mini-t{font-size:10.5px;color:var(--muted-2);font-style:italic}
 .item .b{font-size:10.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);flex:none}
 .item .b.m{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
 .item .b.f{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.pf2,.pf3{margin-top:-4px;padding-top:0}
 .empty{padding:40px 10px;text-align:center;color:var(--muted-2);font-size:12.5px}
 /* right pane */
 .detail{flex:1;overflow-y:auto;min-width:0}
@@ -147,6 +151,18 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
       <button class="pill" data-y="2024">2024年生</button>
       <button class="pill" data-y="2025">2025年生</button>
     </div>
+    <div class="pane-filters pf2">
+      <button class="pill on" data-sx="all">性别</button>
+      <button class="pill" data-sx="牡">牡</button>
+      <button class="pill" data-sx="牝">牝</button>
+      <button class="pill" data-sx="セ">セ</button>
+    </div>
+    <div class="pane-filters pf3">
+      <button class="pill on" data-st="all">状态</button>
+      <button class="pill" data-st="raced">已出赛</button>
+      <button class="pill" data-st="unraced">未出赛</button>
+      <button class="pill" data-st="graded">重赏马</button>
+    </div>
     <div class="list" id="list"></div>
   </aside>
 
@@ -155,10 +171,19 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
   </section>
 </div>
 
+<script src="race-ui.js"></script>
 <script>
-let HORSES=[],q="",y="all",sel=null,verSel=null;
+let HORSES=[],q="",y="all",sx="all",st="all",sel=null,verSel=null;
 const list=document.getElementById("list"),count=document.getElementById("count"),verEl=document.getElementById("ver");
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
+function mini(h){
+  const s=h.stats||{};const n=(h.races||[]).length;
+  if(!n)return`<span class="mini-t">未出赛</span>`;
+  const m=[`${n}战${s.勝||0}胜`];
+  if(s.賞金合計)m.push((s.賞金合計/10000).toFixed(0)+"万");
+  if(s.重賞勝ち)m.push(`重赏${s.重賞勝ち}胜`);
+  return`<span class="mini">${m.join(" · ")}</span>`;
+}
 function parseKin(h){
   const src=String(h["近况更新/近走/牧场评价"]||h.近况||"");
   return src.split(/・/).map(s=>s.trim()).filter(Boolean).map(s=>{
@@ -171,7 +196,12 @@ function parseKin(h){
 function filtered(){
   return HORSES.filter(h=>{
     const hay=[h.馬名,h.译名,h.母名,h.母父名,h.生産牧場,h.生产牧场,h.調教師,h.管理調教師,h.馬主,h.生年月日].join(" ");
-    return (!q||hay.includes(q))&&(y==="all"||(h.生年||h._source)===y);
+    const raced=(h.races||[]).length>0;
+    const graded=(h.stats&&h.stats.重賞出走)>0;
+    return (!q||hay.includes(q))
+      &&(y==="all"||(h.生年||h._source)===y)
+      &&(sx==="all"||h.性別===sx)
+      &&(st==="all"||(st==="raced"?raced:st==="unraced"?!raced:graded));
   });
 }
 function renderList(){
@@ -183,7 +213,10 @@ function renderList(){
     const cn=h.译名||h.馬名;
     return `<div class="item${on}" data-k="${h.馬名}">
       <span class="thumb">${esc(cn)[0]}</span>
-      <span class="cn">${esc(cn)}</span>${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}
+      <span class="it-main">
+        <span class="cn">${esc(cn)}</span>${h.译名?`<span class="jp">${esc(h.馬名)}</span>`:""}
+        ${mini(h)}
+      </span>
       <span class="b ${b}">${esc(h.性別)}</span>
     </div>`;
   }).join("")||`<div class="empty">未找到匹配的产驹</div>`;
@@ -221,6 +254,7 @@ function renderDetail(h){
       ${it.body?`<div class="tl-body">${esc(it.body)}</div>`:""}
     </div>`;
   }).join("")||`<div class="empty" style="padding:14px">暂无近况更新</div>`;
+  const raceSec=RaceUI.section(h,1);
   document.getElementById("dinner").innerHTML=`
     <div class="hero">
       <div class="photo">
@@ -237,6 +271,7 @@ function renderDetail(h){
           ${h.総賞金?`<span class="badge prize">${esc(h.総賞金)}万円</span>`:""}
         </div>
         ${h.通算成績?`<div class="sum">通算成绩 ${esc(h.通算成績)}${h.主な勝鞍?` · 主胜鞍 ${esc(h.主な勝鞍)}`:""}</div>`:""}
+        ${RaceUI.statsHTML(h)}
       </div>
     </div>
 
@@ -250,28 +285,32 @@ function renderDetail(h){
       <div class="f"><div class="k">产地</div><div class="v jap">${esc(h.産地)}</div></div>
       <div class="f"><div class="k">母 · 母父</div><div class="v">${esc(h.母名)}${h.母父名?` / ${esc(h.母父名)}`:""}</div></div>
     </div>
+
+    ${raceSec.html}
+
     <div class="sec">
-      <div class="sec-head"><span class="n">1</span><h2>数据源</h2><span class="hint">主源 netkeiba · 血统 netkeiba/JBIS 兜底</span></div>
+      <div class="sec-head"><span class="n">2</span><h2>数据源</h2><span class="hint">主源 netkeiba · 血统 netkeiba/JBIS 兜底</span></div>
       <div class="sbox note"><p>${h.nk_id?`netkeiba: <a href="https://db.netkeiba.com/horse/${esc(h.nk_id)}/" target="_blank" rel="noreferrer" style="color:var(--green)">${esc(h.nk_id)}</a>`:""}${h.jbis_id?`${h.nk_id?" · ":""}JBIS: <a href="https://www.jbis.or.jp/horse/${esc(h.jbis_id)}/pedigree/" target="_blank" rel="noreferrer" style="color:var(--green)">${esc(h.jbis_id)}</a>`:""}</p></div>
     </div>
 
     ${h.近况||h["近况更新/近走/牧场评价"]?`
     <div class="sec">
-      <div class="sec-head"><span class="n">2</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
+      <div class="sec-head"><span class="n">3</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
       <div class="tl">${items}</div>
     </div>`:""}
 
     ${h.血统分析?`
     <div class="sec">
-      <div class="sec-head"><span class="n">3</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
+      <div class="sec-head"><span class="n">4</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
       <div class="sbox"><p>${esc(h.血统分析)}</p></div>
     </div>`:""}
 
     ${h.备考?`
     <div class="sec">
-      <div class="sec-head"><span class="n">4</span><h2>备考</h2></div>
+      <div class="sec-head"><span class="n">5</span><h2>备考</h2></div>
       <div class="sbox note"><p>${esc(h.备考)}</p></div>
     </div>`:""}`;
+  raceSec.bind(document.getElementById("race-sec"));
 }
 list.addEventListener("click",e=>{
   const it=e.target.closest(".item");if(!it)return;
@@ -279,9 +318,14 @@ list.addEventListener("click",e=>{
   if(h){renderDetail(h);history.replaceState(null,"","#"+encodeURIComponent(h.馬名));}
 });
 document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim();renderList();});
-document.querySelectorAll(".pill").forEach(p=>p.addEventListener("click",()=>{
-  document.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
-  p.classList.add("on");y=p.dataset.y;renderList();
+document.querySelectorAll(".pane-filters").forEach(row=>row.addEventListener("click",e=>{
+  const p=e.target.closest(".pill");if(!p)return;
+  row.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
+  p.classList.add("on");
+  if(p.dataset.y)y=p.dataset.y;
+  if(p.dataset.sx)sx=p.dataset.sx;
+  if(p.dataset.st)st=p.dataset.st;
+  renderList();
 }));
 async function loadData(url){
   const r=await fetch(url);

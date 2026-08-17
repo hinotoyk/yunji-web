@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -99,6 +99,7 @@ footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;co
 
 <footer>云迹 · 数据仅供分享交流，严禁用于赌博或违法行为</footer>
 
+<script src="race-ui.js"></script>
 <script>
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
@@ -141,6 +142,7 @@ function render(h){
       ${it.body?`<div class="tl-body">${esc(it.body)}</div>`:""}
     </div>`;
   }).join("")||`<div class="empty" style="padding:14px">暂无近况更新</div>`;
+  const raceSec=RaceUI.section(h,1);
   document.getElementById("dinner").innerHTML=`
     <div class="hero">
       <div class="photo">
@@ -157,6 +159,7 @@ function render(h){
           ${h.総賞金?`<span class="badge prize">${esc(h.総賞金)}万円</span>`:""}
         </div>
         ${h.通算成績?`<div class="sum">通算成绩 ${esc(h.通算成績)}${h.主な勝鞍?` · 主胜鞍 ${esc(h.主な勝鞍)}`:""}</div>`:""}
+        ${RaceUI.statsHTML(h)}
       </div>
     </div>
 
@@ -171,23 +174,26 @@ function render(h){
       <div class="f"><div class="k">母 · 母父</div><div class="v">${esc(h.母名)}${h.母父名?` / ${esc(h.母父名)}`:""}</div></div>
     </div>
 
+    ${raceSec.html}
+
     ${h.近况||h["近况更新/近走/牧场评价"]?`
     <section class="sec">
-      <div class="sec-head"><span class="n">1</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
+      <div class="sec-head"><span class="n">2</span><h2>近况更新 · 近走 · 牧场评价</h2><span class="hint">按时间倒序</span></div>
       <div class="tl">${items}</div>
     </section>`:""}
 
     ${h.血统分析?`
     <section class="sec">
-      <div class="sec-head"><span class="n">2</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
+      <div class="sec-head"><span class="n">3</span><h2>血统分析</h2><span class="hint">分析 · 钙奶</span></div>
       <div class="sbox"><p>${esc(h.血统分析)}</p></div>
     </section>`:""}
 
     ${h.备考?`
     <section class="sec">
-      <div class="sec-head"><span class="n">3</span><h2>备考</h2></div>
+      <div class="sec-head"><span class="n">4</span><h2>备考</h2></div>
       <div class="sbox note"><p>${esc(h.备考)}</p></div>
     </section>`:""}`;
+  raceSec.bind(document.getElementById("race-sec"));
 }
 (async function init(){
   const m=decodeURIComponent(location.hash.slice(1));
