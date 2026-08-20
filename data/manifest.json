@@ -1,6 +1,34 @@
 {
-  "current": "20260819_2227",
+  "current": "20260820_1113",
   "versions": [
+    {
+      "id": "20260820_1113",
+      "file": "history/20260820_1113.json",
+      "date": "2026-08-20 11:13",
+      "count": 407,
+      "note": "netkeiba+JBIS 抓取更新"
+    },
+    {
+      "id": "20260820_1112",
+      "file": "history/20260820_1112.json",
+      "date": "2026-08-20 11:12",
+      "count": 407,
+      "note": "netkeiba+JBIS 抓取更新"
+    },
+    {
+      "id": "20260820_1109",
+      "file": "history/20260820_1109.json",
+      "date": "2026-08-20 11:09",
+      "count": 407,
+      "note": "netkeiba+JBIS 抓取更新"
+    },
+    {
+      "id": "20260820_1037",
+      "file": "history/20260820_1037.json",
+      "date": "2026-08-20 10:37",
+      "count": 407,
+      "note": "netkeiba+JBIS 抓取更新"
+    },
     {
       "id": "20260819_2227",
       "file": "history/20260819_2227.json",
