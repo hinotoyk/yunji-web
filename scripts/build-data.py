@@ -23,6 +23,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # 供 racelib 导入
 import racelib  # noqa: E402
+from adapters import netkeiba_races  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -32,7 +33,7 @@ RACES_DIR = os.path.join(DATA, "races")
 
 # 前端展示用字段
 FIELDS = [
-    "nk_id", "jbis_id", "馬名", "性別", "生年月日", "毛色", "産地",
+    "id", "nk_id", "jbis_id", "馬名", "性別", "生年月日", "毛色", "産地",
     "馬主", "生産牧場", "調教師", "通算成績", "獲得賞金", "総賞金",
     "母名", "母父名", "生年", "登録状態",
     "pedigree", "fno", "cross",
@@ -51,21 +52,118 @@ def norm(name):
     return re.sub(r"[ 　()（）\[\]【】]", "", name or "").strip()
 
 
-def merge(nk_records, jbis_records, jbis_ped_records):
-    """netkeiba 主 + jbis 兜底 + jbis_pedigree 增强"""
+def load_registry():
+    """读取身份映射表 data/registry.json → 索引结构（M1，见 data-funnel-v2.md §3）。
+    不存在则报错：先跑 python scripts/build_registry.py（M1.1 种子）。
+    """
+    path = os.path.join(DATA, "registry.json")
+    if not os.path.exists(path):
+        sys.exit("❌ 无 data/registry.json：先运行 python scripts/build_registry.py（M1.1 种子）")
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    horses = data.get("horses", [])
+    by_id, by_nk, by_jbis, by_name_year = {}, {}, {}, {}
+    for h in horses:
+        hid = h.get("id")
+        if hid is None or hid in by_id:
+            sys.exit(f"❌ registry id 重复/缺失: {hid}")
+        by_id[hid] = h
+        keys = h.get("keys", {})
+        if keys.get("nk_id"):
+            by_nk.setdefault(keys["nk_id"], h)
+        if keys.get("jbis_id"):
+            by_jbis.setdefault(keys["jbis_id"], h)
+        by_name_year.setdefault((norm((h.get("names") or [""])[-1]), str(h.get("生年", ""))), h)
+    return {
+        "data": data, "horses": horses, "by_id": by_id,
+        "by_nk": by_nk, "by_jbis": by_jbis, "by_name_year": by_name_year,
+    }
+
+
+def save_registry(reg):
+    reg["data"]["horses"] = reg["horses"]
+    reg["data"]["updated"] = datetime.now().strftime("%Y-%m-%d")
+    with open(os.path.join(DATA, "registry.json"), "w", encoding="utf-8") as f:
+        json.dump(reg["data"], f, ensure_ascii=False, indent=2)
+
+
+def resolve_identity(record, reg):
+    """身份解析（§3.2 顺序）：nk_id → jbis_id → (馬名, 生年)。
+    未命中 → 分配 max+1 并写回 registry；命中 → 处理改名（names 追加新名）/补 keys/未命名同步。
+    返回 (id, entry)。
+    """
+    nk_id = (record.get("nk_id") or "").strip()
+    jbis_id = (record.get("jbis_id") or "").strip()
+    name = (record.get("馬名") or "").strip()
+    birth = str(record.get("生年") or "").strip()
+
+    entry = reg["by_nk"].get(nk_id) if nk_id else None
+    if entry is None and jbis_id:
+        entry = reg["by_jbis"].get(jbis_id)
+    if entry is None and name:
+        entry = reg["by_name_year"].get((norm(name), birth))
+
+    if entry is None:
+        new_id = max(reg["by_id"]) + 1 if reg["by_id"] else 1
+        entry = {
+            "id": new_id,
+            "keys": {"nk_id": nk_id, "jbis_id": jbis_id},
+            "names": [name],
+            "生年": birth,
+            "created": datetime.now().strftime("%Y-%m-%d"),
+            "updated": datetime.now().strftime("%Y-%m-%d"),
+            "未命名": racelib.is_unnamed_name(name),
+        }
+        reg["horses"].append(entry)
+        reg["by_id"][new_id] = entry
+        if nk_id:
+            reg["by_nk"][nk_id] = entry
+        if jbis_id:
+            reg["by_jbis"][jbis_id] = entry
+        if name:
+            reg["by_name_year"][(norm(name), birth)] = entry
+
+    # 命中但名字不同 → 改名：names 追加新名（旧名=曾用名）
+    current = (entry.get("names") or [""])[-1]
+    if name and current != name:
+        entry["names"] = entry.get("names") or []
+        if name not in entry["names"]:
+            entry["names"].append(name)
+        entry["updated"] = datetime.now().strftime("%Y-%m-%d")
+        # 未命名 → 正式名：清除未命名标记
+        if entry.get("未命名") and not racelib.is_unnamed_name(name):
+            entry["未命名"] = False
+        reg["by_name_year"][(norm(name), birth)] = entry
+    # 命中且 keys 缺 nk_id（JBIS 兜底马被 netkeiba 收录）→ 补 keys
+    if nk_id and not (entry.get("keys") or {}).get("nk_id"):
+        entry.setdefault("keys", {})["nk_id"] = nk_id
+        reg["by_nk"][nk_id] = entry
+    if jbis_id and not (entry.get("keys") or {}).get("jbis_id"):
+        entry.setdefault("keys", {})["jbis_id"] = jbis_id
+        reg["by_jbis"][jbis_id] = entry
+    return entry["id"], entry
+
+
+def merge(nk_records, jbis_records, jbis_ped_records, reg):
+    """netkeiba 主 + jbis 兜底 + jbis_pedigree 增强（M1：身份经 registry 解析，输出带 id）。
+    返回 [马档案]，每匹含 id（registry 分配/沿用）。"""
     jbis = {norm(h.get("馬名", "")): h for h in jbis_records}
     enrich = {norm(h.get("馬名", "")): h for h in jbis_ped_records if h.get("pedigree")}
     nk_keys = {norm(r.get("馬名", "")) for r in nk_records}
 
-    out = []
-    for r in nk_records:
-        key = norm(r.get("馬名", ""))
-        j = jbis.get(key, {})
-        e = enrich.get(key, {})
+    def build(r, j, e):
+        hid, entry = resolve_identity({
+            "nk_id": r.get("nk_id", ""), "jbis_id": r.get("jbis_id", ""),
+            "馬名": r.get("馬名", ""), "生年": r.get("生年", ""),
+        }, reg)
+        # M1：馬名跟随 registry 当前名（names[-1]）——占位名仔已正式命名时，
+        # 源（netkeiba.json）可能仍为占位名，registry 是身份权威。
+        cur_name = (entry.get("names") or [""])[-1] or r.get("馬名", "")
         h = {
+            "id": hid,
             "nk_id": r.get("nk_id", ""),
             "jbis_id": r.get("jbis_id", "") or j.get("jbis_id", "") or e.get("jbis_id", ""),
-            "馬名": r.get("馬名", ""),
+            "馬名": cur_name,
             "性別": r.get("性別", ""),
             "生年月日": r.get("生年月日", ""),
             "毛色": r.get("毛色", ""),
@@ -84,6 +182,12 @@ def merge(nk_records, jbis_records, jbis_ped_records):
             "fno": r.get("fno") or j.get("fno", "") or e.get("fno", ""),
             "cross": j.get("cross", "") or e.get("cross", ""),
         }
+        return h
+
+    out = []
+    for r in nk_records:
+        key = norm(r.get("馬名", ""))
+        h = build(r, jbis.get(key, {}), enrich.get(key, {}))
         if h["馬名"]:
             out.append(h)
 
@@ -92,10 +196,10 @@ def merge(nk_records, jbis_records, jbis_ped_records):
         key = norm(j.get("馬名", ""))
         if key in nk_keys or not j.get("馬名"):
             continue
-        out.append({
+        h = build({"馬名": j.get("馬名", ""), "生年": j.get("生年", "")}, j, {})
+        h.update({
             "nk_id": "",
             "jbis_id": j.get("jbis_id", ""),
-            "馬名": j.get("馬名", ""),
             "性別": j.get("性別", ""),
             "生年月日": j.get("生年月日", ""),
             "毛色": j.get("毛色", ""),
@@ -106,16 +210,14 @@ def merge(nk_records, jbis_records, jbis_ped_records):
             "通算成績": j.get("通算成績", ""),
             "獲得賞金": "",
             "総賞金": j.get("総賞金", ""),
-            "母名": "",
-            "母父名": "",
-            "生年": j.get("生年", ""),
-            "登録状態": j.get("登録状態", ""),
             "pedigree": j.get("pedigree", {}),
             "fno": j.get("fno", ""),
             "cross": j.get("cross", ""),
         })
+        out.append(h)
 
-    out.sort(key=lambda h: (h["生年"] or "", h["馬名"] or ""), reverse=True)
+    # 输出排序 = 生年月日（缺失退生年）从小到大，与 registry id 顺序一致
+    out.sort(key=lambda h: (racelib.birth_date_key(h), norm(h["馬名"] or "")))
     return out
 
 
@@ -164,8 +266,33 @@ def load_ledger():
     return records, issues
 
 
-def attach_races(records, ledger_rows, aliases):
-    """契约B关联到马档案：马名匹配 + 别名 + 自动建档 + 汇总stats。
+def _merge_gap(base, gap, fill_fields):
+    """海外场：netkeiba 为主，台账只补空缺字段"""
+    out = dict(base)
+    for k in fill_fields:
+        if not out.get(k) and gap.get(k):
+            out[k] = gap[k]
+    return out
+
+
+def _race_key(r):
+    return (str(r.get("日付", "")), str(r.get("場名", "")), str(r.get("R", "")))
+
+
+def _shutoku_of(recs):
+    """収得計算（M4.3）→ 剥离缺失报告后写入 stats 的 {平地, 障害}（円）"""
+    got = racelib.compute_shutoku(recs)
+    if got["缺失"]:
+        print(f"  ⚠ 収得缺失 {len(got['缺失'])} 场（本賞金未抓到，按 0 暂计）: {got['缺失'][:5]}")
+    return {"平地": got["平地"], "障害": got["障害"]}
+
+
+def attach_races(records, nk_recs, ledger_rows, aliases, reg):
+    """契约B关联到马档案（M2.5：netkeiba 为主 + 台账海外补缺；M4.3 加収得）。
+    - nk_recs:     netkeiba 契约B 记录列表（主源，含 來源=netkeiba / race_id / 本賞金 / jockey_id）
+    - ledger_rows: 台账契约B（coerce 后），只保留 venue_type=海外 参与补缺
+    - 合并键 (日付,場名,R)：netkeiba 优先；海外场 netkeiba 有 → netkeiba 为主、台账补賞金空缺；
+      netkeiba 无 → 台账展示（來源=ledger）
     返回 (matched, created_names, unmatched_names, aliases, n_with_races)
     """
     by_norm = {}
@@ -176,11 +303,31 @@ def attach_races(records, ledger_rows, aliases):
         if tgt:
             by_norm.setdefault(norm(src), []).extend(by_norm.get(norm(tgt), []))
 
+    # 台账只保留海外行（中央/地方由 netkeiba 覆盖）
+    ledger_ov = [r for r in ledger_rows if r.get("venue_type") == "海外"]
+    nk_by_name, ov_by_name = {}, {}
+    for r in nk_recs:
+        nk_by_name.setdefault(norm(r.get("出走馬名", "")), []).append(r)
+    for r in ledger_ov:
+        ov_by_name.setdefault(norm(r.get("出走馬名", "")), []).append(r)
+
     horse_recs = {}
-    for r in ledger_rows:
-        key = norm(r["出走馬名"])
-        g = horse_recs.setdefault(key, {"name": r["出走馬名"], "recs": []})
-        g["recs"].append(r)
+    for key in set(nk_by_name) | set(ov_by_name):
+        nk_list = nk_by_name.get(key, [])
+        ov_list = ov_by_name.get(key, [])
+        merged = list(nk_list)  # netkeiba 为主
+        nk_dates = {(str(r.get("日付", "")), str(r.get("場名", ""))) for r in nk_list}
+        for r in ov_list:
+            gap_key = (str(r.get("日付", "")), str(r.get("場名", "")))
+            if gap_key in nk_dates:
+                # 海外场 netkeiba 有 → netkeiba 为主，台账只补空缺字段
+                for base in nk_list:
+                    if (str(base.get("日付", "")), str(base.get("場名", ""))) == gap_key:
+                        _merge_gap(base, r, ["賞金"])
+            else:
+                merged.append(r)  # netkeiba 无该海外场 → 台账展示
+        name = (nk_list[0] if nk_list else ov_list[0]).get("出走馬名", key)
+        horse_recs[key] = {"name": name, "recs": merged}
 
     # 分配: attach(挂到现有马) / create(自动建档) / unmatched(待确认)
     assign = {}
@@ -216,24 +363,31 @@ def attach_races(records, ledger_rows, aliases):
         if key:
             h["races"] = horse_recs[key]["recs"]
             h["stats"] = racelib.compute_stats(h["races"])
+            h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
             n_with += 1
         else:
             h.setdefault("races", [])
             h.setdefault("stats", racelib.compute_stats([]))
+            h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
         h.setdefault("photo", "")
 
     # 台账有、仓库无 → 按别名表 action=create 自动建档（如 Grand Warrior）
     for key in created:
         g = horse_recs[key]
         sex, birth = racelib.derive_basic(g["recs"])
+        hid, _entry = resolve_identity(
+            {"nk_id": "", "jbis_id": "", "馬名": g["name"], "生年": birth}, reg)
+        ledger_recs = [{**r, "來源": "ledger", "管理調教師": ""} for r in g["recs"]]
         h = {
+            "id": hid,
             "nk_id": "", "jbis_id": "", "馬名": g["name"], "性別": sex, "生年月日": "",
             "毛色": "", "産地": "", "馬主": "", "生産牧場": "", "調教師": "",
             "通算成績": "", "獲得賞金": "", "総賞金": "", "母名": "", "母父名": "",
             "生年": birth, "登録状態": "",
             "pedigree": {}, "fno": "", "cross": "", "photo": "",
-            "races": g["recs"], "stats": racelib.compute_stats(g["recs"]),
+            "races": ledger_recs, "stats": racelib.compute_stats(ledger_recs),
         }
+        h["stats"]["収得賞金"] = _shutoku_of(ledger_recs)  # M4.3
         records.append(h)
         n_with += 1
 
@@ -284,7 +438,8 @@ def main():
     nk = load_raw("netkeiba.json")
     jb = load_raw("jbis.json")
     jb_ped = load_raw("jbis_pedigree.json")
-    records = merge(nk, jb, jb_ped)
+    reg = load_registry()
+    records = merge(nk, jb, jb_ped, reg)
     if not records:
         sys.exit("❌ 无数据：先跑 scrape_netkeiba.py / scrape_jbis.py")
 
@@ -292,18 +447,24 @@ def main():
     with_nk_ped = sum(1 for h in records if h.get("nk_id") and h.get("pedigree", {}).get("父"))
     with_jbis_only = sum(1 for h in records if not h.get("nk_id"))
     with_cross = sum(1 for h in records if h.get("cross"))
+    print(f"✔ 身份层: registry {len(reg['horses'])} 条（id 由 build-registry 种子 + max+1 维护）")
     print(f"✔ netkeiba {len(nk)} 匹 + jbis 兜底 {len(jb)} 匹 → 合并 {len(records)} 匹")
     print(f"✔ 血统覆盖: {with_ped}/{len(records)}（netkeiba 源 {with_nk_ped}，JBIS 兜底 {with_jbis_only}）")
     print(f"✔ クロス增强: {with_cross} 匹")
 
-    # ── 契约B 关联（data/races/ledger.csv 由 pull_races.py 产出）──
+    # ── 比赛数据（M2.5 主源：netkeiba 成绩页 + 台账仅海外补漏）──
     aliases = load_aliases()
     ledger_rows, ledger_issues = load_ledger()
-    if ledger_rows:
-        matched, created, unmatched, aliases, n_with = attach_races(records, ledger_rows, aliases)
+    netkeiba_db = netkeiba_races.load_races_db()
+    jockeys = netkeiba_races.load_jockeys()
+    if netkeiba_db:
+        nk_recs = netkeiba_races.fetch()
+        matched, created, unmatched, aliases, n_with = attach_races(
+            records, nk_recs, ledger_rows, aliases, reg)
         with open(os.path.join(DATA, "aliases.json"), "w", encoding="utf-8") as f:
             json.dump(aliases, f, ensure_ascii=False, indent=1)
-        print(f"✔ 比赛数据: 关联 {matched} 匹 · 自动建档 {len(created)} 匹 · 待确认 {len(unmatched)} 匹")
+        print(f"✔ 比赛数据: netkeiba 主源 {len(netkeiba_db)} 匹 · 台账海外关联 {matched} 匹"
+              f" · 自动建档 {len(created)} 匹 · 待确认 {len(unmatched)} 匹")
         if created:
             print("✔ 自动建档:", "、".join(created))
         if unmatched:
@@ -313,7 +474,15 @@ def main():
             f.write(mreport)
         print(f"✔ 已写: data/merge-report.md（覆盖/待校准清单）")
     else:
-        print("⚠ 无 data/races/ledger.csv，跳过比赛数据（先跑 python scripts/pull_races.py）")
+        print("⚠ 无 data/raw/netkeiba_races.json，跳过比赛数据（先跑 scripts/adapters/netkeiba_races.py）")
+
+    # ── 写回 registry（新马/改名/补 keys 已并入）──
+    save_registry(reg)
+    print(f"✔ 已写回: data/registry.json（{len(reg['horses'])} 条）")
+
+    # ── 输出排序 = 生年月日（缺失退生年）从小到大，与 registry id 顺序一致 ──
+    # 台账建档马由 attach_races 追加，需在最后统一重排，保证 crops 顺序 = id 顺序
+    records.sort(key=lambda h: (racelib.birth_date_key(h), norm(h["馬名"] or "")))
 
     os.makedirs(HISTORY, exist_ok=True)
     cur_id = datetime.now().strftime("%Y%m%d_%H%M")

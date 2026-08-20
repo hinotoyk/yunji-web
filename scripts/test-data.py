@@ -24,9 +24,12 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 SAMPLE = 3                      # 每类抽样匹数（测试用，勿改大全量）
 
+sys.path.insert(0, str(ROOT / "scripts"))
+import racelib  # noqa: E402
+
 # 分类规则：命名 netkeiba / 未命名仔 / JBIS 兜底 / 台账建档
 def is_unnamed(name):
-    return bool(re.search(r"の(19|20)\d\d$", name or ""))
+    return racelib.is_unnamed_name(name)
 
 def classify(h):
     if not h.get("nk_id") and not h.get("jbis_id") and h.get("races"):
@@ -198,12 +201,178 @@ def contract_check():
     return out
 
 
+def identity_check():
+    """M1 身份一致性断言：id 全库唯一、registry↔crops 互认、占位名规则、改名当前名=names[-1]。"""
+    out = []
+    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    reg_path = ROOT / "data" / "registry.json"
+    if not reg_path.exists():
+        out.append("  ✗ 身份层: 无 data/registry.json（先跑 build_registry.py）")
+        return out
+    reg = json.loads(reg_path.read_text(encoding="utf-8"))
+    horses = reg.get("horses", [])
+    ids = [h.get("id") for h in crops]
+    dup = len(ids) != len(set(ids))
+    missing_id = any(h.get("id") is None for h in crops)
+    if dup or missing_id:
+        out.append("  ✗ 身份层: crops id 缺失/重复")
+    # registry↔crops 互认
+    by_id = {h["id"]: h for h in horses}
+    mismatch = 0
+    for h in crops:
+        e = by_id.get(h.get("id"))
+        if e is None:
+            mismatch += 1
+            continue
+        cur_name = (e.get("names") or [""])[-1]
+        if cur_name != h.get("馬名"):
+            mismatch += 1
+            out.append(f"  ✗ 身份层 {h.get('馬名')}: registry 当前名 {cur_name} ≠ crops 馬名")
+        if e.get("keys", {}).get("nk_id") != h.get("nk_id"):
+            mismatch += 1
+            out.append(f"  ✗ 身份层 {h.get('馬名')}: nk_id 不一致")
+    # 占位名断言：有 races 的马不允许带未命名标记；无重复 馬名（normalized）
+    unnamed_with_races = [h.get("馬名") for h in crops
+                          if is_unnamed(h.get("馬名")) and h.get("races")]
+    dup_names = {}
+    for h in crops:
+        k = re.sub(r"[ 　()（）\[\]【】]", "", h.get("馬名") or "")
+        dup_names.setdefault(k, []).append(h.get("馬名"))
+    dup_any = {k: v for k, v in dup_names.items() if len(v) > 1}
+    if not dup and not missing_id and mismatch == 0 and not unnamed_with_races and not dup_any:
+        out.append(f"✔ 身份一致性: registry {len(horses)} 条 / crops {len(crops)} 匹，id 唯一且互认、占位名规则成立")
+    else:
+        for n in unnamed_with_races[:5]:
+            out.append(f"  ✗ 身份层: 出过赛却带未命名标记 {n}")
+        for k, v in list(dup_any.items())[:5]:
+            out.append(f"  ✗ 身份层: 重复馬名 {v}")
+    return out
+
+
+def races_check():
+    """M2 比赛主源断言：netkeiba 主 + 台账海外补漏。
+    - 每条带 來源 ∈ {netkeiba, ledger}；单马 (日付, 場名, R) 无重复
+    - 骑手全名：netkeiba 记录有 jockey_id → 騎手 = jockeys.json 全名（无截断残留）
+    - 重赏 且 本方 1/2着 → 必须带本賞金（M2.4 前置，収得依赖）
+    - 海外场次：netkeiba 有该场 → 來源=netkeiba 优先；netkeiba 无 → 來源=ledger
+    """
+    out = []
+    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    jockeys = {}
+    jk_path = ROOT / "data" / "jockeys.json"
+    if jk_path.exists():
+        jockeys = json.loads(jk_path.read_text(encoding="utf-8"))
+    netkeiba_db = {}
+    nk_path = ROOT / "data" / "raw" / "netkeiba_races.json"
+    if nk_path.exists():
+        netkeiba_db = json.loads(nk_path.read_text(encoding="utf-8"))
+
+    total, dup, bad_src = 0, 0, 0
+    prefix_conflict, missing_honsho, overseas_bad = [], [], []
+    graded_set = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII"}  # 重赏才需要本賞金（L 用固定额）
+    for h in crops:
+        keys = set()
+        nk_id = str(h.get("nk_id") or "")
+        nk_loose = set()
+        if nk_id and nk_id in netkeiba_db:
+            nk_loose = {(str(r.get("日付", "")), str(r.get("場名", ""))) for r in netkeiba_db[nk_id]}
+        for r in h.get("races") or []:
+            total += 1
+            src = r.get("來源")
+            if src not in ("netkeiba", "ledger"):
+                bad_src += 1
+                out.append(f"  ✗ 契约C {h.get('馬名')}: 來源 异常 {src!r}")
+            k = (r.get("日付"), r.get("場名"), str(r.get("R", "")))
+            if k in keys:
+                dup += 1
+                out.append(f"  ✗ 契约C {h.get('馬名')}: 重复场次 {k}")
+            keys.add(k)
+
+            if r.get("venue_type") == "海外":
+                has_nk = (str(r.get("日付", "")), str(r.get("場名", ""))) in nk_loose
+                if has_nk and src != "netkeiba":
+                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("競走名"),
+                                         f"netkeiba 有该场但來源={src}"))
+                elif not has_nk and src != "ledger":
+                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("競走名"),
+                                         f"netkeiba 无该场但來源={src}"))
+
+            if src == "netkeiba":
+                jid = str(r.get("jockey_id") or "")
+                name = (r.get("騎手") or "").strip()
+                if jid and jid in jockeys:
+                    if name != jockeys[jid]:
+                        prefix_conflict.append((h.get("馬名"), name, jockeys[jid]))
+                elif jid and jid not in jockeys:
+                    out.append(f"  ✗ 契约C {h.get('馬名')}: jockey_id {jid} 未收录于 jockeys.json")
+                elif not jid:
+                    for full in jockeys.values():
+                        if len(full) > len(name) and full.startswith(name):
+                            prefix_conflict.append((h.get("馬名"), name, full))
+                            break
+
+            if r.get("格") in graded_set and r.get("結果") in (1, 2) and not r.get("本賞金"):
+                missing_honsho.append((h.get("馬名"), r.get("日付"), r.get("競走名")))
+
+    if dup == 0 and bad_src == 0 and not prefix_conflict and not missing_honsho and not overseas_bad:
+        out.append(f"✔ 契约C 比赛主源: {total} 条 · 無重复/來源正确/骑手全名 0 截断/重赏 1/2着 全带本賞金/海外策略正确")
+    else:
+        for it in prefix_conflict[:20]:
+            out.append(f"  ✗ 骑手截断残留: {it[0]} 骑手「{it[1]}」应为「{it[2]}」")
+        for it in missing_honsho[:20]:
+            out.append(f"  ✗ 重赏缺本賞金: {it}")
+        for it in overseas_bad[:20]:
+            out.append(f"  ✗ 海外场次来源违背策略: {it}")
+    return out
+
+
+def shutoku_check():
+    """M4 収得快照断言：crops 每匹 stats.収得賞金 存在；库内 5 匹真值复算 ≤10%。"""
+    out = []
+    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    fixtures = {
+        "コンジェスタス": (36000000, 0), "ゴーイントゥスカイ": (31000000, 0),
+        "チェリヴェント": (27500000, 0), "ジーネキング": (10000000, 0),
+        "テルヒコウ": (9000000, 0),
+    }
+    missing_field, mismatch = [], []
+    for h in crops:
+        stats = h.get("stats") or {}
+        sk = stats.get("収得賞金")
+        if sk is None:
+            missing_field.append(h.get("馬名", "?"))
+            continue
+        if set(sk) != {"平地", "障害"}:
+            missing_field.append(f"{h.get('馬名')}: keys={list(sk)}")
+    for name, (flat, sho) in fixtures.items():
+        h = next((x for x in crops if x.get("馬名") == name), None)
+        if h is None:
+            continue
+        sk = (h.get("stats") or {}).get("収得賞金") or {}
+        for key, want in (("平地", flat), ("障害", sho)):
+            got = sk.get(key, 0)
+            diff = abs(got - want) / want if want else (0 if got == want else float("inf"))
+            if diff > 0.10:
+                mismatch.append(f"{name} {key}: 真值{want/10000:,.0f}万 vs 复算{got/10000:,.0f}万 ({diff:.1%})")
+    if not missing_field and not mismatch:
+        out.append(f"✔ 収得快照: {len(crops)} 匹全带 stats.収得賞金 · 5 匹真值复算 ≤10%")
+    else:
+        for m in missing_field[:10]:
+            out.append(f"  ✗ 収得字段缺失: {m}")
+        for m in mismatch[:10]:
+            out.append(f"  ✗ 収得偏差超限: {m}")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="小样本数据测试（每类 2-3 匹，非全量）")
     ap.add_argument("--smoke", action="store_true", help="网络冒烟测试（实抓验证，勿全量）")
     args = ap.parse_args()
     out = local_check()
     out.extend(contract_check())
+    out.extend(identity_check())
+    out.extend(races_check())
+    out.extend(shutoku_check())
     if args.smoke:
         out.extend(smoke())
     print("\n".join(out))

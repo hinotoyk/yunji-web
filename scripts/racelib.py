@@ -20,9 +20,36 @@ OVERSEAS_VENUES = {"ウッドバイン", "デルマー", "フォートエリー"
                    "アケダクト", "ベルモントパーク", "サラトガ", "キーンランド"}
 
 RESULT_DNF = {"中止", "取消", "除外", "失格"}
-GRADES = {"GI", "GII", "GIII", "L"}
+GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "L"}
 
 DATE_RE = re.compile(r"^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$")
+
+# 占位名（未命名仔）：netkeiba `〇〇の2025` / JBIS `母名＿2025`（见 data-funnel-v2.md §2.2）
+UNNAMED_RE = re.compile(r"の(19|20)\d{2}$")
+
+
+def is_unnamed_name(name):
+    """占位名判定：占位名不能作为身份匹配依据，必须走 nk_id。"""
+    name = name or ""
+    return bool(UNNAMED_RE.search(name)) or ("＿" in name)
+
+
+# 生年月日：netkeiba `2025年3月10日` / JBIS `2025.03.10` 等
+BIRTH_RE = re.compile(r"(\d{4})[年./\-](\d{1,2})[月./\-](\d{1,2})日?")
+
+
+def birth_date_key(h):
+    """马匹出生排序键：生年月日 → (年, 月, 日) 可比较元组（升序=从小到大）。
+    生年月日缺失（如台账建档马）→ 退回生年 → (年, 0, 0)；两者都无 → (0, 0, 0)。
+    用于 registry id 分配与 crops 输出排序，保证 id 顺序 = 出生日期顺序。"""
+    bd = h.get("生年月日") or ""
+    m = BIRTH_RE.search(str(bd))
+    if m:
+        return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    y = str(h.get("生年") or "").strip()
+    if y.isdigit():
+        return (int(y), 0, 0)
+    return (0, 0, 0)
 
 # 契约B 字段清单（适配器必须提供；值可为字符串，由 coerce_record 类型化）
 CONTRACT_FIELDS = [
@@ -147,6 +174,63 @@ def coerce_record(row, issues):
     }
 
 
+# netkeiba レース名 → 格/条件（M2 适配器用）
+GRADE_SUFFIX_RE = re.compile(r"\((J?G[I]{1,3}|L)\)\s*$")
+COND_SUFFIX_RE = re.compile(r"\((1勝クラス|2勝クラス|3勝クラス|OP)\)")
+PLAIN_COND_RE = re.compile(r"\d+歳(?:以上)?(?:新馬|未勝利|\d*勝クラス)")
+COND_NAR_RE = re.compile(r"(C\d|\d+歳\s*[A-Z]|\d+歳ー?\d+)")
+
+
+def race_meta_from_name(name):
+    """netkeiba レース名 → (格, 条件)（尽力提取，供 race_class / 前端展示）。
+    例: '札幌2歳S(GIII)'→('GIII',''); '摩周湖特別(2勝クラス)'→('','2勝クラス');
+        '野路菊S(OP)'→('','オープン'); '2歳新馬'→('','2歳新馬'); '3歳A　4'→('','3歳A')。"""
+    name = (name or "").strip()
+    m = GRADE_SUFFIX_RE.search(name)
+    grade = m.group(1) if m else ""
+    cond = ""
+    cm = COND_SUFFIX_RE.search(name)
+    if cm:
+        cond = "オープン" if cm.group(1) == "OP" else cm.group(1)
+    elif not grade:  # 重赏后缀优先；无后缀才尝试条件关键词
+        pm = PLAIN_COND_RE.search(name)
+        if pm:
+            cond = pm.group(0)
+        else:
+            nm = COND_NAR_RE.search(name)
+            if nm:
+                cond = nm.group(1).replace("ー", "-")
+    return grade, cond
+
+
+def compute_honsho_prize(rec):
+    """从 4着/5着 赏金反推本賞金（M2.4 回退，db 域 4/5着 无付加賞）。
+    5着 = 本賞金×10%，4着 = 本賞金×15%（JRA 比率）。返回 1着 本賞金（円）或 0。"""
+    for k in (5, 4):
+        ratio = 0.10 if k == 5 else 0.15
+        for r in rec:
+            if r.get("結果") == k and r.get("賞金"):
+                return int(r["賞金"] / ratio)
+    return 0
+
+
+DNF_ABBR = {"中止": "中止", "取消": "取消", "除外": "除外", "失格": "失格"}
+
+
+def normalize_result(v):
+    """netkeiba 着順文本 → int 或 DNF 字符串（契约B 结果字段）。
+    兼容已规范化的 int（parse_races 已转 int）；字符串 '1'→1、'中止'/'取消'/'除外'/'失格'→ DNF。"""
+    if isinstance(v, int):
+        return v
+    v = (v or "").strip()
+    if v in DNF_ABBR:
+        return DNF_ABBR[v]
+    try:
+        return int(v)
+    except (ValueError, TypeError):
+        return v
+
+
 def compute_stats(recs):
     """从契约B 逐场履历计算汇总 stats"""
     started = [r for r in recs if isinstance(r["結果"], int) or r["結果"] == "中止"]
@@ -219,3 +303,78 @@ def derive_basic(recs):
     if births:
         birth = str(min(births)) if len(births) == 1 else str(max(births))
     return sex, birth
+
+
+# ── 収得賞金（M4，设计 data-funnel-v2.md §4.1）──
+# 収得 = Σ(結果∈{1,2} ∧ venue_type=中央)，平地/障害同表；海外/地方不计入；付加賞不计入。
+# 规则来源：13 匹 JRA 真值拟合（2026-08-18，11 精确 + 2 达 98%），详见设计文档 §4.1 拟合验证记录。
+SHUTOKU_FIXED = {          # 1着 固定额（万円）
+    "新馬": 400, "未勝利": 400, "1勝": 500,
+    "2勝": 600, "オープン": 600, "3勝": 900,
+}
+SHUTOKU_GRADE_WIN = 0.50   # 重賞 1着 = 本賞金×50%
+SHUTOKU_GRADE_2ND = 0.20   # 重賞 2着 = 本賞金×20%
+HALVE_2YO = False          # 2歳赛季収得 → 3歳后折半：默认关（2016 番組改正疑似废止，13 匹拟合均未要求）
+
+# 重赏标记（含障害 JG*）：契约B `格` 字段 or レース名括号后缀
+_SHUTOKU_GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}
+_SHUTOKU_GRADE_RE = re.compile(r"\((J?G[I]{1,3}|Jpn[I]{1,3})\)")
+
+
+def race_shutoku_class(rec):
+    """记录/レース名 → 収得クラス键（重賞 / 新馬 / 未勝利 / 1勝 / 2勝 / 3勝 / オープン / 条件）。
+    重赏优先用契约B 规范化的 `格` 字段，回退レース名括号；条件クラス优先用 `条件` 字段，
+    回退レース名（メイクデビュー = 新馬别称）。非重赏 1着 固定额见 SHUTOKU_FIXED。"""
+    if isinstance(rec, str):
+        name, grade, cond = rec, "", ""
+    else:
+        name = rec.get("競走名") or rec.get("レース名") or ""
+        grade = rec.get("格") or ""
+        cond = rec.get("条件") or ""
+    if grade in _SHUTOKU_GRADES or _SHUTOKU_GRADE_RE.search(name):
+        return "重賞"
+    for src in (cond, name):
+        if not src:
+            continue
+        if "新馬" in src:
+            return "新馬"
+        if "未勝利" in src:
+            return "未勝利"
+        if "1勝" in src:
+            return "1勝"
+        if "2勝" in src:
+            return "2勝"
+        if "3勝" in src:
+            return "3勝"
+        if "OP" in src or "(OP)" in src or "(L)" in src or "オープン" in src:
+            return "オープン"
+    return "条件"
+
+
+def compute_shutoku(recs):
+    """契约B 记录列表 → 収得賞金 {平地, 障害}（円）。仅中央；重赏按本賞金×比例，
+    非重赏 1着 按固定额表；2着 仅重赏算。重赏 1/2着 缺本賞金 → 按 0 计并记入 '缺失' 报告。"""
+    flat = sho = 0
+    missing = []
+    for r in recs:
+        if r.get("venue_type") != "中央":
+            continue
+        result = r.get("結果")
+        if result not in (1, 2):
+            continue
+        cls = race_shutoku_class(r)
+        if cls == "重賞":
+            honsho = r.get("本賞金") or 0
+            if not honsho:
+                missing.append((r.get("日付"), r.get("競走名") or r.get("レース名"), result))
+                continue  # 本賞金缺失 → 该场按 0 暂计（収得缺失报告）
+            v = honsho * (SHUTOKU_GRADE_WIN if result == 1 else SHUTOKU_GRADE_2ND)
+        elif result == 1 and cls in SHUTOKU_FIXED:
+            v = SHUTOKU_FIXED[cls] * 10000
+        else:
+            v = 0
+        if (r.get("馬場") or "") == "障害":
+            sho += v
+        else:
+            flat += v
+    return {"平地": int(flat), "障害": int(sho), "缺失": missing}
