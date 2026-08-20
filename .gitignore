@@ -4,5 +4,5 @@ __pycache__/
 # 运行时产物（保留在磁盘，不进版本库）
 data/raw/fetch_log.csv
 data/probe_race_report*.md
-data/race-diffs*.md
-data/race-diffs.json
+data/race-diffs-report.md
+# 注: race-diffs.json 被 page/review.html 读取(业务消费方)，必须提交，不忽略
