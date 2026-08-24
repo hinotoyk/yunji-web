@@ -136,7 +136,7 @@ python scripts/test-data.py                  # 必须 0 失败
 1. 遍历 crops（全部有 nk_id 的马）→ 抓 `/horse/result/{id}/`
 2. 复用 `parse_races` → 转契约B 字段（补 `race_id`/`jockey_id`/`來源="netkeiba"`/`本賞金` 占位）
 3. **增量双轨制（2026-08-19 用户拍板）**：
-   - **Track A 台账辅助检测（快）**：`ledger.csv` 全量行驱动——台账有 netkeiba 尚缺的场次、且比赛日在窗口内 → 抓该马；窗口 **中央/地方 7 天、海外 30 天**（`LEDGER_WINDOW`，从比赛日起算，状态可重入：窗口内天天重抓直到 netkeiba 补上；超窗口 → 停快通道）
+   - **Track A 台账辅助检测（快）**：`google_ledger.csv` 全量行驱动——台账有 netkeiba 尚缺的场次、且比赛日在窗口内 → 抓该马；窗口 **中央/地方 7 天、海外 30 天**（`LEDGER_WINDOW`，从比赛日起算，状态可重入：窗口内天天重抓直到 netkeiba 补上；超窗口 → 停快通道）
    - **Track B 轮换兜底（慢但全）**：循环队列 `data/raw/rotation_queue.json`（含全部有 nk_id 的马，现约 406 匹），每天取 head 起 **50 匹**（`ROTATION_BATCH`）抓全量成绩页，head 前进 50（模长，约 8 天一轮）；新马自动追加尾部；兜住台账没记的新场次
    - 两趟**去重**（同一马一天只抓一次）
 4. 输出 `data/raw/netkeiba_races.json`（nk_id → 记录列表，兼容现格式）+ `rotation_queue.json`
@@ -162,7 +162,7 @@ python scripts/test-data.py                  # 必须 0 失败
 
 **怎么做**（改 `scripts/build-data.py::attach_races` / `merge_horse_races`）：
 1. 主记录源从 `load_ledger()` 换为 `netkeiba_races.json`（契约B 适配器输出）
-2. 台账（ledger.csv）**只保留 venue_type=海外** 的行，其余丢弃（中央/地方由 netkeiba 覆盖）
+2. 台账（google_ledger.csv）**只保留 venue_type=海外** 的行，其余丢弃（中央/地方由 netkeiba 覆盖）
 3. 合并键 `(日付, 場名, R)`：netkeiba 优先；**海外场 netkeiba 有 → netkeiba 为主、台账只补空缺**（`_merge_gap`，`OVERSEAS_FILL_FIELDS=["賞金"]`），**netkeiba 无 → 台账展示**（來源=ledger）；netkeiba 海外 R 空 → 同 (日付,場名) 唯一时按补缺处理；每条带 `來源`
 4. 骑手字段：契约B 记录存 `jockey_id`，构建时 `jockeys.json[id]` 解析全名；无 id 的用原值
 5. `racelib.coerce_record()` 保持不动（适配器输出已是契约B）
@@ -176,7 +176,7 @@ python scripts/test-data.py                  # 必须 0 失败
 > ✅ **已实现（2026-08-19）**：M3.1（`scrape_netkeiba.py --new` 对账模式）+ M3.2（update-data.yml 每日/每周任务改造）。
 > 验证：首次 `--new` 对账 → 列表 384 匹 · **新马 0** · **改名 4**（アンブラッセモワの2024→ポルティマン 等占位名转正式名）· 消失忽略；改名经 build-data 传播 → registry names 追加曾用名、id 不变、未命名标记清除（抽查 4 匹全对）；改名检测单元验证（新马/改名/消失三态）；test-data 全绿。
 > **注意**：netkeiba 列表页 ~419 匹中仅解析出 384 行（parse_list_row 过滤了部分无标准马链接的行，预存在行为）——`--new` 只对解析出的行对账，未解析行的新增/改名不会被发现，属已知局限。
-> **台账刷新（2026-08-19 修订）**：exec 的每日自动路径已把 `pull_races.py`（Google Sheets → ledger.csv）**前移到适配器之前**——台账全量行供 Track A 检测（中央/地方 7 天、海外 30 天窗口），显示仍只海外参与合并（见 M2.3 适配器）。拉取失败沿用上次 ledger.csv（容错）。
+> **台账刷新（2026-08-19 修订）**：exec 的每日自动路径已把 `pull_races.py`（Google Sheets → google_ledger.csv）**前移到适配器之前**——台账全量行供 Track A 检测（中央/地方 7 天、海外 30 天窗口），显示仍只海外参与合并（见 M2.3 适配器）。拉取失败沿用上次 google_ledger.csv（容错）。
 
 ### M3.1 scrape_netkeiba.py --new 模式
 
@@ -207,7 +207,7 @@ python scripts/test-data.py
   scrape_netkeiba.py --new       # 对账 + 新马建档（分钟级）
   scrape_netkeiba.py --races     # 成绩页双轨制（M2 适配器：Track A 台账检测 7/30 天 + Track B 轮换 50匹/天）
   build_jockeys.py               # 新骑手补字典（增量）
-  pull_races.py                  # 台账（Google Sheets → ledger.csv），海外数据先落盘（容错：失败沿用上次）
+  pull_races.py                  # 台账（Google Sheets → google_ledger.csv），海外数据先落盘（容错：失败沿用上次）
   build-data.py --note "每日同步"
   test-data.py
   ```
@@ -340,7 +340,7 @@ def compute_shutoku(recs):
 | M2 成绩增量漏场次 | 增量跳过条件严格（最新日付+条数双条件）；test 断言 契约B 全量无重复 |
 | 骑手字典不全 | test 断言所有 jockey_id 可解析；缺失的记报告并回退原值 |
 | 収得 偏差 >10% | test-data 快照断言（库内 5 匹真值）超限报错，修规则表后重建 |
-| 台账海外丢失 | 台账适配器只过滤不删数据（ledger.csv 保留全量，仅合并时筛海外） |
+| 台账海外丢失 | 台账适配器只过滤不删数据（google_ledger.csv 保留全量，仅合并时筛海外） |
 | 前端迁移破坏 | `_meta.schema` 版本兼容；迁移前后截图对比（Playwright，仓库已有先例） |
 | 回滚 | 每里程碑独立 commit；回滚 = `git revert` 该 commit；crops.json 由 build 重建，无手工状态 |
 

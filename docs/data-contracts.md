@@ -10,7 +10,7 @@
 ```
 [源] netkeiba ──scrape_netkeiba.py──▶ data/raw/netkeiba.json ─┐
 [源] JBIS     ──scrape_jbis.py──────▶ data/raw/jbis*.json    ─┤── 契约A
-[源] Sheets   ──adapters/sheets_ledger.py──▶ 契约B记录 ──pull_races.py──▶ data/races/ledger.csv ─┤
+[源] Sheets   ──adapters/sheets_ledger.py──▶ 契约B记录 ──pull_races.py──▶ data/races/google_ledger.csv ─┤
                                                                                                   ▼
                                                           build-data.py（唯一构建器）──▶ data/crops.json（契约C）
                                                                                                   ▼
@@ -21,7 +21,7 @@
 |---|---|---|
 | 抓取器（netkeiba/jbis） | 源站 HTML | 契约A：`data/raw/*.json` |
 | 适配器（adapters/*） | 数据源格式（Sheets CSV 等） | 契约B 记录（内存） |
-| `pull_races.py` | 契约B 记录（经适配器） | 契约B 快照：`data/races/ledger.csv` + `sync-report.md` |
+| `pull_races.py` | 契约B 记录（经适配器） | 契约B 快照：`data/races/google_ledger.csv` + `sync-report.md` |
 | `build-data.py` | 契约A + 契约B | 契约C：`data/crops.json` + `merge-report.md` + 快照 |
 | 前端 | 契约C（唯一数据源） | 页面 |
 
@@ -45,7 +45,7 @@
 
 合并规则（netkeiba 主、JBIS 辅）与字段语义以 `build-data.py` 为准。
 
-## 契约B：比赛记录（data/races/ledger.csv）
+## 契约B：比赛记录（data/races/google_ledger.csv + data/raw/netkeiba_races.json）
 
 适配器输出、`pull_races.py` 校验并落盘。**字段名必须与下表一致**，值可为字符串
 （`racelib.coerce_record()` 负责类型化与值域校验）。
@@ -70,7 +70,7 @@
 | 賞金 | int | 円；海外/缺失为 0 | |
 | Rt / 管理調教師 / 母父名 | 混合 | | |
 
-派生字段（`racelib` 计算，随 ledger.csv 存储）：
+派生字段（`racelib` 计算，随 google_ledger.csv 存储）：
 - `venue_type`：中央（JRA）/ 地方（NAR）/ 海外（场名映射表在 `racelib.py`，可扩充）
 - `race_class`：重賞 / リステッド / オープン / 条件・未勝利（由 格/条件 推导）
 

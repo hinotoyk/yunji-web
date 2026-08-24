@@ -71,7 +71,7 @@ netkeiba 给未命名仔建档时就用同一 nk_id（如 `イリデの2025` →
 ```
 每日 UTC22:00（JST07:00）:
   scrape_netkeiba --new     列表对账（~5页）+ 新马建档 + 改名处理   ← 廉价，分钟级
-  pull_races                台账（Google Sheets）拉取 → ledger.csv   ← 海外数据先落盘（容错：失败沿用上次）
+  pull_races                台账（Google Sheets）拉取 → google_ledger.csv   ← 海外数据先落盘（容错：失败沿用上次）
   scrape_netkeiba --races   成绩页双轨制增量（Track A 台账检测 7/30 天窗口 + Track B 轮换 50匹/天）
   build-data                合并（netkeiba 主 + 台账海外补缺/兜底）+ 収得/facet 计算
   test-data                 断言（唯一性/占位名/海外来源策略/収得快照）
@@ -213,10 +213,10 @@ Google Sheets   ── adapters/sheets_ledger.py ──▶ 契约B 记录（补�
 
 - 每条记录加 `來源: "netkeiba" | "ledger"` 溯源。
 - **比赛记录一旦发生不再变化** → 成绩页/比赛页全部按"抓一次终身有效"处理，**只做增量**：每日只抓新场次（含新马的整条履历），旧场次永不重抓。
-- **台账每日拉取**（Google Sheets → ledger.csv），**仅保留海外场次参与合并**（venue_type=海外 = 非 JRA/NAR 场地）：中央/地方的台账记录由 netkeiba 覆盖，合并时丢弃。
+- **台账每日拉取**（Google Sheets → google_ledger.csv），**仅保留海外场次参与合并**（venue_type=海外 = 非 JRA/NAR 场地）：中央/地方的台账记录由 netkeiba 覆盖，合并时丢弃。
 - **海外场次合并策略（2026-08-19 用户拍板）**：netkeiba 视为"**可能没保存这场**"——netkeiba 有该场 → **netkeiba 优先**（來源=netkeiba），台账只补空缺字段（当前 `OVERSEAS_FILL_FIELDS=["賞金"]`，可扩展）；netkeiba 无该场 → **台账展示**（來源=ledger）。netkeiba 海外场 R 常为空 → 同 (日付, 場名) 松散匹配。
 - **增量双轨制（2026-08-19 用户拍板，消除"已建档马新场次不被发现"盲区）**：
-  - **Track A 台账辅助检测（快）**：`ledger.csv` 全量行（中央/地方/海外）作"应该有哪些场次"驱动——台账有 netkeiba 尚缺的场次、且比赛日在窗口内 → 抓该马；窗口 **中央/地方 7 天、海外 30 天**（台账快于 netkeiba 的追赶期，状态可重入：窗口内天天重抓直到 netkeiba 补上；超窗口 → 停快通道，由 Track B 兜底）。
+  - **Track A 台账辅助检测（快）**：`google_ledger.csv` 全量行（中央/地方/海外）作"应该有哪些场次"驱动——台账有 netkeiba 尚缺的场次、且比赛日在窗口内 → 抓该马；窗口 **中央/地方 7 天、海外 30 天**（台账快于 netkeiba 的追赶期，状态可重入：窗口内天天重抓直到 netkeiba 补上；超窗口 → 停快通道，由 Track B 兜底）。
   - **Track B 轮换兜底（慢但全）**：循环队列 `data/raw/rotation_queue.json`（含全部有 nk_id 的马，现约 406 匹），每天取 head 起 **50 匹**抓全量成绩页，head 前进 50（模长，**约 8 天一轮**）；新马自动追加尾部；兜住台账没记的新场次与 netkeiba 侧修正。
   - 两趟**去重**（同一马一天只抓一次）；之后统一 `backfill_honsho`（本賞金）。显示策略不变：台账中央/地方仍丢弃、海外仍 netkeiba 优先 + 台账兜底（口径：賞金合計 = 中央 + 地方）。
 - 换源（如未来接 NAR 官方）只需再写一个适配器，下游零改动。

@@ -22,7 +22,7 @@ yunji-web/
 ├── data/
 │   ├── crops.json       # 站点数据（契约C，407 匹，含 races+stats；勿手改）
 │   ├── raw/             # 契约A：netkeiba.json / jbis.json / jbis_pedigree.json
-│   ├── races/ledger.csv # 契约B：比赛台账快照（649 条 / 135 匹）
+│   ├── races/google_ledger.csv # 契约B：比赛台账快照（649 条 / 135 匹，海外补缺/兜底）
 │   ├── aliases.json     # 马名别名表（映射 / action=create 自动建档）
 │   ├── sync-report.md   # 台账健康度（pull_races 产出）
 │   ├── merge-report.md  # 马匹关联/覆盖/待校准（build-data 产出）
@@ -33,7 +33,7 @@ yunji-web/
 │   ├── adapters/        # 数据源适配器（唯一知道源格式的代码）
 │   │   └── sheets_ledger.py  # Google Sheets 台账适配器（URL/列名/日期格式）
 │   ├── racelib.py       # 比赛域公共逻辑（契约B 校验/场地推导/汇总统计，与源无关）
-│   ├── pull_races.py    # 比赛流水线：适配器 → 契约B → ledger.csv + sync-report
+│   ├── pull_races.py    # 比赛流水线：适配器 → 契约B → google_ledger.csv + sync-report
 │   ├── scrape_netkeiba.py   # 契约A：netkeiba 抓取 --all/--horse/--name
 │   ├── scrape_jbis.py       # 契约A：JBIS 血统 --all/--horse/--fill
 │   ├── build-data.py        # 唯一构建器：契约A + 契约B → crops.json + merge-report + 快照
@@ -52,7 +52,7 @@ yunji-web/
 | 契约 | 内容 | 产出 |
 |---|---|---|
 | 契约A | 马匹基本数据/血统（raw/*.json） | 抓取器 |
-| 契约B | 比赛记录（ledger.csv，字段/值域见文档） | `pull_races.py`（经适配器） |
+| 契约B | 比赛记录（google_ledger.csv + netkeiba_races.json，字段/值域见文档） | `pull_races.py`（经适配器） |
 | 契约C | 合并产物 crops.json（马档案+races+stats） | `build-data.py`，前端唯一数据源 |
 
 **换比赛数据源**：`scripts/adapters/` 新增模块实现 `fetch() -> 契约B记录`，
@@ -78,7 +78,7 @@ yunji-web/
 
 ```
 定时（每天UTC 22:00）或 手动按钮：
-    pull_races.py（拉台账→ledger.csv+sync-report）
+    pull_races.py（拉台账→google_ledger.csv+sync-report）
   + [手动 all/single 才抓 netkeiba/JBIS]
   → build-data.py（契约A+契约B → crops.json + merge-report + 快照）
   → test-data.py（抽样 + 契约B/C 断言，失败则中止不发布）
