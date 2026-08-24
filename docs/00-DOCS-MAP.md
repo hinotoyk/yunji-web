@@ -121,10 +121,10 @@ data/pedigree/{id}.json    该马血统树+fno/cross（血统页按需，405 个
 
 ---
 
-## 4. 建议删除的历史交接文档（上线后执行）
+## 4. 已删除的历史交接文档（2026-08-24 执行）
 
 > 以下文档是**阶段性实现记录**，内容已被保留文档覆盖/取代，**不再被任何文档引用**。
-> **当前未删除**——按约定**上线后**再跑删除（§5 清单），如需考古可在 git 历史找回。
+> **已删除**（git rm，独立 commit 便于回滚）；如需考古可在 git 历史找回。
 
 | 删除的文档 | 为何可删 |
 |---|---|
@@ -137,25 +137,20 @@ data/pedigree/{id}.json    该马血统树+fno/cross（血统页按需，405 个
 
 ---
 
-## 5. 清理清单（上线后执行）
+## 5. 清理清单（2026-08-24 已执行）
 
-> ⚠ **上线后再执行**：确认 GitHub Pages 正常、数据正确后，按此清单清理。
-> 删除动作建议独立 commit，便于回滚。
+> ✅ **已执行**（本次会话）：6 篇历史交接文档已 git rm（§4），3 个本地临时报告已删除。
+> 保留项与可选优化见下。
 
-### 5.1 建议删除：历史交接文档（git tracked，上线后随 commit 删）
-> 共 6 篇，见 §4 表格。删除前确认 `docs/00-DOCS-MAP.md`（本文档）已提交并作为唯一入口，git 历史可随时找回。
-> 删除命令（上线后执行）：
-> ```
-> git rm docs/data-funnel.md docs/session-handoff-2026-08-16.md docs/session-handoff-2026-08-17.md \
->        docs/session-handoff-2026-08-18.md docs/session-handoff-2026-08-19.md docs/design-race-verification.md
-> ```
+### 5.1 已删除：历史交接文档（git tracked）
+> 共 6 篇，见 §4 表格。已用 `git rm` 删除并独立 commit；git 历史可随时找回。
 
-### 5.2 建议删除（本地临时产物，git 已忽略，不占仓库）
+### 5.2 已删除（本地临时产物，git 已忽略，不占仓库）
 | 文件 | 说明 |
 |---|---|
-| `data/probe_race_report.md`（110KB） | 历史探测报告，gitignore，无消费方 |
-| `data/probe_race_report_graded.md`（36KB） | 同上 |
-| `data/race-diffs-report.md`（1.2KB） | compare-races 每次重建，无长期价值 |
+| `data/probe_race_report.md`（110KB） | ✅ 已删，历史探测报告，无消费方 |
+| `data/probe_race_report_graded.md`（36KB） | ✅ 已删，同上 |
+| `data/race-diffs-report.md`（1.2KB） | ✅ 已删，compare-races 每次重建 |
 
 ### 5.3 保留（勿删）
 | 文件 | 说明 |

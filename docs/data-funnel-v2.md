@@ -2,8 +2,8 @@
 
 > 日期：2026-08-18 · 状态：**设计定稿，待实现**（収得規則已核实一版，部分数字待 JRA 页面复核，见 §4/§8）
 > 实施：见 [data-funnel-v2-exec.md](data-funnel-v2-exec.md)（分步落地 + 验证方法）
-> 定位：`data-funnel.md`（v1 血缘树）的下一版漏斗设计；数据流通仍遵守契约分层，换源只改适配器。
-> 关联：[data-contracts.md](data-contracts.md) · [data-source-refactor.md](data-source-refactor.md) · [design-race-verification.md](design-race-verification.md)
+> 定位：`data-funnel.md`（v1 血缘树，已归档删除）的下一版漏斗设计；数据流通仍遵守契约分层，换源只改适配器。
+> 关联：[data-contracts.md](data-contracts.md) · [data-source-refactor.md](data-source-refactor.md) · [00-DOCS-MAP.md](00-DOCS-MAP.md)（文档唯一入口）
 
 ---
 

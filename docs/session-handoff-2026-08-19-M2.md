@@ -1,7 +1,7 @@
 # 会话交接 · 2026-08-19 M2 比赛主源切换 + M3 对账/定时任务
 
 > 会话目标：实施数据漏斗 v2 的 **M2**（比赛主源切到 netkeiba 成绩页 + 骑手字典 + 本賞金）与 **M3**（`--new` 对账 + Actions 定时任务）。
-> 前置阅读：`docs/data-funnel-v2.md`（§5 比赛聚合、§4.1 収得）、`docs/data-funnel-v2-exec.md`（M2/M3 步骤）、`docs/session-handoff-2026-08-19.md`（M1 交接）
+> 前置阅读：`docs/data-funnel-v2.md`（§5 比赛聚合、§4.1 収得）、`docs/data-funnel-v2-exec.md`（M2/M3 步骤）；M1 交接已归档（身份层要点见 `docs/00-DOCS-MAP.md` §3.7）
 > 状态：**M2 + M3 完成并验证**；下一步 = M4（収得計算，卡 M2 本賞金，已就绪）
 
 ---
