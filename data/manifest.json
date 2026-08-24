@@ -1,31 +1,17 @@
 {
-  "current": "20260820_1113",
+  "current": "20260824_1457",
   "versions": [
+    {
+      "id": "20260824_1457",
+      "file": "history/20260824_1457.json",
+      "date": "2026-08-24 14:57",
+      "count": 407,
+      "note": "crops v2 改造（M5）"
+    },
     {
       "id": "20260820_1113",
       "file": "history/20260820_1113.json",
       "date": "2026-08-20 11:13",
-      "count": 407,
-      "note": "netkeiba+JBIS 抓取更新"
-    },
-    {
-      "id": "20260820_1112",
-      "file": "history/20260820_1112.json",
-      "date": "2026-08-20 11:12",
-      "count": 407,
-      "note": "netkeiba+JBIS 抓取更新"
-    },
-    {
-      "id": "20260820_1109",
-      "file": "history/20260820_1109.json",
-      "date": "2026-08-20 11:09",
-      "count": 407,
-      "note": "netkeiba+JBIS 抓取更新"
-    },
-    {
-      "id": "20260820_1037",
-      "file": "history/20260820_1037.json",
-      "date": "2026-08-20 10:37",
       "count": 407,
       "note": "netkeiba+JBIS 抓取更新"
     },
@@ -70,20 +56,6 @@
       "date": "2026-08-16 11:36",
       "count": 406,
       "note": "netkeiba全量血统+JBIS兜底"
-    },
-    {
-      "id": "20260814_2111",
-      "file": "history/20260814_2111.json",
-      "date": "2026-08-14 21:11",
-      "count": 404,
-      "note": "netkeiba+JBIS 抓取更新"
-    },
-    {
-      "id": "20260814_1836",
-      "file": "history/20260814_1836.json",
-      "date": "2026-08-14 18:36",
-      "count": 404,
-      "note": "netkeiba+JBIS 抓取更新"
     },
     {
       "id": "20260812_165710",

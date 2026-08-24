@@ -1,0 +1,402 @@
+{
+ "id": 107,
+ "馬名": "トーセンマーベラス",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "リトルブック",
+     "sex": "牝",
+     "id": "000a012100",
+     "year": "2008",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Librettist",
+     "sex": "牡",
+     "id": "000a012055",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Cal Norma's Lady",
+     "sex": "牝",
+     "id": "000a010e36",
+     "year": "1988",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mysterial",
+     "sex": "牝",
+     "id": "000a010a6b",
+     "year": "1994",
+     "color": "鹿毛"
+    },
+    {
+     "name": "リファーズスペシャル",
+     "sex": "牡",
+     "id": "000a0001f4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "June Darling",
+     "sex": "牝",
+     "id": "000a010e35",
+     "year": "1983",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Pas de Nom",
+     "sex": "牝",
+     "id": "000a000491",
+     "year": "1968",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Alleged",
+     "sex": "牡",
+     "id": "000a0012f7",
+     "year": "1974",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mysteries",
+     "sex": "牝",
+     "id": "000a0099ab",
+     "year": "1986",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "My Bupers",
+     "sex": "牝",
+     "id": "000a0082bc",
+     "year": "1967",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ジュニアス",
+     "sex": "牡",
+     "id": "000a0001af",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Beau Darling",
+     "sex": "牝",
+     "id": "000a00aac3",
+     "year": "1966",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Nearctic",
+     "sex": "牡",
+     "id": "000a000f8c"
+    },
+    {
+     "name": "Natalma",
+     "sex": "牝",
+     "id": "000a00702e"
+    },
+    {
+     "name": "Admiral's Voyage",
+     "sex": "牡",
+     "id": "000a000e55"
+    },
+    {
+     "name": "Petitioner",
+     "sex": "牝",
+     "id": "000a006f25"
+    },
+    {
+     "name": "Hoist the Flag",
+     "sex": "牡",
+     "id": "000a0012be"
+    },
+    {
+     "name": "Princess Pout",
+     "sex": "牝",
+     "id": "000a007f75"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc"
+    },
+    {
+     "name": "Phydilla",
+     "sex": "牝",
+     "id": "000a0099aa"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Goofed",
+     "sex": "牝",
+     "id": "000a007c8d"
+    },
+    {
+     "name": "Bupers",
+     "sex": "牡",
+     "id": "000a000ea0"
+    },
+    {
+     "name": "Princess Revoked",
+     "sex": "牝",
+     "id": "000a0082bb"
+    },
+    {
+     "name": "Raja Baba",
+     "sex": "牡",
+     "id": "000a0010fa"
+    },
+    {
+     "name": "Solid Thought",
+     "sex": "牝",
+     "id": "000a007f8f"
+    },
+    {
+     "name": "Darling Boy",
+     "sex": "牡",
+     "id": "000a000df3"
+    },
+    {
+     "name": "Fair Astronomer",
+     "sex": "牝",
+     "id": "000a00a77a"
+    }
+   ]
+  ]
+ },
+ "fno": "F16-f",
+ "cross": "Northern Dancer(CAN) ：M4×M5 Lyphard(USA) ：M4×S5"
+}

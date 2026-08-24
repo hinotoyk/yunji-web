@@ -8,7 +8,7 @@ netkeiba 成绩页 /horse/result/{id}/ 天然聚合 中央+地方+海外，一�
 （付加賞-free，2026-08-19 实测 13/13 重赏/非重赏均含）；回退 = db 域 4/5着 反推。
 
 增量（2026-08-19 用户拍板，双轨制）：
-- Track A 台账辅助检测（快）：用 ledger.csv 全量行（中央/地方/海外）驱动检测——台账有
+- Track A 台账辅助检测（快）：用 google_ledger.csv 全量行（中央/地方/海外）驱动检测——台账有
   netkeiba 尚缺的场次 → 该马加入今日抓取；窗口 = 中央/地方 7 天、海外 30 天（台账快于
   netkeiba 的追赶期，状态可重入：窗口内天天自动重抓直到 netkeiba 补上）。
 - Track B 轮换兜底（慢但全）：循环队列 data/raw/rotation_queue.json，每天取 head 起 50 匹
@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 RACES_DB = ROOT / "data" / "raw" / "netkeiba_races.json"
 CROPS_PATH = ROOT / "data" / "crops.json"
 JOCKEYS_PATH = ROOT / "data" / "jockeys.json"
-LEDGER_PATH = ROOT / "data" / "races" / "ledger.csv"          # 台账全量（Track A 检测源）
+LEDGER_PATH = ROOT / "data" / "races" / "google_ledger.csv"   # 台账全量（Track A 检测源）
 ROTATION_PATH = ROOT / "data" / "raw" / "rotation_queue.json"  # 轮换循环队列（Track B）
 RACE_URL = "https://db.netkeiba.com/race/{id}/"                              # db 域（EUC-JP，回退用）
 RACE_SP_URL = "https://race.netkeiba.com/race/result.html?race_id={id}"      # SP 域（UTF-8，本賞金主源）
@@ -72,7 +72,7 @@ def _race_key(r):
 
 
 def _load_ledger():
-    """读 data/races/ledger.csv（台账全量，pull_races 产出）→ 行字典列表。缺失/损坏 → []（容错）。"""
+    """读 data/races/google_ledger.csv（台账全量，pull_races 产出）→ 行字典列表。缺失/损坏 → []（容错）。"""
     if not LEDGER_PATH.exists():
         return []
     try:
@@ -254,7 +254,10 @@ def fetch(name_by_nk=None):
     if name_by_nk is None:
         name_by_nk = {}
         if CROPS_PATH.exists():
-            for h in json.loads(CROPS_PATH.read_text(encoding="utf-8")):
+            crops = json.loads(CROPS_PATH.read_text(encoding="utf-8"))
+            # crops v2 = {_meta, index, horses}；v1 = 裸数组（M5.4 兼容）
+            horses = crops.get("horses") if isinstance(crops, dict) and "horses" in crops else crops
+            for h in horses:
                 if h.get("nk_id"):
                     name_by_nk[h["nk_id"]] = h.get("馬名", "")
     jockeys = load_jockeys()

@@ -98,7 +98,7 @@ def normalize_d(row):
 
 
 def load_ledger():
-    path = os.path.join(DATA, "races", "ledger.csv")
+    path = os.path.join(DATA, "races", "google_ledger.csv")
     issues = []
     rows = []
     with open(path, encoding="utf-8-sig") as f:
@@ -120,6 +120,9 @@ def main():
         nk_db = json.load(f)
     with open(os.path.join(DATA, "crops.json"), encoding="utf-8") as f:
         crops = json.load(f)
+    # crops v2 = {_meta, index, horses}；v1 = 裸数组（M5.4 兼容）
+    if isinstance(crops, dict) and "horses" in crops:
+        crops = crops["horses"]
     name2nk = {h.get("馬名", ""): h.get("nk_id", "") for h in crops}
 
     # 2. 按马分组

@@ -1,0 +1,402 @@
+{
+ "id": 285,
+ "馬名": "マゲバの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "マゲバ",
+     "sex": "牝",
+     "id": "000a01b835",
+     "year": "2017",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Wootton Bassett",
+     "sex": "牡",
+     "id": "000a01322e",
+     "year": "2008",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Melilot",
+     "sex": "牝",
+     "id": "000a01b503",
+     "year": "2011",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Iffraaj",
+     "sex": "牡",
+     "id": "000a0111d1",
+     "year": "2001",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Balladonia",
+     "sex": "牝",
+     "id": "000a01322f",
+     "year": "1996",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Elusive City",
+     "sex": "牡",
+     "id": "000a01239c",
+     "year": "2000",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Liwana",
+     "sex": "牝",
+     "id": "000a01b502",
+     "year": "1994",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Zafonic",
+     "sex": "牡",
+     "id": "000a001d7d",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Pastorale",
+     "sex": "牝",
+     "id": "000a0111e1",
+     "year": "1988",
+     "color": "栗毛"
+    },
+    {
+     "name": "Primo Dominie",
+     "sex": "牡",
+     "id": "000a001e69",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Susquehanna Days",
+     "sex": "牝",
+     "id": "000a00a085",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Elusive Quality",
+     "sex": "牡",
+     "id": "000a00231f",
+     "year": "1993",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Star of Paris",
+     "sex": "牝",
+     "id": "000a0123b0",
+     "year": "1995",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Rainbow Quest",
+     "sex": "牡",
+     "id": "000a001b4d",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Linnga",
+     "sex": "牝",
+     "id": "000a01b501",
+     "year": "1989",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Gone West",
+     "sex": "牡",
+     "id": "000a001be1"
+    },
+    {
+     "name": "Zaizafon",
+     "sex": "牝",
+     "id": "000a009960"
+    },
+    {
+     "name": "Nureyev",
+     "sex": "牡",
+     "id": "000a001676"
+    },
+    {
+     "name": "Park Appeal",
+     "sex": "牝",
+     "id": "000a009fa4"
+    },
+    {
+     "name": "Dominion",
+     "sex": "牡",
+     "id": "000a001b88"
+    },
+    {
+     "name": "Swan Ann",
+     "sex": "牝",
+     "id": "000a009065"
+    },
+    {
+     "name": "Chief's Crown",
+     "sex": "牡",
+     "id": "000a001b87"
+    },
+    {
+     "name": "Gliding By",
+     "sex": "牝",
+     "id": "000a013244"
+    },
+    {
+     "name": "Gone West",
+     "sex": "牡",
+     "id": "000a001be1"
+    },
+    {
+     "name": "Touch of Greatness",
+     "sex": "牝",
+     "id": "000a00b688"
+    },
+    {
+     "name": "Dayjur",
+     "sex": "牡",
+     "id": "000a001d8b"
+    },
+    {
+     "name": "Liturgism",
+     "sex": "牝",
+     "id": "000a0123af"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340"
+    },
+    {
+     "name": "I Will Follow",
+     "sex": "牝",
+     "id": "000a00903f"
+    },
+    {
+     "name": "Shardari",
+     "sex": "牡",
+     "id": "000a010351"
+    },
+    {
+     "name": "Lisana",
+     "sex": "牝",
+     "id": "000a013317"
+    }
+   ]
+  ]
+ },
+ "fno": "F13-c",
+ "cross": ""
+}

@@ -1,0 +1,402 @@
+{
+ "id": 119,
+ "馬名": "ヒシナスキロ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "コンドコマンド",
+     "sex": "牝",
+     "id": "000a012f06",
+     "year": "2012",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Tiz Wonderful",
+     "sex": "牡",
+     "id": "000a011c23",
+     "year": "2004",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Yearly Report",
+     "sex": "牝",
+     "id": "000a012eba",
+     "year": "2001",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Evil",
+     "sex": "牝",
+     "id": "000a011c52",
+     "year": "1998",
+     "color": "栗毛"
+    },
+    {
+     "name": "General Meeting",
+     "sex": "牡",
+     "id": "000a001fee",
+     "year": "1988",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Fiscal Year",
+     "sex": "牝",
+     "id": "000a011c3b",
+     "year": "1995",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c",
+     "year": "1987",
+     "color": "芦毛"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed",
+     "year": "1986",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ヘネシー",
+     "sex": "牡",
+     "id": "000a000178",
+     "year": "1993",
+     "color": "栗毛"
+    },
+    {
+     "name": "Lit'l Rose",
+     "sex": "牝",
+     "id": "000a011c51",
+     "year": "1987",
+     "color": "栗毛"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc",
+     "year": "1974",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Alydar's Promise",
+     "sex": "牝",
+     "id": "000a00a4bf",
+     "year": "1983",
+     "color": "栗毛"
+    },
+    {
+     "name": "Half a Year",
+     "sex": "牡",
+     "id": "000a011739",
+     "year": "1984",
+     "color": "栗毛"
+    },
+    {
+     "name": "Fiscal Gold",
+     "sex": "牝",
+     "id": "000a011c3a",
+     "year": "1990",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Relaunch",
+     "sex": "牡",
+     "id": "000a001b45"
+    },
+    {
+     "name": "テイズリー",
+     "sex": "牝",
+     "id": "000a000364"
+    },
+    {
+     "name": "Seattle Song",
+     "sex": "牡",
+     "id": "000a0017e6"
+    },
+    {
+     "name": "Lonely Dancer",
+     "sex": "牝",
+     "id": "000a00faee"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Island Kitty",
+     "sex": "牝",
+     "id": "000a00a104"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Girlfriend",
+     "sex": "牝",
+     "id": "000a009ce0"
+    },
+    {
+     "name": "Bold Reasoning",
+     "sex": "牡",
+     "id": "000a001598"
+    },
+    {
+     "name": "My Charmer",
+     "sex": "牝",
+     "id": "000a008080"
+    },
+    {
+     "name": "Alydar",
+     "sex": "牡",
+     "id": "000a00175b"
+    },
+    {
+     "name": "Summertime Promise",
+     "sex": "牝",
+     "id": "000a009d7b"
+    },
+    {
+     "name": "Riverman",
+     "sex": "牡",
+     "id": "000a0014ce"
+    },
+    {
+     "name": "Six Months Long",
+     "sex": "牝",
+     "id": "000a00fac3"
+    },
+    {
+     "name": "Slew o' Gold",
+     "sex": "牡",
+     "id": "000a0019ac"
+    },
+    {
+     "name": "Fiscal Fun",
+     "sex": "牝",
+     "id": "000a011c39"
+    }
+   ]
+  ]
+ },
+ "fno": "F22-b",
+ "cross": "Tiznow(USA) ：M3×S4 Storm Cat(USA) ：S5×M5"
+}

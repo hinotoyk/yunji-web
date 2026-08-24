@@ -1,0 +1,402 @@
+{
+ "id": 330,
+ "馬名": "アルルの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "アルル",
+     "sex": "牝",
+     "id": "000a014352",
+     "year": "2012",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Monsun",
+     "sex": "牡",
+     "id": "000a010db6",
+     "year": "1990",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Attachee de Presse",
+     "sex": "牝",
+     "id": "000a0142b5",
+     "year": "2000",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Konigsstuhl",
+     "sex": "牡",
+     "id": "000a001ecc",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Mosella",
+     "sex": "牝",
+     "id": "000a010db5",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "デインヒル",
+     "sex": "牡",
+     "id": "000a0000d1",
+     "year": "1986",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Allons Enfants",
+     "sex": "牝",
+     "id": "000a0142b4",
+     "year": "1988",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Dschingis Khan",
+     "sex": "牡",
+     "id": "000a00166e",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Konigskronung",
+     "sex": "牝",
+     "id": "000a009ed6",
+     "year": "1965",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Surumu",
+     "sex": "牡",
+     "id": "000a001d10",
+     "year": "1974",
+     "color": "栗毛"
+    },
+    {
+     "name": "Monasia",
+     "sex": "牝",
+     "id": "000a010db4",
+     "year": "1979",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Razyana",
+     "sex": "牝",
+     "id": "000a009233",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Spend a Buck",
+     "sex": "牡",
+     "id": "000a00197d",
+     "year": "1982",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Allez France",
+     "sex": "牝",
+     "id": "000a010df1",
+     "year": "1970",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Tamerlane",
+     "sex": "牡",
+     "id": "000a00101c"
+    },
+    {
+     "name": "Donna Diana",
+     "sex": "牝",
+     "id": "000a0081cc"
+    },
+    {
+     "name": "Tiepoletto",
+     "sex": "牡",
+     "id": "000a00102c"
+    },
+    {
+     "name": "Kronung",
+     "sex": "牝",
+     "id": "000a000454"
+    },
+    {
+     "name": "Literat",
+     "sex": "牡",
+     "id": "000a00135a"
+    },
+    {
+     "name": "Surama",
+     "sex": "牝",
+     "id": "000a009775"
+    },
+    {
+     "name": "Authi",
+     "sex": "牡",
+     "id": "000a0016e4"
+    },
+    {
+     "name": "Monacensia",
+     "sex": "牝",
+     "id": "000a00fd00"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Pas de Nom",
+     "sex": "牝",
+     "id": "000a000491"
+    },
+    {
+     "name": "His Majesty",
+     "sex": "牡",
+     "id": "000a000628"
+    },
+    {
+     "name": "Spring Adieu",
+     "sex": "牝",
+     "id": "000a00922b"
+    },
+    {
+     "name": "Buckaroo",
+     "sex": "牡",
+     "id": "000a0017cb"
+    },
+    {
+     "name": "Belle de Jour",
+     "sex": "牝",
+     "id": "000a008b7f"
+    },
+    {
+     "name": "Sea-Bird",
+     "sex": "牡",
+     "id": "000a0004bb"
+    },
+    {
+     "name": "Priceless Gem",
+     "sex": "牝",
+     "id": "000a000291"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-x",
+ "cross": ""
+}

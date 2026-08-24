@@ -1,0 +1,402 @@
+{
+ "id": 346,
+ "馬名": "ネフェルウラーの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ネフェルウラー",
+     "sex": "牝",
+     "id": "2020110063",
+     "year": "2020",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "American Pharoah",
+     "sex": "牡",
+     "id": "000a012aad",
+     "year": "2012",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Harmony Lodge",
+     "sex": "牝",
+     "id": "000a013f74",
+     "year": "1998",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Pioneerof the Nile",
+     "sex": "牡",
+     "id": "000a0122f5",
+     "year": "2006",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Littleprincessemma",
+     "sex": "牝",
+     "id": "000a012ab6",
+     "year": "2006",
+     "color": "栗毛"
+    },
+    {
+     "name": "ヘネシー",
+     "sex": "牡",
+     "id": "000a000178",
+     "year": "1993",
+     "color": "栗毛"
+    },
+    {
+     "name": "Win Crafty Lady",
+     "sex": "牝",
+     "id": "000a011377",
+     "year": "1988",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "エンパイアメーカー",
+     "sex": "牡",
+     "id": "000a010542",
+     "year": "2000",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Star of Goshen",
+     "sex": "牝",
+     "id": "000a012327",
+     "year": "1994",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Yankee Gentleman",
+     "sex": "牡",
+     "id": "000a012aae",
+     "year": "1999",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Exclusive Rosette",
+     "sex": "牝",
+     "id": "000a012ab4",
+     "year": "1993",
+     "color": "栗毛"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98",
+     "year": "1983",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Island Kitty",
+     "sex": "牝",
+     "id": "000a00a104",
+     "year": "1976",
+     "color": "栗毛"
+    },
+    {
+     "name": "Crafty Prospector",
+     "sex": "牡",
+     "id": "000a00193b",
+     "year": "1979",
+     "color": "栗毛"
+    },
+    {
+     "name": "Honeytab",
+     "sex": "牝",
+     "id": "000a011376",
+     "year": "1982",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0"
+    },
+    {
+     "name": "Toussaud",
+     "sex": "牝",
+     "id": "000a01008f"
+    },
+    {
+     "name": "Lord at War",
+     "sex": "牡",
+     "id": "000a00193d"
+    },
+    {
+     "name": "Castle Eight",
+     "sex": "牝",
+     "id": "000a00fb5d"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Key Phrase",
+     "sex": "牝",
+     "id": "000a01102e"
+    },
+    {
+     "name": "Ecliptical",
+     "sex": "牡",
+     "id": "000a012ab5"
+    },
+    {
+     "name": "Zetta Jet",
+     "sex": "牝",
+     "id": "000a012ab3"
+    },
+    {
+     "name": "Storm Bird",
+     "sex": "牡",
+     "id": "000a0016d4"
+    },
+    {
+     "name": "Terlingua",
+     "sex": "牝",
+     "id": "000a008e05"
+    },
+    {
+     "name": "Hawaii",
+     "sex": "牡",
+     "id": "000a0010d6"
+    },
+    {
+     "name": "T. C. Kitten",
+     "sex": "牝",
+     "id": "000a009f23"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Real Crafty Lady",
+     "sex": "牝",
+     "id": "000a008adf"
+    },
+    {
+     "name": "Al Hattab",
+     "sex": "牡",
+     "id": "000a000daf"
+    },
+    {
+     "name": "Get Up Honey",
+     "sex": "牝",
+     "id": "000a011375"
+    }
+   ]
+  ]
+ },
+ "fno": "F16-g",
+ "cross": ""
+}

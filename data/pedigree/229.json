@@ -1,0 +1,402 @@
+{
+ "id": 229,
+ "馬名": "ルージュグレア",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "レッドエルザ",
+     "sex": "牝",
+     "id": "2010110011",
+     "year": "2010",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Smart Strike",
+     "sex": "牡",
+     "id": "000a00211c",
+     "year": "1992",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Belva",
+     "sex": "牝",
+     "id": "000a011c28",
+     "year": "1998",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Classy 'n Smart",
+     "sex": "牝",
+     "id": "000a00ac59",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Theatrical",
+     "sex": "牡",
+     "id": "000a001bed",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Committed",
+     "sex": "牝",
+     "id": "000a011c27",
+     "year": "1980",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46",
+     "year": "1961",
+     "color": "栗毛"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c",
+     "year": "1962",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Smarten",
+     "sex": "牡",
+     "id": "000a00160c",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "No Class",
+     "sex": "牝",
+     "id": "000a009dd1",
+     "year": "1974",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Nureyev",
+     "sex": "牡",
+     "id": "000a001676",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ツリーオブノレッジ",
+     "sex": "牝",
+     "id": "000a000374",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Hagley",
+     "sex": "牡",
+     "id": "000a001db6",
+     "year": "1967",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Minstinguette",
+     "sex": "牝",
+     "id": "000a009dbd",
+     "year": "1975",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Native Dancer",
+     "sex": "牡",
+     "id": "000a000f89"
+    },
+    {
+     "name": "Raise You",
+     "sex": "牝",
+     "id": "000a007984"
+    },
+    {
+     "name": "Nashua",
+     "sex": "牡",
+     "id": "000a000f87"
+    },
+    {
+     "name": "Sequence",
+     "sex": "牝",
+     "id": "000a007d1c"
+    },
+    {
+     "name": "Cyane",
+     "sex": "牡",
+     "id": "000a000ecd"
+    },
+    {
+     "name": "Smartaire",
+     "sex": "牝",
+     "id": "000a0080b6"
+    },
+    {
+     "name": "Nodouble",
+     "sex": "牡",
+     "id": "000a001384"
+    },
+    {
+     "name": "Classy Quillo",
+     "sex": "牝",
+     "id": "000a00855e"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Special",
+     "sex": "牝",
+     "id": "000a0081e9"
+    },
+    {
+     "name": "Sassafras",
+     "sex": "牡",
+     "id": "000a000ddc"
+    },
+    {
+     "name": "Sensibility",
+     "sex": "牝",
+     "id": "000a008303"
+    },
+    {
+     "name": "Olden Times",
+     "sex": "牡",
+     "id": "000a000dbc"
+    },
+    {
+     "name": "Teo Pepi",
+     "sex": "牝",
+     "id": "000a009a0c"
+    },
+    {
+     "name": "Boldnesian",
+     "sex": "牡",
+     "id": "000a001599"
+    },
+    {
+     "name": "Royal Warrant",
+     "sex": "牝",
+     "id": "000a0002c2"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-k",
+ "cross": ""
+}

@@ -30,6 +30,8 @@ DATA = os.path.join(ROOT, "data")
 HISTORY = os.path.join(ROOT, "history")
 RAW = os.path.join(ROOT, "data", "raw")
 RACES_DIR = os.path.join(DATA, "races")
+RACEFILES_DIR = os.path.join(DATA, "racefiles")   # M5.3：比赛记录拆分（data/races 已被台账 csv 占用）
+PEDIGREE_DIR = os.path.join(DATA, "pedigree")     # M5.3：血统树拆分
 
 # 前端展示用字段
 FIELDS = [
@@ -221,7 +223,7 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
     return out
 
 
-def update_manifest(current_id, count, note="", versions=None):
+def update_manifest(current_id, count, note="", versions=None, has_snapshot=True):
     mf_path = os.path.join(DATA, "manifest.json")
     mf = {"current": current_id, "versions": []}
     if os.path.exists(mf_path):
@@ -229,15 +231,22 @@ def update_manifest(current_id, count, note="", versions=None):
             old = json.load(f)
         mf["versions"] = old.get("versions", [])
     mf["versions"] = [v for v in mf["versions"] if v["id"] != current_id]
-    mf["versions"].insert(0, {
-        "id": current_id,
-        "file": f"history/{current_id}.json",
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "count": count,
-        "note": note,
-    })
+    if has_snapshot:
+        mf["versions"].insert(0, {
+            "id": current_id,
+            "file": f"history/{current_id}.json",
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "count": count,
+            "note": note,
+        })
+    # 清理孤儿引用：登记的版本文件不存在（含历史遗留）→ 剔除，保证前端版本下拉可加载
+    mf["versions"] = [v for v in mf["versions"] if os.path.exists(os.path.join(ROOT, v.get("file", "")))]
     mf["versions"] = mf["versions"][:30]
-    mf["current"] = current_id
+    # current 必须指向真实存在的快照：no-snapshot 不写新文件 → 保持旧 current（回退到最近存在的）
+    if has_snapshot:
+        mf["current"] = current_id
+    elif mf["versions"]:
+        mf["current"] = mf["versions"][0]["id"]
     with open(mf_path, "w", encoding="utf-8") as f:
         json.dump(mf, f, ensure_ascii=False, indent=2)
     return mf
@@ -253,7 +262,7 @@ def load_aliases():
 
 def load_ledger():
     """读取契约B快照（pull_races.py 产出）→ 类型化记录 + 校验 issues"""
-    path = os.path.join(RACES_DIR, "ledger.csv")
+    path = os.path.join(RACES_DIR, "google_ledger.csv")
     if not os.path.exists(path):
         return [], []
     issues = []
@@ -429,6 +438,64 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     return "\n".join(lines) + "\n"
 
 
+# ── M5.3 crops v2 输出：拆分文件 + facet + {_meta, index, horses} ──
+# 设计：docs/data-dashboard-v1.md §2。每匹 races/血统树拆到 data/racefiles/{id}.json /
+# data/pedigree/{id}.json（仅建有内容的马），crops 只留瘦身档案 + facet + 文件引用。
+
+
+def write_split_files(records):
+    """拆分 races / pedigree 到独立文件（仅建有内容的马）。返回 (race_count, pedigree_count)。
+    crops 内嵌字段替换为文件引用：race_count / races_file / pedigree_file；无内容留空串。"""
+    os.makedirs(RACEFILES_DIR, exist_ok=True)
+    os.makedirs(PEDIGREE_DIR, exist_ok=True)
+    n_race, n_ped = 0, 0
+    for h in records:
+        hid = h["id"]
+        races = h.get("races") or []
+        if races:
+            with open(os.path.join(RACEFILES_DIR, f"{hid}.json"), "w", encoding="utf-8") as f:
+                json.dump({"id": hid, "馬名": h.get("馬名", ""), "races": races},
+                          f, ensure_ascii=False, indent=1)
+            n_race += 1
+        h["race_count"] = len(races)
+        h["races_file"] = f"data/racefiles/{hid}.json" if races else ""
+        ped = h.get("pedigree") or {}
+        if ped.get("父") or ped.get("母"):
+            with open(os.path.join(PEDIGREE_DIR, f"{hid}.json"), "w", encoding="utf-8") as f:
+                json.dump({"id": hid, "馬名": h.get("馬名", ""), "pedigree": ped,
+                           "fno": h.get("fno", ""), "cross": h.get("cross", "")},
+                          f, ensure_ascii=False, indent=1)
+            n_ped += 1
+        h["pedigree_file"] = f"data/pedigree/{hid}.json" if (ped.get("父") or ped.get("母")) else ""
+        # crops 内嵌字段瘦身：races 已拆文件；pedigree 保留 fno/cross 摘要、大血统树移文件
+        h["races"] = []
+        h["pedigree"] = {}
+    return n_race, n_ped
+
+
+def build_v2(records, built_iso, sources, manifest_id):
+    """records（含 races/pedigree 内嵌）→ crops v2 输出 dict {_meta, index, horses}。
+    - 每匹生成 facet（M5.2）
+    - 拆分 races/pedigree 文件（M5.3）
+    - _meta.index 倒排表（带计数分面导航）
+    """
+    for h in records:
+        h["facet"] = racelib.build_facet(h)
+    n_race, n_ped = write_split_files(records)
+    index = racelib.build_index(records)
+    return {
+        "_meta": {
+            "schema": "crops/v2",
+            "built": built_iso,
+            "count": len(records),
+            "sources": sources,
+            "manifest": manifest_id,
+        },
+        "index": index,
+        "horses": records,
+    }, n_race, n_ped
+
+
 def main():
     ap = argparse.ArgumentParser(description="云迹数据构建（netkeiba 主 + JBIS 兜底）")
     ap.add_argument("--note", default="netkeiba+JBIS 抓取更新")
@@ -458,7 +525,9 @@ def main():
     netkeiba_db = netkeiba_races.load_races_db()
     jockeys = netkeiba_races.load_jockeys()
     if netkeiba_db:
-        nk_recs = netkeiba_races.fetch()
+        # fetch 无参会自读 crops.json 取 nk_id→馬名；crops v2 已改 {_meta,index,horses}，必须显式传
+        name_by_nk = {h["nk_id"]: h.get("馬名", "") for h in records if h.get("nk_id")}
+        nk_recs = netkeiba_races.fetch(name_by_nk)
         matched, created, unmatched, aliases, n_with = attach_races(
             records, nk_recs, ledger_rows, aliases, reg)
         with open(os.path.join(DATA, "aliases.json"), "w", encoding="utf-8") as f:
@@ -486,16 +555,30 @@ def main():
 
     os.makedirs(HISTORY, exist_ok=True)
     cur_id = datetime.now().strftime("%Y%m%d_%H%M")
-    with open(os.path.join(DATA, "crops.json"), "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=1)
 
+    # ── 先写快照（v1 完整形态，含 races/pedigree 内嵌，便于回滚与对比）──
+    # 注意：必须在 build_v2 之前——build_v2 会清空 records 内嵌 races/pedigree（拆文件）
     if not args.no_snapshot:
         with open(os.path.join(HISTORY, f"{cur_id}.json"), "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=1)
 
-    mf = update_manifest(cur_id, len(records), args.note)
-    print(f"✔ crops.json 已更新 ({len(records)} 匹)")
-    print(f"✔ 快照: history/{cur_id}.json · 版本数: {len(mf['versions'])}")
+    # ── M5.3 crops v2：{_meta, index, horses} + races/pedigree 拆分 + facet ──
+    sources = {}
+    for name in ("netkeiba", "jbis", "ledger"):
+        p = os.path.join(DATA, "raw", f"{name}.json") if name != "ledger" else os.path.join(RACES_DIR, "google_ledger.csv")
+        if os.path.exists(p):
+            sources[name] = datetime.now().strftime("%Y-%m-%d")
+    v2, n_race, n_ped = build_v2(records, datetime.now().strftime("%Y-%m-%dT%H:%M:%S+09:00"),
+                                 sources, cur_id)
+
+    with open(os.path.join(DATA, "crops.json"), "w", encoding="utf-8") as f:
+        json.dump(v2, f, ensure_ascii=False, indent=1)
+
+    mf = update_manifest(cur_id, len(records), args.note, has_snapshot=not args.no_snapshot)
+    print(f"✔ crops.json v2 已更新 ({len(records)} 匹 · schema={v2['_meta']['schema']})")
+    print(f"✔ 拆分: data/racefiles/ ×{n_race} · data/pedigree/ ×{n_ped}（仅建有内容的马）")
+    print(f"✔ facet: 每匹已生成 · index: {len(v2['index'])} 个分面字段")
+    print(f"✔ 快照(v1 完整形态): history/{cur_id}.json · 版本数: {len(mf['versions'])}")
 
 
 if __name__ == "__main__":

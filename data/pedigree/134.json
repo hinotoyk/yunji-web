@@ -1,0 +1,401 @@
+{
+ "id": 134,
+ "馬名": "ソルフィーナ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "マハゴニー",
+     "sex": "牝",
+     "id": "000a01bfb8",
+     "year": "2017",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Embrujado",
+     "sex": "牡",
+     "id": "000a01bf0c",
+     "year": "2004",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Mira Vos",
+     "sex": "牝",
+     "id": "000a01bf18",
+     "year": "2008"
+    }
+   ],
+   [
+    {
+     "name": "Bernstein",
+     "sex": "牡",
+     "id": "000a010bae",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Embobada Toss",
+     "sex": "牝",
+     "id": "000a01bf16",
+     "year": "1993",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Afleet Alex",
+     "sex": "牡",
+     "id": "000a010dc8",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Dame d'Loc",
+     "sex": "牝",
+     "id": "000a01bf17",
+     "year": "1998",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98",
+     "year": "1983",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "La Affirmed",
+     "sex": "牝",
+     "id": "000a010a73",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Egg Toss",
+     "sex": "牡",
+     "id": "000a001d8c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Embelesante",
+     "sex": "牝",
+     "id": "000a01bf15",
+     "year": "1982",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Northern Afleet",
+     "sex": "牡",
+     "id": "000a010a96",
+     "year": "1993",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Maggy Hawk",
+     "sex": "牝",
+     "id": "000a010e19",
+     "year": "1994",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mt. Livermore",
+     "sex": "牡",
+     "id": "000a00184b",
+     "year": "1981",
+     "color": "栗毛"
+    },
+    {
+     "name": "Spectacular Bev",
+     "sex": "牝",
+     "id": "000a00a57e",
+     "year": "1984",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Bird",
+     "sex": "牡",
+     "id": "000a0016d4"
+    },
+    {
+     "name": "Terlingua",
+     "sex": "牝",
+     "id": "000a008e05"
+    },
+    {
+     "name": "Affirmed",
+     "sex": "牡",
+     "id": "000a001785"
+    },
+    {
+     "name": "La Mesa",
+     "sex": "牝",
+     "id": "000a00a0b8"
+    },
+    {
+     "name": "Buckpasser",
+     "sex": "牡",
+     "id": "000a000e0e"
+    },
+    {
+     "name": "Eggy",
+     "sex": "牝",
+     "id": "000a009989"
+    },
+    {
+     "name": "Practicante",
+     "sex": "牡",
+     "id": "000a001e5f"
+    },
+    {
+     "name": "Emocional",
+     "sex": "牝",
+     "id": "000a01bf14"
+    },
+    {
+     "name": "アフリート",
+     "sex": "牡",
+     "id": "000a000013"
+    },
+    {
+     "name": "Nuryette",
+     "sex": "牝",
+     "id": "000a010ab2"
+    },
+    {
+     "name": "ホークスター",
+     "sex": "牡",
+     "id": "1986109000"
+    },
+    {
+     "name": "Qualique",
+     "sex": "牝",
+     "id": "000a010e18"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340"
+    },
+    {
+     "name": "Flama Ardiente",
+     "sex": "牝",
+     "id": "000a008859"
+    },
+    {
+     "name": "Spectacular Bid",
+     "sex": "牡",
+     "id": "000a0017b6"
+    },
+    {
+     "name": "Bev Bev",
+     "sex": "牝",
+     "id": "000a00a0c7"
+    }
+   ]
+  ]
+ },
+ "fno": "F7",
+ "cross": "Storm Cat(USA) ：M4×S5"
+}

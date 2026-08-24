@@ -1,0 +1,402 @@
+{
+ "id": 201,
+ "馬名": "ペアスターロード",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "シュウギン",
+     "sex": "牝",
+     "id": "2010103426",
+     "year": "2010",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "スウェプトオーヴァーボード",
+     "sex": "牡",
+     "id": "000a00fa34",
+     "year": "1997",
+     "color": "芦毛"
+    },
+    {
+     "name": "キングスミール",
+     "sex": "牝",
+     "id": "2001103376",
+     "year": "2001",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "エンドスウィープ",
+     "sex": "牡",
+     "id": "000a00010f",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sheer Ice",
+     "sex": "牝",
+     "id": "000a00faab",
+     "year": "1982",
+     "color": "芦毛"
+    },
+    {
+     "name": "Theatrical",
+     "sex": "牡",
+     "id": "000a001bed",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "スルーオール",
+     "sex": "牝",
+     "id": "000a00030d",
+     "year": "1990",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "フォーティナイナー",
+     "sex": "牡",
+     "id": "000a000134",
+     "year": "1985",
+     "color": "栗毛"
+    },
+    {
+     "name": "Broom Dance",
+     "sex": "牝",
+     "id": "000a00a55c",
+     "year": "1979",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Cutlass",
+     "sex": "牡",
+     "id": "000a001bd6",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Hey Dolly A.",
+     "sex": "牝",
+     "id": "000a00faac",
+     "year": "1974",
+     "color": "芦毛"
+    },
+    {
+     "name": "Nureyev",
+     "sex": "牡",
+     "id": "000a001676",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ツリーオブノレッジ",
+     "sex": "牝",
+     "id": "000a000374",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc",
+     "year": "1974",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Over All",
+     "sex": "牝",
+     "id": "000a00b06b",
+     "year": "1985",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "File",
+     "sex": "牝",
+     "id": "000a0094a9"
+    },
+    {
+     "name": "Dance Spell",
+     "sex": "牡",
+     "id": "000a0012eb"
+    },
+    {
+     "name": "Witching Hour",
+     "sex": "牝",
+     "id": "000a000007"
+    },
+    {
+     "name": "Damascus",
+     "sex": "牡",
+     "id": "000a0010a8"
+    },
+    {
+     "name": "Aphonia",
+     "sex": "牝",
+     "id": "000a0080c4"
+    },
+    {
+     "name": "Ambehaving",
+     "sex": "牡",
+     "id": "000a001944"
+    },
+    {
+     "name": "Swift Deal",
+     "sex": "牝",
+     "id": "000a00faad"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Special",
+     "sex": "牝",
+     "id": "000a0081e9"
+    },
+    {
+     "name": "Sassafras",
+     "sex": "牡",
+     "id": "000a000ddc"
+    },
+    {
+     "name": "Sensibility",
+     "sex": "牝",
+     "id": "000a008303"
+    },
+    {
+     "name": "Bold Reasoning",
+     "sex": "牡",
+     "id": "000a001598"
+    },
+    {
+     "name": "My Charmer",
+     "sex": "牝",
+     "id": "000a008080"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Full Tigress",
+     "sex": "牝",
+     "id": "000a009dff"
+    }
+   ]
+  ]
+ },
+ "fno": "F8-h",
+ "cross": "Mr. Prospector(USA) ：M5×M5"
+}

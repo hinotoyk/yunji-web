@@ -158,10 +158,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,
   </div>
 </div>
 
+<script src="data-util.js"></script>
 <script>
 const KEY_FIELDS=["馬名","性別","生年月日","毛色","産地","馬主","生産牧場","調教師","母名","母父名","総賞金","登録状態","生年","n年"];
 const LONG_FIELDS=[["近况更新/近走/牧场评价","近况更新 / 近走 / 牧场评价"],["血统分析","血统分析"],["备考","备考"]];
-let HORSES=[],sel=null,q="",dirty=false;
+let HORSES=[],sel=null,q="",dirty=false,CR_META={},CR_INDEX=null;
 const listEl=document.getElementById("list"),editor=document.getElementById("editor"),
       statusEl=document.getElementById("status"),footEl=document.getElementById("paneFoot"),
       btnLocal=document.getElementById("btnLocal"),btnGithub=document.getElementById("btnGithub");
@@ -285,7 +286,7 @@ document.getElementById("alSave").addEventListener("click",()=>{
 
 /* ---------- 导出 ---------- */
 document.getElementById("btnExport").addEventListener("click",()=>{
-  const blob=new Blob([JSON.stringify(HORSES,null,2)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify(buildCropsOut(),null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download=`crops_${new Date().toISOString().slice(0,10)}.json`;
@@ -342,6 +343,15 @@ function showLog(lines){
   log.querySelector("pre").innerHTML=lines.map(l=>l.ok?`<span class="ok">✔ ${esc(l.t)}</span>`:l.err?`<span class="err">✘ ${esc(l.t)}</span>`:esc(l.t)).join("\n");
   log.scrollIntoView({behavior:"smooth"});
 }
+/* M5.4：admin 改动人工字段后输出整份 crops v2。
+ * v1 数据（旧快照裸数组）→ 包成 {_meta, index, horses}；v2 数据 → 保留 _meta、重建 index。 */
+function buildCropsOut(){
+  const horses=HORSES.map(h=>({...h}));
+  const meta={schema:"crops/v2",built:new Date().toISOString(),count:horses.length,
+              sources:(CR_META&&CR_META.sources)||{},manifest:(CR_META&&CR_META.manifest)||""};
+  const index=YJ.rebuildIndex(horses);
+  return {_meta:meta,index,horses};
+}
 async function commitToGithub(){
   const cfg=JSON.parse(localStorage.getItem(LS_GH)||"{}");
   if(!cfg.owner||!cfg.repo||!cfg.token){alert("请先配置 GitHub");return;}
@@ -358,9 +368,10 @@ async function commitToGithub(){
     mf.versions=[{id,file:`history/${id}.json`,date:ts.toLocaleString("zh-CN"),count:HORSES.length,note:"管理页提交"}].concat(mf.versions.filter(v=>v.id!==id&&v.id!==mf.current));
     mf.versions=mf.versions.slice(0,30);
     mf.current=id;
-    // 单次 commit 写入文件（crops + 快照 + manifest + aliases）
+    // 单次 commit 写入文件（crops v2 + 快照 + manifest + aliases）
+    const cropsOut=buildCropsOut();
     const files=[
-      {path:"data/crops.json",content:JSON.stringify(HORSES,null,2)},
+      {path:"data/crops.json",content:JSON.stringify(cropsOut,null,2)},
       {path:`history/${id}.json`,content:JSON.stringify(HORSES,null,2)},
       {path:"data/manifest.json",content:JSON.stringify(mf,null,2)},
       {path:"data/aliases.json",content:JSON.stringify(ALIASES,null,2)}
@@ -379,9 +390,8 @@ async function commitToGithub(){
 /* ---------- 初始化 ---------- */
 (async function init(){
   try{
-    const r=await fetch("../data/crops.json");
-    if(!r.ok)throw new Error("HTTP "+r.status);
-    HORSES=await r.json();
+    const {horses,meta,index}=await YJ.loadCrops("../data/crops.json");   // M5.4：兼容 v1/v2
+    HORSES=horses;CR_META=meta;CR_INDEX=index;
   }catch(e){
     listEl.innerHTML=`<div class="empty">数据加载失败（${e.message}）</div>`;
     return;

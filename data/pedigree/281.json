@@ -1,0 +1,402 @@
+{
+ "id": 281,
+ "馬名": "ダイアナヘイローの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ダイアナヘイロー",
+     "sex": "牝",
+     "id": "2013103292",
+     "year": "2013",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "キングヘイロー",
+     "sex": "牡",
+     "id": "1995104427",
+     "year": "1995",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ヤマカツセイレーン",
+     "sex": "牝",
+     "id": "2007101469",
+     "year": "2007",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "ダンシングブレーヴ",
+     "sex": "牡",
+     "id": "000a0000cc",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "グッバイヘイロー",
+     "sex": "牝",
+     "id": "000a0062e2",
+     "year": "1985",
+     "color": "栗毛"
+    },
+    {
+     "name": "グラスワンダー",
+     "sex": "牡",
+     "id": "1995108676",
+     "year": "1995",
+     "color": "栗毛"
+    },
+    {
+     "name": "ヤマカツサクラ",
+     "sex": "牝",
+     "id": "2001103292",
+     "year": "2001",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Navajo Princess",
+     "sex": "牝",
+     "id": "000a0081bb",
+     "year": "1974",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Pound Foolish",
+     "sex": "牝",
+     "id": "000a00877d",
+     "year": "1979",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Silver Hawk",
+     "sex": "牡",
+     "id": "000a0019b4",
+     "year": "1979",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Ameriflora",
+     "sex": "牝",
+     "id": "000a00a4b9",
+     "year": "1989",
+     "color": "鹿毛"
+    },
+    {
+     "name": "フジキセキ",
+     "sex": "牡",
+     "id": "1992109618",
+     "year": "1992",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ローズサッシュ",
+     "sex": "牝",
+     "id": "1995107831",
+     "year": "1995",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Goofed",
+     "sex": "牝",
+     "id": "000a007c8d"
+    },
+    {
+     "name": "Drone",
+     "sex": "牡",
+     "id": "000a001668"
+    },
+    {
+     "name": "Olmec",
+     "sex": "牝",
+     "id": "000a0081ba"
+    },
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Sir Ivor",
+     "sex": "牡",
+     "id": "000a000dd9"
+    },
+    {
+     "name": "Squander",
+     "sex": "牝",
+     "id": "000a007e4f"
+    },
+    {
+     "name": "Roberto",
+     "sex": "牡",
+     "id": "000a0012cb"
+    },
+    {
+     "name": "Gris Vitesse",
+     "sex": "牝",
+     "id": "000a008c0e"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3"
+    },
+    {
+     "name": "Graceful Touch",
+     "sex": "牝",
+     "id": "000a00a4b8"
+    },
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a"
+    },
+    {
+     "name": "ミルレーサー",
+     "sex": "牝",
+     "id": "000a00021e"
+    },
+    {
+     "name": "ドクターデヴィアス",
+     "sex": "牡",
+     "id": "1989109102"
+    },
+    {
+     "name": "ゴールデンサッシュ",
+     "sex": "牝",
+     "id": "1988107344"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-t",
+ "cross": ""
+}

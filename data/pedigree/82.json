@@ -1,0 +1,402 @@
+{
+ "id": 82,
+ "馬名": "レヴァンターセ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "フェアウェルキッス",
+     "sex": "牝",
+     "id": "2017104662",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ヴィクトワールピサ",
+     "sex": "牡",
+     "id": "2007102923",
+     "year": "2007",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "アーヴェイ",
+     "sex": "牝",
+     "id": "2006190003",
+     "year": "2006",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ネオユニヴァース",
+     "sex": "牡",
+     "id": "2000101426",
+     "year": "2000",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ホワイトウォーターアフェア",
+     "sex": "牝",
+     "id": "000a00039f",
+     "year": "1993",
+     "color": "栗毛"
+    },
+    {
+     "name": "Danehill Dancer",
+     "sex": "牡",
+     "id": "000a002309",
+     "year": "1993",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Anna Amalia",
+     "sex": "牝",
+     "id": "000a0118f5",
+     "year": "2000",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ポインテッドパス",
+     "sex": "牝",
+     "id": "000a000285",
+     "year": "1984",
+     "color": "栗毛"
+    },
+    {
+     "name": "Machiavellian",
+     "sex": "牡",
+     "id": "000a001c1d",
+     "year": "1987",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Much Too Risky",
+     "sex": "牝",
+     "id": "000a00ae6e",
+     "year": "1982",
+     "color": "栗毛"
+    },
+    {
+     "name": "デインヒル",
+     "sex": "牡",
+     "id": "000a0000d1",
+     "year": "1986",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mira Adonde",
+     "sex": "牝",
+     "id": "000a00a59b",
+     "year": "1986",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "In the Wings",
+     "sex": "牡",
+     "id": "000a001cd4",
+     "year": "1986",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Anna of Saxony",
+     "sex": "牝",
+     "id": "000a00b4a8",
+     "year": "1989",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e"
+    },
+    {
+     "name": "Kris",
+     "sex": "牡",
+     "id": "000a001678"
+    },
+    {
+     "name": "Silken Way",
+     "sex": "牝",
+     "id": "000a009c85"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Coup de Folie",
+     "sex": "牝",
+     "id": "000a00931f"
+    },
+    {
+     "name": "Bustino",
+     "sex": "牡",
+     "id": "000a000564"
+    },
+    {
+     "name": "Short Rations",
+     "sex": "牝",
+     "id": "000a00ae6f"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3"
+    },
+    {
+     "name": "Razyana",
+     "sex": "牝",
+     "id": "000a009233"
+    },
+    {
+     "name": "Sharpen Up",
+     "sex": "牡",
+     "id": "000a001677"
+    },
+    {
+     "name": "Lettre d'Amour",
+     "sex": "牝",
+     "id": "000a009591"
+    },
+    {
+     "name": "Sadler's Wells",
+     "sex": "牡",
+     "id": "000a00185d"
+    },
+    {
+     "name": "High Hawk",
+     "sex": "牝",
+     "id": "1980109003"
+    },
+    {
+     "name": "Ela-Mana-Mou",
+     "sex": "牡",
+     "id": "000a001798"
+    },
+    {
+     "name": "Anna Matrushka",
+     "sex": "牝",
+     "id": "000a00b4a9"
+    }
+   ]
+  ]
+ },
+ "fno": "F7-f",
+ "cross": "サンデーサイレンス(USA) ：S3×M4"
+}

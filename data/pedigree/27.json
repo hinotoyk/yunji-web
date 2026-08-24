@@ -1,0 +1,402 @@
+{
+ "id": 27,
+ "馬名": "シャルトル",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "カーレッサ",
+     "sex": "牝",
+     "id": "000a01bfb5",
+     "year": "2016",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Uncle Mo",
+     "sex": "牡",
+     "id": "000a011ffb",
+     "year": "2008",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Iplaytricks",
+     "sex": "牝",
+     "id": "000a01bed5",
+     "year": "2008",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Indian Charlie",
+     "sex": "牡",
+     "id": "000a00fcd8",
+     "year": "1995",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Playa Maya",
+     "sex": "牝",
+     "id": "000a012038",
+     "year": "2000",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Desert God",
+     "sex": "牡",
+     "id": "000a01be9a",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "I Like Tricks",
+     "sex": "牝",
+     "id": "000a01bed4",
+     "year": "2002",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "In Excess",
+     "sex": "牡",
+     "id": "000a00228f",
+     "year": "1987",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Soviet Sojourn",
+     "sex": "牝",
+     "id": "000a00b54c",
+     "year": "1989",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Arch",
+     "sex": "牡",
+     "id": "000a0021b7",
+     "year": "1995",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Dixie Slippers",
+     "sex": "牝",
+     "id": "000a012037",
+     "year": "1995",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Blush With Pride",
+     "sex": "牝",
+     "id": "000a00fa86",
+     "year": "1979",
+     "color": "栗毛"
+    },
+    {
+     "name": "Tricky Fun",
+     "sex": "牡",
+     "id": "000a01be9b",
+     "year": "1988",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Iliketodance",
+     "sex": "牝",
+     "id": "000a01bed3",
+     "year": "1993",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Siberian Express",
+     "sex": "牡",
+     "id": "000a00185e"
+    },
+    {
+     "name": "Kantado",
+     "sex": "牝",
+     "id": "000a00b334"
+    },
+    {
+     "name": "Leo Castelli",
+     "sex": "牡",
+     "id": "000a001e25"
+    },
+    {
+     "name": "Political Parfait",
+     "sex": "牝",
+     "id": "000a00b54d"
+    },
+    {
+     "name": "Kris S.",
+     "sex": "牡",
+     "id": "000a0016f2"
+    },
+    {
+     "name": "Aurora",
+     "sex": "牝",
+     "id": "000a00af92"
+    },
+    {
+     "name": "Dixieland Band",
+     "sex": "牡",
+     "id": "000a0017b2"
+    },
+    {
+     "name": "Cyane's Slippers",
+     "sex": "牝",
+     "id": "000a012036"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Killaloe",
+     "sex": "牝",
+     "id": "000a0083e3"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340"
+    },
+    {
+     "name": "Best in Show",
+     "sex": "牝",
+     "id": "000a008297"
+    },
+    {
+     "name": "Phone Trick",
+     "sex": "牡",
+     "id": "000a0019a3"
+    },
+    {
+     "name": "Fun and Tears",
+     "sex": "牝",
+     "id": "000a0119ce"
+    },
+    {
+     "name": "Country Manor",
+     "sex": "牡",
+     "id": "000a01be9c"
+    },
+    {
+     "name": "Dratahni's Dance",
+     "sex": "牝",
+     "id": "000a01bed2"
+    }
+   ]
+  ]
+ },
+ "fno": "F14-d",
+ "cross": "Fappiano(USA) ：M4×S5"
+}

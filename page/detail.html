@@ -99,6 +99,7 @@ footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;co
 
 <footer>云迹 · 数据仅供分享交流，严禁用于赌博或违法行为</footer>
 
+<script src="data-util.js"></script>
 <script src="race-ui.js"></script>
 <script>
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
@@ -133,7 +134,9 @@ function renderPedigree(h){
     <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
     ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
 }
-function render(h){
+async function render(h){
+  await YJ.ensureRaces(h);          // M5.4：详情页按需加载 races（v2 拆文件）
+  await YJ.ensurePedigree(h);       // M5.4：详情页按需加载血统树（v2 拆文件）
   document.title=(h.译名||h.馬名)+" · 云迹";
   const items=parseKin(h).map(it=>{
     const isDate=DATE_RE.test(it.label);
@@ -198,10 +201,8 @@ function render(h){
 (async function init(){
   const m=decodeURIComponent(location.hash.slice(1));
   try{
-    const r=await fetch("../data/crops.json");
-    if(!r.ok)throw new Error(r.status);
-    const hs=await r.json();
-    render(hs.find(h=>h.馬名===m)||hs[0]);
+    const {horses,meta}=await YJ.loadCrops("../data/crops.json");   // M5.4：兼容 v1/v2
+    await render(horses.find(h=>h.馬名===m)||horses[0]);
   }catch(e){
     document.getElementById("dinner").innerHTML=`<div class="empty" style="padding:40px">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
   }

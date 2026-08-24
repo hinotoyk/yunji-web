@@ -1,0 +1,402 @@
+{
+ "id": 301,
+ "馬名": "オリーズキャンディの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "オリーズキャンディ",
+     "sex": "牝",
+     "id": "000a01bea4",
+     "year": "2015",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Candy Ride",
+     "sex": "牡",
+     "id": "000a01132a",
+     "year": "1999",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Afternoon Stroll",
+     "sex": "牝",
+     "id": "000a01bd47",
+     "year": "2006",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Ride the Rails",
+     "sex": "牡",
+     "id": "000a011329",
+     "year": "1991",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Candy Girl",
+     "sex": "牝",
+     "id": "000a01133d",
+     "year": "1990",
+     "color": "栗毛"
+    },
+    {
+     "name": "Stroll",
+     "sex": "牡",
+     "id": "000a011f19",
+     "year": "2000",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Gertie",
+     "sex": "牝",
+     "id": "000a01bd46",
+     "year": "1995",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Cryptoclearance",
+     "sex": "牡",
+     "id": "000a001e83",
+     "year": "1984",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Herbalesian",
+     "sex": "牝",
+     "id": "000a00890b",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Candy Stripes",
+     "sex": "牡",
+     "id": "000a00fe3c",
+     "year": "1982",
+     "color": "栗毛"
+    },
+    {
+     "name": "City Girl",
+     "sex": "牝",
+     "id": "000a01133c",
+     "year": "1982",
+     "color": "栗毛"
+    },
+    {
+     "name": "Pulpit",
+     "sex": "牡",
+     "id": "000a002133",
+     "year": "1994",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Maid for Walking",
+     "sex": "牝",
+     "id": "000a011f34",
+     "year": "1992",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Danzatore",
+     "sex": "牡",
+     "id": "000a001968",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Granny Ruth",
+     "sex": "牝",
+     "id": "000a01bd45",
+     "year": "1989",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Naval Orange",
+     "sex": "牝",
+     "id": "000a008491"
+    },
+    {
+     "name": "Herbager",
+     "sex": "牡",
+     "id": "000a000f32"
+    },
+    {
+     "name": "Alanesian",
+     "sex": "牝",
+     "id": "000a007095"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340"
+    },
+    {
+     "name": "バブルカンパニー",
+     "sex": "牝",
+     "id": "000a000087"
+    },
+    {
+     "name": "Farnesio",
+     "sex": "牡",
+     "id": "000a00205b"
+    },
+    {
+     "name": "Cithara",
+     "sex": "牝",
+     "id": "000a01133b"
+    },
+    {
+     "name": "A.P. Indy",
+     "sex": "牡",
+     "id": "000a001d37"
+    },
+    {
+     "name": "Preach",
+     "sex": "牝",
+     "id": "000a00acaa"
+    },
+    {
+     "name": "Prince Sabo",
+     "sex": "牡",
+     "id": "000a010cff"
+    },
+    {
+     "name": "Stinging Nettle",
+     "sex": "牝",
+     "id": "000a010b09"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Shake a Leg",
+     "sex": "牝",
+     "id": "000a008353"
+    },
+    {
+     "name": "Key to the Mint",
+     "sex": "牡",
+     "id": "000a0010f9"
+    },
+    {
+     "name": "Best of My Love",
+     "sex": "牝",
+     "id": "000a01bd44"
+    }
+   ]
+  ]
+ },
+ "fno": "F23-b",
+ "cross": ""
+}

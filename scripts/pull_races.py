@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """云迹·比赛数据流水线（与数据源无关）。
 
-职责：数据源适配器 → 契约B 校验/去重/场地推导 → 规范快照 data/races/ledger.csv + 校验报告。
+职责：数据源适配器 → 契约B 校验/去重/场地推导 → 规范快照 data/races/google_ledger.csv + 校验报告。
 数据源如何变化只影响 scripts/adapters/*（见 docs/data-contracts.md），本脚本及下游零改动。
 
 用法:
@@ -70,7 +70,7 @@ def build_report(records, issues, adapter_name):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="云迹·比赛数据流水线（适配器 → 契约B → ledger.csv）")
+    ap = argparse.ArgumentParser(description="云迹·比赛数据流水线（适配器 → 契约B → google_ledger.csv）")
     ap.add_argument("--adapter", default="sheets_ledger", help="数据源适配器名（scripts/adapters/ 下）")
     ap.add_argument("--no-write", action="store_true", help="只打印不写文件")
     args = ap.parse_args()
@@ -101,17 +101,17 @@ def main():
     names = [r["出走馬名"] for r in records]
     print(f"✔ 有效记录: {len(records)} 条 / {len(set(names))} 匹马 · 异常: {len(issues)} 条")
 
-    print("③ 写 ledger.csv + sync-report.md …")
+    print("③ 写 google_ledger.csv + sync-report.md …")
     report = build_report(records, issues, args.adapter)
     if not args.no_write:
         os.makedirs(RACES_DIR, exist_ok=True)
-        with open(os.path.join(RACES_DIR, "ledger.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        with open(os.path.join(RACES_DIR, "google_ledger.csv"), "w", encoding="utf-8-sig", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(records[0].keys()) if records else [])
             w.writeheader()
             w.writerows(records)
         with open(os.path.join(DATA, "sync-report.md"), "w", encoding="utf-8") as f:
             f.write(report)
-        print(f"✔ 已写: data/races/ledger.csv（{len(records)} 条）")
+        print(f"✔ 已写: data/races/google_ledger.csv（{len(records)} 条）")
         print(f"✔ 已写: data/sync-report.md")
     else:
         print("[dry-run] 未写文件")

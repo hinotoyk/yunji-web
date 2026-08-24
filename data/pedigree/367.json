@@ -1,0 +1,402 @@
+{
+ "id": 367,
+ "馬名": "ニコーズステージの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ニコーズステージ",
+     "sex": "牝",
+     "id": "2014104398",
+     "year": "2014",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "エンパイアメーカー",
+     "sex": "牡",
+     "id": "000a010542",
+     "year": "2000",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ディキシーランドジェム",
+     "sex": "牝",
+     "id": "000a01115f",
+     "year": "2002",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Toussaud",
+     "sex": "牝",
+     "id": "000a01008f",
+     "year": "1989",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Dixieland Band",
+     "sex": "牡",
+     "id": "000a0017b2",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Allusion",
+     "sex": "牝",
+     "id": "000a0110ba",
+     "year": "1981",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d",
+     "year": "1981",
+     "color": "栗毛"
+    },
+    {
+     "name": "El Gran Senor",
+     "sex": "牡",
+     "id": "000a0019da",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Image of Reality",
+     "sex": "牝",
+     "id": "000a008a92",
+     "year": "1976",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mississippi Mud",
+     "sex": "牝",
+     "id": "000a0085d7",
+     "year": "1973",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Touch",
+     "sex": "牝",
+     "id": "000a0110b9",
+     "year": "1968",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Killaloe",
+     "sex": "牝",
+     "id": "000a0083e3"
+    },
+    {
+     "name": "Le Fabuleux",
+     "sex": "牡",
+     "id": "000a000e44"
+    },
+    {
+     "name": "Charedi",
+     "sex": "牝",
+     "id": "000a00902c"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Sex Appeal",
+     "sex": "牝",
+     "id": "000a008298"
+    },
+    {
+     "name": "In Reality",
+     "sex": "牡",
+     "id": "000a0010e2"
+    },
+    {
+     "name": "Edee's Image",
+     "sex": "牝",
+     "id": "000a008a91"
+    },
+    {
+     "name": "Nearctic",
+     "sex": "牡",
+     "id": "000a000f8c"
+    },
+    {
+     "name": "Natalma",
+     "sex": "牝",
+     "id": "000a00702e"
+    },
+    {
+     "name": "Delta Judge",
+     "sex": "牡",
+     "id": "000a000ed5"
+    },
+    {
+     "name": "Sand Buggy",
+     "sex": "牝",
+     "id": "000a007f92"
+    },
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c"
+    },
+    {
+     "name": "Herbager",
+     "sex": "牡",
+     "id": "000a000f32"
+    },
+    {
+     "name": "Aesthetic",
+     "sex": "牝",
+     "id": "000a0110b8"
+    }
+   ]
+  ]
+ },
+ "fno": "F8-g",
+ "cross": ""
+}

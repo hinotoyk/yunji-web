@@ -1,0 +1,402 @@
+{
+ "id": 116,
+ "馬名": "ランザワールド",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ビッグワールド",
+     "sex": "牝",
+     "id": "000a013db3",
+     "year": "2013",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Custom for Carlos",
+     "sex": "牡",
+     "id": "000a012b46",
+     "year": "2006",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Tensas Wedding Joy",
+     "sex": "牝",
+     "id": "000a013ce2",
+     "year": "2009",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "More Than Ready",
+     "sex": "牡",
+     "id": "000a00fcdd",
+     "year": "1997",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Meadow Oaks",
+     "sex": "牝",
+     "id": "000a012b51",
+     "year": "1992",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Broken Vow",
+     "sex": "牡",
+     "id": "000a0101a0",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Xylophone",
+     "sex": "牝",
+     "id": "000a013ce1",
+     "year": "1996",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "サザンヘイロー",
+     "sex": "牡",
+     "id": "000a00031e",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Woodman's Girl",
+     "sex": "牝",
+     "id": "000a00fd18",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Meadowlake",
+     "sex": "牡",
+     "id": "000a001c0e",
+     "year": "1983",
+     "color": "栗毛"
+    },
+    {
+     "name": "Peggy Slew",
+     "sex": "牝",
+     "id": "000a012b50",
+     "year": "1984",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Wedding Vow",
+     "sex": "牝",
+     "id": "000a0101aa",
+     "year": "1988",
+     "color": "鹿毛"
+    },
+    {
+     "name": "デヒア",
+     "sex": "牡",
+     "id": "000a0000df",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Joyous Melody",
+     "sex": "牝",
+     "id": "000a013ce0",
+     "year": "1990",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf"
+    },
+    {
+     "name": "Northern Sea",
+     "sex": "牝",
+     "id": "000a00a8f8"
+    },
+    {
+     "name": "Woodman",
+     "sex": "牡",
+     "id": "000a001beb"
+    },
+    {
+     "name": "Becky Be Good",
+     "sex": "牝",
+     "id": "000a00fd19"
+    },
+    {
+     "name": "Hold Your Peace",
+     "sex": "牡",
+     "id": "000a00184d"
+    },
+    {
+     "name": "Suspicious Native",
+     "sex": "牝",
+     "id": "000a0092dd"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc"
+    },
+    {
+     "name": "Plankton",
+     "sex": "牝",
+     "id": "000a00b08d"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Nijinsky",
+     "sex": "牡",
+     "id": "000a000dfe"
+    },
+    {
+     "name": "Wedding Picture",
+     "sex": "牝",
+     "id": "000a00ab57"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849"
+    },
+    {
+     "name": "Sister Dot",
+     "sex": "牝",
+     "id": "000a00a0c0"
+    },
+    {
+     "name": "Phone Trick",
+     "sex": "牡",
+     "id": "000a0019a3"
+    },
+    {
+     "name": "Hear a Rhapsody",
+     "sex": "牝",
+     "id": "000a009998"
+    }
+   ]
+  ]
+ },
+ "fno": "F4-f",
+ "cross": "Halo(USA) ：S4×M5 Unbridled(USA) ：S4×M4"
+}

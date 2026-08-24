@@ -136,6 +136,7 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
       <span class="nav-count"><b id="count">278</b> 头</span>
       <div class="nav-r">
         <select id="ver" class="ver" title="切换历史版本"></select>
+        <a class="admin-link" href="dashboard.html">大盘</a>
         <a class="admin-link" href="admin.html">管理</a>
       </div>
     </nav>
@@ -171,13 +172,14 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
   </section>
 </div>
 
+<script src="data-util.js"></script>
 <script src="race-ui.js"></script>
 <script>
 let HORSES=[],q="",y="all",sx="all",st="all",sel=null,verSel=null;
 const list=document.getElementById("list"),count=document.getElementById("count"),verEl=document.getElementById("ver");
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function mini(h){
-  const s=h.stats||{};const n=(h.races||[]).length;
+  const s=h.stats||{};const n=h.race_count||(h.races||[]).length;
   if(!n)return`<span class="mini-t">未出赛</span>`;
   const m=[`${n}战${s.勝||0}胜`];
   if(s.賞金合計)m.push((s.賞金合計/10000).toFixed(0)+"万");
@@ -196,7 +198,7 @@ function parseKin(h){
 function filtered(){
   return HORSES.filter(h=>{
     const hay=[h.馬名,h.译名,h.母名,h.母父名,h.生産牧場,h.生产牧场,h.調教師,h.管理調教師,h.馬主,h.生年月日].join(" ");
-    const raced=(h.races||[]).length>0;
+    const raced=(h.race_count||(h.races||[]).length)>0;
     const graded=(h.stats&&h.stats.重賞出走)>0;
     return (!q||hay.includes(q))
       &&(y==="all"||(h.生年||h._source)===y)
@@ -244,8 +246,10 @@ function renderPedigree(h){
     <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
     ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
 }
-function renderDetail(h){
+async function renderDetail(h){
   sel=h.馬名;renderList();
+  await YJ.ensureRaces(h);          // M5.4：详情页按需加载 races（v2 拆文件）
+  await YJ.ensurePedigree(h);       // M5.4：详情页按需加载血统树（v2 拆文件）
   document.getElementById("detail").scrollTop=0;
   const items=parseKin(h).map(it=>{
     const isDate=DATE_RE.test(it.label);
@@ -316,8 +320,7 @@ list.addEventListener("click",e=>{
   const it=e.target.closest(".item");if(!it)return;
   const h=HORSES.find(x=>x.馬名===it.dataset.k);
   if(h){renderDetail(h);history.replaceState(null,"","#"+encodeURIComponent(h.馬名));}
-});
-document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim();renderList();});
+});document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim();renderList();});
 document.querySelectorAll(".pane-filters").forEach(row=>row.addEventListener("click",e=>{
   const p=e.target.closest(".pill");if(!p)return;
   row.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
@@ -333,7 +336,8 @@ async function loadData(url){
   return await r.json();
 }
 function applyData(hs,verLabel){
-  HORSES=hs;
+  // M5.4：crops v2 = {_meta,index,horses}；历史快照 v1 = 裸数组
+  HORSES=(hs&&hs.horses)?hs.horses:hs;
   const keep=HORSES.find(h=>h.馬名===sel);
   sel=keep?keep.馬名:(HORSES[0]?.馬名||null);
   renderList();

@@ -43,7 +43,7 @@ jobs:
       - name: Install deps
         run: pip install requests beautifulsoup4 lxml
 
-      # ── 比赛数据（契约B）：数据源适配器 → ledger.csv（每日/每次必跑）──
+      # ── 比赛数据（契约B）：数据源适配器 → google_ledger.csv（每日/每次必跑）──
       - name: Pull race ledger
         run: python scripts/pull_races.py
 

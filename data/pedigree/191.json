@@ -1,0 +1,402 @@
+{
+ "id": 191,
+ "馬名": "ビッグレグナート",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ソングオブザハート",
+     "sex": "牝",
+     "id": "2017106335",
+     "year": "2017",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "マジェスティックウォリアー",
+     "sex": "牡",
+     "id": "000a011e9c",
+     "year": "2005",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ジュディソング",
+     "sex": "牝",
+     "id": "2009102639",
+     "year": "2009",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "A.P. Indy",
+     "sex": "牡",
+     "id": "000a001d37",
+     "year": "1989",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Dream Supreme",
+     "sex": "牝",
+     "id": "000a011eae",
+     "year": "1997",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ダイワメジャー",
+     "sex": "牡",
+     "id": "2001103114",
+     "year": "2001",
+     "color": "栗毛"
+    },
+    {
+     "name": "ジェネラスオプション",
+     "sex": "牝",
+     "id": "000a0111f8",
+     "year": "2002",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc",
+     "year": "1974",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Weekend Surprise",
+     "sex": "牝",
+     "id": "000a009821",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Seeking the Gold",
+     "sex": "牡",
+     "id": "000a001bea",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Spinning Round",
+     "sex": "牝",
+     "id": "000a011ead",
+     "year": "1989",
+     "color": "鹿毛"
+    },
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "スカーレットブーケ",
+     "sex": "牝",
+     "id": "1988107320",
+     "year": "1988",
+     "color": "栗毛"
+    },
+    {
+     "name": "Cadeaux Genereux",
+     "sex": "牡",
+     "id": "000a001e13",
+     "year": "1985",
+     "color": "栗毛"
+    },
+    {
+     "name": "Easy Option",
+     "sex": "牝",
+     "id": "000a010d00",
+     "year": "1992",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Bold Reasoning",
+     "sex": "牡",
+     "id": "000a001598"
+    },
+    {
+     "name": "My Charmer",
+     "sex": "牝",
+     "id": "000a008080"
+    },
+    {
+     "name": "Secretariat",
+     "sex": "牡",
+     "id": "000a000ded"
+    },
+    {
+     "name": "Lassie Dear",
+     "sex": "牝",
+     "id": "000a009820"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Con Game",
+     "sex": "牝",
+     "id": "000a0087a5"
+    },
+    {
+     "name": "Dixieland Band",
+     "sex": "牡",
+     "id": "000a0017b2"
+    },
+    {
+     "name": "Take Heart",
+     "sex": "牝",
+     "id": "000a0114e1"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e"
+    },
+    {
+     "name": "ノーザンテースト",
+     "sex": "牡",
+     "id": "000a000258"
+    },
+    {
+     "name": "スカーレットインク",
+     "sex": "牝",
+     "id": "000a000768"
+    },
+    {
+     "name": "Young Generation",
+     "sex": "牡",
+     "id": "000a0018ea"
+    },
+    {
+     "name": "Smarten Up",
+     "sex": "牝",
+     "id": "000a009bee"
+    },
+    {
+     "name": "Prince Sabo",
+     "sex": "牡",
+     "id": "000a010cff"
+    },
+    {
+     "name": "Brazen Faced",
+     "sex": "牝",
+     "id": "000a010cfc"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-u",
+ "cross": "サンデーサイレンス(USA) ：S3×M4"
+}

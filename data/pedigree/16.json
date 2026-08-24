@@ -1,0 +1,402 @@
+{
+ "id": 16,
+ "馬名": "ロックスミス",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "アビーム",
+     "sex": "牝",
+     "id": "2015100846",
+     "year": "2015",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ノヴェリスト",
+     "sex": "牡",
+     "id": "000a012230",
+     "year": "2009",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ジターナ",
+     "sex": "牝",
+     "id": "2006103086",
+     "year": "2006",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Monsun",
+     "sex": "牡",
+     "id": "000a010db6",
+     "year": "1990",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Night Lagoon",
+     "sex": "牝",
+     "id": "000a01222f",
+     "year": "2001",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ダンスインザダーク",
+     "sex": "牡",
+     "id": "1993109188",
+     "year": "1993",
+     "color": "鹿毛"
+    },
+    {
+     "name": "マルバイユ",
+     "sex": "牝",
+     "id": "000a010648",
+     "year": "2000",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Konigsstuhl",
+     "sex": "牡",
+     "id": "000a001ecc",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Mosella",
+     "sex": "牝",
+     "id": "000a010db5",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Lagunas",
+     "sex": "牡",
+     "id": "000a0022d5",
+     "year": "1981",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Nenuphar",
+     "sex": "牝",
+     "id": "000a012229",
+     "year": "1994",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ダンシングキイ",
+     "sex": "牝",
+     "id": "000a0062c2",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Marju",
+     "sex": "牡",
+     "id": "000a001fb6",
+     "year": "1988",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Hambye",
+     "sex": "牝",
+     "id": "000a010585",
+     "year": "1994",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Dschingis Khan",
+     "sex": "牡",
+     "id": "000a00166e"
+    },
+    {
+     "name": "Konigskronung",
+     "sex": "牝",
+     "id": "000a009ed6"
+    },
+    {
+     "name": "Surumu",
+     "sex": "牡",
+     "id": "000a001d10"
+    },
+    {
+     "name": "Monasia",
+     "sex": "牝",
+     "id": "000a010db4"
+    },
+    {
+     "name": "イルドブルボン",
+     "sex": "牡",
+     "id": "000a000191"
+    },
+    {
+     "name": "Liranga",
+     "sex": "牝",
+     "id": "000a00b4e2"
+    },
+    {
+     "name": "Night Shift",
+     "sex": "牡",
+     "id": "000a001c5c"
+    },
+    {
+     "name": "Narola",
+     "sex": "牝",
+     "id": "000a01222e"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e"
+    },
+    {
+     "name": "Nijinsky",
+     "sex": "牡",
+     "id": "000a000dfe"
+    },
+    {
+     "name": "Key Partner",
+     "sex": "牝",
+     "id": "000a008e25"
+    },
+    {
+     "name": "ラストタイクーン",
+     "sex": "牡",
+     "id": "000a0001d6"
+    },
+    {
+     "name": "Flame of Tara",
+     "sex": "牝",
+     "id": "000a00902b"
+    },
+    {
+     "name": "Distant Relative",
+     "sex": "牡",
+     "id": "000a001c67"
+    },
+    {
+     "name": "Paglietta Gener",
+     "sex": "牝",
+     "id": "000a010584"
+    }
+   ]
+  ]
+ },
+ "fno": "F9-f",
+ "cross": "サンデーサイレンス(USA) ：S3×M4"
+}

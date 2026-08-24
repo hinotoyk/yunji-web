@@ -1,0 +1,402 @@
+{
+ "id": 43,
+ "馬名": "エーデルゼーレ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "カラライナ",
+     "sex": "牝",
+     "id": "000a013878",
+     "year": "2012",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Curlin",
+     "sex": "牡",
+     "id": "000a011734",
+     "year": "2004",
+     "color": "栗毛"
+    },
+    {
+     "name": "Whatdreamsrmadeof",
+     "sex": "牝",
+     "id": "000a01374e",
+     "year": "2004",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Smart Strike",
+     "sex": "牡",
+     "id": "000a00211c",
+     "year": "1992",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sherriff's Deputy",
+     "sex": "牝",
+     "id": "000a011740",
+     "year": "1994",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Graeme Hall",
+     "sex": "牡",
+     "id": "000a01372a",
+     "year": "1997",
+     "color": "栗毛"
+    },
+    {
+     "name": "Eastern Ruckus",
+     "sex": "牝",
+     "id": "000a01374d",
+     "year": "1996",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Classy 'n Smart",
+     "sex": "牝",
+     "id": "000a00ac59",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849",
+     "year": "1979",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Barbarika",
+     "sex": "牝",
+     "id": "000a00b2fe",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "デヒア",
+     "sex": "牡",
+     "id": "000a0000df",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Win Crafty Lady",
+     "sex": "牝",
+     "id": "000a011377",
+     "year": "1988",
+     "color": "栗毛"
+    },
+    {
+     "name": "Eastern Echo",
+     "sex": "牡",
+     "id": "000a001c5d",
+     "year": "1988",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Andrea Ruckus",
+     "sex": "牝",
+     "id": "000a013690",
+     "year": "1986",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c"
+    },
+    {
+     "name": "Smarten",
+     "sex": "牡",
+     "id": "000a00160c"
+    },
+    {
+     "name": "No Class",
+     "sex": "牝",
+     "id": "000a009dd1"
+    },
+    {
+     "name": "Vice Regent",
+     "sex": "牡",
+     "id": "000a0007e5"
+    },
+    {
+     "name": "Mint Copy",
+     "sex": "牝",
+     "id": "000a00884d"
+    },
+    {
+     "name": "Bates Motel",
+     "sex": "牡",
+     "id": "000a00198e"
+    },
+    {
+     "name": "War Exchange",
+     "sex": "牝",
+     "id": "000a00a27f"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849"
+    },
+    {
+     "name": "Sister Dot",
+     "sex": "牝",
+     "id": "000a00a0c0"
+    },
+    {
+     "name": "Crafty Prospector",
+     "sex": "牡",
+     "id": "000a00193b"
+    },
+    {
+     "name": "Honeytab",
+     "sex": "牝",
+     "id": "000a011376"
+    },
+    {
+     "name": "Damascus",
+     "sex": "牡",
+     "id": "000a0010a8"
+    },
+    {
+     "name": "Wild Applause",
+     "sex": "牝",
+     "id": "000a0094ad"
+    },
+    {
+     "name": "Bold Ruckus",
+     "sex": "牡",
+     "id": "000a001ceb"
+    },
+    {
+     "name": "Do's Melody",
+     "sex": "牝",
+     "id": "000a013691"
+    }
+   ]
+  ]
+ },
+ "fno": "F3-g",
+ "cross": "Deputy Minister(CAN) ：M4×M5"
+}

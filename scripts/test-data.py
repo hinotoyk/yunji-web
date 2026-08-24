@@ -46,6 +46,31 @@ def sample_of(records, cls, n=SAMPLE):
     rng.shuffle(pool)
     return pool[:n]
 
+
+def load_crops():
+    """读 data/crops.json（v2: {_meta, index, horses}），并为每匹从拆分文件回填 races/pedigree。
+    兼容 v1 裸数组（无 _meta）。返回 (horses, meta)。"""
+    d = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    if isinstance(d, dict) and "_meta" in d:
+        horses = d["horses"]
+        meta = d["_meta"]
+        for h in horses:
+            rf = h.get("races_file") or ""
+            if rf:
+                p = ROOT / rf
+                if p.exists():
+                    h["races"] = (json.loads(p.read_text(encoding="utf-8")) or {}).get("races") or []
+            pf = h.get("pedigree_file") or ""
+            if pf:
+                p = ROOT / pf
+                if p.exists():
+                    pd = json.loads(p.read_text(encoding="utf-8")) or {}
+                    h["pedigree"] = pd.get("pedigree") or {}
+                    h["fno"] = pd.get("fno") or h.get("fno") or ""
+                    h["cross"] = pd.get("cross") or h.get("cross") or ""
+        return horses, meta
+    return d, {"schema": "crops/v1"}
+
 def check_ledger_horse(h, out):
     """台账建档马：只要求有履历（血统/基本信息本来就没有）"""
     ok = True
@@ -73,10 +98,10 @@ def check_horse(h, out):
 
 def local_check():
     out = []
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    crops, meta = load_crops()
     nk = json.loads((RAW / "netkeiba.json").read_text(encoding="utf-8"))
     jb = json.loads((RAW / "jbis.json").read_text(encoding="utf-8"))
-    out.append(f"✔ 数据量: netkeiba {len(nk)} / jbis 兜底 {len(jb)} / crops {len(crops)}")
+    out.append(f"✔ 数据量: netkeiba {len(nk)} / jbis 兜底 {len(jb)} / crops {len(crops)} (schema={meta.get('schema','?')})")
     classes = {"named": [], "unnamed": [], "jbis_only": [], "ledger_created": []}
     for h in crops:
         classes[classify(h)].append(h)
@@ -143,8 +168,8 @@ def contract_check():
     sys.path.insert(0, str(ROOT / "scripts"))
     import racelib
 
-    # ── 契约B：ledger.csv 全量校验 ──
-    ledger_path = ROOT / "data" / "races" / "ledger.csv"
+    # ── 契约B：google_ledger.csv 全量校验 ──
+    ledger_path = ROOT / "data" / "races" / "google_ledger.csv"
     if ledger_path.exists():
         issues = []
         with open(ledger_path, encoding="utf-8-sig") as f:
@@ -168,12 +193,12 @@ def contract_check():
             if r["賞金"] is None or r["賞金"] < 0:
                 out.append(f"  ✗ 契约B 賞金 异常: {r['出走馬名']} {r['日付']}")
         if not issues and recs:
-            out.append(f"✔ 契约B ledger.csv 通过（{len(recs)} 条 / {len(set(r['出走馬名'] for r in recs))} 匹，0 异常）")
+            out.append(f"✔ 契约B google_ledger.csv 通过（{len(recs)} 条 / {len(set(r['出走馬名'] for r in recs))} 匹，0 异常）")
     else:
-        out.append("⚠ 无 data/races/ledger.csv，跳过契约B（先跑 python scripts/pull_races.py）")
+        out.append("⚠ 无 data/races/google_ledger.csv，跳过契约B（先跑 python scripts/pull_races.py）")
 
     # ── 契约C：crops.json races/stats 一致性（逐匹） ──
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    crops, _ = load_crops()
     bad = 0
     for h in crops:
         races = h.get("races") or []
@@ -204,7 +229,7 @@ def contract_check():
 def identity_check():
     """M1 身份一致性断言：id 全库唯一、registry↔crops 互认、占位名规则、改名当前名=names[-1]。"""
     out = []
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    crops, _ = load_crops()
     reg_path = ROOT / "data" / "registry.json"
     if not reg_path.exists():
         out.append("  ✗ 身份层: 无 data/registry.json（先跑 build_registry.py）")
@@ -257,7 +282,7 @@ def races_check():
     - 海外场次：netkeiba 有该场 → 來源=netkeiba 优先；netkeiba 无 → 來源=ledger
     """
     out = []
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    crops, _ = load_crops()
     jockeys = {}
     jk_path = ROOT / "data" / "jockeys.json"
     if jk_path.exists():
@@ -329,7 +354,7 @@ def races_check():
 def shutoku_check():
     """M4 収得快照断言：crops 每匹 stats.収得賞金 存在；库内 5 匹真值复算 ≤10%。"""
     out = []
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    crops, _ = load_crops()
     fixtures = {
         "コンジェスタス": (36000000, 0), "ゴーイントゥスカイ": (31000000, 0),
         "チェリヴェント": (27500000, 0), "ジーネキング": (10000000, 0),
@@ -364,6 +389,35 @@ def shutoku_check():
     return out
 
 
+def v2_check():
+    """M5 crops v2 断言：_meta.schema / index 与 horses 一致 / facet 关键字段存在。"""
+    out = []
+    d = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    if not (isinstance(d, dict) and d.get("_meta", {}).get("schema") == "crops/v2"):
+        out.append("  ✗ v2 结构: crops.json 非 {_meta, index, horses}（schema 非 crops/v2）")
+        return out
+    horses, index, meta = d["horses"], d.get("index", {}), d["_meta"]
+    if meta.get("count") != len(horses):
+        out.append(f"  ✗ v2 结构: _meta.count {meta.get('count')} ≠ horses {len(horses)}")
+    # index 倒排表：每个 id 都来自 horses；值不重复
+    id_set = {h.get("id") for h in horses}
+    bad = 0
+    for field, values in index.items():
+        for val, ids in values.items():
+            for i in ids:
+                if i not in id_set:
+                    bad += 1
+    if bad:
+        out.append(f"  ✗ v2 index: {bad} 个 id 不在 horses")
+    # 每匹 facet 关键字段
+    missing_facet = sum(1 for h in horses if not (h.get("facet") or {}).get("search_text"))
+    if missing_facet:
+        out.append(f"  ✗ v2 facet: {missing_facet} 匹缺 search_text")
+    if not out:
+        out.append(f"✔ crops v2: schema={meta['schema']} · index {len(index)} 字段 · 全部 facet 就绪")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="小样本数据测试（每类 2-3 匹，非全量）")
     ap.add_argument("--smoke", action="store_true", help="网络冒烟测试（实抓验证，勿全量）")
@@ -373,6 +427,7 @@ def main():
     out.extend(identity_check())
     out.extend(races_check())
     out.extend(shutoku_check())
+    out.extend(v2_check())
     if args.smoke:
         out.extend(smoke())
     print("\n".join(out))

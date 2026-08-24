@@ -1,0 +1,402 @@
+{
+ "id": 131,
+ "馬名": "ブラッククラウズ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "アニエラ",
+     "sex": "牝",
+     "id": "2016110042",
+     "year": "2016",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Dubawi",
+     "sex": "牡",
+     "id": "000a0115e2",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Royal Highness",
+     "sex": "牝",
+     "id": "000a0126f9",
+     "year": "2002",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Dubai Millennium",
+     "sex": "牡",
+     "id": "000a0022d1",
+     "year": "1996",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Zomaradah",
+     "sex": "牝",
+     "id": "000a0115f9",
+     "year": "1995",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Monsun",
+     "sex": "牡",
+     "id": "000a010db6",
+     "year": "1990",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Reem Dubai",
+     "sex": "牝",
+     "id": "000a0126f8",
+     "year": "1992",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Seeking the Gold",
+     "sex": "牡",
+     "id": "000a001bea",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Colorado Dancer",
+     "sex": "牝",
+     "id": "000a00b4db",
+     "year": "1986",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Deploy",
+     "sex": "牡",
+     "id": "000a0000e3",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Jawaher",
+     "sex": "牝",
+     "id": "000a0115f8",
+     "year": "1989",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Konigsstuhl",
+     "sex": "牡",
+     "id": "000a001ecc",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Mosella",
+     "sex": "牝",
+     "id": "000a010db5",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Nashwan",
+     "sex": "牡",
+     "id": "000a001ce7",
+     "year": "1986",
+     "color": "栗毛"
+    },
+    {
+     "name": "Gesedeh",
+     "sex": "牝",
+     "id": "000a010e15",
+     "year": "1983",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Con Game",
+     "sex": "牝",
+     "id": "000a0087a5"
+    },
+    {
+     "name": "Shareef Dancer",
+     "sex": "牡",
+     "id": "000a001a8e"
+    },
+    {
+     "name": "Fall Aspen",
+     "sex": "牝",
+     "id": "000a009ac9"
+    },
+    {
+     "name": "Shirley Heights",
+     "sex": "牡",
+     "id": "000a00135e"
+    },
+    {
+     "name": "Slightly Dangerous",
+     "sex": "牝",
+     "id": "000a009614"
+    },
+    {
+     "name": "ダンシングブレーヴ",
+     "sex": "牡",
+     "id": "000a0000cc"
+    },
+    {
+     "name": "High Tern",
+     "sex": "牝",
+     "id": "000a00aee4"
+    },
+    {
+     "name": "Dschingis Khan",
+     "sex": "牡",
+     "id": "000a00166e"
+    },
+    {
+     "name": "Konigskronung",
+     "sex": "牝",
+     "id": "000a009ed6"
+    },
+    {
+     "name": "Surumu",
+     "sex": "牡",
+     "id": "000a001d10"
+    },
+    {
+     "name": "Monasia",
+     "sex": "牝",
+     "id": "000a010db4"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340"
+    },
+    {
+     "name": "Height of Fashion",
+     "sex": "牝",
+     "id": "000a008bf5"
+    },
+    {
+     "name": "Ela-Mana-Mou",
+     "sex": "牡",
+     "id": "000a001798"
+    },
+    {
+     "name": "Le Melody",
+     "sex": "牝",
+     "id": "000a008934"
+    }
+   ]
+  ]
+ },
+ "fno": "F23",
+ "cross": ""
+}

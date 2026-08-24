@@ -1,0 +1,402 @@
+{
+ "id": 72,
+ "馬名": "オーロラボレアリス",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "エスキモーキセス",
+     "sex": "牝",
+     "id": "000a015600",
+     "year": "2015",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "To Honor and Serve",
+     "sex": "牡",
+     "id": "000a0123ee",
+     "year": "2008",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Silver Colors",
+     "sex": "牝",
+     "id": "000a014f5a",
+     "year": "2007",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Bernardini",
+     "sex": "牡",
+     "id": "000a0111fe",
+     "year": "2003",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Pilfer",
+     "sex": "牝",
+     "id": "000a012418",
+     "year": "2001",
+     "color": "栗毛"
+    },
+    {
+     "name": "Mr. Greeley",
+     "sex": "牡",
+     "id": "000a00213e",
+     "year": "1992",
+     "color": "栗毛"
+    },
+    {
+     "name": "Winning Colors",
+     "sex": "牝",
+     "id": "000a009e9a",
+     "year": "1985",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "A.P. Indy",
+     "sex": "牡",
+     "id": "000a001d37",
+     "year": "1989",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Cara Rafaela",
+     "sex": "牝",
+     "id": "000a011203",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849",
+     "year": "1979",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Misty Hour",
+     "sex": "牝",
+     "id": "000a00b46a",
+     "year": "1995",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Gone West",
+     "sex": "牡",
+     "id": "000a001be1",
+     "year": "1984",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Long Legend",
+     "sex": "牝",
+     "id": "000a00acfc",
+     "year": "1978",
+     "color": "栗毛"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed",
+     "year": "1967",
+     "color": "芦毛"
+    },
+    {
+     "name": "All Rainbows",
+     "sex": "牝",
+     "id": "000a008784",
+     "year": "1973",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc"
+    },
+    {
+     "name": "Weekend Surprise",
+     "sex": "牝",
+     "id": "000a009821"
+    },
+    {
+     "name": "Quiet American",
+     "sex": "牡",
+     "id": "000a001ea2"
+    },
+    {
+     "name": "Oil Fable",
+     "sex": "牝",
+     "id": "000a011202"
+    },
+    {
+     "name": "Vice Regent",
+     "sex": "牡",
+     "id": "000a0007e5"
+    },
+    {
+     "name": "Mint Copy",
+     "sex": "牝",
+     "id": "000a00884d"
+    },
+    {
+     "name": "Miswaki",
+     "sex": "牡",
+     "id": "000a0017b0"
+    },
+    {
+     "name": "Our Tina Marie",
+     "sex": "牝",
+     "id": "000a00b46b"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Secrettame",
+     "sex": "牝",
+     "id": "000a00923d"
+    },
+    {
+     "name": "Reviewer",
+     "sex": "牡",
+     "id": "000a000e47"
+    },
+    {
+     "name": "Lianga",
+     "sex": "牝",
+     "id": "000a008633"
+    },
+    {
+     "name": "フォルティノ",
+     "sex": "牡",
+     "id": "000a000133"
+    },
+    {
+     "name": "Chambord",
+     "sex": "牝",
+     "id": "000a0069ad"
+    },
+    {
+     "name": "Bold Hour",
+     "sex": "牡",
+     "id": "000a00133f"
+    },
+    {
+     "name": "Miss Carmie",
+     "sex": "牝",
+     "id": "000a008714"
+    }
+   ]
+  ]
+ },
+ "fno": "F23-b",
+ "cross": "Caro(IRE) ：M4×S5"
+}

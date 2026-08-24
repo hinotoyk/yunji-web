@@ -1,0 +1,402 @@
+{
+ "id": 236,
+ "馬名": "ノットアフルーク",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "スピニングワイルドキャット",
+     "sex": "牝",
+     "id": "000a01250f",
+     "year": "2009",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "ハードスパン",
+     "sex": "牡",
+     "id": "000a0116a1",
+     "year": "2004",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Hollywood Wildcat",
+     "sex": "牝",
+     "id": "000a00fd26",
+     "year": "1990",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Turkish Tryst",
+     "sex": "牝",
+     "id": "000a0116ae",
+     "year": "1991",
+     "color": "栗毛"
+    },
+    {
+     "name": "Kris S.",
+     "sex": "牡",
+     "id": "000a0016f2",
+     "year": "1977",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Miss Wildcatter",
+     "sex": "牝",
+     "id": "000a00a00b",
+     "year": "1980",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Pas de Nom",
+     "sex": "牝",
+     "id": "000a000491",
+     "year": "1968",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Turkoman",
+     "sex": "牡",
+     "id": "000a001a96",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Darbyvail",
+     "sex": "牝",
+     "id": "000a00ae9c",
+     "year": "1984",
+     "color": "栗毛"
+    },
+    {
+     "name": "Roberto",
+     "sex": "牡",
+     "id": "000a0012cb",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sharp Queen",
+     "sex": "牝",
+     "id": "000a0083b4",
+     "year": "1965",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Elizabeth K.",
+     "sex": "牝",
+     "id": "000a00a00a",
+     "year": "1970",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Nearctic",
+     "sex": "牡",
+     "id": "000a000f8c"
+    },
+    {
+     "name": "Natalma",
+     "sex": "牝",
+     "id": "000a00702e"
+    },
+    {
+     "name": "Admiral's Voyage",
+     "sex": "牡",
+     "id": "000a000e55"
+    },
+    {
+     "name": "Petitioner",
+     "sex": "牝",
+     "id": "000a006f25"
+    },
+    {
+     "name": "Alydar",
+     "sex": "牡",
+     "id": "000a00175b"
+    },
+    {
+     "name": "Taba",
+     "sex": "牝",
+     "id": "000a008dff"
+    },
+    {
+     "name": "Roberto",
+     "sex": "牡",
+     "id": "000a0012cb"
+    },
+    {
+     "name": "Luiana",
+     "sex": "牝",
+     "id": "000a007cc0"
+    },
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Bramalea",
+     "sex": "牝",
+     "id": "000a007c38"
+    },
+    {
+     "name": "Princequillo",
+     "sex": "牡",
+     "id": "000a000fc9"
+    },
+    {
+     "name": "Bridgework",
+     "sex": "牝",
+     "id": "000a0083b3"
+    },
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c"
+    },
+    {
+     "name": "Third Martini",
+     "sex": "牡",
+     "id": "000a001b20"
+    },
+    {
+     "name": "Baked Apple",
+     "sex": "牝",
+     "id": "000a00a009"
+    }
+   ]
+  ]
+ },
+ "fno": "F4-r",
+ "cross": ""
+}

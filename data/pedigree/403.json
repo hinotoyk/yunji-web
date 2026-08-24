@@ -1,0 +1,402 @@
+{
+ "id": 403,
+ "馬名": "ゴールデンドックエーの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ゴールデンドックエー",
+     "sex": "牝",
+     "id": "000a011a45",
+     "year": "2005",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Unusual Heat",
+     "sex": "牡",
+     "id": "000a0118fe",
+     "year": "1990",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Penpont",
+     "sex": "牝",
+     "id": "000a011928",
+     "year": "1994",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Nureyev",
+     "sex": "牡",
+     "id": "000a001676",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Rossard",
+     "sex": "牝",
+     "id": "000a01191f",
+     "year": "1980",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Crested Wave",
+     "sex": "牡",
+     "id": "000a001c4d",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Imposing Star",
+     "sex": "牝",
+     "id": "000a011927",
+     "year": "1981",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Special",
+     "sex": "牝",
+     "id": "000a0081e9",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Glacial",
+     "sex": "牡",
+     "id": "000a011902",
+     "year": "1966",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Peas-Blossom",
+     "sex": "牝",
+     "id": "000a01191e",
+     "year": "1968",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Crozier",
+     "sex": "牡",
+     "id": "000a000ecb",
+     "year": "1958",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Fading Wave",
+     "sex": "牝",
+     "id": "000a009438",
+     "year": "1964",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Imposing",
+     "sex": "牡",
+     "id": "000a001bf5",
+     "year": "1975",
+     "color": "栗毛"
+    },
+    {
+     "name": "Black Willow",
+     "sex": "牝",
+     "id": "000a011926",
+     "year": "1971",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Nearctic",
+     "sex": "牡",
+     "id": "000a000f8c"
+    },
+    {
+     "name": "Natalma",
+     "sex": "牝",
+     "id": "000a00702e"
+    },
+    {
+     "name": "Forli",
+     "sex": "牡",
+     "id": "000a000f12"
+    },
+    {
+     "name": "Thong",
+     "sex": "牝",
+     "id": "000a007e3f"
+    },
+    {
+     "name": "Pardal",
+     "sex": "牡",
+     "id": "000a000faa"
+    },
+    {
+     "name": "Glacis",
+     "sex": "牝",
+     "id": "000a011922"
+    },
+    {
+     "name": "Midsummer Night",
+     "sex": "牡",
+     "id": "000a000e30"
+    },
+    {
+     "name": "Fan Light",
+     "sex": "牝",
+     "id": "000a01191d"
+    },
+    {
+     "name": "My Babu",
+     "sex": "牡",
+     "id": "000a000f85"
+    },
+    {
+     "name": "Miss Olympia",
+     "sex": "牝",
+     "id": "000a007cd3"
+    },
+    {
+     "name": "Quibu",
+     "sex": "牡",
+     "id": "000a00160b"
+    },
+    {
+     "name": "Fading Sky",
+     "sex": "牝",
+     "id": "000a009437"
+    },
+    {
+     "name": "Todman",
+     "sex": "牡",
+     "id": "000a001075"
+    },
+    {
+     "name": "Hialeah",
+     "sex": "牝",
+     "id": "000a009273"
+    },
+    {
+     "name": "Sobig",
+     "sex": "牡",
+     "id": "000a000dee"
+    },
+    {
+     "name": "Kathleigh",
+     "sex": "牝",
+     "id": "000a011925"
+    }
+   ]
+  ]
+ },
+ "fno": "F11-g",
+ "cross": ""
+}

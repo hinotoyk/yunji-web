@@ -1,0 +1,402 @@
+{
+ "id": 379,
+ "馬名": "ビップベリンダの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ビップベリンダ",
+     "sex": "牝",
+     "id": "2015102039",
+     "year": "2015",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ハーツクライ",
+     "sex": "牡",
+     "id": "2001103038",
+     "year": "2001",
+     "color": "鹿毛"
+    },
+    {
+     "name": "スーパーバレリーナ",
+     "sex": "牝",
+     "id": "1994109504",
+     "year": "1994",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "アイリッシュダンス",
+     "sex": "牝",
+     "id": "1990104626",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Storm Bird",
+     "sex": "牡",
+     "id": "000a0016d4",
+     "year": "1978",
+     "color": "鹿毛"
+    },
+    {
+     "name": "カウントオンアチェンジ",
+     "sex": "牝",
+     "id": "000a0000b6",
+     "year": "1987",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "トニービン",
+     "sex": "牡",
+     "id": "1983109006",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ビューパーダンス",
+     "sex": "牝",
+     "id": "000a0061b3",
+     "year": "1983",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04",
+     "year": "1961",
+     "color": "鹿毛"
+    },
+    {
+     "name": "South Ocean",
+     "sex": "牝",
+     "id": "000a00834c",
+     "year": "1967",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Time for a Change",
+     "sex": "牡",
+     "id": "000a0017b3",
+     "year": "1981",
+     "color": "栗毛"
+    },
+    {
+     "name": "Count On Kathy",
+     "sex": "牝",
+     "id": "000a00a280",
+     "year": "1978",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "カンパラ",
+     "sex": "牡",
+     "id": "000a000827"
+    },
+    {
+     "name": "Severn Bridge",
+     "sex": "牝",
+     "id": "000a00859c"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "My Bupers",
+     "sex": "牝",
+     "id": "000a0082bc"
+    },
+    {
+     "name": "Nearctic",
+     "sex": "牡",
+     "id": "000a000f8c"
+    },
+    {
+     "name": "Natalma",
+     "sex": "牝",
+     "id": "000a00702e"
+    },
+    {
+     "name": "New Providence",
+     "sex": "牡",
+     "id": "000a0016d3"
+    },
+    {
+     "name": "Shining Sun",
+     "sex": "牝",
+     "id": "000a00834b"
+    },
+    {
+     "name": "Damascus",
+     "sex": "牡",
+     "id": "000a0010a8"
+    },
+    {
+     "name": "Resolver",
+     "sex": "牝",
+     "id": "000a00831a"
+    },
+    {
+     "name": "Dancing Count",
+     "sex": "牡",
+     "id": "000a001b22"
+    },
+    {
+     "name": "War Exchange",
+     "sex": "牝",
+     "id": "000a00a27f"
+    }
+   ]
+  ]
+ },
+ "fno": "F19-c",
+ "cross": ""
+}

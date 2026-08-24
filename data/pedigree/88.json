@@ -1,0 +1,402 @@
+{
+ "id": 88,
+ "馬名": "アスピラシオン",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ラマンサニステル",
+     "sex": "牝",
+     "id": "000a01be42",
+     "year": "2014",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Van Nistelrooy",
+     "sex": "牡",
+     "id": "000a010c3f",
+     "year": "2000",
+     "color": "栗毛"
+    },
+    {
+     "name": "Misiadura Fitz",
+     "sex": "牝",
+     "id": "000a01bcd2",
+     "year": "2000",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98",
+     "year": "1983",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Halory",
+     "sex": "牝",
+     "id": "000a010c4a",
+     "year": "1984",
+     "color": "栗毛"
+    },
+    {
+     "name": "Fitzcarraldo",
+     "sex": "牡",
+     "id": "000a010680",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Miss Con Strued",
+     "sex": "牝",
+     "id": "000a01bcd1",
+     "year": "1988",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Bird",
+     "sex": "牡",
+     "id": "000a0016d4",
+     "year": "1978",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Terlingua",
+     "sex": "牝",
+     "id": "000a008e05",
+     "year": "1976",
+     "color": "栗毛"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Cold Reply",
+     "sex": "牝",
+     "id": "000a009190",
+     "year": "1972",
+     "color": "栗毛"
+    },
+    {
+     "name": "Cipayo",
+     "sex": "牡",
+     "id": "000a0017f3",
+     "year": "1974",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Stall Only",
+     "sex": "牝",
+     "id": "000a01067f",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Forli",
+     "sex": "牡",
+     "id": "000a000f12",
+     "year": "1963",
+     "color": "栗毛"
+    },
+    {
+     "name": "Coup de Rouge",
+     "sex": "牝",
+     "id": "000a01bcd0",
+     "year": "1981",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "South Ocean",
+     "sex": "牝",
+     "id": "000a00834c"
+    },
+    {
+     "name": "Secretariat",
+     "sex": "牡",
+     "id": "000a000ded"
+    },
+    {
+     "name": "Crimson Saint",
+     "sex": "牝",
+     "id": "000a008e04"
+    },
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Respond",
+     "sex": "牝",
+     "id": "000a00918f"
+    },
+    {
+     "name": "Lacydon",
+     "sex": "牡",
+     "id": "000a0017f2"
+    },
+    {
+     "name": "Tsarina",
+     "sex": "牝",
+     "id": "000a0086e8"
+    },
+    {
+     "name": "Stallwood",
+     "sex": "牡",
+     "id": "000a01067e"
+    },
+    {
+     "name": "Broadcast",
+     "sex": "牝",
+     "id": "000a010682"
+    },
+    {
+     "name": "Aristophanes",
+     "sex": "牡",
+     "id": "000a001269"
+    },
+    {
+     "name": "Trevisa",
+     "sex": "牝",
+     "id": "000a007b49"
+    },
+    {
+     "name": "Riverman",
+     "sex": "牡",
+     "id": "000a0014ce"
+    },
+    {
+     "name": "Carmonata",
+     "sex": "牝",
+     "id": "000a01bccf"
+    }
+   ]
+  ]
+ },
+ "fno": "F3-b",
+ "cross": "Storm Cat(USA) ：M3×S5 Halo(USA) ：S4×M4 Northern Dancer(CAN) ：M5×M5"
+}

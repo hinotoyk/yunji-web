@@ -1,0 +1,402 @@
+{
+ "id": 214,
+ "馬名": "ドラゴンバルド",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "メチャコルタ",
+     "sex": "牝",
+     "id": "000a013924",
+     "year": "2012",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "El Corredor",
+     "sex": "牡",
+     "id": "000a010238",
+     "year": "1997",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Aqui Lulu",
+     "sex": "牝",
+     "id": "000a0138b5",
+     "year": "2005",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Greeley",
+     "sex": "牡",
+     "id": "000a00213e",
+     "year": "1992",
+     "color": "栗毛"
+    },
+    {
+     "name": "Silvery Swan",
+     "sex": "牝",
+     "id": "000a01023b",
+     "year": "1994",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Lucky Roberto",
+     "sex": "牡",
+     "id": "000a013884",
+     "year": "1996",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Great Stampa",
+     "sex": "牝",
+     "id": "000a0138b4",
+     "year": "1995",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Gone West",
+     "sex": "牡",
+     "id": "000a001be1",
+     "year": "1984",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Long Legend",
+     "sex": "牝",
+     "id": "000a00acfc",
+     "year": "1978",
+     "color": "栗毛"
+    },
+    {
+     "name": "Silver Deputy",
+     "sex": "牡",
+     "id": "000a001fa3",
+     "year": "1985",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sociable Duck",
+     "sex": "牝",
+     "id": "000a01023a",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Belong to Me",
+     "sex": "牡",
+     "id": "000a001ff2",
+     "year": "1989",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Roberto's Gal",
+     "sex": "牝",
+     "id": "000a0138b0",
+     "year": "1989",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Senor Pete",
+     "sex": "牡",
+     "id": "000a011799",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Bella Stampa",
+     "sex": "牝",
+     "id": "000a0138b3",
+     "year": "1990",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Secrettame",
+     "sex": "牝",
+     "id": "000a00923d"
+    },
+    {
+     "name": "Reviewer",
+     "sex": "牡",
+     "id": "000a000e47"
+    },
+    {
+     "name": "Lianga",
+     "sex": "牝",
+     "id": "000a008633"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849"
+    },
+    {
+     "name": "Silver Valley",
+     "sex": "牝",
+     "id": "000a00a3a0"
+    },
+    {
+     "name": "Quack",
+     "sex": "牡",
+     "id": "000a0010ff"
+    },
+    {
+     "name": "Unsociable",
+     "sex": "牝",
+     "id": "000a00924d"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3"
+    },
+    {
+     "name": "Belonging",
+     "sex": "牝",
+     "id": "000a009792"
+    },
+    {
+     "name": "Roberto",
+     "sex": "牡",
+     "id": "000a0012cb"
+    },
+    {
+     "name": "Grafitti Gal",
+     "sex": "牝",
+     "id": "000a00ad2d"
+    },
+    {
+     "name": "Green Dancer",
+     "sex": "牡",
+     "id": "000a001353"
+    },
+    {
+     "name": "She Won't Tell",
+     "sex": "牝",
+     "id": "000a00a046"
+    },
+    {
+     "name": "Gold Alert",
+     "sex": "牡",
+     "id": "000a001be0"
+    },
+    {
+     "name": "Go Forward",
+     "sex": "牝",
+     "id": "000a0138b2"
+    }
+   ]
+  ]
+ },
+ "fno": "F2-j",
+ "cross": ""
+}

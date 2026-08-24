@@ -1,0 +1,402 @@
+{
+ "id": 300,
+ "馬名": "ライトオブマイアイズの2025",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ライトオブマイアイズ",
+     "sex": "牝",
+     "id": "000a01fcd3",
+     "year": "2018",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Frankel",
+     "sex": "牡",
+     "id": "000a01239b",
+     "year": "2008",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Divine Proportions",
+     "sex": "牝",
+     "id": "000a013a7b",
+     "year": "2002",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Galileo",
+     "sex": "牡",
+     "id": "000a00232b",
+     "year": "1998",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Kind",
+     "sex": "牝",
+     "id": "000a0123ae",
+     "year": "2001",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Kingmambo",
+     "sex": "牡",
+     "id": "000a001d7e",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Myth to Reality",
+     "sex": "牝",
+     "id": "000a0114b6",
+     "year": "1986",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Sadler's Wells",
+     "sex": "牡",
+     "id": "000a00185d",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Urban Sea",
+     "sex": "牝",
+     "id": "1989109105",
+     "year": "1989",
+     "color": "栗毛"
+    },
+    {
+     "name": "デインヒル",
+     "sex": "牡",
+     "id": "000a0000d1",
+     "year": "1986",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Rainbow Lake",
+     "sex": "牝",
+     "id": "000a010248",
+     "year": "1990",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Miesque",
+     "sex": "牝",
+     "id": "000a009961",
+     "year": "1984",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sadler's Wells",
+     "sex": "牡",
+     "id": "000a00185d",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Millieme",
+     "sex": "牝",
+     "id": "000a009a97",
+     "year": "1977",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Fairy Bridge",
+     "sex": "牝",
+     "id": "000a008892"
+    },
+    {
+     "name": "Miswaki",
+     "sex": "牡",
+     "id": "000a0017b0"
+    },
+    {
+     "name": "Allegretta",
+     "sex": "牝",
+     "id": "000a009786"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3"
+    },
+    {
+     "name": "Razyana",
+     "sex": "牝",
+     "id": "000a009233"
+    },
+    {
+     "name": "Rainbow Quest",
+     "sex": "牡",
+     "id": "000a001b4d"
+    },
+    {
+     "name": "Rockfest",
+     "sex": "牝",
+     "id": "000a010247"
+    },
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c"
+    },
+    {
+     "name": "Nureyev",
+     "sex": "牡",
+     "id": "000a001676"
+    },
+    {
+     "name": "Pasadoble",
+     "sex": "牝",
+     "id": "000a0084c9"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Fairy Bridge",
+     "sex": "牝",
+     "id": "000a008892"
+    },
+    {
+     "name": "Mill Reef",
+     "sex": "牡",
+     "id": "000a000e32"
+    },
+    {
+     "name": "Hardiemma",
+     "sex": "牝",
+     "id": "000a0080dd"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-l",
+ "cross": ""
+}

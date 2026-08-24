@@ -88,18 +88,19 @@
   </div>
   <div class="main" id="main"><div class="empty">← 选择一匹马查看履历与汇总</div></div>
 </div>
+<script src="data-util.js"></script>
 <script>
 const dataEl = document.getElementById('list'), mainEl = document.getElementById('main');
 let HORSES = [], filter = 'all', query = '', current = null;
 
-fetch('../data/crops.json').then(r => r.json()).then(d => {
-  HORSES = d;
+YJ.loadCrops('../data/crops.json').then(({horses}) => {
+  HORSES = horses;
   renderList();
 }).catch(e => mainEl.innerHTML = '<div class="empty">加载失败：' + e.message + '</div>');
 
 function matches(h) {
-  if (filter === 'raced' && !(h.races && h.races.length)) return false;
-  if (filter === 'unraced' && h.races && h.races.length) return false;
+  if (filter === 'raced' && !(h.race_count || (h.races && h.races.length))) return false;
+  if (filter === 'unraced' && (h.race_count || (h.races && h.races.length))) return false;
   if (filter === 'graded' && !(h.stats && h.stats.重賞出走)) return false;
   if (!query) return true;
   const q = query.toLowerCase();
@@ -110,7 +111,7 @@ function renderList() {
   const list = HORSES.filter(matches);
   dataEl.innerHTML = list.map(h => {
     const s = h.stats || {};
-    const n = (h.races || []).length;
+    const n = h.race_count || (h.races || []).length;
     const chip = n ? `<span class="chip">${n}战 ${s.勝}胜</span><span class="chip">${(s.賞金合計/10000).toFixed(0)}万</span>`
                    : `<span class="chip">未出赛</span>`;
     return `<div class="item ${current === h ? 'on' : ''}" data-name="${h.馬名}">
@@ -127,7 +128,8 @@ function renderList() {
 
 function kpi(v, k, cls) { return `<div class="kpi ${cls || ''}"><div class="v">${v}</div><div class="k">${k}</div></div>`; }
 
-function renderDetail(h) {
+async function renderDetail(h) {
+  await YJ.ensureRaces(h);          // M5.4：预览逐场履历按需加载（v2 拆文件）
   const s = h.stats || {}, races = h.races || [];
   const graded = (s.重賞 || []).map(g => `${g.日付} <b>${g.競走名}</b> ${g.格} <span class="mono">${g.結果}着</span>`).join('<br>') || '—';
   const venue = Object.entries(s.場地別 || {}).map(([k, v]) => `${k} ${v.出赛}战${v.勝}胜 ${(v.賞金/10000).toFixed(0)}万`).join(' · ') || '—';

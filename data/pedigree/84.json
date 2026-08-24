@@ -1,0 +1,402 @@
+{
+ "id": 84,
+ "馬名": "フロンテアムーン",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "フロンテアクイーン",
+     "sex": "牝",
+     "id": "2013103682",
+     "year": "2013",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "メイショウサムソン",
+     "sex": "牡",
+     "id": "2003102205",
+     "year": "2003",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ブルーボックスボウ",
+     "sex": "牝",
+     "id": "1998103264",
+     "year": "1998",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "オペラハウス",
+     "sex": "牡",
+     "id": "000a000d77",
+     "year": "1988",
+     "color": "鹿毛"
+    },
+    {
+     "name": "マイヴィヴィアン",
+     "sex": "牝",
+     "id": "1997102385",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ブルーバタフライ",
+     "sex": "牝",
+     "id": "1988104859",
+     "year": "1988",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Sadler's Wells",
+     "sex": "牡",
+     "id": "000a00185d",
+     "year": "1981",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Colorspin",
+     "sex": "牝",
+     "id": "000a009851",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ダンシングブレーヴ",
+     "sex": "牡",
+     "id": "000a0000cc",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ウイルプリンセス",
+     "sex": "牝",
+     "id": "1983102786",
+     "year": "1983",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ブレイヴェストローマン",
+     "sex": "牡",
+     "id": "000a000081",
+     "year": "1972",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ファストブルー",
+     "sex": "牝",
+     "id": "000a006094",
+     "year": "1977",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Fairy Bridge",
+     "sex": "牝",
+     "id": "000a008892"
+    },
+    {
+     "name": "High Top",
+     "sex": "牡",
+     "id": "000a0015e1"
+    },
+    {
+     "name": "Reprocolor",
+     "sex": "牝",
+     "id": "000a00820f"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Navajo Princess",
+     "sex": "牝",
+     "id": "000a0081bb"
+    },
+    {
+     "name": "サンプリンス",
+     "sex": "牡",
+     "id": "000a0004d2"
+    },
+    {
+     "name": "エール",
+     "sex": "牝",
+     "id": "1955104038"
+    },
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Never Bend",
+     "sex": "牡",
+     "id": "000a000e03"
+    },
+    {
+     "name": "Roman Song",
+     "sex": "牝",
+     "id": "000a007054"
+    },
+    {
+     "name": "ダンディルート",
+     "sex": "牡",
+     "id": "000a0003f9"
+    },
+    {
+     "name": "ブルートウショウ",
+     "sex": "牝",
+     "id": "1955104295"
+    }
+   ]
+  ]
+ },
+ "fno": "F1-w",
+ "cross": "サンデーサイレンス(USA) ：S3×M3 Lyphard(USA) ：S5×M5"
+}

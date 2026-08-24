@@ -1,0 +1,402 @@
+{
+ "id": 39,
+ "馬名": "ジュエリールイス",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ティファニーズオナー",
+     "sex": "牝",
+     "id": "000a014415",
+     "year": "2011",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Street Cry",
+     "sex": "牡",
+     "id": "000a0103ba",
+     "year": "1998",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Better Than Honour",
+     "sex": "牝",
+     "id": "000a010cb3",
+     "year": "1996",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Machiavellian",
+     "sex": "牡",
+     "id": "000a001c1d",
+     "year": "1987",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Helen Street",
+     "sex": "牝",
+     "id": "000a00fd0e",
+     "year": "1982",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Deputy Minister",
+     "sex": "牡",
+     "id": "000a001849",
+     "year": "1979",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Blush With Pride",
+     "sex": "牝",
+     "id": "000a00fa86",
+     "year": "1979",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607",
+     "year": "1970",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Coup de Folie",
+     "sex": "牝",
+     "id": "000a00931f",
+     "year": "1982",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Troy",
+     "sex": "牡",
+     "id": "000a0016d6",
+     "year": "1976",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Waterway",
+     "sex": "牝",
+     "id": "000a009339",
+     "year": "1976",
+     "color": "栗毛"
+    },
+    {
+     "name": "Vice Regent",
+     "sex": "牡",
+     "id": "000a0007e5",
+     "year": "1967",
+     "color": "栗毛"
+    },
+    {
+     "name": "Mint Copy",
+     "sex": "牝",
+     "id": "000a00884d",
+     "year": "1970",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Blushing Groom",
+     "sex": "牡",
+     "id": "000a001340",
+     "year": "1974",
+     "color": "栗毛"
+    },
+    {
+     "name": "Best in Show",
+     "sex": "牝",
+     "id": "000a008297",
+     "year": "1965",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native",
+     "sex": "牡",
+     "id": "000a000e46"
+    },
+    {
+     "name": "Gold Digger",
+     "sex": "牝",
+     "id": "000a007e0c"
+    },
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf"
+    },
+    {
+     "name": "Raise the Standard",
+     "sex": "牝",
+     "id": "000a009315"
+    },
+    {
+     "name": "Petingo",
+     "sex": "牡",
+     "id": "000a000fb2"
+    },
+    {
+     "name": "La Milo",
+     "sex": "牝",
+     "id": "000a00834f"
+    },
+    {
+     "name": "Riverman",
+     "sex": "牡",
+     "id": "000a0014ce"
+    },
+    {
+     "name": "Boulevard",
+     "sex": "牝",
+     "id": "000a009338"
+    },
+    {
+     "name": "Northern Dancer",
+     "sex": "牡",
+     "id": "000a000e04"
+    },
+    {
+     "name": "Victoria Regina",
+     "sex": "牝",
+     "id": "000a007d4b"
+    },
+    {
+     "name": "Bunty's Flight",
+     "sex": "牡",
+     "id": "000a001847"
+    },
+    {
+     "name": "Shakney",
+     "sex": "牝",
+     "id": "000a00884c"
+    },
+    {
+     "name": "Red God",
+     "sex": "牡",
+     "id": "000a000e48"
+    },
+    {
+     "name": "Runaway Bride",
+     "sex": "牝",
+     "id": "000a0079de"
+    },
+    {
+     "name": "Traffic Judge",
+     "sex": "牡",
+     "id": "000a00103a"
+    },
+    {
+     "name": "Stolen Hour",
+     "sex": "牝",
+     "id": "000a008296"
+    }
+   ]
+  ]
+ },
+ "fno": "F8-f",
+ "cross": ""
+}

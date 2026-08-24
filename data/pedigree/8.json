@@ -1,0 +1,402 @@
+{
+ "id": 8,
+ "馬名": "フィオーレクラウド",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "イセベル",
+     "sex": "牝",
+     "id": "2015102330",
+     "year": "2015",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "シンボリクリスエス",
+     "sex": "牡",
+     "id": "1999110099",
+     "year": "1999",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ベルクラシック",
+     "sex": "牝",
+     "id": "1996107132",
+     "year": "1996",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Kris S.",
+     "sex": "牡",
+     "id": "000a0016f2",
+     "year": "1977",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Tee Kay",
+     "sex": "牝",
+     "id": "000a00b2b6",
+     "year": "1991",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "A.P. Indy",
+     "sex": "牡",
+     "id": "000a001d37",
+     "year": "1989",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ベルピアノ",
+     "sex": "牝",
+     "id": "000a00652f",
+     "year": "1991",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Roberto",
+     "sex": "牡",
+     "id": "000a0012cb",
+     "year": "1969",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Sharp Queen",
+     "sex": "牝",
+     "id": "000a0083b4",
+     "year": "1965",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Gold Meridian",
+     "sex": "牡",
+     "id": "000a001e72",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Tri Argo",
+     "sex": "牝",
+     "id": "000a00b2b7",
+     "year": "1982",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc",
+     "year": "1974",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Weekend Surprise",
+     "sex": "牝",
+     "id": "000a009821",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Bel Sheba",
+     "sex": "牝",
+     "id": "000a007219",
+     "year": "1970",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Bramalea",
+     "sex": "牝",
+     "id": "000a007c38"
+    },
+    {
+     "name": "Princequillo",
+     "sex": "牡",
+     "id": "000a000fc9"
+    },
+    {
+     "name": "Bridgework",
+     "sex": "牝",
+     "id": "000a0083b3"
+    },
+    {
+     "name": "Seattle Slew",
+     "sex": "牡",
+     "id": "000a0015fc"
+    },
+    {
+     "name": "Queen Louie",
+     "sex": "牝",
+     "id": "000a009715"
+    },
+    {
+     "name": "Tri Jet",
+     "sex": "牡",
+     "id": "000a0017cd"
+    },
+    {
+     "name": "Hail Proudly",
+     "sex": "牝",
+     "id": "000a00b2b8"
+    },
+    {
+     "name": "Bold Reasoning",
+     "sex": "牡",
+     "id": "000a001598"
+    },
+    {
+     "name": "My Charmer",
+     "sex": "牝",
+     "id": "000a008080"
+    },
+    {
+     "name": "Secretariat",
+     "sex": "牡",
+     "id": "000a000ded"
+    },
+    {
+     "name": "Lassie Dear",
+     "sex": "牝",
+     "id": "000a009820"
+    },
+    {
+     "name": "Mr. Prospector",
+     "sex": "牡",
+     "id": "000a001607"
+    },
+    {
+     "name": "Killaloe",
+     "sex": "牝",
+     "id": "000a0083e3"
+    },
+    {
+     "name": "Lt. Stevens",
+     "sex": "牡",
+     "id": "000a000464"
+    },
+    {
+     "name": "Belthazar",
+     "sex": "牝",
+     "id": "000a007dcc"
+    }
+   ]
+  ]
+ },
+ "fno": "F20",
+ "cross": "Seattle Slew(USA) ：M4×M5 Fappiano(USA) ：M4×S5 Hail to Reason(USA) ：S5×M5"
+}

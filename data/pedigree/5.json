@@ -1,0 +1,402 @@
+{
+ "id": 5,
+ "馬名": "ヴェルサイユシエル",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "2017101835",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "2002100816",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト",
+     "sex": "牝",
+     "id": "2010110076",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス",
+     "sex": "牡",
+     "id": "000a00033a",
+     "year": "1986",
+     "color": "青鹿毛"
+    },
+    {
+     "name": "ウインドインハーヘア",
+     "sex": "牝",
+     "id": "000a0003a2",
+     "year": "1991",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled's Song",
+     "sex": "牡",
+     "id": "000a002071",
+     "year": "1993",
+     "color": "芦毛"
+    },
+    {
+     "name": "Folklore",
+     "sex": "牝",
+     "id": "000a011d47",
+     "year": "2003",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Halo",
+     "sex": "牡",
+     "id": "000a0012bf",
+     "year": "1969",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Wishing Well",
+     "sex": "牝",
+     "id": "000a008c1e",
+     "year": "1975",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Alzao",
+     "sex": "牡",
+     "id": "000a001cb4",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Burghclere",
+     "sex": "牝",
+     "id": "000a00922c",
+     "year": "1977",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Unbridled",
+     "sex": "牡",
+     "id": "000a001cd0",
+     "year": "1987",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Trolley Song",
+     "sex": "牝",
+     "id": "000a009fd9",
+     "year": "1983",
+     "color": "芦毛"
+    },
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Contrive",
+     "sex": "牝",
+     "id": "000a011d46",
+     "year": "1998",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason",
+     "sex": "牡",
+     "id": "000a000f2b"
+    },
+    {
+     "name": "Cosmah",
+     "sex": "牝",
+     "id": "000a007459"
+    },
+    {
+     "name": "Understanding",
+     "sex": "牡",
+     "id": "000a0019b6"
+    },
+    {
+     "name": "Mountain Flower",
+     "sex": "牝",
+     "id": "000a008c1d"
+    },
+    {
+     "name": "Lyphard",
+     "sex": "牡",
+     "id": "000a001205"
+    },
+    {
+     "name": "Lady Rebecca",
+     "sex": "牝",
+     "id": "000a009170"
+    },
+    {
+     "name": "Busted",
+     "sex": "牡",
+     "id": "000a000e0d"
+    },
+    {
+     "name": "Highclere",
+     "sex": "牝",
+     "id": "000a008341"
+    },
+    {
+     "name": "Fappiano",
+     "sex": "牡",
+     "id": "000a001702"
+    },
+    {
+     "name": "Gana Facil",
+     "sex": "牝",
+     "id": "000a00902d"
+    },
+    {
+     "name": "Caro",
+     "sex": "牡",
+     "id": "000a0010ed"
+    },
+    {
+     "name": "Lucky Spell",
+     "sex": "牝",
+     "id": "000a00945e"
+    },
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed"
+    },
+    {
+     "name": "Storm Cat",
+     "sex": "牡",
+     "id": "000a001a98"
+    },
+    {
+     "name": "Jeano",
+     "sex": "牝",
+     "id": "000a00ff90"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ウェイトゥヴェルサイユ",
+     "sex": "牝",
+     "id": "000a01b6d5",
+     "year": "2014",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Tizway",
+     "sex": "牡",
+     "id": "2005190007",
+     "year": "2005",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Belle a Versailles",
+     "sex": "牝",
+     "id": "000a01a8f8",
+     "year": "2000",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Tiznow",
+     "sex": "牡",
+     "id": "000a00fa4b",
+     "year": "1997",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Bethany",
+     "sex": "牝",
+     "id": "000a01169f",
+     "year": "1994",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Beau Genius",
+     "sex": "牡",
+     "id": "000a001e8f",
+     "year": "1985",
+     "color": "栗毛"
+    },
+    {
+     "name": "Chardonnay Ridge",
+     "sex": "牝",
+     "id": "000a00b686",
+     "year": "1992",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Cee's Tizzy",
+     "sex": "牡",
+     "id": "000a00fa4c",
+     "year": "1987",
+     "color": "芦毛"
+    },
+    {
+     "name": "Cee's Song",
+     "sex": "牝",
+     "id": "000a00faed",
+     "year": "1986",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Dayjur",
+     "sex": "牡",
+     "id": "000a001d8b",
+     "year": "1987",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Willamae",
+     "sex": "牝",
+     "id": "000a00879f",
+     "year": "1980",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Bold Ruckus",
+     "sex": "牡",
+     "id": "000a001ceb",
+     "year": "1976",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "Royal Colleen",
+     "sex": "牝",
+     "id": "000a009dd8",
+     "year": "1973",
+     "color": "栗毛"
+    },
+    {
+     "name": "Trempolino",
+     "sex": "牡",
+     "id": "000a001bf8",
+     "year": "1984",
+     "color": "栗毛"
+    },
+    {
+     "name": "Pecos Girl",
+     "sex": "牝",
+     "id": "000a00b687",
+     "year": "1970",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Relaunch",
+     "sex": "牡",
+     "id": "000a001b45"
+    },
+    {
+     "name": "テイズリー",
+     "sex": "牝",
+     "id": "000a000364"
+    },
+    {
+     "name": "Seattle Song",
+     "sex": "牡",
+     "id": "000a0017e6"
+    },
+    {
+     "name": "Lonely Dancer",
+     "sex": "牝",
+     "id": "000a00faee"
+    },
+    {
+     "name": "Danzig",
+     "sex": "牡",
+     "id": "000a0000d3"
+    },
+    {
+     "name": "Gold Beauty",
+     "sex": "牝",
+     "id": "000a009983"
+    },
+    {
+     "name": "Tentam",
+     "sex": "牡",
+     "id": "000a00181f"
+    },
+    {
+     "name": "Raclette",
+     "sex": "牝",
+     "id": "000a00879e"
+    },
+    {
+     "name": "Boldnesian",
+     "sex": "牡",
+     "id": "000a001599"
+    },
+    {
+     "name": "Raise a Ruckus",
+     "sex": "牝",
+     "id": "000a009695"
+    },
+    {
+     "name": "ヴァイスリーガル",
+     "sex": "牡",
+     "id": "000a0004e8"
+    },
+    {
+     "name": "Own Colleen",
+     "sex": "牝",
+     "id": "000a009dd7"
+    },
+    {
+     "name": "Sharpen Up",
+     "sex": "牡",
+     "id": "000a001677"
+    },
+    {
+     "name": "Trephine",
+     "sex": "牝",
+     "id": "000a00857c"
+    },
+    {
+     "name": "Gallant Man",
+     "sex": "牡",
+     "id": "000a000dcd"
+    },
+    {
+     "name": "Lignee",
+     "sex": "牝",
+     "id": "000a008308"
+    }
+   ]
+  ]
+ },
+ "fno": "F9-f",
+ "cross": "Tiznow(USA) ：M3×S4"
+}
