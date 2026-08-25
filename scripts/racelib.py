@@ -65,7 +65,7 @@ BIRTH_RE = re.compile(r"(\d{4})[年./\-](\d{1,2})[月./\-](\d{1,2})日?")
 def birth_date_key(h):
     """马匹出生排序键：生年月日 → (年, 月, 日) 可比较元组（升序=从小到大）。
     生年月日缺失（如台账建档马）→ 退回生年 → (年, 0, 0)；两者都无 → (0, 0, 0)。
-    用于 registry id 分配与 crops 输出排序，保证 id 顺序 = 出生日期顺序。"""
+    用于 registry id 分配与 basic.json 输出排序，保证 id 顺序 = 出生日期顺序。"""
     bd = h.get("生年月日") or ""
     m = BIRTH_RE.search(str(bd))
     if m:

@@ -12,9 +12,9 @@
 [源] JBIS     ──scrape_jbis.py──────▶ data/raw/jbis*.json    ─┤── 契约A
 [源] Sheets   ──adapters/sheets_ledger.py──▶ 契约B记录 ──pull_races.py──▶ data/races/google_ledger.csv ─┤
                                                                                                   ▼
-                                                          build-data.py（唯一构建器）──▶ data/crops.json（契约C）
+                                                          build-data.py（唯一构建器）──▶ data/basic.json（契约C）
                                                                                                   ▼
-                                                          前端 index/detail/dashboard（只读 crops.json）
+                                                          前端 index/detail/dashboard（只读 basic.json）
 ```
 
 | 环节 | 消费 | 产出 |
@@ -22,7 +22,7 @@
 | 抓取器（netkeiba/jbis） | 源站 HTML | 契约A：`data/raw/*.json` |
 | 适配器（adapters/*） | 数据源格式（Sheets CSV 等） | 契约B 记录（内存） |
 | `pull_races.py` | 契约B 记录（经适配器） | 契约B 快照：`data/races/google_ledger.csv` + `sync-report.md` |
-| `build-data.py` | 契约A + 契约B | 契约C：`data/crops.json` + `merge-report.md` + 快照 |
+| `build-data.py` | 契约A + 契约B | 契约C：`data/basic.json` + `merge-report.md` + 快照 |
 | 前端 | 契约C（唯一数据源） | 页面 |
 
 **更换数据源的唯一动作**：在 `scripts/adapters/` 新增一个模块，实现 `fetch() -> 契约B记录`，
@@ -79,13 +79,16 @@
 统计口径（W2/D2）：出赛数/胜/率/赏金合计/重赏 只计 中央+地方，与 netkeiba 通算对齐；
 海外场在 `場地別` 等展示分面保留。取消/除外不计入出赛数；中止计入。
 
-## 契约C：合并产物（data/crops.json）
+## 契约C：合并产物（data/basic.json）
 
-前端唯一数据源。每匹马：契约A 全部字段 + `photo` + `races[]`（契约B 记录，按日付倒序）+ `stats`（`racelib.compute_stats()` 汇总）。结构示例见 `云迹项目.md` 3.3。
+前端唯一数据源。`{_meta, horses[]}`；`_meta` = `schema: basic/v1` · `built: yyyy-MM-dd HH:mm:ss` · count · sources（与快照解耦，不写 manifest 引用；快照由 `data/manifest.json` 登记）。
+每匹只含基本信息（`BASIC_FIELDS` 白名单，见 `build-data.py`）：id / nk_id / jbis_id / 馬名 / 性別 / 生年月日 / 毛色 / 産地 /
+馬主 / 生産牧場 / 調教師 / 通算成績 / 獲得賞金 / 総賞金 / 母名 / 母父名 / 生年 / 登録状態 / 英文名 / セリ取引価格 / photo +
+拆分文件引用 `races_file` / `pedigree_file`（详情经拆分文件按需加载）。`races/stats/血统树` 不再内嵌。
 
 ## 契约校验
 
-- `python scripts/test-data.py`：抽样数据校验 + **契约B/契约C 全量断言**（必需字段、值域、stats 一致性）
+- `python scripts/test-data.py`：抽样数据校验 + **契约B/契约C 全量断言**（必需字段、值域、拆分文件引用、basic.json 结构）
 - `python scripts/pull_races.py`：产出 `sync-report.md`（台账健康度）
 - `python scripts/build-data.py`：产出 `merge-report.md`（马匹关联/覆盖/待校准）
 

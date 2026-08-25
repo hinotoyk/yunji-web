@@ -1,7 +1,7 @@
 # 云迹 · 项目总纲与数据知识库（唯一入口）
 
 > 定位：**仓库文档唯一入口 + 数据知识总库**。全部阶段性与设计文档已完成使命并归档删除（见 §9），
-> 本文档把散落在各文档中的**不可丢的硬知识**提炼留存：数据契约、数据分类、crops v2 结构、查询模型、
+> 本文档把散落在各文档中的**不可丢的硬知识**提炼留存：数据契约、数据分类、basic.json 结构、查询模型、
 > 身份/収得/比赛主源设计、血统解析算法与踩坑、已拍板决策与遗留问题。
 > 数据契约与数据源无关：换源只改适配器，下游零改动（详见 [data-contracts.md](data-contracts.md)）。
 
@@ -12,7 +12,7 @@
 - **项目**：铁鸟翱天（コントレイル）产驹资料库 · GitHub Pages 静态站 · 个人检索
 - **站点**：`https://hinotoyk.github.io/yunji-web/page/`
 - **仓库**：`github.com/hinotoyk/yunji-web`（branch main，Actions 自动部署）
-- **当前数据状态**：404 匹 / 141 匹已出赛 / 血统 403+2 / crops.json v2（schema=crops/v2 = {_meta,horses}；检索索引已移除，待单独重建）
+- **当前数据状态**：404 匹 / 141 匹已出赛 / 血统 403+2 / basic.json（schema=basic/v1 = {_meta,horses}；只含基本信息，检索索引已移除，待单独重建）
 
 ---
 
@@ -36,11 +36,11 @@
 | **A. 抓取数据** | `data/raw/*.json` | 抓取器 | build-data（只读） | 每次抓取覆盖 |
 | **B. 身份数据** | `data/registry.json` | build-data（唯一写方） | build-data / admin（只读） | 只增不改（改名=names 追加） |
 | **C. 比赛数据** | `data/races/google_ledger.csv` + `data/raw/netkeiba_races.json` | pull_races / 适配器 | build-data（只读） | 增量追加 |
-| **D. 展示数据** | `data/crops.json` + 拆分文件（含人工字段） | build-data（唯一）+ admin（人工字段） | 前端（只读） | 每次构建重建 |
+| **D. 展示数据** | `data/basic.json` + 拆分文件（含人工字段） | build-data（唯一）+ admin（人工字段） | 前端（只读） | 每次构建重建 |
 
 **写入权红线**：
-- 抓取器**禁止**回写 admin 字段；build-data **唯一**写 registry/crops；admin **只写人工字段**（译名/近况/血统分析/备考/馬名意味/photo），直接改 crops.json 覆盖。
-- **已拍板：不拆 notes.json**——admin 直接改 crops.json，全量抓取覆盖人工字段是已知取舍。
+- 抓取器**禁止**回写 admin 字段；build-data **唯一**写 registry/basic.json；admin **只写人工字段**（译名/近况/血统分析/备考/馬名意味/photo），直接改 basic.json 覆盖。
+- **已拍板：不拆 notes.json**——admin 直接改 basic.json，全量抓取覆盖人工字段是已知取舍。
 
 ### A. 抓取数据子类
 - `netkeiba.json`（基础+血统，主）· `jbis.json`/`jbis_pedigree.json`（JBIS 兜底/クロス增强）· `netkeiba_races.json`（成绩页，比赛主源）· `rotation_queue.json`（Track B 轮换队列状态）· `fetch_log.csv`（抓取日志审计）
@@ -56,41 +56,41 @@
 - **契约A**（raw/*.json）：netkeiba 主（子嗣+基础+血统）+ JBIS 兜底/クロス增强。字段规范化中文/日文标签。
 - **契约B**（比赛记录）：`google_ledger.csv`（台账）+ `netkeiba_races.json`（netkeiba 成绩页主源）。字段清单：
   `日付, 場名, R, レース名, 格, 距離, 芝ダ, 馬場, 天候, 出走馬名, 騎手, 性, 年齢, 斤量, 頭数, 人気, 単勝, 結果, タイム, 上り, 着差, 通過, ペース, 馬体重, 増減, 賞金, Rt, 調教師, venue_type, 來源`（`race_class/条件/性齢/管理調教師/母父名` 已舍弃）
-- **契约C**（crops.json）：前端唯一数据源；由 build-data.py 产出，任何人不得手改自动字段。
+- **契约C**（basic.json）：前端唯一数据源；由 build-data.py 产出，任何人不得手改自动字段。
 - **校验**：test-data.py 全量断言，违反契约立即失败（不静默）。
 
 **统计口径**（W2/D2 拍板）：出赛数/胜/率/赏金合计/重赏 **只计中央+地方**（与 netkeiba 通算对齐），海外场在 `場地別` 展示分面保留。取消/除外不计入出赛数；中止计入。
 
 ---
 
-## 4. crops.json v2 · 模块化结构
+## 4. basic.json · 模块化结构
 
 > 来源：原 data-dashboard-v1.md §2/§3（M5 设计，已实施）。**契约C 的唯一消费形态**。
-> **2026-08 拍板**：检索索引（顶层 `index` 倒排表 + 每匹 `facet`）已从 crops.json 移除；
+> **2026-08 拍板**：检索索引（顶层 `index` 倒排表 + 每匹 `facet`）已从 basic.json 移除；
 > 前端检索/筛选方案待后续单独设计，届时另行落地（当前 index 列表直接遍历 `horses`）。
 
 ### 4.1 文件布局
 
 ```
 data/
-├── crops.json              # 列表唯一入口（瘦身版：无血统树、无 races、无检索索引）
+├── basic.json              # 列表唯一入口（基本信息：无血统树、无 races/stats、无检索索引）
 ├── racefiles/{id}.json     # 该马比赛记录（详情页按需加载；仅建有内容的马）
 ├── pedigree/{id}.json      # 该马血统树 + fno/cross（血统页按需加载；仅建有内容的马）
 └── images/                 # 图片（预留）
 ```
 
 - **拆分原则 = 按"消费场景"拆，不按"匹马"拆**：首屏请求 = 1 个大文件 + 按需 2 个小文件，总量最优（GH Pages 静态托管请求数有成本）。
-- **已拍板：仅建有内容的马**（无 races 不建 races 文件、无血统不建 pedigree 文件；crops 对应字段留空字符串）。
+- **已拍板：仅建有内容的马**（无 races 不建 races 文件、无血统不建 pedigree 文件；basic.json 对应字段留空字符串）。
 
 ### 4.2 结构
 
 ```
-crops.json = { _meta, horses[] }
-  _meta:  schema=crops/v2 · built · count · sources · manifest
-  horses: 每匹 = 基础信息 + stats + races_file/pedigree_file 引用
+basic.json = { _meta, horses[] }
+  _meta:  schema=basic/v1 · built(yyyy-MM-dd HH:mm:ss) · count · sources（与快照解耦，无 manifest 引用）
+  horses: 每匹 = 基本信息（BASIC_FIELDS 白名单，见 build-data.py）+ races_file/pedigree_file 引用
 ```
 
-> 检索：暂无（索引已移除）。后续单独设计检索/筛选，不再往 crops.json 塞索引数据。
+> 检索：暂无（索引已移除）。后续单独设计检索/筛选，不再往 basic.json 塞索引数据。
 
 ---
 
@@ -229,7 +229,7 @@ crops.json = { _meta, horses[] }
                         │
              build-data.py（唯一构建器）
                         ▼
-        data/crops.json（契约C v2 = {_meta,horses}）
+        data/basic.json（契约C = {_meta,horses}，基本信息）
         ├── data/racefiles/{id}.json   （按需）
         └── data/pedigree/{id}.json    （按需）
                         │

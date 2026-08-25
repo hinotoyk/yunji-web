@@ -98,7 +98,7 @@ async function render(h){
 (async function init(){
   const m=decodeURIComponent(location.hash.slice(1));
   try{
-    const {horses}=await YJ.loadCrops("../data/crops.json");       // M5.4：兼容 v1/v2
+    const {horses}=await YJ.loadCrops("../data/basic.json");       // M5.4：兼容 v1/v2
     const hit=horses.find(h=>h.馬名===m);
     if(!hit){document.getElementById("dinner").innerHTML=`<div class="empty">未找到该产驹的血统数据</div>`;return;}
     await render(hit);

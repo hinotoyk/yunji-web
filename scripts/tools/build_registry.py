@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""M1.1 身份映射表种子生成：从现有 data/crops.json（v1 裸数组）生成 data/registry.json。
+"""M1.1 身份映射表种子生成：从现有 data/basic.json（{_meta, horses}）生成 data/registry.json。
 
 每个马一条记录（见 docs/PROJECT.md §5.2）：
   id      = **按生年月日从小到大排序后的序号 1..N**（最年长 = 1；一次性种子，
@@ -35,19 +35,19 @@ import racelib  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, "data")
 REGISTRY_PATH = os.path.join(DATA, "registry.json")
-CROPS_PATH = os.path.join(DATA, "crops.json")
+BASIC_PATH = os.path.join(DATA, "basic.json")
 
 
 def _norm(name):
     return re.sub(r"[ 　()（）\[\]【】]", "", name or "").strip()
 
 
-def generate_registry_seed(crops, updated=None):
-    """crops（裸数组）→ {"horses": [...], "updated": "..."}。
+def generate_registry_seed(records, updated=None):
+    """马记录（horses 列表）→ {"horses": [...], "updated": "..."}。
     id = 按生年月日（缺失退生年）从小到大排序后的序号；并列按马名稳定排序。
     """
     updated = updated or datetime.now().strftime("%Y-%m-%d")
-    ordered = sorted(crops, key=lambda h: (racelib.birth_date_key(h), _norm(h.get("馬名", ""))))
+    ordered = sorted(records, key=lambda h: (racelib.birth_date_key(h), _norm(h.get("馬名", ""))))
     horses = []
     for i, h in enumerate(ordered, 1):
         name = h.get("馬名", "")
@@ -71,13 +71,15 @@ def main():
     if os.path.exists(REGISTRY_PATH) and not args.force:
         sys.exit("❌ data/registry.json 已存在：不覆盖（改名历史不可重建）。确认请加 --force")
 
-    if not os.path.exists(CROPS_PATH):
-        sys.exit("❌ 无 data/crops.json：先运行 python scripts/build-data.py")
+    if not os.path.exists(BASIC_PATH):
+        sys.exit("❌ 无 data/basic.json：先运行 python scripts/build-data.py")
 
-    with open(CROPS_PATH, encoding="utf-8") as f:
-        crops = json.load(f)
+    with open(BASIC_PATH, encoding="utf-8") as f:
+        records = json.load(f)
+    if isinstance(records, dict) and "horses" in records:
+        records = records["horses"]
 
-    seed = generate_registry_seed(crops)
+    seed = generate_registry_seed(records)
     ids = [h["id"] for h in seed["horses"]]
     if len(ids) != len(set(ids)):
         sys.exit("❌ 种子 id 非唯一，终止")

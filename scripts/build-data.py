@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""云迹数据构建：netkeiba 主数据（基础+血统）+ JBIS 兜底/血统增强 → data/crops.json + manifest + 快照。
+"""云迹数据构建：netkeiba 主数据（基础+血统）+ JBIS 兜底/血统增强 → data/basic.json + manifest + 快照。
 合并规则：
 - 基础信息：netkeiba 优先；netkeiba 无记录（如 Hazey Jane）→ JBIS 兜底（jbis.json）
 - 血统图：netkeiba 优先（404 匹全量）；netkeiba 无记录 → JBIS（jbis.json）
@@ -33,12 +33,12 @@ RACES_DIR = os.path.join(DATA, "races")
 RACEFILES_DIR = os.path.join(DATA, "racefiles")   # M5.3：比赛记录拆分（data/races 已被台账 csv 占用）
 PEDIGREE_DIR = os.path.join(DATA, "pedigree")     # M5.3：血统树拆分
 
-# 前端展示用字段
-FIELDS = [
+# basic.json 输出白名单：horses 只保留基本信息（详情经 races_file / pedigree_file 拆分文件按需加载）
+BASIC_FIELDS = [
     "id", "nk_id", "jbis_id", "馬名", "性別", "生年月日", "毛色", "産地",
     "馬主", "生産牧場", "調教師", "通算成績", "獲得賞金", "総賞金",
-    "母名", "母父名", "生年", "登録状態",
-    "pedigree", "fno", "cross",
+    "母名", "母父名", "生年", "登録状態", "英文名", "セリ取引価格",
+    "photo", "races_file", "pedigree_file",
 ]
 
 
@@ -568,7 +568,7 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     for it in ledger_issues[:20]:
         lines.append(f"  - **{it['type']}**: {it}")
     lines.append("")
-    lines.append("## 数据覆盖情况（crops 有通算成績但台账缺记录的马）")
+    lines.append("## 数据覆盖情况（basic.json 有通算成績但台账缺记录的马）")
     missing = []
     for h in records:
         m = re.match(r"(\d+)戦", h.get("通算成績") or "")
@@ -595,14 +595,14 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     return "\n".join(lines) + "\n"
 
 
-# ── M5.3 crops v2 输出：拆分文件 + {_meta, horses} ──
+# ── basic.json 输出：拆分文件 + {_meta, horses} ──
 # 设计：docs/PROJECT.md §4。每匹 races/血统树拆到 data/racefiles/{id}.json /
-# data/pedigree/{id}.json（仅建有内容的马），crops 只留瘦身档案 + 文件引用。
+# data/pedigree/{id}.json（仅建有内容的马），basic.json 只留基本信息 + 文件引用。
 
 
 def write_split_files(records):
     """拆分 races / pedigree 到独立文件（仅建有内容的马）。返回 (race_count, pedigree_count)。
-    crops 内嵌字段替换为文件引用：race_count / races_file / pedigree_file；无内容留空串。"""
+    basic.json 内嵌字段替换为文件引用：race_count / races_file / pedigree_file；无内容留空串。"""
     os.makedirs(RACEFILES_DIR, exist_ok=True)
     os.makedirs(PEDIGREE_DIR, exist_ok=True)
     n_race, n_ped = 0, 0
@@ -624,27 +624,29 @@ def write_split_files(records):
                           f, ensure_ascii=False, indent=1)
             n_ped += 1
         h["pedigree_file"] = f"data/pedigree/{hid}.json" if (ped.get("父") or ped.get("母")) else ""
-        # crops 内嵌字段瘦身：races 已拆文件；pedigree 保留 fno/cross 摘要、大血统树移文件
+        # basic.json 内嵌字段瘦身：races 已拆文件；pedigree 保留 fno/cross 摘要、大血统树移文件
         h["races"] = []
         h["pedigree"] = {}
     return n_race, n_ped
 
 
-def build_v2(records, built_iso, sources, manifest_id):
-    """records（含 races/pedigree 内嵌）→ crops v2 输出 dict {_meta, horses}。
+def build_basic(records, built_iso, sources):
+    """records（含 races/pedigree 内嵌）→ basic.json 输出 dict {_meta, horses}。
     - 拆分 races/pedigree 文件（M5.3）
+    - horses 只保留基本信息（BASIC_FIELDS 白名单），stats/races/血统树等一律不入文件
+    - _meta 与快照解耦：不写 manifest 引用（快照由 data/manifest.json 单独登记）
     - 检索索引（facet/index）已移除，待后续单独设计（2026-08 拍板）
     """
     n_race, n_ped = write_split_files(records)
+    horses = [{k: h.get(k, "") for k in BASIC_FIELDS} for h in records]
     return {
         "_meta": {
-            "schema": "crops/v2",
+            "schema": "basic/v1",
             "built": built_iso,
-            "count": len(records),
+            "count": len(horses),
             "sources": sources,
-            "manifest": manifest_id,
         },
-        "horses": records,
+        "horses": horses,
     }, n_race, n_ped
 
 
@@ -677,7 +679,7 @@ def main():
     netkeiba_db = netkeiba_races.load_races_db()
     jockeys = netkeiba_races.load_jockeys()
     if netkeiba_db:
-        # fetch 无参会自读 crops.json 取 nk_id→馬名；crops v2 已改 {_meta,horses}，必须显式传
+        # fetch 无参会自读 basic.json 取 nk_id→馬名；basic.json 已改 {_meta,horses}，必须显式传
         name_by_nk = {h["nk_id"]: h.get("馬名", "") for h in records if h.get("nk_id")}
         nk_recs = netkeiba_races.fetch(name_by_nk)
         matched, created, unmatched, aliases, n_with = attach_races(
@@ -702,7 +704,7 @@ def main():
     print(f"✔ 已写回: data/registry.json（{len(reg['horses'])} 条）")
 
     # ── 输出排序 = 生年月日（缺失退生年）从小到大，与 registry id 顺序一致 ──
-    # 台账建档马由 attach_races 追加，需在最后统一重排，保证 crops 顺序 = id 顺序
+    # 台账建档马由 attach_races 追加，需在最后统一重排，保证 basic.json 顺序 = id 顺序
     records.sort(key=lambda h: (racelib.birth_date_key(h), norm(h["馬名"] or "")))
 
     os.makedirs(HISTORY, exist_ok=True)
@@ -714,20 +716,20 @@ def main():
         with open(os.path.join(HISTORY, f"{cur_id}.json"), "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=1)
 
-    # ── M5.3 crops v2：{_meta, horses} + races/pedigree 拆分 ──
+    # ── basic.json：{_meta, horses} + races/pedigree 拆分 ──
     sources = {}
     for name in ("netkeiba", "jbis", "ledger"):
         p = os.path.join(DATA, "raw", f"{name}.json") if name != "ledger" else os.path.join(RACES_DIR, "google_ledger.csv")
         if os.path.exists(p):
             sources[name] = datetime.now().strftime("%Y-%m-%d")
-    v2, n_race, n_ped = build_v2(records, datetime.now().strftime("%Y-%m-%dT%H:%M:%S+09:00"),
-                                 sources, cur_id)
+    out, n_race, n_ped = build_basic(records, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                     sources)
 
-    with open(os.path.join(DATA, "crops.json"), "w", encoding="utf-8") as f:
-        json.dump(v2, f, ensure_ascii=False, indent=1)
+    with open(os.path.join(DATA, "basic.json"), "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=1)
 
     mf = update_manifest(cur_id, len(records), args.note, has_snapshot=not args.no_snapshot)
-    print(f"✔ crops.json v2 已更新 ({len(records)} 匹 · schema={v2['_meta']['schema']})")
+    print(f"✔ basic.json 已更新 ({len(out['horses'])} 匹 · schema={out['_meta']['schema']})")
     print(f"✔ 拆分: data/racefiles/ ×{n_race} · data/pedigree/ ×{n_ped}（仅建有内容的马）")
     print(f"✔ 快照(v1 完整形态): history/{cur_id}.json · 版本数: {len(mf['versions'])}")
 

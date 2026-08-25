@@ -24,7 +24,7 @@ python -m http.server 8000
 | 血统数据 | JBIS（辅） | 契约A `data/raw/jbis*.json` | 5代血统图 + FNo/クロス |
 | 比赛数据 | netkeiba 成绩页（主源，M2）+ Google Sheets 台账（海外补缺/兜底） | 契约B `data/races/google_ledger.csv` + `data/raw/netkeiba_races.json` | 中央+地方+海外统一契约B；台账经 `scripts/adapters/sheets_ledger.py` 适配 |
 | 马匹身份 | registry 映射表（M1） | `data/registry.json` | 本地自增 id + 外部键(nk_id/jbis_id)映射 + 名字历史 |
-| 合并产物 | build-data.py | 契约C `data/crops.json` | 前端唯一数据源 |
+| 合并产物 | build-data.py | 契约C `data/basic.json`（马基本信息 + races_file/pedigree_file 引用） | 前端唯一数据源 |
 | 图片 | 用户自己上传（预留） | `photo` 字段 + `data/images/` | 管理页上传（阶段4） |
 
 ## 同步链路（定时自动 + 手动兜底）
@@ -51,7 +51,7 @@ python scripts/scrape_netkeiba.py --ped            # 契约A：血统/クロス 
 python scripts/scrape_jbis.py --fill               # 契约A：JBIS 兜底补填（每周，缺 血统/クロス）
 python scripts/scrape_netkeiba.py --all            # 契约A：netkeiba 全部子嗣 + 基础信息（全量，慎用）
 python scripts/scrape_jbis.py --all                # 契约A：JBIS 5代血统图（全量，慎用）
-python scripts/build-data.py --note "备注"         # 契约A+契约B → crops.json + merge-report.md + 快照
+python scripts/build-data.py --note "备注"         # 契约A+契约B → basic.json + merge-report.md + 快照
 python scripts/test-data.py                        # 抽样 + 契约B/C 全量校验
 ```
 
@@ -62,7 +62,7 @@ python scripts/test-data.py                        # 抽样 + 契约B/C 全量�
 
 ```
 data/
-├── crops.json         站点数据（契约C，由构建脚本生成，勿手改）
+├── basic.json         站点基本信息（契约C，由构建脚本生成，勿手改）
 ├── registry.json      马匹身份映射表（本地 id + 外部键 + 名字历史，M1）
 ├── jockeys.json       骑手 ID → 全名 字典（解决 netkeiba 截断）
 ├── raw/               抓取原始数据（契约A：netkeiba.json / jbis*.json / netkeiba_races.json / rotation_queue.json / fetch_log.csv）
@@ -82,7 +82,7 @@ scripts/
 ├── pull_races.py      比赛流水线（适配器 → 契约B → google_ledger.csv）
 ├── scrape_netkeiba.py netkeiba 抓取（--new 对账 / --races 增量 / --all / --horse / --name）
 ├── scrape_jbis.py     JBIS 血统抓取（--all / --horse / --fill）
-├── build-data.py      唯一构建器（契约A + 契约B + registry → crops.json）
+├── build-data.py      唯一构建器（契约A + 契约B + registry → basic.json）
 ├── test-data.py       抽样 + 契约校验
 └── tools/             一次性/维护工具
     ├── build_registry.py  身份映射表种子生成（M1，一次性）

@@ -391,11 +391,11 @@ def run_races(args):
     races_db = {}
     if races_path.exists():
         races_db = _json.loads(races_path.read_text(encoding="utf-8"))
-    crops_path = DEFAULT_OUT.parent.parent / "crops.json"
-    crops = _json.loads(crops_path.read_text(encoding="utf-8"))
+    basic_path = DEFAULT_OUT.parent.parent / "basic.json"
+    basic = _json.loads(basic_path.read_text(encoding="utf-8"))
 
     raced_nk = [(h.get("nk_id"), h.get("馬名", ""), h.get("races") or [])
-                for h in crops if h.get("nk_id") and h.get("races")]
+                for h in basic if h.get("nk_id") and h.get("races")]
     todo = []
     for nk, name, recs in raced_nk:
         ledger_max = max(r["日付"] for r in recs)

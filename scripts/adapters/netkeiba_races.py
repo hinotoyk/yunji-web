@@ -43,7 +43,7 @@ from scrape_netkeiba import fetch as nk_fetch, jitter, parse_races, RESULT_URL  
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 RACES_DB = ROOT / "data" / "raw" / "netkeiba_races.json"
-CROPS_PATH = ROOT / "data" / "crops.json"
+BASIC_PATH = ROOT / "data" / "basic.json"
 JOCKEYS_PATH = ROOT / "data" / "jockeys.json"
 LEDGER_PATH = ROOT / "data" / "races" / "google_ledger.csv"   # 台账全量（Track A 检测源）
 ROTATION_PATH = ROOT / "data" / "raw" / "rotation_queue.json"  # 轮换循环队列（Track B）
@@ -94,13 +94,13 @@ def _ledger_covered(nk_db, nk, r):
     return key in {_race_key(x) for x in exist}
 
 
-def _ledger_detection(crops, ledger_rows, nk_db, today=None):
+def _ledger_detection(basic, ledger_rows, nk_db, today=None):
     """Track A 台账辅助检测：台账有 netkeiba 尚缺的场次、且比赛日在窗口内（中央/地方 7 天、
     海外 30 天）→ 该马加入今日抓取。返回 [(nk_id, 馬名)]。状态可重入：台账行还在、netkeiba
     未补上 → 明天自动再抓，直到窗口到期。"""
     today = today or datetime.date.today()
     name_to_nk = {}
-    for h in crops:
+    for h in basic:
         nk = h.get("nk_id")
         if nk and h.get("馬名"):
             name_to_nk.setdefault(h["馬名"], nk)
@@ -123,10 +123,10 @@ def _ledger_detection(crops, ledger_rows, nk_db, today=None):
     return list(out.items())
 
 
-def _load_queue(crops):
-    """加载/初始化轮换循环队列 {"head": int, "order": [nk_id…]}。对照 crops 自动补新马到尾部。
+def _load_queue(basic):
+    """加载/初始化轮换循环队列 {"head": int, "order": [nk_id…]}。对照 basic.json 自动补新马到尾部。
     队列 = 全部有 nk_id 的马（含未出赛，轮换负责兜"首战没记台账"）。"""
-    nk_ids = [h["nk_id"] for h in crops if h.get("nk_id")]
+    nk_ids = [h["nk_id"] for h in basic if h.get("nk_id")]
     queue = {"head": 0, "order": []}
     if ROTATION_PATH.exists():
         try:
@@ -250,16 +250,16 @@ def convert_to_contract_b(rec, horse_name, jockeys=None):
 def fetch(name_by_nk=None):
     """适配器契约：netkeiba_races.json → 契约B 记录列表（本地转换，不抓网络）。
     供 pull_races.py --adapter netkeiba_races 使用/验证；build-data 也复用它。
-    无参调用（pull_races 契约）→ 自动从 crops.json 取 nk_id→馬名。"""
+    无参调用（pull_races 契约）→ 自动从 basic.json 取 nk_id→馬名。"""
     if not RACES_DB.exists():
         return []
     db = json.loads(RACES_DB.read_text(encoding="utf-8"))
     if name_by_nk is None:
         name_by_nk = {}
-        if CROPS_PATH.exists():
-            crops = json.loads(CROPS_PATH.read_text(encoding="utf-8"))
-            # crops v2 = {_meta, index, horses}；v1 = 裸数组（M5.4 兼容）
-            horses = crops.get("horses") if isinstance(crops, dict) and "horses" in crops else crops
+        if BASIC_PATH.exists():
+            basic = json.loads(BASIC_PATH.read_text(encoding="utf-8"))
+            # basic.json = {_meta, horses}；历史快照 = v1 裸数组（兼容）
+            horses = basic.get("horses") if isinstance(basic, dict) and "horses" in basic else basic
             for h in horses:
                 if h.get("nk_id"):
                     name_by_nk[h["nk_id"]] = h.get("馬名", "")
@@ -342,10 +342,10 @@ def update(force=False, limit=None, sleep=6.5, fetch_pages=True):
     Track B 轮换兜底（慢但全）：循环队列每天抓 50 匹全量，队列含全部有 nk_id 的马。
     两趟去重（同一马一天只抓一次）；之后统一 backfill_honsho。"""
     nk_db = load_races_db()
-    if not CROPS_PATH.exists():
-        raise SystemExit("❌ 无 data/crops.json（需先构建）")
-    crops = json.loads(CROPS_PATH.read_text(encoding="utf-8"))
-    nk_names = {h.get("nk_id"): h.get("馬名", "") for h in crops if h.get("nk_id")}
+    if not BASIC_PATH.exists():
+        raise SystemExit("❌ 无 data/basic.json（需先构建）")
+    basic = json.loads(BASIC_PATH.read_text(encoding="utf-8"))
+    nk_names = {h.get("nk_id"): h.get("馬名", "") for h in basic if h.get("nk_id")}
 
     def fetch_one(nk, name, tag, i, total):
         """抓单马成绩页 → 写回 nk_db；未出赛记录空（轮换确认过）；页面异常保留旧数据。返回是否成功"""
@@ -366,12 +366,12 @@ def update(force=False, limit=None, sleep=6.5, fetch_pages=True):
     targets = {}  # nk -> (name, tag)
     if fetch_pages:
         # ── Track A：台账辅助检测（快）──
-        for nk, name in _ledger_detection(crops, _load_ledger(), nk_db):
+        for nk, name in _ledger_detection(basic, _load_ledger(), nk_db):
             targets.setdefault(nk, (name or nk_names.get(nk, nk), "台账"))
         print(f"✔ Track A 台账检测: 台账有 netkeiba 尚缺场次 {len(targets)} 匹（窗口内）")
 
         # ── Track B：轮换兜底（慢但全）──
-        queue = _load_queue(crops)
+        queue = _load_queue(basic)
         if force:
             batch = list(queue["order"])
             print(f"✔ Track B 轮换: --force 全量 {len(batch)} 匹（队列不推进）")

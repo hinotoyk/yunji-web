@@ -3,7 +3,7 @@
 """数据测试：小样本抽样验证（每类 2-3 匹），不做全量。
 测试原则：全量抓取由人工跑（Actions 按钮 / 命令行），测试只做抽样冒烟。
 用法:
-    python scripts/test-data.py                # 本地数据校验（raw + crops.json，每类抽样）
+    python scripts/test-data.py                # 本地数据校验（raw + basic.json，每类抽样）
     python scripts/test-data.py --smoke        # 网络冒烟：每类抽 2-3 匹实际抓取验证
 """
 import argparse
@@ -47,10 +47,10 @@ def sample_of(records, cls, n=SAMPLE):
     return pool[:n]
 
 
-def load_crops():
-    """读 data/crops.json（v2: {_meta, index, horses}），并为每匹从拆分文件回填 races/pedigree。
-    兼容 v1 裸数组（无 _meta）。返回 (horses, meta)。"""
-    d = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+def load_basic():
+    """读 data/basic.json（{_meta, horses}），并为每匹从拆分文件回填 races/pedigree。
+    兼容 v1 裸数组（无 _meta，历史快照）。返回 (horses, meta)。"""
+    d = json.loads((ROOT / "data" / "basic.json").read_text(encoding="utf-8"))
     if isinstance(d, dict) and "_meta" in d:
         horses = d["horses"]
         meta = d["_meta"]
@@ -69,7 +69,7 @@ def load_crops():
                     h["fno"] = pd.get("fno") or h.get("fno") or ""
                     h["cross"] = pd.get("cross") or h.get("cross") or ""
         return horses, meta
-    return d, {"schema": "crops/v1"}
+    return d, {"schema": "v1"}
 
 def check_ledger_horse(h, out):
     """台账建档马：只要求有履历（血统/基本信息本来就没有）"""
@@ -98,12 +98,12 @@ def check_horse(h, out):
 
 def local_check():
     out = []
-    crops, meta = load_crops()
+    basic, meta = load_basic()
     nk = json.loads((RAW / "netkeiba.json").read_text(encoding="utf-8"))
     jb = json.loads((RAW / "jbis.json").read_text(encoding="utf-8"))
-    out.append(f"✔ 数据量: netkeiba {len(nk)} / jbis 兜底 {len(jb)} / crops {len(crops)} (schema={meta.get('schema','?')})")
+    out.append(f"✔ 数据量: netkeiba {len(nk)} / jbis 兜底 {len(jb)} / basic {len(basic)} (schema={meta.get('schema','?')})")
     classes = {"named": [], "unnamed": [], "jbis_only": [], "ledger_created": []}
-    for h in crops:
+    for h in basic:
         classes[classify(h)].append(h)
     for cls, label in (("named", "命名马(netkeiba源)"), ("unnamed", "未命名仔"),
                        ("jbis_only", "JBIS兜底"), ("ledger_created", "台账建档")):
@@ -115,8 +115,8 @@ def local_check():
             ok_all = checker(h, out) and ok_all
         if ok_all:
             out.append(f"  ✓ {label} 抽样全部通过")
-    with_ped = sum(1 for h in crops if h.get("pedigree", {}).get("父"))
-    out.append(f"✔ 血统覆盖: {with_ped}/{len(crops)}")
+    with_ped = sum(1 for h in basic if h.get("pedigree", {}).get("父"))
+    out.append(f"✔ 血统覆盖: {with_ped}/{len(basic)}")
     return out
 
 def smoke(netkeiba_sleep=1.0, jbis_sleep=1.5):
@@ -133,11 +133,11 @@ def smoke(netkeiba_sleep=1.0, jbis_sleep=1.5):
 
     nk = json.loads((RAW / "netkeiba.json").read_text(encoding="utf-8"))
     jb = json.loads((RAW / "jbis.json").read_text(encoding="utf-8"))
-    crops = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
+    basic = json.loads((ROOT / "data" / "basic.json").read_text(encoding="utf-8"))
 
     snk = load("scrape_netkeiba")
     out.append("── netkeiba 血统冒烟（抽 3 匹）──")
-    for h in sample_of(crops, "named") + sample_of(crops, "unnamed")[:1]:
+    for h in sample_of(basic, "named") + sample_of(basic, "unnamed")[:1]:
         try:
             html = snk.fetch(snk.PEDIGREE_URL.format(id=h["nk_id"]))
             r = snk.parse_pedigree(html)
@@ -150,7 +150,7 @@ def smoke(netkeiba_sleep=1.0, jbis_sleep=1.5):
 
     sjb = load("scrape_jbis")
     out.append("── JBIS 兜底冒烟（抽 2 匹）──")
-    for h in sample_of(crops, "jbis_only")[:2]:
+    for h in sample_of(basic, "jbis_only")[:2]:
         try:
             html = sjb.fetch(sjb.HORSE_URL.format(id=h["jbis_id"]))
             d = sjb.parse_detail(html)
@@ -199,56 +199,45 @@ def contract_check():
     else:
         out.append("⚠ 无 data/races/google_ledger.csv，跳过契约B（先跑 python scripts/pull_races.py）")
 
-    # ── 契约C：crops.json races/stats 一致性（逐匹） ──
-    crops, _ = load_crops()
+    # ── 契约C：basic.json 基本信息 + 拆分文件引用（逐匹） ──
+    # races/stats 已不在 basic.json（详情经 races_file / pedigree_file 拆分文件按需加载），
+    # 此处校验基本字段存在性与拆分文件引用可解析。
+    basic, _ = load_basic()
     bad = 0
-    for h in crops:
-        races = h.get("races") or []
-        if not races:
-            continue
-        s = h.get("stats") or {}
-        # W2/D2：出赛/勝/賞金 主口径 = 中央+地方（与 stats 一致）；首末战 = 全量
-        main = [r for r in races if r.get("venue_type") in ("中央", "地方")]
-        started = sum(1 for r in main if isinstance(r.get("結果"), int) or r.get("結果") == "中止")
-        wins = sum(1 for r in main if r.get("結果") == 1)
-        prize = sum(r.get("賞金") or 0 for r in main)
-        dates = [r["日付"] for r in races]
-        if s.get("出賽数") != started:
-            bad += 1
-            out.append(f"  ✗ 契约C {h.get('馬名')}: 出賽数 {s.get('出賽数')} ≠ 履历 {started}")
-        if s.get("勝") != wins:
-            bad += 1
-            out.append(f"  ✗ 契约C {h.get('馬名')}: 勝 {s.get('勝')} ≠ 履历 {wins}")
-        if s.get("賞金合計") != prize:
-            bad += 1
-            out.append(f"  ✗ 契约C {h.get('馬名')}: 賞金合計 {s.get('賞金合計')} ≠ 履历 {prize}")
-        if s.get("初出走") != min(dates) or s.get("最終出走") != max(dates):
-            bad += 1
-            out.append(f"  ✗ 契约C {h.get('馬名')}: 首末战不符")
+    for h in basic:
+        for k in ("id", "馬名", "生年"):
+            if k not in h:
+                bad += 1
+                out.append(f"  ✗ 契约C {h.get('馬名', '?')}: 缺字段 {k}")
+        for k in ("races_file", "pedigree_file"):
+            p = h.get(k) or ""
+            if p and not (ROOT / p).exists():
+                bad += 1
+                out.append(f"  ✗ 契约C {h.get('馬名', '?')}: {k} 指向文件不存在 {p}")
     if bad == 0:
-        out.append("✔ 契约C crops.json races/stats 逐匹一致")
+        out.append(f"✔ 契约C basic.json 基本字段完整 · 拆分文件引用可解析（{len(basic)} 匹）")
     return out
 
 
 def identity_check():
-    """M1 身份一致性断言：id 全库唯一、registry↔crops 互认、占位名规则、改名当前名=names[-1]。"""
+    """M1 身份一致性断言：id 全库唯一、registry↔basic 互认、占位名规则、改名当前名=names[-1]。"""
     out = []
-    crops, _ = load_crops()
+    basic, _ = load_basic()
     reg_path = ROOT / "data" / "registry.json"
     if not reg_path.exists():
         out.append("  ✗ 身份层: 无 data/registry.json（先跑 scripts/tools/build_registry.py）")
         return out
     reg = json.loads(reg_path.read_text(encoding="utf-8"))
     horses = reg.get("horses", [])
-    ids = [h.get("id") for h in crops]
+    ids = [h.get("id") for h in basic]
     dup = len(ids) != len(set(ids))
-    missing_id = any(h.get("id") is None for h in crops)
+    missing_id = any(h.get("id") is None for h in basic)
     if dup or missing_id:
-        out.append("  ✗ 身份层: crops id 缺失/重复")
-    # registry↔crops 互认
+        out.append("  ✗ 身份层: basic id 缺失/重复")
+    # registry↔basic 互认
     by_id = {h["id"]: h for h in horses}
     mismatch = 0
-    for h in crops:
+    for h in basic:
         e = by_id.get(h.get("id"))
         if e is None:
             mismatch += 1
@@ -256,20 +245,20 @@ def identity_check():
         cur_name = (e.get("names") or [""])[-1]
         if cur_name != h.get("馬名"):
             mismatch += 1
-            out.append(f"  ✗ 身份层 {h.get('馬名')}: registry 当前名 {cur_name} ≠ crops 馬名")
+            out.append(f"  ✗ 身份层 {h.get('馬名')}: registry 当前名 {cur_name} ≠ basic 馬名")
         if e.get("keys", {}).get("nk_id") != h.get("nk_id"):
             mismatch += 1
             out.append(f"  ✗ 身份层 {h.get('馬名')}: nk_id 不一致")
     # 占位名断言：有 races 的马不允许带未命名标记；无重复 馬名（normalized）
-    unnamed_with_races = [h.get("馬名") for h in crops
+    unnamed_with_races = [h.get("馬名") for h in basic
                           if is_unnamed(h.get("馬名")) and h.get("races")]
     dup_names = {}
-    for h in crops:
+    for h in basic:
         k = re.sub(r"[ 　()（）\[\]【】]", "", h.get("馬名") or "")
         dup_names.setdefault(k, []).append(h.get("馬名"))
     dup_any = {k: v for k, v in dup_names.items() if len(v) > 1}
     if not dup and not missing_id and mismatch == 0 and not unnamed_with_races and not dup_any:
-        out.append(f"✔ 身份一致性: registry {len(horses)} 条 / crops {len(crops)} 匹，id 唯一且互认、占位名规则成立")
+        out.append(f"✔ 身份一致性: registry {len(horses)} 条 / basic {len(basic)} 匹，id 唯一且互认、占位名规则成立")
     else:
         for n in unnamed_with_races[:5]:
             out.append(f"  ✗ 身份层: 出过赛却带未命名标记 {n}")
@@ -281,7 +270,7 @@ def identity_check():
 def uniqueness_check():
     """W1/D1 唯一性断言（见 docs/PROJECT.md §5.2）：
     - 去国家后缀后「同名同生年」全库唯一（registry 当前名）
-    - 同「(母名, 生年)」全库唯一（crops）
+    - 同「(母名, 生年)」全库唯一（basic.json）
     - nk_id 全库唯一（registry keys）"""
     out = []
     reg_path = ROOT / "data" / "registry.json"
@@ -313,10 +302,10 @@ def uniqueness_check():
                 dups_nk.append((nk_seen[nk_], h.get("id"), nk_))
             else:
                 nk_seen[nk_] = h.get("id")
-    # 3) (母名, 生年) 唯一（crops）
-    crops, _ = load_crops()
+    # 3) (母名, 生年) 唯一（basic.json）
+    basic, _ = load_basic()
     mother_seen, dups_m = {}, []
-    for h in crops:
+    for h in basic:
         m = h.get("母名") or ""
         if m:
             k = (norm_n(m), str(h.get("生年", "")))
@@ -344,7 +333,7 @@ def races_check():
     - 海外场次：netkeiba 有该场 → 來源=netkeiba 优先；netkeiba 无 → 來源=ledger
     """
     out = []
-    crops, _ = load_crops()
+    basic, _ = load_basic()
     jockeys = {}
     jk_path = ROOT / "data" / "jockeys.json"
     if jk_path.exists():
@@ -357,7 +346,7 @@ def races_check():
     total, dup, bad_src = 0, 0, 0
     prefix_conflict, missing_honsho, overseas_bad = [], [], []
     graded_set = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}  # 重赏才需要本賞金（L 用固定额）
-    for h in crops:
+    for h in basic:
         keys = set()
         nk_id = str(h.get("nk_id") or "")
         nk_loose = set()
@@ -413,58 +402,24 @@ def races_check():
     return out
 
 
-def shutoku_check():
-    """M4 収得快照断言：crops 每匹 stats.収得賞金 存在；库内 5 匹真值复算 ≤10%。"""
+def basic_check():
+    """M5 basic.json 结构断言：_meta.schema / built 时间格式 / count 与 horses 一致（无 index）。"""
     out = []
-    crops, _ = load_crops()
-    fixtures = {
-        "コンジェスタス": (36000000, 0), "ゴーイントゥスカイ": (31000000, 0),
-        "チェリヴェント": (27500000, 0), "ジーネキング": (10000000, 0),
-        "テルヒコウ": (9000000, 0),
-    }
-    missing_field, mismatch = [], []
-    for h in crops:
-        stats = h.get("stats") or {}
-        sk = stats.get("収得賞金")
-        if sk is None:
-            missing_field.append(h.get("馬名", "?"))
-            continue
-        if set(sk) != {"平地", "障害"}:
-            missing_field.append(f"{h.get('馬名')}: keys={list(sk)}")
-    for name, (flat, sho) in fixtures.items():
-        h = next((x for x in crops if x.get("馬名") == name), None)
-        if h is None:
-            continue
-        sk = (h.get("stats") or {}).get("収得賞金") or {}
-        for key, want in (("平地", flat), ("障害", sho)):
-            got = sk.get(key, 0)
-            diff = abs(got - want) / want if want else (0 if got == want else float("inf"))
-            if diff > 0.10:
-                mismatch.append(f"{name} {key}: 真值{want/10000:,.0f}万 vs 复算{got/10000:,.0f}万 ({diff:.1%})")
-    if not missing_field and not mismatch:
-        out.append(f"✔ 収得快照: {len(crops)} 匹全带 stats.収得賞金 · 5 匹真值复算 ≤10%")
-    else:
-        for m in missing_field[:10]:
-            out.append(f"  ✗ 収得字段缺失: {m}")
-        for m in mismatch[:10]:
-            out.append(f"  ✗ 収得偏差超限: {m}")
-    return out
-
-
-def v2_check():
-    """M5 crops v2 断言：_meta.schema / count 与 horses 一致（检索索引已移除）。"""
-    out = []
-    d = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
-    if not (isinstance(d, dict) and d.get("_meta", {}).get("schema") == "crops/v2"):
-        out.append("  ✗ v2 结构: crops.json 非 {_meta, horses}（schema 非 crops/v2）")
+    d = json.loads((ROOT / "data" / "basic.json").read_text(encoding="utf-8"))
+    if not (isinstance(d, dict) and d.get("_meta", {}).get("schema") == "basic/v1"):
+        out.append("  ✗ basic 结构: basic.json 非 {_meta, horses}（schema 非 basic/v1）")
         return out
     horses, meta = d["horses"], d["_meta"]
     if "index" in d:
-        out.append("  ✗ v2 结构: crops.json 不应包含 index（检索索引已移除）")
+        out.append("  ✗ basic 结构: basic.json 不应包含 index（检索索引已移除）")
+    if "manifest" in meta:
+        out.append("  ✗ basic 结构: _meta 不应包含 manifest（快照引用已解耦，快照由 data/manifest.json 登记）")
     if meta.get("count") != len(horses):
-        out.append(f"  ✗ v2 结构: _meta.count {meta.get('count')} ≠ horses {len(horses)}")
+        out.append(f"  ✗ basic 结构: _meta.count {meta.get('count')} ≠ horses {len(horses)}")
+    if not re.match(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$", str(meta.get("built") or "")):
+        out.append(f"  ✗ basic 结构: _meta.built 非 yyyy-MM-dd HH:mm:ss: {meta.get('built')}")
     if not out:
-        out.append(f"✔ crops v2: schema={meta['schema']} · {len(horses)} 匹 · 无 index")
+        out.append(f"✔ basic.json: schema={meta['schema']} · {len(horses)} 匹 · 无 index · built 格式正确")
     return out
 
 
@@ -477,8 +432,7 @@ def main():
     out.extend(identity_check())
     out.extend(uniqueness_check())
     out.extend(races_check())
-    out.extend(shutoku_check())
-    out.extend(v2_check())
+    out.extend(basic_check())
     if args.smoke:
         out.extend(smoke())
     print("\n".join(out))
