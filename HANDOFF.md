@@ -18,7 +18,7 @@ yunji-web/
 │   ├── index.html       # 主从分栏查看页（列表 + 详情，含血统/成绩/近况，hash 深链接）
 │   └── pedigree.html    # 完整血统图（hash 深链接）
 ├── data/
-│   ├── crops.json       # 站点数据（契约C，407 匹，含 races+stats；勿手改）
+│   ├── crops.json       # 站点数据（契约C，404 匹，{_meta,horses}；勿手改）
 │   ├── raw/             # 契约A：netkeiba.json / jbis.json / jbis_pedigree.json
 │   ├── races/google_ledger.csv # 契约B：比赛台账快照（649 条 / 135 匹，海外补缺/兜底）
 │   ├── aliases.json     # 马名别名表（映射 / action=create 自动建档）

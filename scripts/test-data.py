@@ -452,31 +452,19 @@ def shutoku_check():
 
 
 def v2_check():
-    """M5 crops v2 断言：_meta.schema / index 与 horses 一致 / facet 关键字段存在。"""
+    """M5 crops v2 断言：_meta.schema / count 与 horses 一致（检索索引已移除）。"""
     out = []
     d = json.loads((ROOT / "data" / "crops.json").read_text(encoding="utf-8"))
     if not (isinstance(d, dict) and d.get("_meta", {}).get("schema") == "crops/v2"):
-        out.append("  ✗ v2 结构: crops.json 非 {_meta, index, horses}（schema 非 crops/v2）")
+        out.append("  ✗ v2 结构: crops.json 非 {_meta, horses}（schema 非 crops/v2）")
         return out
-    horses, index, meta = d["horses"], d.get("index", {}), d["_meta"]
+    horses, meta = d["horses"], d["_meta"]
+    if "index" in d:
+        out.append("  ✗ v2 结构: crops.json 不应包含 index（检索索引已移除）")
     if meta.get("count") != len(horses):
         out.append(f"  ✗ v2 结构: _meta.count {meta.get('count')} ≠ horses {len(horses)}")
-    # index 倒排表：每个 id 都来自 horses；值不重复
-    id_set = {h.get("id") for h in horses}
-    bad = 0
-    for field, values in index.items():
-        for val, ids in values.items():
-            for i in ids:
-                if i not in id_set:
-                    bad += 1
-    if bad:
-        out.append(f"  ✗ v2 index: {bad} 个 id 不在 horses")
-    # 每匹 facet 关键字段
-    missing_facet = sum(1 for h in horses if not (h.get("facet") or {}).get("search_text"))
-    if missing_facet:
-        out.append(f"  ✗ v2 facet: {missing_facet} 匹缺 search_text")
     if not out:
-        out.append(f"✔ crops v2: schema={meta['schema']} · index {len(index)} 字段 · 全部 facet 就绪")
+        out.append(f"✔ crops v2: schema={meta['schema']} · {len(horses)} 匹 · 无 index")
     return out
 
 

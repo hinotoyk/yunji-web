@@ -12,7 +12,7 @@
 - **项目**：铁鸟翱天（コントレイル）产驹资料库 · GitHub Pages 静态站 · 个人检索
 - **站点**：`https://hinotoyk.github.io/yunji-web/page/`
 - **仓库**：`github.com/hinotoyk/yunji-web`（branch main，Actions 自动部署）
-- **当前数据状态**：404 匹 / 141 匹已出赛 / 血统 403+2 / crops.json v2（schema=crops/v2，含 facet 检索索引 + _meta.index 倒排表）
+- **当前数据状态**：404 匹 / 141 匹已出赛 / 血统 403+2 / crops.json v2（schema=crops/v2 = {_meta,horses}；检索索引已移除，待单独重建）
 
 ---
 
@@ -63,15 +63,17 @@
 
 ---
 
-## 4. crops.json v2 · 模块化结构与查询模型
+## 4. crops.json v2 · 模块化结构
 
 > 来源：原 data-dashboard-v1.md §2/§3（M5 设计，已实施）。**契约C 的唯一消费形态**。
+> **2026-08 拍板**：检索索引（顶层 `index` 倒排表 + 每匹 `facet`）已从 crops.json 移除；
+> 前端检索/筛选方案待后续单独设计，届时另行落地（当前 index 列表直接遍历 `horses`）。
 
 ### 4.1 文件布局
 
 ```
 data/
-├── crops.json              # 列表/检索唯一入口（瘦身版：无血统树、无 races）
+├── crops.json              # 列表唯一入口（瘦身版：无血统树、无 races、无检索索引）
 ├── racefiles/{id}.json     # 该马比赛记录（详情页按需加载；仅建有内容的马）
 ├── pedigree/{id}.json      # 该马血统树 + fno/cross（血统页按需加载；仅建有内容的马）
 └── images/                 # 图片（预留）
@@ -83,27 +85,12 @@ data/
 ### 4.2 结构
 
 ```
-crops.json = { _meta, index, horses[] }
+crops.json = { _meta, horses[] }
   _meta:  schema=crops/v2 · built · count · sources · manifest
-  index:  倒排表 {字段:{值:[id…]}}（性別/調教師/騎手/場名/格/血统祖先/登録状態…，带计数分面）
-  horses: 每匹 = 基础信息 + stats + facet（检索索引）+ races_file/pedigree_file 引用
+  horses: 每匹 = 基础信息 + stats + races_file/pedigree_file 引用
 ```
 
-### 4.3 查询模型（三层）
-
-| 层 | 数据 | 匹配方式 | 例子 |
-|---|---|---|---|
-| 模糊全文 | `facet.search_text`（全字段拼接） | 小写 substring | "ドバイ" → 跑过迪拜 |
-| 强匹配·等值 | `馬名`/`曾用名`/`性別`/`生年`/`登録状態`/`調教師`/`馬主`/`生産牧場`/`fno` | `===` | 調教師 = 田中克典 |
-| 强匹配·集合 | `騎手`/`場名`/`格`/`血统祖先`/`主要場地` | `Array.includes` | 血统祖先含 Northern Dancer |
-| 数值范围 | `stats` 数值字段 | 比较运算 | 賞金合計 ≥ 1亿 |
-
-规则：
-1. **归一化在构建时做一次**（NFKC + 去全半角空白 + toLowerCase）；前端零归一化逻辑。
-2. **搜索两段式**：先对 馬名/曾用名 精确等值（命中置顶），再 search_text 模糊。
-3. 数组字段 = **集合语义**（去重成员），不做子串。
-4. 人工字段只进 search_text，不做强匹配。
-5. 姓名字段（骑手/调教师/马主）在契约B 层已全名归一化。
+> 检索：暂无（索引已移除）。后续单独设计检索/筛选，不再往 crops.json 塞索引数据。
 
 ---
 
@@ -224,10 +211,13 @@ crops.json = { _meta, index, horses[] }
 
 ### 7.2 遗留 / 待探索项
 
-- **W4 待探索抓取项**（D4）：① 本马英文名（JBIS/netkeiba 详情页来源）；② セリ取引価格（netkeiba 详情页拍卖成交价区块，`parse_detail` 未抓）；③ **netkeiba クロス**：血统页 `<div class="blood_cross">`（表格：马名红字 + 百分比 + `N x N`；隐藏字段 FMFF/MFMF/MFFMF/MMMFF 表位置），探索 `N x N → S4×M4` 转换规则与 JBIS 对齐。
+- **W4 待探索抓取项**（D4，2026-08 探索闭环）：
+  - ① **本马英文名** ✅：来源 = netkeiba 详情页 `p.eng_name`（实测：スウィーティーベル→Sweetie Belle、ヴァンドレスト→Vent de l'Est）。`parse_detail` 已实现。**待回刷**：现有 404 匹历史记录缺 `英文名`/`セリ取引価格` 键。
+  - ② **セリ取引価格** ✅：来源 = netkeiba 详情表「セリ取引価格」行（无拍卖记录 = `-`）。`parse_detail` 已实现。待定：`-` 是否归一空串（与クロス `なし`→`""` 同口径）。
+  - ③ **netkeiba クロス** ✅（规则已解码并实现到 `parse_pedigree`）：`div.blood_cross` 隐藏字段 `input[name]=F/M路径`（每次出现一个），name 每字符 = 从本马往回一代，F=父系、M=母系；**首字符定侧**（F→S、M→M）、**长度=世代数**（FFF→S3、MFFF→M4、FMFMF→S5）。**表格 `N x N` 不编码侧向**（"5 x 5" 可能两次都在母侧，如 Danzig→M5×M5），必须用隐藏字段。转换：按祖先分组路径 → (侧, 世代) → 按 (世代升序, S<M) 排序 → `×` 连接 → JBIS 风格 `{名} ：S4×M4 ...`。验证：JBIS 侧 178/178 匹、591/591 段 100% 与血统树一致；netkeiba 实测 5 例（S3×M4 / M5×M5 / M4×S5 / S5×M5×M5 / M4×S5×M5）逐字对齐；无クロス（"なし"）→ 空串。百分比 = Σ(1/2)^世代，JBIS 不显示故转换时舍弃。
 - **収得口径边界**：仅中央，不含地方ダートグレード；若日后要把 Jpn 算入需另行实现规则。
-- **P5 低优先**：JBIS-only 马 母名/母父名缺失（parse_detail 未提取）；跨源血统命名不一致（netkeiba 无后缀 vs JBIS 带 `(USA)` → facet 血统祖先集合不一致）；赏金微量差（付加賞/四舍五入口径）。
-- **数据缺口**：`data/raw/` 旧抓取文件是否清理待定。
+- **P5 低优先**：JBIS-only 马 母名/母父名缺失（parse_detail 未提取）；跨源血统命名不一致（netkeiba 无后缀 vs JBIS 带 `(USA)` → 血统祖先集合不一致；クロス名同样无/有后缀，可用 JBIS 血统树节点作后缀来源对齐）；赏金微量差（付加賞/四舍五入口径）。
+- **数据缺口**：`data/raw/` 旧抓取文件是否清理待定；W4 新字段（英文名/セリ/结构化クロス）待一次全量回刷（详情页 + 血统页，约 800 请求 × ~6.5s ≈ 90 分钟）。
 
 ---
 
@@ -239,7 +229,7 @@ crops.json = { _meta, index, horses[] }
                         │
              build-data.py（唯一构建器）
                         ▼
-        data/crops.json（契约C v2 = {_meta,index,horses}）
+        data/crops.json（契约C v2 = {_meta,horses}）
         ├── data/racefiles/{id}.json   （按需）
         └── data/pedigree/{id}.json    （按需）
                         │
@@ -253,30 +243,9 @@ crops.json = { _meta, index, horses[] }
 
 ## 9. 文档清理记录
 
-### 9.1 已归档删除（git 历史可找回）
-
-| 删除的文档 | 为何可删 | 要点去向 |
-|---|---|---|
-| `docs/data-funnel.md` | v1 血缘树，被 v2 取代（早期） | → §5 |
-| `docs/session-handoff-2026-08-16/17/18/19.md` | 阶段性交接，被契约/漏斗覆盖（早期） | → §5 |
-| `docs/design-race-verification.md` | 自认"待确认"设计稿，演进偏离其预设（早期） | — |
-| `docs/data-funnel-v2.md` | 设计已全部实施，硬知识已提炼 | → §5 |
-| `docs/data-funnel-v2-exec.md` | M1~M5 分步实施记录，全部完成勾选 | → §5 |
-| `docs/data-dashboard-v1.md` | M5 设计已实施（数据分类/crops v2/大盘） | → §2/§4 |
-| `docs/data-source-refactor.md` | 技术权威，要点已提炼 | → §6 |
-| `docs/session-handoff-2026-08-19-M2.md` | M2+M3 会话交接，要点已沉淀 | → §5.4/§5.5 |
-| `docs/biz-review-notes.md` | 业务发现记录，被 solution 承接 | → §7 |
-| `docs/business-review-2026-08-24.md` | 三匹测试马会话结论，决策/问题已提炼 | → §7 |
-| `docs/biz-review-solution-2026-08-24.md` | 行动计划 W1~W5 已实施，决策已提炼 | → §5.2/§7 |
-
-### 9.2 本地临时产物清理（git 已忽略）
-
-- `data/probe_race_report.md` / `data/probe_race_report_graded.md`（探测报告）✅ 已删
-- `data/race-diffs-report.md` / `data/race-diffs.json`（差异审核页已删，compare-races.py 已移除）✅ 已删
-
-### 9.3 保留（勿删）
+### 9.1 保留（勿删）
 
 - `docs/data-contracts.md`（契约活文档，随字段改动更新）
 - `data/merge-report.md` / `new-horses-report.md` / `sync-report.md`（流水线产物，每次 build 重建）
 - `data/registry.json` / `jockeys.json` / `aliases.json`（身份/骑手/别名数据，核心）
-- `history/*.json`（历史快照，manifest 自动滚动保留 ≤30，当前为空）
+- `history/*.json`（历史快照，manifest 自动滚动保留 ≤30，当前 3 个；前端 index 已不再展示，后续单独做历史查阅页）

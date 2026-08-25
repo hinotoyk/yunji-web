@@ -211,13 +211,29 @@ def parse_pedigree(html):
                     nxt.extend(node["_children"])
             pedigree[label].append(row)
             queue = nxt
-    # W4/D4：netkeiba クロス（血統表下方 div.blood_cross，如「5代目までに生じたクロス Halo 12.50% 4 x 4」）
+    # W4/D4：netkeiba クロス → JBIS 风格（如「Halo ：S4×M4」，与 jbis 对齐）。
+    # div.blood_cross 隐藏字段 input[name] = F/M 路径：每字符 = 从本马往回一代，F=父系、M=母系；
+    # 首字符定侧（F→S、M→M），长度 = 世代数（如 FFF→S3、MFFF→M4、FMFMF→S5、MMMFF→M5）。
+    # 表格的「N x N」不编码侧向（如 Danzig "5 x 5" 实际两次都在母侧 → M5×M5），必须用隐藏字段。
+    # 转换：按祖先分组路径 → (侧, 世代) → 按 (世代升序, S<M) 排序 → × 连接；多祖先空格分隔。
+    # 无隐藏字段 → 无クロス（"なし"）→ 空串（与 jbis 无 cross 一致）。
     cross = ""
     bc = soup.select_one("div.blood_cross")
     if bc:
-        cross = re.sub(r"^\s*5代目までに生じたクロス\s*", "", bc.get_text(" ", strip=True)).strip()
-        if cross == "なし":
-            cross = ""  # 无近亲交配 → 空（与 jbis 无 cross 一致）
+        paths = {}
+        for inp in bc.find_all("input"):
+            n = inp.get("name") or ""
+            v = (inp.get("value") or "").strip()
+            if n in ("pid", "ped") or not v or not re.fullmatch(r"[FM]+", n):
+                continue
+            paths.setdefault(v, []).append(n)
+        if paths:
+            entries = []
+            for anc, plist in paths.items():
+                segs = [(("S" if p[0] == "F" else "M"), len(p)) for p in plist]
+                segs.sort(key=lambda t: (t[1], 0 if t[0] == "S" else 1))
+                entries.append("%s ：%s" % (anc, "×".join("%s%d" % (s, g) for s, g in segs)))
+            cross = " ".join(entries)
     return {"pedigree": pedigree, "fno": fno, "cross": cross}
 
 

@@ -1,6 +1,6 @@
 /* 云迹 · 前端数据工具
- * crops.json v2 = {_meta, index, horses}；历史快照 = v1 裸数组（含 races/pedigree 内嵌）。
- * 统一入口：loadCrops() 返回 {horses, meta, index}（兼容 v1/v2）
+ * crops.json v2 = {_meta, horses}；历史快照 = v1 裸数组（含 races/pedigree 内嵌）。
+ * 统一入口：loadCrops() 返回 {horses, meta}（兼容 v1/v2）
  * 按需加载：ensureRaces(h) / ensurePedigree(h) —— 详情页才拉拆分文件，列表不拉
  */
 window.YJ = (function () {
@@ -10,8 +10,8 @@ window.YJ = (function () {
     const r = await fetch(url || "../data/crops.json");
     if (!r.ok) throw new Error("HTTP " + r.status);
     const d = await r.json();
-    if (Array.isArray(d)) return { horses: d, meta: { schema: "crops/v1" }, index: null };
-    return { horses: d.horses || [], meta: d._meta || {}, index: d.index || null };
+    if (Array.isArray(d)) return { horses: d, meta: { schema: "crops/v1" } };
+    return { horses: d.horses || [], meta: d._meta || {} };
   }
 
   async function ensureRaces(h) {

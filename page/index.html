@@ -27,15 +27,6 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .nav-count b{color:var(--green);font-weight:700}
 /* left pane */
 .pane{flex:0 0 380px;display:flex;flex-direction:column;border-right:1px solid var(--line);min-width:0;background:var(--card-soft)}
-.pane-search{padding:12px 14px;border-bottom:1px solid var(--line)}
-.input{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line-2);border-radius:10px;padding:0 12px;height:38px;transition:border-color .15s,box-shadow .15s}
-.input:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(63,143,120,.12)}
-.input svg{color:var(--muted-2);flex:none}
-.input input{flex:1;border:none;outline:none;background:none;color:var(--ink);font:inherit;font-size:13px}
-.pane-filters{display:flex;gap:6px;padding:10px 14px;flex-wrap:wrap}
-.pill{font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--line-2);padding:4px 13px;border-radius:999px;cursor:pointer;transition:all .12s}
-.pill:hover{color:var(--ink);border-color:var(--muted-2)}
-.pill.on{color:#fff;background:var(--green);border-color:var(--green);font-weight:500}
 .list{flex:1;overflow-y:auto;padding:4px 10px 16px}
 .item{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:10px;cursor:pointer;border:1px solid transparent;margin-bottom:2px}
 .item:hover{background:var(--card);border-color:var(--line)}
@@ -49,7 +40,6 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .item .b{font-size:10.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);flex:none}
 .item .b.m{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
 .item .b.f{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
-.pf2,.pf3{margin-top:-4px;padding-top:0}
 .empty{padding:40px 10px;text-align:center;color:var(--muted-2);font-size:12.5px}
 /* right pane */
 .detail{flex:1;overflow-y:auto;min-width:0}
@@ -117,11 +107,6 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .sig em{color:var(--amber);font-style:normal;font-weight:700}
 .note{background:var(--amber-soft);border-color:var(--amber-line)}
 .note p{color:#6b5736}
-/* version switch */
-.nav-r{margin-left:auto;display:flex;align-items:center;gap:10px}
-.ver{font-size:12px;color:var(--muted);border:1px solid var(--line-2);border-radius:8px;padding:4px 8px;background:var(--card);outline:none;cursor:pointer;font-family:inherit;max-width:190px}
-.ver:focus{border-color:var(--green)}
-.ver.hist{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
 .loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:99;font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -132,34 +117,7 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
     <nav>
       <div class="logo"><span class="dot"></span>云迹<em>铁鸟翱天产驹</em></div>
       <span class="nav-count"><b id="count">278</b> 头</span>
-      <div class="nav-r">
-        <select id="ver" class="ver" title="切换历史版本"></select>
-      </div>
     </nav>
-    <div class="pane-search">
-      <div class="input">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="text" placeholder="搜索马名 / 译名 / 母父 / 牧场…">
-      </div>
-    </div>
-    <div class="pane-filters">
-      <button class="pill on" data-y="all">全部</button>
-      <button class="pill" data-y="2023">2023年生</button>
-      <button class="pill" data-y="2024">2024年生</button>
-      <button class="pill" data-y="2025">2025年生</button>
-    </div>
-    <div class="pane-filters pf2">
-      <button class="pill on" data-sx="all">性别</button>
-      <button class="pill" data-sx="牡">牡</button>
-      <button class="pill" data-sx="牝">牝</button>
-      <button class="pill" data-sx="セ">セ</button>
-    </div>
-    <div class="pane-filters pf3">
-      <button class="pill on" data-st="all">状态</button>
-      <button class="pill" data-st="raced">已出赛</button>
-      <button class="pill" data-st="unraced">未出赛</button>
-      <button class="pill" data-st="graded">重赏马</button>
-    </div>
     <div class="list" id="list"></div>
   </aside>
 
@@ -171,8 +129,8 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 <script src="data-util.js"></script>
 <script src="race-ui.js"></script>
 <script>
-let HORSES=[],q="",y="all",sx="all",st="all",sel=null,verSel=null;
-const list=document.getElementById("list"),count=document.getElementById("count"),verEl=document.getElementById("ver");
+let HORSES=[],sel=null;
+const list=document.getElementById("list"),count=document.getElementById("count");
 const DATE_RE=/^(\d{1,2}月\d{1,2}|2[0-9]|1[0-9]|[0-9]+\.[0-9]+)/;
 function mini(h){
   const s=h.stats||{};const n=h.race_count||(h.races||[]).length;
@@ -191,19 +149,8 @@ function parseKin(h){
     return {label,body};
   });
 }
-function filtered(){
-  return HORSES.filter(h=>{
-    const hay=[h.馬名,h.译名,h.母名,h.母父名,h.生産牧場,h.生产牧场,h.調教師,h.管理調教師,h.馬主,h.生年月日].join(" ");
-    const raced=(h.race_count||(h.races||[]).length)>0;
-    const graded=(h.stats&&h.stats.重賞出走)>0;
-    return (!q||hay.includes(q))
-      &&(y==="all"||(h.生年||h._source)===y)
-      &&(sx==="all"||h.性別===sx)
-      &&(st==="all"||(st==="raced"?raced:st==="unraced"?!raced:graded));
-  });
-}
 function renderList(){
-  const hs=filtered();
+  const hs=HORSES;
   count.textContent=hs.length;
   list.innerHTML=hs.map(h=>{
     const on=h.馬名===sel?" on":"";
@@ -217,7 +164,7 @@ function renderList(){
       </span>
       <span class="b ${b}">${esc(h.性別)}</span>
     </div>`;
-  }).join("")||`<div class="empty">未找到匹配的产驹</div>`;
+  }).join("")||`<div class="empty">暂无产驹数据</div>`;
 }
 function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}
 function renderPedigree(h){
@@ -237,7 +184,7 @@ function renderPedigree(h){
   const tree=(arr,off)=>{const out=[];for(let g=0;g<5;g++){const row=arr[g]||[];for(let i=0;i<2**g;i++)out.push(cell(row[i]||null,g,i,off));}return out.join("");};
   const foot=[] ;
   if(h.fno)foot.push(`<span><b>FNo</b> ${esc(h.fno)}</span>`);
-  if(h.cross)foot.push(`<span><b>クロス</b> ${esc(h.cross)}</span>`);
+  if(h.cross)foot.push(`<span style="white-space:pre-line"><b>クロス</b> ${esc(h.cross)}</span>`);
   return`<h3>血统 · PEDIGREE <span style="font-weight:400;letter-spacing:0">${esc(h.馬名)} 5代血统表（可横向滚动）</span></h3>
     <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
     ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
@@ -316,23 +263,14 @@ list.addEventListener("click",e=>{
   const it=e.target.closest(".item");if(!it)return;
   const h=HORSES.find(x=>x.馬名===it.dataset.k);
   if(h){renderDetail(h);history.replaceState(null,"","#"+encodeURIComponent(h.馬名));}
-});document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim();renderList();});
-document.querySelectorAll(".pane-filters").forEach(row=>row.addEventListener("click",e=>{
-  const p=e.target.closest(".pill");if(!p)return;
-  row.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));
-  p.classList.add("on");
-  if(p.dataset.y)y=p.dataset.y;
-  if(p.dataset.sx)sx=p.dataset.sx;
-  if(p.dataset.st)st=p.dataset.st;
-  renderList();
-}));
+});
 async function loadData(url){
   const r=await fetch(url);
   if(!r.ok)throw new Error("HTTP "+r.status);
   return await r.json();
 }
-function applyData(hs,verLabel){
-  // M5.4：crops v2 = {_meta,index,horses}；历史快照 v1 = 裸数组
+function applyData(hs){
+  // M5.4：crops v2 = {_meta,horses}；历史快照 v1 = 裸数组（仅历史查阅页使用）
   HORSES=(hs&&hs.horses)?hs.horses:hs;
   const keep=HORSES.find(h=>h.馬名===sel);
   sel=keep?keep.馬名:(HORSES[0]?.馬名||null);
@@ -341,32 +279,12 @@ function applyData(hs,verLabel){
   else document.getElementById("dinner").innerHTML=`<div class="empty" style="padding:80px 0">当前版本没有产驹数据</div>`;
 }
 (async function init(){
-  let mf,hs;
   try{
-    mf=await loadData("../data/manifest.json");
-    hs=await loadData("../data/crops.json");
+    const hs=await loadData("../data/crops.json");
+    applyData(hs);
   }catch(e){
     list.innerHTML=`<div class="empty">数据加载失败（${e.message}），请通过 http 服务器访问</div>`;
     return;
-  }
-  try{
-    const cur=mf.current||"";
-    verEl.innerHTML=[
-      `<option value="">当前版 (${cur})</option>`,
-      ...(mf.versions||[]).filter(v=>v.id!==cur).map(v=>
-        `<option value="${v.file}">历史 ${v.date} · ${v.count}匹${v.note?" · "+v.note:""}</option>`)
-    ].join("");
-    verEl.addEventListener("change",async()=>{
-      verEl.classList.toggle("hist",!!verEl.value);
-      try{
-        const hs=verEl.value?await loadData("../"+verEl.value):await loadData("../data/crops.json");
-        applyData(hs,verEl.value);
-      }catch(e){alert("版本加载失败: "+e.message);}
-    });
-    applyData(hs,"");
-  }catch(e){
-    console.error(e);
-    list.innerHTML=`<div class="empty">渲染失败：${e.message}</div>`;
   }
   const m=location.hash.slice(1);
   const hit=HORSES.find(h=>h.馬名===decodeURIComponent(m));

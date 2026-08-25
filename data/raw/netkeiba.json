@@ -138784,7 +138784,10 @@
     ]
    ]
   },
-  "fno": "F2-d"
+  "fno": "F2-d",
+  "英文名": "Badrinath",
+  "セリ取引価格": "-",
+  "cross": "Halo ：S4×M5 Storm Cat ：M3×S5 Northern Dancer ：M4×M5 Mr. Prospector ：M4×M5"
  },
  {
   "nk_id": "2023107238",
@@ -146728,7 +146731,7 @@
   "fno": "F9-f",
   "英文名": "Sweetie Belle",
   "セリ取引価格": "-",
-  "cross": "Halo 12.50% 4 x 4"
+  "cross": "Halo ：S4×M4"
  },
  {
   "nk_id": "2023105300",
@@ -147149,7 +147152,7 @@
   "fno": "F13-c",
   "英文名": "Switch in Love",
   "セリ取引価格": "1億8,700万円 (2023年 セレクトセール)",
-  "cross": "Fappiano 9.38% 5 x 4 Mr. Prospector 6.25% 5 x 5"
+  "cross": "Fappiano ：M4×S5 Mr. Prospector ：M5×M5"
  },
  {
   "nk_id": "2023104885",
@@ -153839,7 +153842,7 @@
   "fno": "F22",
   "英文名": "",
   "セリ取引価格": "5,500万円 (2024年 セレクトセール)",
-  "cross": "なし"
+  "cross": ""
  },
  {
   "nk_id": "2023105378",
@@ -154257,7 +154260,10 @@
     ]
    ]
   },
-  "fno": "F13-d"
+  "fno": "F13-d",
+  "英文名": "Going to Sky",
+  "セリ取引価格": "3,300万円 (2023年 セレクトセール)",
+  "cross": "Unbridled ：S4×M4 Mr. Prospector ：M5×M5"
  },
  {
   "nk_id": "2023106084",

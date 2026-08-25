@@ -152,6 +152,50 @@ def resolve_identity(record, reg):
     return entry["id"], entry
 
 
+def _build_suffix_map(*sources):
+    """从血统树节点收集 基名 → 国别后缀 映射（如 'Halo' → '(USA)'）。
+    JBIS 血统树节点名带后缀（Halo(USA)），netkeiba 节点名不带 → 用此映射给 netkeiba クロス 补后缀。"""
+    m = {}
+    for src in sources:
+        for h in (src or []):
+            ped = h.get("pedigree", {}) or {}
+            for side in ("父", "母"):
+                for row in ped.get(side, []):
+                    for node in row:
+                        nm = (node.get("name") or "").strip()
+                        base = racelib.strip_country_suffix(nm)
+                        if base and base != nm:
+                            m.setdefault(base, nm[len(base):].strip())
+    return m
+
+
+def _fmt_cross(cross, suffix_map=None):
+    """クロス → 展示格式：每行「名字(国籍) 记法 百分比%」，多条换行分隔。
+    输入为规范记法（netkeiba 新格式 / JBIS）：'Fappiano(USA) ：M4×S5 Mr. Prospector(USA) ：M5×M5'。
+    百分比 = Σ(1/2)^世代 ×100（netkeiba 页即此口径：M4×S5 → 9.38%；S5×M5×M5 照算），2 位小数。
+    国别后缀：源自带（JBIS）保留；netkeiba 源无后缀 → 用 suffix_map（JBIS 血统树）补齐。
+    空/なし → ''；无法解析（旧格式等）原样保留不丢数据。"""
+    if not cross:
+        return ""
+    cross = str(cross).strip()
+    if cross in ("なし", "-", "--"):
+        return ""
+    lines = []
+    for m in re.finditer(r"([^：]+?)\s*：\s*((?:[SM]\d)(?:×[SM]\d)*)", cross):
+        raw = m.group(1).strip()
+        base = racelib.strip_country_suffix(raw)
+        if base != raw:
+            name = raw                      # 源自带后缀（JBIS）→ 保留
+        elif suffix_map and base in suffix_map:
+            name = base + suffix_map[base]  # netkeiba 无后缀 → JBIS 血统树补
+        else:
+            name = base                     # 无后缀信息 → 裸名
+        segs = m.group(2)
+        pct = sum(0.5 ** int(g) for g in re.findall(r"\d+", segs)) * 100
+        lines.append("%s %s %.2f%%" % (name, segs, pct))
+    return "\n".join(lines) if lines else cross
+
+
 def _mother_from_pedigree(pedigree):
     """从血统树 母 G1 提取母名。JBIS parse_detail 未提取母名（business-review P5），
     (母名, 生年) 关联需从血统树取。"""
@@ -201,6 +245,8 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
     jbis = {norm(h.get("馬名", "")): h for h in jbis_records}
     enrich = {norm(h.get("馬名", "")): h for h in jbis_ped_records if h.get("pedigree")}
     nk_keys = {norm(r.get("馬名", "")) for r in nk_records}
+    # W4：国别后缀映射（JBIS 血统树节点名带 (USA) 等 → 给 netkeiba クロス 补后缀）
+    suffix_map = _build_suffix_map(enrich.values(), jbis.values())
 
     def build(r, j, e):
         hid, entry = resolve_identity({
@@ -234,7 +280,7 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
             "セリ取引価格": r.get("セリ取引価格", ""),  # W4/D4：netkeiba セリ取引価格
             "pedigree": r.get("pedigree") or j.get("pedigree", {}),
             "fno": r.get("fno") or j.get("fno", "") or e.get("fno", ""),
-            "cross": r.get("cross", "") or j.get("cross", "") or e.get("cross", ""),  # W4：netkeiba クロス 优先
+            "cross": _fmt_cross(r.get("cross", "") or j.get("cross", "") or e.get("cross", ""), suffix_map),  # W4：netkeiba クロス 优先
         }
         return h
 
@@ -297,7 +343,7 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
             "総賞金": j.get("総賞金", ""),
             "pedigree": j.get("pedigree", {}),
             "fno": j.get("fno", ""),
-            "cross": j.get("cross", ""),
+            "cross": _fmt_cross(j.get("cross", ""), suffix_map),
         })
         out.append(h)
 
@@ -549,9 +595,9 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     return "\n".join(lines) + "\n"
 
 
-# ── M5.3 crops v2 输出：拆分文件 + facet + {_meta, index, horses} ──
+# ── M5.3 crops v2 输出：拆分文件 + {_meta, horses} ──
 # 设计：docs/PROJECT.md §4。每匹 races/血统树拆到 data/racefiles/{id}.json /
-# data/pedigree/{id}.json（仅建有内容的马），crops 只留瘦身档案 + facet + 文件引用。
+# data/pedigree/{id}.json（仅建有内容的马），crops 只留瘦身档案 + 文件引用。
 
 
 def write_split_files(records):
@@ -585,15 +631,11 @@ def write_split_files(records):
 
 
 def build_v2(records, built_iso, sources, manifest_id):
-    """records（含 races/pedigree 内嵌）→ crops v2 输出 dict {_meta, index, horses}。
-    - 每匹生成 facet（M5.2）
+    """records（含 races/pedigree 内嵌）→ crops v2 输出 dict {_meta, horses}。
     - 拆分 races/pedigree 文件（M5.3）
-    - _meta.index 倒排表（带计数分面导航）
+    - 检索索引（facet/index）已移除，待后续单独设计（2026-08 拍板）
     """
-    for h in records:
-        h["facet"] = racelib.build_facet(h)
     n_race, n_ped = write_split_files(records)
-    index = racelib.build_index(records)
     return {
         "_meta": {
             "schema": "crops/v2",
@@ -602,7 +644,6 @@ def build_v2(records, built_iso, sources, manifest_id):
             "sources": sources,
             "manifest": manifest_id,
         },
-        "index": index,
         "horses": records,
     }, n_race, n_ped
 
@@ -636,7 +677,7 @@ def main():
     netkeiba_db = netkeiba_races.load_races_db()
     jockeys = netkeiba_races.load_jockeys()
     if netkeiba_db:
-        # fetch 无参会自读 crops.json 取 nk_id→馬名；crops v2 已改 {_meta,index,horses}，必须显式传
+        # fetch 无参会自读 crops.json 取 nk_id→馬名；crops v2 已改 {_meta,horses}，必须显式传
         name_by_nk = {h["nk_id"]: h.get("馬名", "") for h in records if h.get("nk_id")}
         nk_recs = netkeiba_races.fetch(name_by_nk)
         matched, created, unmatched, aliases, n_with = attach_races(
@@ -673,7 +714,7 @@ def main():
         with open(os.path.join(HISTORY, f"{cur_id}.json"), "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=1)
 
-    # ── M5.3 crops v2：{_meta, index, horses} + races/pedigree 拆分 + facet ──
+    # ── M5.3 crops v2：{_meta, horses} + races/pedigree 拆分 ──
     sources = {}
     for name in ("netkeiba", "jbis", "ledger"):
         p = os.path.join(DATA, "raw", f"{name}.json") if name != "ledger" else os.path.join(RACES_DIR, "google_ledger.csv")
@@ -688,7 +729,6 @@ def main():
     mf = update_manifest(cur_id, len(records), args.note, has_snapshot=not args.no_snapshot)
     print(f"✔ crops.json v2 已更新 ({len(records)} 匹 · schema={v2['_meta']['schema']})")
     print(f"✔ 拆分: data/racefiles/ ×{n_race} · data/pedigree/ ×{n_ped}（仅建有内容的马）")
-    print(f"✔ facet: 每匹已生成 · index: {len(v2['index'])} 个分面字段")
     print(f"✔ 快照(v1 完整形态): history/{cur_id}.json · 版本数: {len(mf['versions'])}")
 
 

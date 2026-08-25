@@ -77,7 +77,7 @@ function renderPedigree(h){
   const tree=(arr,off)=>{const out=[];for(let g=0;g<5;g++){const row=arr[g]||[];for(let i=0;i<2**g;i++)out.push(cell(row[i]||null,g,i,off));}return out.join("");};
   const foot=[];
   if(h.fno)foot.push(`<span><b>FNo</b> ${esc(h.fno)}</span>`);
-  if(h.cross)foot.push(`<span><b>クロス</b> ${esc(h.cross)}</span>`);
+  if(h.cross)foot.push(`<span style="white-space:pre-line"><b>クロス</b> ${esc(h.cross)}</span>`);
   return`<h3>血统 · PEDIGREE <span style="font-weight:400;letter-spacing:0">${esc(h.馬名)} 5代血统表</span></h3>
     <div class="pedi-scroll"><div class="pside">${tree(f,0)}${tree(m,16)}</div></div>
     ${foot.length?`<div class="pedi-foot">${foot.join("")}</div>`:""}`;
