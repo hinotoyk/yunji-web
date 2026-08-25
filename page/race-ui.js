@@ -1,4 +1,4 @@
-/* 云迹 · 比赛展示组件（index.html / detail.html 共用）
+/* 云迹 · 比赛展示组件（index.html 使用）
  * 数据契约C：h.races[]（逐场履历）+ h.stats（汇总）
  * API: RaceUI.statsHTML(h)  → KPI 卡 HTML（放 hero 区）
  *      RaceUI.section(h,n)  → {html, bind} 比赛成绩区块（过滤 + 排序履历表）
@@ -6,13 +6,14 @@
 window.RaceUI = (function () {
   "use strict";
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  const G = { GI: "g1", GII: "g2", GIII: "g3", L: "gL" };
+  const G = { GI: "g1", GII: "g2", GIII: "g3", L: "gL", JpnI: "g1", JpnII: "g2", JpnIII: "g3", OP: "gL" };
   const V = { 中央: "v0", 地方: "v1", 海外: "v2" };
+  // W3/D3：契约B 字段展示（race_class/条件/性齢/管理調教師 已舍弃；新增 芝ダ/性/年齢）
   const COLS = [
-    ["日付", "日付"], ["場名", "場名"], ["R", "R"], ["競走名", "競走名"], ["条件", "条件"],
-    ["距離", "距離"], ["馬場", "馬場"], ["状態", "状態"], ["頭数", "頭数"], ["人気", "人気"],
+    ["日付", "日付"], ["場名", "場名"], ["R", "R"], ["レース名", "レース名"],
+    ["距離", "距離"], ["芝ダ", "芝ダ"], ["馬場", "馬場"], ["頭数", "頭数"], ["人気", "人気"],
     ["単勝", "単勝"], ["着順", "結果"], ["タイム", "タイム"], ["着差", "着差"], ["斤量", "斤量"],
-    ["騎手", "騎手"], ["馬体重", "馬体重"], ["賞金", "賞金"], ["調教師", "管理調教師"],
+    ["性", "性"], ["年齢", "年齢"], ["騎手", "騎手"], ["馬体重", "馬体重"], ["賞金", "賞金"], ["調教師", "調教師"],
   ];
   const SORTABLE = new Set(["日付", "距離", "結果", "賞金"]);
 
@@ -77,12 +78,12 @@ window.RaceUI = (function () {
   }
 
   /* ── 逐场履历 ── */
-  const DEFAULTS = { venue: "all", cls: "all", res: "all", sort: "日付", dir: -1 };
+  const DEFAULTS = { venue: "all", res: "all", sort: "日付", dir: -1 };
 
   function rowsFor(h, st) {
     let rs = h.races.slice();
     if (st.venue !== "all") rs = rs.filter(r => r.venue_type === st.venue);
-    if (st.cls !== "all") rs = rs.filter(r => r.race_class === st.cls);
+    // W3/D7：race_class 筛选暂缓（前端不按类别过滤；重赏标签按 格 展示）
     if (st.res === "win") rs = rs.filter(r => r.結果 === 1);
     else if (st.res === "top3") rs = rs.filter(r => r.結果 === 1 || r.結果 === 2 || r.結果 === 3);
     else if (st.res === "dnf") rs = rs.filter(r => typeof r.結果 === "string");
@@ -103,11 +104,10 @@ window.RaceUI = (function () {
       <td class="mono">${esc(r.日付)}</td>
       <td>${esc(r.場名)}${vtag}</td>
       <td class="mono">${esc(r.R ?? "")}</td>
-      <td>${esc(r.競走名)}${grade}</td>
-      <td>${esc(r.条件 || "")}</td>
+      <td>${esc(r.レース名)}${grade}</td>
       <td class="mono">${esc(r.距離 ?? "")}</td>
+      <td>${esc(r.芝ダ || "")}</td>
       <td>${esc(r.馬場 || "")}</td>
-      <td>${esc(r.状態 || "")}</td>
       <td>${r.頭数 ?? ""}</td>
       <td>${r.人気 ?? ""}</td>
       <td class="mono">${r.単勝 ?? ""}</td>
@@ -115,10 +115,12 @@ window.RaceUI = (function () {
       <td class="mono">${esc(r.タイム || "")}</td>
       <td class="mono">${esc(r.着差 || "")}</td>
       <td class="mono">${r.斤量 ?? ""}</td>
+      <td>${esc(r.性 || "")}</td>
+      <td>${r.年齢 ?? ""}</td>
       <td>${esc(r.騎手 || "")}</td>
       <td>${r.馬体重 ?? ""}</td>
       <td class="mono">${r.賞金 ? r.賞金.toLocaleString() : ""}</td>
-      <td>${esc(r.管理調教師 || "")}</td>
+      <td>${esc(r.調教師 || "")}</td>
     </tr>`;
   }
 
@@ -132,7 +134,7 @@ window.RaceUI = (function () {
       };
     }
     const graded = (s.重賞 || []).length
-      ? `<div class="rgraded">重赏 / Listed 出场：${s.重賞.map(g => `${esc(g.競走名)} <em>${esc(g.格)} ${g.結果}着 · ${esc(g.日付)}</em>`).join("　")}</div>` : "";
+      ? `<div class="rgraded">重赏 / Listed 出场：${s.重賞.map(g => `${esc(g.レース名)} <em>${esc(g.格)} ${g.結果}着 · ${esc(g.日付)}</em>`).join("　")}</div>` : "";
     const head = `<tr>${COLS.map(([label, col]) =>
       `<th data-col="${col}" class="${SORTABLE.has(col) ? "sortable" : ""}">${label}${SORTABLE.has(col) ? " ⇅" : ""}</th>`).join("")}</tr>`;
     const html = `<section class="sec" id="race-sec">
@@ -140,7 +142,6 @@ window.RaceUI = (function () {
       ${graded}
       <div class="rbar">
         <select data-rf="venue"><option value="all">全部场地</option><option value="中央">中央</option><option value="地方">地方</option><option value="海外">海外</option></select>
-        <select data-rf="cls"><option value="all">全部类别</option><option value="重賞">重赏</option><option value="リステッド">L / Listed</option><option value="オープン">OP 特别</option><option value="条件・未勝利">条件 / 未胜利</option></select>
         <select data-rf="res"><option value="all">全部着顺</option><option value="win">胜</option><option value="top3">前三</option><option value="dnf">未完走</option></select>
         <span class="rhint">显示 <b>${races.length}</b> 场 · 点击表头排序</span>
       </div>

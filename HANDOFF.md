@@ -15,10 +15,8 @@ GitHub Pages 托管的静态站：**铁鸟翱天（コントレイル）产驹�
 ```
 yunji-web/
 ├── page/
-│   ├── index.html       # 主从分栏查看页（407 匹，5代血统树，年份筛选）
-│   ├── detail.html      # 独立详情页（hash 深链接）
-│   ├── preview.html     # 比赛数据临时预览页（核验用，阶段2 后移除）
-│   └── admin.html       # 数据管理页（补录人工字段，勿用于覆盖抓取字段）
+│   ├── index.html       # 主从分栏查看页（列表 + 详情，含血统/成绩/近况，hash 深链接）
+│   └── pedigree.html    # 完整血统图（hash 深链接）
 ├── data/
 │   ├── crops.json       # 站点数据（契约C，407 匹，含 races+stats；勿手改）
 │   ├── raw/             # 契约A：netkeiba.json / jbis.json / jbis_pedigree.json
@@ -34,14 +32,17 @@ yunji-web/
 │   │   └── sheets_ledger.py  # Google Sheets 台账适配器（URL/列名/日期格式）
 │   ├── racelib.py       # 比赛域公共逻辑（契约B 校验/场地推导/汇总统计，与源无关）
 │   ├── pull_races.py    # 比赛流水线：适配器 → 契约B → google_ledger.csv + sync-report
-│   ├── scrape_netkeiba.py   # 契约A：netkeiba 抓取 --all/--horse/--name
+│   ├── scrape_netkeiba.py   # 契约A：netkeiba 抓取 --new/--ped/--races/--all/--horse/--name
 │   ├── scrape_jbis.py       # 契约A：JBIS 血统 --all/--horse/--fill
 │   ├── build-data.py        # 唯一构建器：契约A + 契约B → crops.json + merge-report + 快照
-│   └── test-data.py         # 抽样校验 + 契约B/C 全量断言
+│   ├── test-data.py         # 抽样校验 + 契约B/C 全量断言
+│   └── tools/               # 一次性/维护工具
+│       ├── build_registry.py    # 身份映射表种子生成（M1，一次性）
+│       └── build_jockeys.py     # 骑手字典构建（M2，一次性）
 ├── docs/data-contracts.md   # 数据契约定义（核心文档，先读它）
 ├── .github/workflows/
 │   ├── deploy.yml           # Pages 自动部署
-│   └── update-data.yml      # 同步：schedule 定时(每天UTC22:00) + 手动 races/all/single
+│   └── update-data.yml      # 同步：schedule 每日=daily / 每周日=weekly + 手动 daily/weekly/all/single
 └── HANDOFF.md
 ```
 
@@ -66,7 +67,7 @@ yunji-web/
 | 5代血统图 | **JBIS** | `/horse/{id}/pedigree/` 结构化 JSON，FNo/クロス |
 | 比赛数据 | **Google Sheets 台账（人工维护，权威源）** | 逐场全字段（日付/場名/競走名/距離/馬場/結果/賞金/騎手…），中央+地方+海外；经 sheets_ledger 适配 |
 | 自动建档 | 台账独有马（如 Grand Warrior） | aliases.json `action=create`，性別/生年由性齢推导 |
-| 人工注释（译名/近况/血统分析/备考） | 管理页补录 | 下次全量抓取会覆盖事实字段 |
+| 人工注释（译名/近况/血统分析/备考） | 直接改 crops.json | 下次全量抓取会覆盖事实字段 |
 
 **已知限制**：
 - JBIS 马名登记滞后、403 限流退避；netkeiba 数据截断以 netkeiba 为准（沿用既有处理）
@@ -77,20 +78,27 @@ yunji-web/
 ## 5. 同步链路
 
 ```
-定时（每天UTC 22:00）或 手动按钮：
-    pull_races.py（拉台账→google_ledger.csv+sync-report）
-  + [手动 all/single 才抓 netkeiba/JBIS]
-  → build-data.py（契约A+契约B → crops.json + merge-report + 快照）
-  → test-data.py（抽样 + 契约B/C 断言，失败则中止不发布）
-  → commit & push → deploy.yml → Pages 自动更新
+定时：每天UTC 22:00 = daily / 每周日UTC 02:00 = weekly；或手动按钮（daily/weekly/all/single）。
+  daily : scrape_netkeiba.py --new（新马/改名对账，D0 后不自动建档）
+        → pull_races.py（拉台账→google_ledger.csv+sync-report）
+        → scrape_netkeiba.py --races（成绩页双轨制增量）
+        → build-data.py（契约A+契约B → crops.json + merge-report + 快照）
+        → test-data.py（抽样 + 契约B/C 断言，失败则中止不发布）
+        → commit & push → deploy.yml → Pages 自动更新
+  weekly: scrape_netkeiba.py --ped（血统/クロス 补全） + scrape_jbis.py --fill（兜底补填）
+        → pull_races.py → build-data.py → test-data.py → commit & push
 ```
 
 本地命令：
 
 ```
+python scripts/scrape_netkeiba.py --new            # 新马/改名对账（每日）
 python scripts/pull_races.py                       # 比赛数据（快）
-python scripts/scrape_netkeiba.py --all --sleep 1.0   # 马匹数据（重）
-python scripts/scrape_jbis.py --all --sleep 1.2       # 血统（重）
+python scripts/scrape_netkeiba.py --races          # 成绩页增量（每日）
+python scripts/scrape_netkeiba.py --ped            # 血统/クロス（每周）
+python scripts/scrape_jbis.py --fill               # JBIS 兜底补填（每周）
+python scripts/scrape_netkeiba.py --all --sleep 1.0   # 马匹数据（重，慎用）
+python scripts/scrape_jbis.py --all --sleep 1.2       # 血统（重，慎用）
 python scripts/build-data.py --note "手动更新"
 python scripts/test-data.py
 ```
@@ -98,7 +106,6 @@ python scripts/test-data.py
 ## 6. 注意事项
 
 - **契约分层是本项目地基**：任何新代码不得直接读数据源格式，必须走契约
-- 管理页写入依赖浏览器 localStorage + GitHub API（纯静态无后端）
 - 前端血统树父/母两列 × 5 代，G5 深代文字截断属正常
 - 免责声明在页面 footer；许可证 CC BY-NC-SA 4.0
 - 照片：hero 已留 4:5 占位，`photo` 字段 + `data/images/` 已预留（阶段4 做上传）

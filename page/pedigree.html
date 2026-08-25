@@ -50,7 +50,7 @@ footer{border-top:1px solid var(--line);padding:18px 0 40px;text-align:center;co
 
 <nav>
   <div class="logo"><span class="dot"></span>云迹<em>血统表</em></div>
-  <a class="back" id="backLink" href="detail.html">← 返回详情</a>
+  <a class="back" id="backLink" href="index.html">← 返回列表</a>
 </nav>
 
 <main id="dinner"></main>
@@ -85,7 +85,7 @@ function renderPedigree(h){
 async function render(h){
   await YJ.ensurePedigree(h);       // M5.4：按需加载血统树（v2 拆文件）
   document.title=(h.译名||h.馬名)+" · 血统 · PEDIGREE · 云迹";
-  document.getElementById("backLink").href="detail.html#"+encodeURIComponent(h.馬名);
+  document.getElementById("backLink").href="index.html#"+encodeURIComponent(h.馬名);
   document.getElementById("dinner").innerHTML=`
     <div class="hhead">
       <h1>${esc(h.译名||h.馬名)}</h1>

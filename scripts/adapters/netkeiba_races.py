@@ -190,9 +190,9 @@ def parse_race_page(html):
 
 
 def convert_to_contract_b(rec, horse_name, jockeys=None):
-    """netkeiba 成绩页记录 → 契约B 记录（适配器输出，供 build-data 直接消费）。
-    - 賞金：万円 → 円（×10000）；海外/缺失 → 0
-    - 着順/状態：netkeiba 单字缩写 → 契约B 标准值
+    """netkeiba 成绩页记录 → 契约B 记录（适配器输出，供 build-data 直接消费，W3/D3 字段规范）。
+    - 赏金：万円 → 円（×10000）；海外/缺失 → 空字符串（非 0）
+    - 着順/状态：netkeiba 单字缩写 → 契约B 标准值（状態→馬場，馬場→芝ダ 并归一化 ダ/障）
     - 騎手：jockeys.json[jockey_id] 全名（截断免疫）；无 id 用原值
     - 附：race_id / jockey_id / 本賞金 / 來源
     """
@@ -202,25 +202,28 @@ def convert_to_contract_b(rec, horse_name, jockeys=None):
     jockey_name = jockeys.get(jockey_id) or rec.get("騎手", "")
     state = STATE_MAP.get((rec.get("状態") or "").strip(), (rec.get("状態") or "").strip())
     result = racelib.normalize_result(rec.get("着順", ""))
-    prize_raw = rec.get("賞金") or 0
-    try:
-        prize_yen = int(float(str(prize_raw).replace(",", "")) * 10000)
-    except (ValueError, TypeError):
-        prize_yen = 0
+    prize_raw = rec.get("賞金")
+    if prize_raw in ("", None):
+        prize_yen = ""  # W3/D3：海外/缺失 → 空字符串
+    else:
+        try:
+            prize_yen = int(float(str(prize_raw).replace(",", "")) * 10000)
+        except (ValueError, TypeError):
+            prize_yen = ""
     return {
         "日付": rec.get("日付", ""),
         "場名": rec.get("場名", ""),
         "R": rec.get("R", ""),
-        "競走名": rec.get("レース名", ""),
-        "条件": cond,
+        "レース名": rec.get("レース名", ""),
         "格": grade,
         "距離": rec.get("距離", ""),
-        "馬場": rec.get("馬場", ""),
-        "状態": state,
+        "芝ダ": racelib._normalize_surface(rec.get("馬場", "")),
+        "馬場": state,
         "天候": rec.get("天気", ""),
         "出走馬名": horse_name,
         "騎手": jockey_name,
-        "性齢": "",
+        "性": "",
+        "年齢": "",
         "斤量": rec.get("斤量", ""),
         "頭数": rec.get("頭数", ""),
         "人気": rec.get("人気", ""),
@@ -229,14 +232,14 @@ def convert_to_contract_b(rec, horse_name, jockeys=None):
         "タイム": rec.get("タイム", ""),
         "上り": rec.get("上り", ""),
         "着差": rec.get("着差", ""),
+        "通過": rec.get("通過", ""),
+        "ペース": rec.get("ペース", ""),
         "馬体重": rec.get("馬体重", ""),
         "増減": rec.get("増減", ""),
         "賞金": prize_yen,
         "Rt": "",
-        "管理調教師": "",
-        "母父名": "",
+        "調教師": "",
         "venue_type": racelib.venue_type(rec.get("場名", "")),
-        "race_class": racelib.race_class(grade, cond),
         "race_id": rec.get("race_id", ""),
         "jockey_id": jockey_id,
         "本賞金": rec.get("本賞金", 0) or 0,

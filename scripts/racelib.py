@@ -3,9 +3,11 @@
 """云迹·比赛域公共逻辑（与数据源无关）。
 
 契约B 定义见 docs/data-contracts.md：
-- coerce_record(): 字符串行 → 契约B 类型化记录（非法值记入 issues）
-- venue_type() / race_class(): 场地/级别推导（领域知识，不依赖任何源）
-- compute_stats() / derive_basic(): 汇总统计 / 建档推导
+- coerce_record(): 字符串行 → 契约B 类型化记录（非法值记入 issues；W3/D3 字段规范）
+- venue_type() / race_meta_from_name(): 场地/格 推导（领域知识，不依赖任何源）
+- compute_stats() / derive_basic() / compute_age(): 汇总统计（W2/D2 主口径 中央+地方）/ 建档推导
+- compute_shutoku() / compute_honsho_prize(): 収得賞金 规则
+- strip_country_suffix() / is_unnamed_name() / norm_facet(): 身份归一化 / 检索 facet
 
 适配器（scripts/adapters/*）与本模块解耦：适配器只做"源格式 → 契约字段名 + 字符串值"，
 类型规范化、值域校验、推导一律走本模块，保证任何数据源进入同一套逻辑。
@@ -21,7 +23,11 @@ OVERSEAS_VENUES = {"ウッドバイン", "デルマー", "フォートエリー"
                    "アケダクト", "ベルモントパーク", "サラトガ", "キーンランド"}
 
 RESULT_DNF = {"中止", "取消", "除外", "失格"}
-GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "L"}
+# 格（W3/D3，从 netkeiba レース名推导）：GRADE_ORDER 为规范顺序（含 Jpn*/OP）；
+# GRADES = 重赏/重赏级（含障害 JG*，用于 重賞出走/has_graded_win，OP 不算重赏）。
+GRADE_ORDER = ["GI", "JpnI", "GII", "JpnII", "GIII", "JpnIII", "L", "OP"]
+GRADES = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII", "L", "JGI", "JGII", "JGIII"}
+ALL_GRADES = GRADE_ORDER + ["JGI", "JGII", "JGIII"]
 
 DATE_RE = re.compile(r"^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$")
 
@@ -33,6 +39,23 @@ def is_unnamed_name(name):
     """占位名判定：占位名不能作为身份匹配依据，必须走 nk_id。"""
     name = name or ""
     return bool(UNNAMED_RE.search(name)) or ("＿" in name)
+
+
+# 国家后缀（JBIS 登记名等，W1/D1）：`Grand Warrior(JPN)` 与 `Grand Warrior` 是同一匹马。
+# 身份键归一化时去除，统一「去国家后缀 + 括号/空白」后的马名。
+_COUNTRY_SUFFIX_RE = re.compile(
+    r"\((?:(?:JPN|USA|GB|IRE|NZ|FR|AU|AUS|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK))\)$")
+
+
+def strip_country_suffix(name):
+    """去国家后缀 `(JPN)/(USA)/(GB)/(IRE)/(NZ)/(FR)/(AU)…`（链式，可多后缀）。
+    仅去除末尾的国家代码括号后缀，不影响其它括号内容：`Grand Warrior(JPN)` → `Grand Warrior`。"""
+    name = (name or "").strip()
+    prev = None
+    while prev != name:
+        prev = name
+        name = _COUNTRY_SUFFIX_RE.sub("", name).strip()
+    return name
 
 
 # 生年月日：netkeiba `2025年3月10日` / JBIS `2025.03.10` 等
@@ -53,10 +76,14 @@ def birth_date_key(h):
     return (0, 0, 0)
 
 # 契约B 字段清单（适配器必须提供；值可为字符串，由 coerce_record 类型化）
+# W3/D3 最终清单：`日付, 場名, R, レース名, 格, 距離, 芝ダ, 馬場, 天候, 出走馬名, 騎手, 性,
+# 年齢, 斤量, 頭数, 人気, 単勝, 結果, タイム, 上り, 着差, 通過, ペース, 馬体重, 増減, 賞金,
+# Rt, 調教師, venue_type, 來源`（race_class/条件/性齢/管理調教師/母父名 已舍弃）
 CONTRACT_FIELDS = [
-    "日付", "場名", "R", "競走名", "条件", "格", "距離", "馬場", "状態", "天候",
-    "出走馬名", "騎手", "性齢", "斤量", "頭数", "人気", "単勝", "結果", "タイム",
-    "上り", "着差", "馬体重", "増減", "賞金", "Rt", "管理調教師", "母父名",
+    "日付", "場名", "R", "レース名", "格", "距離", "芝ダ", "馬場", "天候",
+    "出走馬名", "騎手", "性", "年齢", "斤量", "頭数", "人気", "単勝", "結果",
+    "タイム", "上り", "着差", "通過", "ペース", "馬体重", "増減", "賞金", "Rt",
+    "調教師", "venue_type", "來源",
 ]
 
 
@@ -86,17 +113,9 @@ def venue_type(name):
     return "未知"
 
 
-def race_class(grade, cond):
-    """重赏 / リステッド / オープン / 条件・未勝利"""
-    grade = (grade or "").strip()
-    cond = cond or ""
-    if grade in ("GI", "GII", "GIII"):
-        return "重賞"
-    if grade == "L":
-        return "リステッド"
-    if "OP" in cond:
-        return "オープン"
-    return "条件・未勝利"
+def _normalize_surface(surf):
+    """芝ダ 归一化（W3/D3）：netkeiba 距离列 芝/ダ/障；台账 芝/ダート/AW → 芝/ダ/AW；障害→障。"""
+    return {"ダート": "ダ", "障害": "障", "芝": "芝", "ダ": "ダ", "障": "障", "AW": "AW"}.get(surf or "", surf or "")
 
 
 def _cell(row, key):
@@ -109,7 +128,7 @@ def _cell(row, key):
 
 
 def coerce_record(row, issues):
-    """契约B：字符串行 → 类型化记录；非法/缺关键字段记入 issues 并返回 None"""
+    """契约B：字符串行 → 类型化记录；非法/缺关键字段记入 issues 并返回 None（W3/D3 字段规范）"""
     name, date_s, result_s = _cell(row, "出走馬名"), _cell(row, "日付"), _cell(row, "結果")
     if not name:
         issues.append({"type": "缺馬名"})
@@ -132,7 +151,11 @@ def coerce_record(row, issues):
             issues.append({"type": "結果格式异常", "馬名": name, "日付": date_norm, "結果": result_s})
             return None
 
-    prize = parse_int(_cell(row, "賞金")) or 0
+    # W3/D3：赏金/単勝 缺失 → 空字符串（非 0）；斤量 保持字符串
+    prize = parse_int(_cell(row, "賞金"))
+    prize = prize if prize is not None else ""
+    odds = parse_float(_cell(row, "単勝"))
+    odds = odds if odds is not None else ""
     dist = parse_int(_cell(row, "距離"))
     if dist is None and _cell(row, "距離"):
         issues.append({"type": "距離非数字", "馬名": name, "日付": date_norm, "距離": _cell(row, "距離")})
@@ -142,50 +165,59 @@ def coerce_record(row, issues):
     if vt == "未知":
         issues.append({"type": "未知場名", "馬名": name, "日付": date_norm, "場名": venue})
 
+    # W3：性/年齢 分离。台账源自带 性齢（如「牡2」）→ 性=首字、年齢=数字（JRA 馬齢表记，实岁）；
+    # 已建档马的 年齢 由 build-data 按生年月日实时重算（更精确），此处为台账兜底。
+    seirei = _cell(row, "性齢")
+    sex_m = re.match(r"([牡牝セ])", seirei)
+    sex = sex_m.group(1) if sex_m else ""
+    age_m = re.search(r"(\d+)", seirei)
+    age = age_m.group(1) if age_m else ""
     return {
         "日付": date_norm,
         "場名": venue,
         "R": _cell(row, "R"),
-        "競走名": _cell(row, "競走名"),
-        "条件": _cell(row, "条件"),
+        "レース名": _cell(row, "レース名") or _cell(row, "競走名"),
         "格": _cell(row, "格"),
         "距離": dist if dist is not None else _cell(row, "距離"),
-        "馬場": _cell(row, "馬場"),
-        "状態": _cell(row, "状態"),
+        "芝ダ": _normalize_surface(_cell(row, "芝ダ") or _cell(row, "馬場")),
+        "馬場": _cell(row, "馬場"),  # W3 新列：马场=状态（良/稍重/重...）
         "天候": _cell(row, "天候"),
         "出走馬名": name,
         "騎手": _cell(row, "騎手"),
-        "性齢": _cell(row, "性齢"),
-        "斤量": parse_float(_cell(row, "斤量")),
+        "性": sex,
+        "年齢": age,
+        "斤量": _cell(row, "斤量"),
         "頭数": parse_int(_cell(row, "頭数")),
         "人気": parse_int(_cell(row, "人気")),
-        "単勝": parse_float(_cell(row, "単勝")),
+        "単勝": odds,
         "結果": result if result is not None else dnf,
         "タイム": _cell(row, "タイム"),
         "上り": _cell(row, "上り"),
         "着差": _cell(row, "着差"),
+        "通過": _cell(row, "通過"),
+        "ペース": _cell(row, "ペース"),
         "馬体重": parse_int(_cell(row, "馬体重")),
         "増減": _cell(row, "増減"),
         "賞金": prize,
         "Rt": parse_int(_cell(row, "Rt")),
-        "管理調教師": _cell(row, "管理調教師"),
-        "母父名": _cell(row, "母父名"),
+        "調教師": _cell(row, "調教師") or _cell(row, "管理調教師"),
         "venue_type": vt,
-        "race_class": race_class(_cell(row, "格"), _cell(row, "条件")),
+        "來源": _cell(row, "來源"),
     }
 
 
-# netkeiba レース名 → 格/条件（M2 适配器用）
-GRADE_SUFFIX_RE = re.compile(r"\((J?G[I]{1,3}|L)\)\s*$")
+# netkeiba レース名 → 格/条件（适配器用；W3/D3 含 Jpn*/OP，不再生成 race_class）
+GRADE_SUFFIX_RE = re.compile(r"\((J?G[I]{1,3}|Jpn[I]{1,3}|L|OP)\)\s*$")
 COND_SUFFIX_RE = re.compile(r"\((1勝クラス|2勝クラス|3勝クラス|OP)\)")
 PLAIN_COND_RE = re.compile(r"\d+歳(?:以上)?(?:新馬|未勝利|\d*勝クラス)")
 COND_NAR_RE = re.compile(r"(C\d|\d+歳\s*[A-Z]|\d+歳ー?\d+)")
 
 
 def race_meta_from_name(name):
-    """netkeiba レース名 → (格, 条件)（尽力提取，供 race_class / 前端展示）。
+    """netkeiba レース名 → (格, 条件)。格 = 规范后缀（GI/GII/GIII/JpnI/JpnII/JpnIII/L/OP，含障害 JG*）；
+    条件 仅作信息保留（不再生成 race_class）。
     例: '札幌2歳S(GIII)'→('GIII',''); '摩周湖特別(2勝クラス)'→('','2勝クラス');
-        '野路菊S(OP)'→('','オープン'); '2歳新馬'→('','2歳新馬'); '3歳A　4'→('','3歳A')。"""
+        '野路菊S(OP)'→('OP',''); '2歳新馬'→('','2歳新馬'); '3歳A　4'→('','3歳A')。"""
     name = (name or "").strip()
     m = GRADE_SUFFIX_RE.search(name)
     grade = m.group(1) if m else ""
@@ -233,23 +265,27 @@ def normalize_result(v):
 
 
 def compute_stats(recs):
-    """从契约B 逐场履历计算汇总 stats"""
-    started = [r for r in recs if isinstance(r["結果"], int) or r["結果"] == "中止"]
+    """从契约B 逐场履历计算汇总 stats（W2/D2：主口径只计 中央+地方，与 netkeiba 通算对齐；
+    海外场只在 場地別 等展示分面保留，供 venue 标签筛选展示）"""
+    # 主口径 = 中央 + 地方
+    main = [r for r in recs if r.get("venue_type") in ("中央", "地方")]
+    started = [r for r in main if isinstance(r["結果"], int) or r["結果"] == "中止"]
     finished = [r for r in started if isinstance(r["結果"], int)]
     n = len(started)
     w = sum(1 for r in finished if r["結果"] == 1)
     p2 = sum(1 for r in finished if r["結果"] == 2)
     p3 = sum(1 for r in finished if r["結果"] == 3)
-    prize = sum(r["賞金"] or 0 for r in recs)
+    prize = sum(r["賞金"] or 0 for r in main)
 
     def rate(x, base):
         return f"{x / base:.3f}" if base else "0.000"
 
+    # 展示分面保留全量（含海外，供场地筛选展示）；W3：芝ダ=芝/ダ/障，馬場=状态
     dist, surf, cond, venue_s = {}, {}, {}, {}
     for r in recs:
-        key_d = f"{r['馬場'] or '?'}{r['距離']}"
-        key_s = r["馬場"] or "?"
-        key_c = r["状態"] or "?"
+        key_d = f"{r['芝ダ'] or '?'}{r['距離']}"
+        key_s = r["芝ダ"] or "?"
+        key_c = r["馬場"] or "?"
         key_v = r["venue_type"] or "?"
         win = 1 if r["結果"] == 1 else 0
         in2 = 1 if r["結果"] in (1, 2) else 0
@@ -261,7 +297,8 @@ def compute_stats(recs):
             g["連対"] += in2
             g["賞金"] += r["賞金"] or 0
 
-    graded = [r for r in recs if r["格"] in GRADES]
+    # 重賞统计同主口径（中央+地方，KPI 一致；海外重赏在履历表保留 + venue 标签）
+    graded = [r for r in main if r["格"] in GRADES]
     graded_wins = [r for r in graded if r["結果"] == 1]
 
     dates = [r["日付"] for r in recs]
@@ -280,7 +317,7 @@ def compute_stats(recs):
         "賞金合計": prize,
         "重賞出走": len(graded),
         "重賞勝ち": len(graded_wins),
-        "重賞": [{"日付": r["日付"], "競走名": r["競走名"], "格": r["格"], "結果": r["結果"]} for r in graded],
+        "重賞": [{"日付": r["日付"], "レース名": r["レース名"], "格": r["格"], "結果": r["結果"]} for r in graded],
         "距離別": dist,
         "馬場別": surf,
         "状態別": cond,
@@ -291,19 +328,36 @@ def compute_stats(recs):
 
 
 def derive_basic(recs):
-    """从 性齢/日付 推导 性別（取最近一场，兼容被阉割）、生年（一致性推导）"""
+    """从 性/年齢（回退 性齢）推导 性別（取最近一场，兼容被阉割）、生年（年齢=馬齢 → 生年 = 比赛年 - 年齢）"""
     latest = max(recs, key=lambda r: r["日付"])
-    m = re.match(r"([牡牝セ])", _cell(latest, "性齢"))
+    m = re.match(r"([牡牝セ])", _cell(latest, "性") or _cell(latest, "性齢"))
     sex = m.group(1) if m else ""
     births = set()
     for r in recs:
-        m2 = re.search(r"(\d+)", _cell(r, "性齢"))
+        m2 = re.search(r"(\d+)", _cell(r, "年齢") or _cell(r, "性齢"))
         if m2:
             births.add(int(r["日付"][:4]) - int(m2.group(1)))
     birth = ""
     if births:
         birth = str(min(births)) if len(births) == 1 else str(max(births))
     return sex, birth
+
+
+def compute_age(race_date, birth_ymd):
+    """马在 race_date（YYYY-MM-DD）当天的 年齢（周岁，未满 1 岁 = 0；与 JRA 表记一致）。
+    无生年月日 → 空字符串。"""
+    if not race_date or not birth_ymd:
+        return ""
+    m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", str(race_date))
+    bm = re.match(r"(\d{4})[年\-\./]?(\d{1,2})[月\-\./]?(\d{1,2})", str(birth_ymd))
+    if not m or not bm:
+        return ""
+    rd = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    bd = (int(bm.group(1)), int(bm.group(2)), int(bm.group(3)))
+    age = rd[0] - bd[0]
+    if (rd[1], rd[2]) < (bd[1], bd[2]):
+        age -= 1
+    return str(max(0, age))
 
 
 # ── 収得賞金（M4，设计 data-funnel-v2.md §4.1）──
@@ -324,12 +378,12 @@ _SHUTOKU_GRADE_RE = re.compile(r"\((J?G[I]{1,3}|Jpn[I]{1,3})\)")
 
 def race_shutoku_class(rec):
     """记录/レース名 → 収得クラス键（重賞 / 新馬 / 未勝利 / 1勝 / 2勝 / 3勝 / オープン / 条件）。
-    重赏优先用契约B 规范化的 `格` 字段，回退レース名括号；条件クラス优先用 `条件` 字段，
-    回退レース名（メイクデビュー = 新馬别称）。非重赏 1着 固定额见 SHUTOKU_FIXED。"""
+    重赏优先用契约B 规范化的 `格` 字段，回退レース名括号；条件クラス从レース名解析
+    （メイクデビュー = 新馬别称）。非重赏 1着 固定额见 SHUTOKU_FIXED。"""
     if isinstance(rec, str):
         name, grade, cond = rec, "", ""
     else:
-        name = rec.get("競走名") or rec.get("レース名") or ""
+        name = rec.get("レース名") or rec.get("競走名") or ""
         grade = rec.get("格") or ""
         cond = rec.get("条件") or ""
     if grade in _SHUTOKU_GRADES or _SHUTOKU_GRADE_RE.search(name):
@@ -374,7 +428,7 @@ def compute_shutoku(recs):
             v = SHUTOKU_FIXED[cls] * 10000
         else:
             v = 0
-        if (r.get("馬場") or "") == "障害":
+        if (r.get("芝ダ") or "") == "障":
             sho += v
         else:
             flat += v
@@ -431,7 +485,7 @@ def build_facet(h):
         h.get("血统分析") or "", h.get("馬名意味") or "",
         h.get("調教師") or "", h.get("馬主") or "", h.get("生産牧場") or "",
         *jockeys, *venues, *grades,
-        *[str(r.get("競走名") or "") for r in races],
+        *[str(r.get("レース名") or r.get("競走名") or "") for r in races],
         *ancestors,
     ]
     search_text = norm_facet(" ".join(p for p in search_parts if p))

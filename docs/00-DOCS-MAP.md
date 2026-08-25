@@ -26,6 +26,7 @@
 | 5 | `docs/data-funnel-v2-exec.md` | 漏斗 v2 分步实施（M1~M5 已全部完成，DoD 已达成） |
 | 6 | `docs/data-source-refactor.md` | 数据源调研结论 + netkeiba 血统解析算法 + 踩坑记录（技术权威） |
 | 7 | `docs/session-handoff-2026-08-19-M2.md` | 最近一次交接快照（M2+M3 完成、M4 判定输入） |
+| 8 | `docs/business-review-2026-08-24.md` | **业务梳理结论**：三匹测试马数据流核对 + 问题清单（P1~P5）+ 已拍板决策（D1/D2） |
 
 > 快速操作（日常使用）：`README.md`（命令/结构）· `HANDOFF.md`（交接视角，⚠ 部分内容待随改名更新）。
 
@@ -151,17 +152,16 @@ data/pedigree/{id}.json    该马血统树+fno/cross（血统页按需，405 个
 | `data/probe_race_report.md`（110KB） | ✅ 已删，历史探测报告，无消费方 |
 | `data/probe_race_report_graded.md`（36KB） | ✅ 已删，同上 |
 | `data/race-diffs-report.md`（1.2KB） | ✅ 已删，compare-races 每次重建 |
+| `data/race-diffs.json`（81KB） | ✅ 已删，原 review.html 已删，compare-races.py 也已移除 |
 
 ### 5.3 保留（勿删）
 | 文件 | 说明 |
 |---|---|
-| `data/race-diffs.json` | **业务消费方**（page/review.html 读它），必须保留 |
 | `data/merge-report.md` / `new-horses-report.md` / `sync-report.md` | 流水线产物，每次 build 重建 |
 | `data/registry.json` / `jockeys.json` / `aliases.json` | 身份/骑手/别名数据，核心 |
-| `history/*.json`（9 个） | 历史快照，manifest 自动滚动保留 ≤30 |
+| `history/*.json` | 历史快照，manifest 自动滚动保留 ≤30（当前为空） |
 
 ### 5.4 可选（需你拍板）
-- `history/` 是否只保留最近 N 个快照（如 5 个）进一步瘦身？当前 9 个全被 manifest 引用，删除需同步 manifest。
 - `data/raw/` 旧抓取文件是否清理？见 `docs/data-source-refactor.md` §9 已知限制。
 
 ---
@@ -178,8 +178,7 @@ data/pedigree/{id}.json    该马血统树+fno/cross（血统页按需，405 个
         ├── data/racefiles/{id}.json   （按需）
         └── data/pedigree/{id}.json    （按需）
                         │
-             前端 page/*.html（只读）
-             admin.html（写人工字段，直接改 crops.json）
+             前端 page/*.html（只读，index + pedigree）
 ```
 
 **改数据流程**：改台账 → `python scripts/pull_races.py` → `python scripts/build-data.py` → `python scripts/test-data.py` → 提交。

@@ -113,6 +113,8 @@ def parse_detail(html, nk_id):
             if k in prof:
                 return prof[k]
         return ""
+    # W4/D4：英文名 = 马名下方 p.eng_name；セリ取引価格 = 详情表行（无拍卖记录为 '-'）
+    eng = soup.select_one("p.eng_name")
     return {
         "nk_id": nk_id,
         "登録状態": t.get("status", ""),
@@ -127,6 +129,8 @@ def parse_detail(html, nk_id):
         "通算成績": g("通算成績"),
         "獲得賞金": g("獲得賞金 (中央)", "獲得賞金(中央)"),
         "主な勝鞍": g("主な勝鞍"),
+        "英文名": eng.get_text(" ", strip=True) if eng else "",
+        "セリ取引価格": g("セリ取引価格"),
         "_raw_title": title.get_text(" ", strip=True) if title else "",
     }
 
@@ -207,7 +211,14 @@ def parse_pedigree(html):
                     nxt.extend(node["_children"])
             pedigree[label].append(row)
             queue = nxt
-    return {"pedigree": pedigree, "fno": fno}
+    # W4/D4：netkeiba クロス（血統表下方 div.blood_cross，如「5代目までに生じたクロス Halo 12.50% 4 x 4」）
+    cross = ""
+    bc = soup.select_one("div.blood_cross")
+    if bc:
+        cross = re.sub(r"^\s*5代目までに生じたクロス\s*", "", bc.get_text(" ", strip=True)).strip()
+        if cross == "なし":
+            cross = ""  # 无近亲交配 → 空（与 jbis 无 cross 一致）
+    return {"pedigree": pedigree, "fno": fno, "cross": cross}
 
 
 def parse_list_row(tr):
@@ -527,6 +538,7 @@ def main():
             ped = parse_pedigree(fetch(PEDIGREE_URL.format(id=nk_id)))
             merged[nk_id]["pedigree"] = ped["pedigree"]
             merged[nk_id]["fno"] = ped["fno"]
+            merged[nk_id]["cross"] = ped["cross"]  # W4/D4：netkeiba クロス
             n_cells = sum(len(r) for r in (ped["pedigree"].get("父", []) + ped["pedigree"].get("母", [])))
             print(f"  [{i}/{len(todo)}] {row.get('馬名', nk_id)} ped=OK({n_cells}格) fno={ped['fno'] or '-'}")
         except Exception as e:

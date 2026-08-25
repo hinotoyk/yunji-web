@@ -6,10 +6,10 @@ netkeiba 成绩页骑手名全站截断（5 字截成 4 字，如 佐々木大�
 从 /jockey/result/{id}/ 页 <title> 提取全名（"佐々木大輔の年度別成績 | 騎手データ - netkeiba"）。
 
 用法:
-    python scripts/build_jockeys.py                 # 增量：只抓缺失的 id
-    python scripts/build_jockeys.py --force         # 全量重抓
-    python scripts/build_jockeys.py --limit 10      # 调试：只抓前 10 个缺失
-    python scripts/build_jockeys.py --sleep 1.0     # 请求间隔（默认 1.5s）
+    python scripts/tools/build_jockeys.py                 # 增量：只抓缺失的 id
+    python scripts/tools/build_jockeys.py --force         # 全量重抓
+    python scripts/tools/build_jockeys.py --limit 10      # 调试：只抓前 10 个缺失
+    python scripts/tools/build_jockeys.py --sleep 1.0     # 请求间隔（默认 1.5s）
 """
 import argparse
 import io
@@ -25,10 +25,10 @@ if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     except Exception:
         pass
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scrape_netkeiba import fetch, jitter  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 RACES_DB = ROOT / "data" / "raw" / "netkeiba_races.json"
 JOCKEYS_PATH = ROOT / "data" / "jockeys.json"
 JOCKEY_URL = "https://db.netkeiba.com/jockey/result/{id}/"

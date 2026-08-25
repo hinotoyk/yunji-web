@@ -51,16 +51,17 @@ def load_raw(name):
 
 
 def norm(name):
-    return re.sub(r"[ 　()（）\[\]【】]", "", name or "").strip()
+    """身份键归一化：先去国家后缀（`Grand Warrior(JPN)`→`Grand Warrior`，W1/D1），再去括号/空白。"""
+    return re.sub(r"[ 　()（）\[\]【】]", "", racelib.strip_country_suffix(name) or "").strip()
 
 
 def load_registry():
     """读取身份映射表 data/registry.json → 索引结构（M1，见 data-funnel-v2.md §3）。
-    不存在则报错：先跑 python scripts/build_registry.py（M1.1 种子）。
+    不存在则报错：先跑 python scripts/tools/build_registry.py（M1.1 种子）。
     """
     path = os.path.join(DATA, "registry.json")
     if not os.path.exists(path):
-        sys.exit("❌ 无 data/registry.json：先运行 python scripts/build_registry.py（M1.1 种子）")
+        sys.exit("❌ 无 data/registry.json：先运行 python scripts/tools/build_registry.py（M1.1 种子）")
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     horses = data.get("horses", [])
@@ -128,14 +129,19 @@ def resolve_identity(record, reg):
     # 命中但名字不同 → 改名：names 追加新名（旧名=曾用名）
     current = (entry.get("names") or [""])[-1]
     if name and current != name:
-        entry["names"] = entry.get("names") or []
-        if name not in entry["names"]:
-            entry["names"].append(name)
-        entry["updated"] = datetime.now().strftime("%Y-%m-%d")
-        # 未命名 → 正式名：清除未命名标记
-        if entry.get("未命名") and not racelib.is_unnamed_name(name):
-            entry["未命名"] = False
-        reg["by_name_year"][(norm(name), birth)] = entry
+        # W1/D1 防回退：源记录为占位名、registry 当前名已是正式名（如 JBIS 兜底改名后，
+        # netkeiba 源仍是占位名 `〇〇の2023`）→ 不把名字改回占位名（占位名不是权威身份名）。
+        if racelib.is_unnamed_name(name) and not racelib.is_unnamed_name(current):
+            pass
+        else:
+            entry["names"] = entry.get("names") or []
+            if name not in entry["names"]:
+                entry["names"].append(name)
+            entry["updated"] = datetime.now().strftime("%Y-%m-%d")
+            # 未命名 → 正式名：清除未命名标记
+            if entry.get("未命名") and not racelib.is_unnamed_name(name):
+                entry["未命名"] = False
+            reg["by_name_year"][(norm(name), birth)] = entry
     # 命中且 keys 缺 nk_id（JBIS 兜底马被 netkeiba 收录）→ 补 keys
     if nk_id and not (entry.get("keys") or {}).get("nk_id"):
         entry.setdefault("keys", {})["nk_id"] = nk_id
@@ -144,6 +150,49 @@ def resolve_identity(record, reg):
         entry.setdefault("keys", {})["jbis_id"] = jbis_id
         reg["by_jbis"][jbis_id] = entry
     return entry["id"], entry
+
+
+def _mother_from_pedigree(pedigree):
+    """从血统树 母 G1 提取母名。JBIS parse_detail 未提取母名（business-review P5），
+    (母名, 生年) 关联需从血统树取。"""
+    try:
+        return (pedigree or {}).get("母", [[]])[0][0].get("name", "")
+    except (IndexError, KeyError, TypeError):
+        return ""
+
+
+def _fill_from_jbis(target, j, reg):
+    """JBIS 记录并入已有 netkeiba 实体（W1/D1，不再无条件新建）：
+    1. 占位名 → 正式名（registry 改名簿记：names 追加、未命名=false）
+    2. 补 keys（jbis_id）
+    3. 补基础字段（netkeiba 空 → JBIS）
+    4. cross/fno 增强（JBIS クロス 补充，netkeiba 主源没有）"""
+    jname = j.get("馬名") or ""
+    # 1) 占位名 → 正式名（用去国家后缀名，如 Grand Warrior(JPN) → Grand Warrior）
+    if jname and racelib.is_unnamed_name(target.get("馬名") or ""):
+        hid, entry = resolve_identity({
+            "nk_id": target.get("nk_id", ""), "jbis_id": j.get("jbis_id", ""),
+            "馬名": racelib.strip_country_suffix(jname), "生年": target.get("生年", ""),
+        }, reg)
+        target["id"] = hid
+        target["馬名"] = (entry.get("names") or [""])[-1]
+        target["曾用名"] = list((entry.get("names") or [])[:-1])
+    # 2) 补 keys（jbis_id）
+    if j.get("jbis_id") and not target.get("jbis_id"):
+        target["jbis_id"] = j["jbis_id"]
+    # 3) 补基础字段（netkeiba 空 → JBIS）；占位档的「0戦0勝」视为默认值 → JBIS 通算成績優先
+    for k in ("登録状態", "調教師", "総賞金", "毛色", "生年月日", "産地", "馬主", "生産牧場"):
+        if not target.get(k) and j.get(k):
+            target[k] = j[k]
+    if j.get("通算成績"):
+        _t = target.get("通算成績") or ""
+        if (not _t) or re.match(r"^0戦0勝", _t):
+            target["通算成績"] = j["通算成績"]
+    # 4) cross / fno 增强
+    if not target.get("cross") and j.get("cross"):
+        target["cross"] = j["cross"]
+    if not target.get("fno") and j.get("fno"):
+        target["fno"] = j["fno"]
 
 
 def merge(nk_records, jbis_records, jbis_ped_records, reg):
@@ -166,6 +215,7 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
             "nk_id": r.get("nk_id", ""),
             "jbis_id": r.get("jbis_id", "") or j.get("jbis_id", "") or e.get("jbis_id", ""),
             "馬名": cur_name,
+            "曾用名": list((entry.get("names") or [])[:-1]),
             "性別": r.get("性別", ""),
             "生年月日": r.get("生年月日", ""),
             "毛色": r.get("毛色", ""),
@@ -180,9 +230,11 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
             "母父名": r.get("母父名", ""),
             "生年": r.get("生年", ""),
             "登録状態": r.get("登録状態", ""),
+            "英文名": r.get("英文名", ""),              # W4/D4：netkeiba 英文名
+            "セリ取引価格": r.get("セリ取引価格", ""),  # W4/D4：netkeiba セリ取引価格
             "pedigree": r.get("pedigree") or j.get("pedigree", {}),
             "fno": r.get("fno") or j.get("fno", "") or e.get("fno", ""),
-            "cross": j.get("cross", "") or e.get("cross", ""),
+            "cross": r.get("cross", "") or j.get("cross", "") or e.get("cross", ""),  # W4：netkeiba クロス 优先
         }
         return h
 
@@ -193,11 +245,42 @@ def merge(nk_records, jbis_records, jbis_ped_records, reg):
         if h["馬名"]:
             out.append(h)
 
-    # JBIS 兜底：netkeiba 无记录的马
+    # 索引（W1/D1）：netkeiba 占位档（`〇〇の2023` 未命名仔）→ (母名, 生年)。
+    # 仅索引占位名：未命名仔无正式名，只能靠 (母名, 生年) 定位；已命名马靠「去后缀名+生年」命中，
+    # 避免 (母名, 生年) 误并不同马。
+    nk_by_id = {h["id"]: h for h in out}
+    out_by_nk = {h.get("nk_id", ""): h for h in out if h.get("nk_id")}
+    nk_by_mother_year = {}
+    for r in nk_records:
+        if not racelib.is_unnamed_name(r.get("馬名") or ""):
+            continue
+        mother = r.get("母名", "") or _mother_from_pedigree(r.get("pedigree"))
+        if mother and r.get("生年"):
+            nk_by_mother_year.setdefault((norm(mother), str(r.get("生年", ""))), r)
+
+    # JBIS 兜底：netkeiba 无记录的马（W1/D1：先去后缀名+生年、再 (母名, 生年) 并入已有
+    # netkeiba 实体，不再无条件新建）
     for j in jbis_records:
         key = norm(j.get("馬名", ""))
         if key in nk_keys or not j.get("馬名"):
             continue
+        target = None
+        # 1) 去后缀名 + 生年 → registry（同名同生年 = 同一匹马）
+        stripped = racelib.strip_country_suffix(j.get("馬名", ""))
+        entry = reg["by_name_year"].get((norm(stripped), str(j.get("生年", ""))))
+        if entry is not None:
+            target = nk_by_id.get(entry["id"])
+        # 2) (母名, 生年) → netkeiba 占位档（仅未命名仔；命中 = 同母同生年 = 同一匹马）
+        if target is None:
+            mother = j.get("母名", "") or _mother_from_pedigree(j.get("pedigree"))
+            if mother:
+                r = nk_by_mother_year.get((norm(mother), str(j.get("生年", ""))))
+                if r is not None:
+                    target = out_by_nk.get(r.get("nk_id", ""))
+        if target is not None:
+            _fill_from_jbis(target, j, reg)
+            continue
+        # 3) 无命中 → 新建 JBIS-only 实体
         h = build({"馬名": j.get("馬名", ""), "生年": j.get("生年", "")}, j, {})
         h.update({
             "nk_id": "",
@@ -296,12 +379,40 @@ def _shutoku_of(recs):
     return {"平地": got["平地"], "障害": got["障害"]}
 
 
+def _match_ledger_to_existing(g, reg, by_norm):
+    """台账海外马匹配链（W1/D1）：去后缀名+生年 → registry → (母名,生年) → 已有 netkeiba 实体。
+    返回 by_norm 键（可 attach）或 None。台账记录无 jbis_id，链上"JBIS"由 registry 的
+    JBIS 登记名承担（by_name_year 已用去国家后缀名）。"""
+    name = g["name"]
+    _sex, birth = racelib.derive_basic(g["recs"])
+    if not birth:
+        return None
+    # 1) 去后缀名 + 生年 → registry 当前名 → by_norm
+    stripped = racelib.strip_country_suffix(name)
+    entry = reg["by_name_year"].get((norm(stripped), birth))
+    if entry is not None:
+        cur = (entry.get("names") or [""])[-1]
+        k = norm(cur)
+        if k in by_norm:
+            return k
+    # 2) (母名, 生年) → 已有 netkeiba 实体（台账记录若有母名列）
+    mother = g.get("母名") or ""
+    if mother:
+        for k, hs in by_norm.items():
+            for h in hs:
+                if norm(h.get("母名") or "") == norm(mother) and str(h.get("生年") or "") == birth:
+                    return k
+    return None
+
+
 def attach_races(records, nk_recs, ledger_rows, aliases, reg):
-    """契约B关联到马档案（M2.5：netkeiba 为主 + 台账海外补缺；M4.3 加収得）。
+    """契约B关联到马档案（M2.5：netkeiba 为主 + 台账海外补缺；M4.3 加収得；W1/D1 移除自动建档）。
     - nk_recs:     netkeiba 契约B 记录列表（主源，含 來源=netkeiba / race_id / 本賞金 / jockey_id）
     - ledger_rows: 台账契约B（coerce 后），只保留 venue_type=海外 参与补缺
     - 合并键 (日付,場名,R)：netkeiba 优先；海外场 netkeiba 有 → netkeiba 为主、台账补賞金空缺；
       netkeiba 无 → 台账展示（來源=ledger）
+    - W1/D1：台账海外马走匹配链（去后缀名 → registry → (母名,生年) → netkeiba 实体），
+      匹配不到进「待确认」；彻底不再自动建档（action=create 分支已移除）。
     返回 (matched, created_names, unmatched_names, aliases, n_with_races)
     """
     by_norm = {}
@@ -334,22 +445,26 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
                     if (str(base.get("日付", "")), str(base.get("場名", ""))) == gap_key:
                         _merge_gap(base, r, ["賞金"])
             else:
-                merged.append(r)  # netkeiba 无该海外场 → 台账展示
+                # netkeiba 无该海外场 → 台账展示（W1：台账 CSV 无 來源 列，coerce 不产出 → 补标 ledger）
+                merged.append({**r, "來源": "ledger"})
         name = (nk_list[0] if nk_list else ov_list[0]).get("出走馬名", key)
         horse_recs[key] = {"name": name, "recs": merged}
 
-    # 分配: attach(挂到现有马) / create(自动建档) / unmatched(待确认)
+    # 分配: attach(挂到现有马) / unmatched(待确认)。W1/D1：彻底移除 action=create 自动建档；
+    # 台账海外马改走匹配链（去后缀名 → registry → (母名,生年) → netkeiba 实体），匹配不到进「待确认」。
     assign = {}
     for key, g in horse_recs.items():
         if key in by_norm:
             assign[key] = ("attach", key)
             continue
         entry = aliases.get(g["name"]) or aliases.get(key) or {}
-        action, tgt = entry.get("action") or "", entry.get("target") or ""
-        if action == "create":
-            assign[key] = ("create", None)
-        elif tgt and norm(tgt) in by_norm:
+        tgt = entry.get("target") or ""
+        if tgt and norm(tgt) in by_norm:
             assign[key] = ("attach", norm(tgt))
+            continue
+        mkey = _match_ledger_to_existing(g, reg, by_norm)
+        if mkey:
+            assign[key] = ("attach", mkey)
         else:
             if not entry:
                 note = "海外登记名，无日文名" if g["name"].isascii() else "台账有、仓库无，待确认"
@@ -371,6 +486,17 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
         key = attach_map.get(norm(h.get("馬名", "")))
         if key:
             h["races"] = horse_recs[key]["recs"]
+            # W3/D3：性/年齢/調教師 实时补全（性 = 档案性別；年齢 = 按生年月日+比赛日精确重算，
+            # 无生年月日保留台账性齢值；調教師 = 档案级兜底，台账源自带则保留）
+            for r in h["races"]:
+                if not r.get("性"):
+                    r["性"] = h.get("性別", "")
+                if h.get("生年月日"):
+                    r["年齢"] = racelib.compute_age(r.get("日付"), h.get("生年月日"))
+                elif not r.get("年齢"):
+                    r["年齢"] = ""
+                if not r.get("調教師"):
+                    r["調教師"] = h.get("調教師", "")
             h["stats"] = racelib.compute_stats(h["races"])
             h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
             n_with += 1
@@ -380,25 +506,7 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
             h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
         h.setdefault("photo", "")
 
-    # 台账有、仓库无 → 按别名表 action=create 自动建档（如 Grand Warrior）
-    for key in created:
-        g = horse_recs[key]
-        sex, birth = racelib.derive_basic(g["recs"])
-        hid, _entry = resolve_identity(
-            {"nk_id": "", "jbis_id": "", "馬名": g["name"], "生年": birth}, reg)
-        ledger_recs = [{**r, "來源": "ledger", "管理調教師": ""} for r in g["recs"]]
-        h = {
-            "id": hid,
-            "nk_id": "", "jbis_id": "", "馬名": g["name"], "性別": sex, "生年月日": "",
-            "毛色": "", "産地": "", "馬主": "", "生産牧場": "", "調教師": "",
-            "通算成績": "", "獲得賞金": "", "総賞金": "", "母名": "", "母父名": "",
-            "生年": birth, "登録状態": "",
-            "pedigree": {}, "fno": "", "cross": "", "photo": "",
-            "races": ledger_recs, "stats": racelib.compute_stats(ledger_recs),
-        }
-        h["stats"]["収得賞金"] = _shutoku_of(ledger_recs)  # M4.3
-        records.append(h)
-        n_with += 1
+    # W1/D1：自动建档分支已移除（台账海外马走匹配链，匹配不到进「待确认」），created 恒空。
 
     return matched, [horse_recs[k]["name"] for k in created], \
         [horse_recs[k]["name"] for k in unmatched], aliases, n_with
@@ -408,7 +516,7 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     lines = ["# 合并校验报告（build-data）", ""]
     lines.append(f"- 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append(f"- 关联成功: {matched} 匹")
-    lines.append(f"- 自动建档: {len(created)} 匹" + (f" → {'、'.join(created)}" if created else ""))
+    lines.append(f"- 自动建档: 0 匹（W1/D1 已停用：台账海外马走匹配链并入已有 netkeiba 实体，不再自动建档）")
     lines.append(f"- 待确认: {len(unmatched)} 匹" + (f" → {'、'.join(unmatched)}（已写入 data/aliases.json）" if unmatched else ""))
     lines.append(f"- ledger 校验异常: {len(ledger_issues)} 条")
     for it in ledger_issues[:20]:
@@ -422,14 +530,17 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
             missing.append(h.get("馬名", ""))
     lines.append(f"- 共 {len(missing)} 匹" + ("：" + "、".join(missing[:30]) if missing else "（无）"))
     lines.append("")
-    lines.append("## 台账少于 netkeiba 通算成績（待校准）")
+    lines.append("## 台账中央+地方 少于 netkeiba 通算成績（待校准）")
     fewer = []
     for h in records:
         m = re.match(r"(\d+)戦", h.get("通算成績") or "")
         if m and h.get("races"):
-            led = sum(1 for r in h["races"] if isinstance(r["結果"], int) or r["結果"] == "中止")
+            # W2/D2：出赛口径 = 中央+地方；海外单列（台账含海外不再误报"台账>通算"）
+            led = sum(1 for r in h["races"]
+                      if (isinstance(r["結果"], int) or r["結果"] == "中止")
+                      and r.get("venue_type") in ("中央", "地方"))
             if int(m.group(1)) > led:
-                fewer.append(f"{h.get('馬名', '')}（netkeiba {int(m.group(1))}戦 / 台账 {led}战）")
+                fewer.append(f"{h.get('馬名', '')}（netkeiba 通算 {int(m.group(1))}戦 / 台账中央+地方 {led}战）")
     lines.append(f"- 共 {len(fewer)} 匹" + ("：" + "、".join(fewer[:30]) if fewer else "（无）"))
     lines.append("")
     lines.append("## 说明")

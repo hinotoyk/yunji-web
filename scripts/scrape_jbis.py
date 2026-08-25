@@ -219,6 +219,7 @@ def main():
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--all", action="store_true", help="全量：産駒一覧 → netkeiba 无记录的马 → 详情+血统")
     g.add_argument("--horse", help="马名（单匹）")
+    g.add_argument("--fill", action="store_true", help="增量补填（每周）：仅重抓 缺血统/クロス 的 JBIS 兜底马")
     ap.add_argument("--output", default=str(DEFAULT_OUT))
     ap.add_argument("--sleep", type=float, default=1.2)
     ap.add_argument("--force", action="store_true")
@@ -259,7 +260,13 @@ def main():
             targets[name] = t
         print(f"✔ netkeiba 无记录 → 兜底目标 {len(targets)} 匹")
 
-    todo = [(n, t) for n, t in targets.items() if args.force or n not in merged]
+    if args.fill:
+        # W5/每周 --fill：增量补填，只重抓 缺血统/クロス 的已有兜底马 + 新目标（W4 后クロス也算补填项）
+        todo = [(n, t) for n, t in targets.items()
+                if args.force or n not in merged or not merged[n].get("pedigree") or not merged[n].get("cross")]
+        print(f"✔ 增量补填目标 {len(todo)} 匹（缺 血统/クロス）")
+    else:
+        todo = [(n, t) for n, t in targets.items() if args.force or n not in merged]
     if not todo:
         print("✔ 无待更新（--force 强制）")
     for i, (name, t) in enumerate(todo, 1):

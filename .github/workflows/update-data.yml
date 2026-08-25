@@ -1,20 +1,23 @@
 name: Sync yunji data
 
 on:
-  # 定时自动同步：每天 UTC 22:00（JST 07:00）拉比赛台账 → 重建 → 自动部署。
+  # 每日 JST 07:00（UTC 22:00）：新马/改名对账（--new）→ 台账 → netkeiba 成绩 → 重建。
+  # 每周日 JST 11:00（UTC 02:00）：netkeiba 血统/クロス（--ped）+ JBIS 兜底补填（--fill）→ 重建。
   # 注意：仓库闲置 60 天定时任务会被 GitHub 暂停，届时手动 Run workflow 一次即恢复。
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "0 22 * * *"    # 每日 → daily
+    - cron: "0 2 * * 0"     # 每周日 → weekly
   workflow_dispatch:
     inputs:
       mode:
         description: 同步模式
         type: choice
         required: true
-        default: races
+        default: daily
         options:
-          - races    # 只拉比赛台账 + 重建（快，定时任务默认）
-          - all      # netkeiba 全量 + JBIS 血统 + 台账 + 重建（重，慎用）
+          - daily    # 每日：netkeiba --new（新马/改名）+ 台账 + 成绩 + 重建
+          - weekly   # 每周：netkeiba --ped（血统/クロス）+ jbis --fill + 重建
+          - all      # 全量抓取（重，慎用）
           - single   # 单匹更新（需填马名）
       horse_name:
         description: 马名（仅 single 模式，日文名）
@@ -43,27 +46,64 @@ jobs:
       - name: Install deps
         run: pip install requests beautifulsoup4 lxml
 
-      # ── 比赛数据（契约B）：数据源适配器 → google_ledger.csv（每日/每次必跑）──
+      # ── 解析本次运行模式：手动走 inputs；定时走「周日=weekly，其余=daily」──
+      - name: Resolve mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ inputs.mode || 'daily' }}" >> "$GITHUB_OUTPUT"
+          else
+            if [ "$(date +%u)" = "7" ]; then
+              echo "mode=weekly" >> "$GITHUB_OUTPUT"
+            else
+              echo "mode=daily" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      # ── 每日：netkeiba 新马/改名对账（D0：--new 只收新马/改名，零请求增量）──
+      - name: netkeiba 新马/改名对账 (daily/weekly)
+        if: steps.mode.outputs.mode == 'daily' || steps.mode.outputs.mode == 'weekly'
+        run: python scripts/scrape_netkeiba.py --new --sleep 1.0
+
+      # ── 每日：拉台账（契约B 权威源）──
       - name: Pull race ledger
+        if: steps.mode.outputs.mode == 'daily' || steps.mode.outputs.mode == 'weekly'
         run: python scripts/pull_races.py
 
-      # ── 马匹数据（契约A）：仅手动模式才抓取源站 ──
-      - name: Scrape netkeiba (mode=all)
-        if: inputs.mode == 'all'
+      # ── 每日：netkeiba 成绩页（--races，双轨制 Track B）──
+      - name: netkeiba 成绩 (daily)
+        if: steps.mode.outputs.mode == 'daily'
+        run: python scripts/scrape_netkeiba.py --races --sleep 1.0
+
+      # ── 每周：netkeiba 血统/クロス 补全（--ped）──
+      - name: netkeiba 血统/クロス (weekly)
+        if: steps.mode.outputs.mode == 'weekly'
+        run: python scripts/scrape_netkeiba.py --ped --sleep 1.0
+
+      # ── 每周：JBIS 兜底补填（--fill，缺 血统/クロス 增量重抓）──
+      - name: JBIS 兜底补填 (weekly)
+        if: steps.mode.outputs.mode == 'weekly'
+        run: python scripts/scrape_jbis.py --fill --sleep 3.0
+
+      # ── 手动：全量抓取（重，慎用）──
+      - name: netkeiba 全量 (mode=all)
+        if: steps.mode.outputs.mode == 'all'
         run: python scripts/scrape_netkeiba.py --all --sleep 1.0
-      - name: Scrape netkeiba (mode=single)
-        if: inputs.mode == 'single'
+      - name: JBIS 全量 (mode=all)
+        if: steps.mode.outputs.mode == 'all'
+        run: python scripts/scrape_jbis.py --all --sleep 1.2
+
+      # ── 手动：单匹更新 ──
+      - name: netkeiba 单匹 (mode=single)
+        if: steps.mode.outputs.mode == 'single'
         run: python scripts/scrape_netkeiba.py --name "${{ inputs.horse_name }}" --sleep 1.0
-      - name: Scrape JBIS (mode=all)
-        if: inputs.mode == 'all'
-        run: python scripts/scrape_jbis.py --all --sleep 1.2 || python scripts/scrape_jbis.py --fill --sleep 3.0
-      - name: Scrape JBIS (mode=single)
-        if: inputs.mode == 'single'
+      - name: JBIS 单匹 (mode=single)
+        if: steps.mode.outputs.mode == 'single'
         run: python scripts/scrape_jbis.py --horse "${{ inputs.horse_name }}" --sleep 1.2
 
       # ── 构建（契约A + 契约B → crops.json）+ 契约校验 ──
       - name: Build crops.json
-        run: python scripts/build-data.py --note "${{ inputs.mode || 'races' }} 同步"
+        run: python scripts/build-data.py --note "${{ steps.mode.outputs.mode }} 同步"
 
       - name: Contract & data test
         run: python scripts/test-data.py
@@ -73,5 +113,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "sync data (${{ inputs.mode || 'races' }})"
+          git diff --cached --quiet || git commit -m "sync data (${{ steps.mode.outputs.mode }})"
           git push

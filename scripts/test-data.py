@@ -184,14 +184,16 @@ def contract_check():
         for r in recs:
             if r["venue_type"] not in ("中央", "地方", "海外"):
                 out.append(f"  ✗ 契约B venue_type 异常: {r['出走馬名']} {r['日付']} → {r['venue_type']}")
-            if r["格"] not in ("", *racelib.GRADES):
+            if r["格"] not in ("", *racelib.ALL_GRADES):
                 out.append(f"  ✗ 契约B 格 异常: {r['出走馬名']} {r['日付']} → {r['格']}")
-            if r["馬場"] not in ("芝", "ダート", "AW", ""):
-                out.append(f"  ✗ 契约B 馬場 异常: {r['出走馬名']} {r['日付']} → {r['馬場']}")
+            if r["芝ダ"] not in ("芝", "ダ", "障", "AW", ""):
+                out.append(f"  ✗ 契约B 芝ダ 异常: {r['出走馬名']} {r['日付']} → {r['芝ダ']}")
+            if not r["レース名"]:
+                out.append(f"  ✗ 契约B レース名 缺失: {r['出走馬名']} {r['日付']}")
             if not (isinstance(r["結果"], int) or r["結果"] in racelib.RESULT_DNF):
                 out.append(f"  ✗ 契约B 結果 异常: {r['出走馬名']} {r['日付']} → {r['結果']}")
-            if r["賞金"] is None or r["賞金"] < 0:
-                out.append(f"  ✗ 契约B 賞金 异常: {r['出走馬名']} {r['日付']}")
+            if not (r["賞金"] == "" or (isinstance(r["賞金"], int) and r["賞金"] >= 0)):
+                out.append(f"  ✗ 契约B 賞金 异常: {r['出走馬名']} {r['日付']} → {r['賞金']!r}")
         if not issues and recs:
             out.append(f"✔ 契约B google_ledger.csv 通过（{len(recs)} 条 / {len(set(r['出走馬名'] for r in recs))} 匹，0 异常）")
     else:
@@ -205,9 +207,11 @@ def contract_check():
         if not races:
             continue
         s = h.get("stats") or {}
-        started = sum(1 for r in races if isinstance(r.get("結果"), int) or r.get("結果") == "中止")
-        wins = sum(1 for r in races if r.get("結果") == 1)
-        prize = sum(r.get("賞金") or 0 for r in races)
+        # W2/D2：出赛/勝/賞金 主口径 = 中央+地方（与 stats 一致）；首末战 = 全量
+        main = [r for r in races if r.get("venue_type") in ("中央", "地方")]
+        started = sum(1 for r in main if isinstance(r.get("結果"), int) or r.get("結果") == "中止")
+        wins = sum(1 for r in main if r.get("結果") == 1)
+        prize = sum(r.get("賞金") or 0 for r in main)
         dates = [r["日付"] for r in races]
         if s.get("出賽数") != started:
             bad += 1
@@ -232,7 +236,7 @@ def identity_check():
     crops, _ = load_crops()
     reg_path = ROOT / "data" / "registry.json"
     if not reg_path.exists():
-        out.append("  ✗ 身份层: 无 data/registry.json（先跑 build_registry.py）")
+        out.append("  ✗ 身份层: 无 data/registry.json（先跑 scripts/tools/build_registry.py）")
         return out
     reg = json.loads(reg_path.read_text(encoding="utf-8"))
     horses = reg.get("horses", [])
@@ -274,6 +278,64 @@ def identity_check():
     return out
 
 
+def uniqueness_check():
+    """W1/D1 唯一性断言（docs/biz-review-solution-2026-08-24.md §W1.5）：
+    - 去国家后缀后「同名同生年」全库唯一（registry 当前名）
+    - 同「(母名, 生年)」全库唯一（crops）
+    - nk_id 全库唯一（registry keys）"""
+    out = []
+    reg_path = ROOT / "data" / "registry.json"
+    if not reg_path.exists():
+        out.append("  ✗ 唯一性: 无 data/registry.json")
+        return out
+    reg = json.loads(reg_path.read_text(encoding="utf-8"))
+    horses = reg.get("horses", [])
+
+    def norm_n(n):
+        return re.sub(r"[ 　()（）\[\]【】]", "", racelib.strip_country_suffix(n) or "").strip()
+
+    # 1) 去后缀名 + 生年 唯一
+    keyed, dups1 = {}, []
+    for h in horses:
+        nm = norm_n((h.get("names") or [""])[-1])
+        k = (nm, str(h.get("生年", "")))
+        if k[0]:
+            if k in keyed:
+                dups1.append((keyed[k], h.get("id"), k[0], k[1]))
+            else:
+                keyed[k] = h.get("id")
+    # 2) nk_id 唯一
+    nk_seen, dups_nk = {}, []
+    for h in horses:
+        nk_ = (h.get("keys") or {}).get("nk_id") or ""
+        if nk_:
+            if nk_ in nk_seen:
+                dups_nk.append((nk_seen[nk_], h.get("id"), nk_))
+            else:
+                nk_seen[nk_] = h.get("id")
+    # 3) (母名, 生年) 唯一（crops）
+    crops, _ = load_crops()
+    mother_seen, dups_m = {}, []
+    for h in crops:
+        m = h.get("母名") or ""
+        if m:
+            k = (norm_n(m), str(h.get("生年", "")))
+            if k in mother_seen:
+                dups_m.append((mother_seen[k], h.get("id"), k[0]))
+            else:
+                mother_seen[k] = h.get("id")
+    if not dups1 and not dups_nk and not dups_m:
+        out.append(f"✔ 唯一性: 去国家后缀同名同生年 {len(keyed)} · (母名,生年) {len(mother_seen)} · nk_id 全库唯一")
+    else:
+        for it in dups1[:10]:
+            out.append(f"  ✗ 唯一性: 去后缀同名同生年重复 {it}")
+        for it in dups_nk[:10]:
+            out.append(f"  ✗ 唯一性: nk_id 重复 {it}")
+        for it in dups_m[:10]:
+            out.append(f"  ✗ 唯一性: (母名,生年) 重复 {it}")
+    return out
+
+
 def races_check():
     """M2 比赛主源断言：netkeiba 主 + 台账海外补漏。
     - 每条带 來源 ∈ {netkeiba, ledger}；单马 (日付, 場名, R) 无重复
@@ -294,7 +356,7 @@ def races_check():
 
     total, dup, bad_src = 0, 0, 0
     prefix_conflict, missing_honsho, overseas_bad = [], [], []
-    graded_set = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII"}  # 重赏才需要本賞金（L 用固定额）
+    graded_set = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}  # 重赏才需要本賞金（L 用固定额）
     for h in crops:
         keys = set()
         nk_id = str(h.get("nk_id") or "")
@@ -316,10 +378,10 @@ def races_check():
             if r.get("venue_type") == "海外":
                 has_nk = (str(r.get("日付", "")), str(r.get("場名", ""))) in nk_loose
                 if has_nk and src != "netkeiba":
-                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("競走名"),
+                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("レース名") or r.get("競走名"),
                                          f"netkeiba 有该场但來源={src}"))
                 elif not has_nk and src != "ledger":
-                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("競走名"),
+                    overseas_bad.append((h.get("馬名"), r.get("日付"), r.get("レース名") or r.get("競走名"),
                                          f"netkeiba 无该场但來源={src}"))
 
             if src == "netkeiba":
@@ -337,7 +399,7 @@ def races_check():
                             break
 
             if r.get("格") in graded_set and r.get("結果") in (1, 2) and not r.get("本賞金"):
-                missing_honsho.append((h.get("馬名"), r.get("日付"), r.get("競走名")))
+                missing_honsho.append((h.get("馬名"), r.get("日付"), r.get("レース名") or r.get("競走名")))
 
     if dup == 0 and bad_src == 0 and not prefix_conflict and not missing_honsho and not overseas_bad:
         out.append(f"✔ 契约C 比赛主源: {total} 条 · 無重复/來源正确/骑手全名 0 截断/重赏 1/2着 全带本賞金/海外策略正确")
@@ -425,6 +487,7 @@ def main():
     out = local_check()
     out.extend(contract_check())
     out.extend(identity_check())
+    out.extend(uniqueness_check())
     out.extend(races_check())
     out.extend(shutoku_check())
     out.extend(v2_check())

@@ -50,12 +50,6 @@ def build_report(records, issues, adapter_name):
     for k, v in Counter(r["格"] for r in records if r["格"]).most_common():
         lines.append(f"| {k} | {v} |")
     lines.append("")
-    lines.append("## 比赛类别分布")
-    lines.append("| 类别 | 记录数 |")
-    lines.append("|---|---|")
-    for k, v in Counter(r["race_class"] for r in records).most_common():
-        lines.append(f"| {k} | {v} |")
-    lines.append("")
     lines.append("## 异常清单")
     if not issues:
         lines.append("- 无")
@@ -119,7 +113,6 @@ def main():
     print("\n===== 台账统计 =====")
     print("场地类型:", dict(Counter(r["venue_type"] for r in records)))
     print("级别分布:", dict(Counter(r["格"] for r in records if r["格"])))
-    print("比赛类别:", dict(Counter(r["race_class"] for r in records)))
     print(f"涉及马匹: {len(set(names))}")
 
 

@@ -12,8 +12,8 @@
   未命名   = true（马名为占位名：〇〇の2025 或 母名＿2025）
 
 用法:
-    python scripts/build_registry.py          # 生成（已存在则拒绝，需 --force）
-    python scripts/build_registry.py --force  # 覆盖重建（会丢失改名历史，慎用）
+    python scripts/tools/build_registry.py          # 生成（已存在则拒绝，需 --force）
+    python scripts/tools/build_registry.py --force  # 覆盖重建（会丢失改名历史，慎用）
 """
 import argparse
 import io
@@ -29,10 +29,10 @@ if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     except Exception:
         pass
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # 供 racelib 导入
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 供 racelib 导入
 import racelib  # noqa: E402
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA = os.path.join(ROOT, "data")
 REGISTRY_PATH = os.path.join(DATA, "registry.json")
 CROPS_PATH = os.path.join(DATA, "crops.json")

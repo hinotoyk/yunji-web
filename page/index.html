@@ -117,13 +117,11 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
 .sig em{color:var(--amber);font-style:normal;font-weight:700}
 .note{background:var(--amber-soft);border-color:var(--amber-line)}
 .note p{color:#6b5736}
-/* version switch + admin link */
+/* version switch */
 .nav-r{margin-left:auto;display:flex;align-items:center;gap:10px}
 .ver{font-size:12px;color:var(--muted);border:1px solid var(--line-2);border-radius:8px;padding:4px 8px;background:var(--card);outline:none;cursor:pointer;font-family:inherit;max-width:190px}
 .ver:focus{border-color:var(--green)}
 .ver.hist{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
-.admin-link{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--line-2);padding:4px 10px;border-radius:8px;white-space:nowrap}
-.admin-link:hover{color:var(--green);border-color:var(--green)}
 .loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:99;font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -136,8 +134,6 @@ nav{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;border-b
       <span class="nav-count"><b id="count">278</b> 头</span>
       <div class="nav-r">
         <select id="ver" class="ver" title="切换历史版本"></select>
-        <a class="admin-link" href="dashboard.html">大盘</a>
-        <a class="admin-link" href="admin.html">管理</a>
       </div>
     </nav>
     <div class="pane-search">
@@ -279,7 +275,7 @@ async function renderDetail(h){
       </div>
     </div>
 
-    <div class="pedi">${renderPedigree(h)}</div>
+    <div class="pedi">${renderPedigree(h)}${h.pedigree&&((h.pedigree.父||[]).length||(h.pedigree.母||[]).length)?`<div style="margin-top:12px;text-align:right"><a href="pedigree.html#${encodeURIComponent(h.馬名)}" style="font-size:11.5px;color:var(--green);text-decoration:none;border:1px solid var(--green-line);background:var(--green-soft);padding:4px 12px;border-radius:99px">查看完整血统图 →</a></div>`:""}</div>
 
     <div class="facts">
       <div class="f"><div class="k">生产牧场</div><div class="v jap">${esc(h.生産牧場||h.生产牧场)}</div></div>
