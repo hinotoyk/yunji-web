@@ -56,7 +56,7 @@ def norm(name):
 
 
 def load_registry():
-    """读取身份映射表 data/registry.json → 索引结构（M1，见 data-funnel-v2.md §3）。
+    """读取身份映射表 data/registry.json → 索引结构（M1，见 docs/PROJECT.md §5.2）。
     不存在则报错：先跑 python scripts/tools/build_registry.py（M1.1 种子）。
     """
     path = os.path.join(DATA, "registry.json")
@@ -550,7 +550,7 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
 
 
 # ── M5.3 crops v2 输出：拆分文件 + facet + {_meta, index, horses} ──
-# 设计：docs/data-dashboard-v1.md §2。每匹 races/血统树拆到 data/racefiles/{id}.json /
+# 设计：docs/PROJECT.md §4。每匹 races/血统树拆到 data/racefiles/{id}.json /
 # data/pedigree/{id}.json（仅建有内容的马），crops 只留瘦身档案 + facet + 文件引用。
 
 

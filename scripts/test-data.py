@@ -279,7 +279,7 @@ def identity_check():
 
 
 def uniqueness_check():
-    """W1/D1 唯一性断言（docs/biz-review-solution-2026-08-24.md §W1.5）：
+    """W1/D1 唯一性断言（见 docs/PROJECT.md §5.2）：
     - 去国家后缀后「同名同生年」全库唯一（registry 当前名）
     - 同「(母名, 生年)」全库唯一（crops）
     - nk_id 全库唯一（registry keys）"""

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """M1.1 身份映射表种子生成：从现有 data/crops.json（v1 裸数组）生成 data/registry.json。
 
-每个马一条记录（见 data-funnel-v2.md §3.1）：
+每个马一条记录（见 docs/PROJECT.md §5.2）：
   id      = **按生年月日从小到大排序后的序号 1..N**（最年长 = 1；一次性种子，
             此后由 build-data.py 维护 max+1 自增；生年月日缺失退回生年）
   keys    = {nk_id, jbis_id}（外部键 → 本地 id 映射；id 是身份，外部 id 只是属性）

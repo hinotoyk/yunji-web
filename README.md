@@ -88,7 +88,8 @@ scripts/
     ├── build_registry.py  身份映射表种子生成（M1，一次性）
     └── build_jockeys.py   骑手字典构建（M2，一次性）
 docs/
-└── data-contracts.md  数据契约定义（A/B/C + 换源规则）
+├── PROJECT.md   项目总纲与数据知识库（唯一入口，读它）
+└── data-contracts.md 数据契约定义（A/B/C + 换源规则）
 ```
 
 ## 数据说明
@@ -96,7 +97,7 @@ docs/
 - 数据仅供分享交流，严禁用于任何违法行为
 - 比赛记录以 netkeiba 成绩页为主源；Google Sheets 台账仅用于海外场补缺/兜底（海外赛事赏金未在台账记录，赏金合计 = 中央 + 地方）
 - 取消/除外不计入出赛数；中止计入
-- 収得賞金（平地/障害）由 racelib 规则表计算（M4），仅计中央，口径见 `docs/data-funnel-v2.md` §4
+- 収得賞金（平地/障害）由 racelib 规则表计算（M4），仅计中央，口径见 `docs/PROJECT.md` §5.3
 - 自动建档马（如 Grand Warrior）由台账生成，基本信息待补
 
 License: CC BY-NC-SA 4.0

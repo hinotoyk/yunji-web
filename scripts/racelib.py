@@ -31,7 +31,7 @@ ALL_GRADES = GRADE_ORDER + ["JGI", "JGII", "JGIII"]
 
 DATE_RE = re.compile(r"^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$")
 
-# 占位名（未命名仔）：netkeiba `〇〇の2025` / JBIS `母名＿2025`（见 data-funnel-v2.md §2.2）
+# 占位名（未命名仔）：netkeiba `〇〇の2025` / JBIS `母名＿2025`（见 docs/PROJECT.md §5.2）
 UNNAMED_RE = re.compile(r"の(19|20)\d{2}$")
 
 
@@ -360,7 +360,7 @@ def compute_age(race_date, birth_ymd):
     return str(max(0, age))
 
 
-# ── 収得賞金（M4，设计 data-funnel-v2.md §4.1）──
+# ── 収得賞金（M4，规则见 docs/PROJECT.md §5.3）──
 # 収得 = Σ(結果∈{1,2} ∧ venue_type=中央)，平地/障害同表；海外/地方不计入；付加賞不计入。
 # 规则来源：13 匹 JRA 真值拟合（2026-08-18，11 精确 + 2 达 98%），详见设计文档 §4.1 拟合验证记录。
 SHUTOKU_FIXED = {          # 1着 固定额（万円）
@@ -435,7 +435,7 @@ def compute_shutoku(recs):
     return {"平地": int(flat), "障害": int(sho), "缺失": missing}
 
 
-# ── 检索索引 facet（M5.2，设计 docs/data-dashboard-v1.md §3）──
+# ── 检索索引 facet（M5.2，查询模型见 docs/PROJECT.md §4.3）──
 # 归一化在构建时做一次（NFKC + 去全半角空白 + toLowerCase）；前端只做朴素 ===/includes。
 
 
