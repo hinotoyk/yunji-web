@@ -75,6 +75,11 @@ jobs:
         if: steps.mode.outputs.mode == 'daily'
         run: python scripts/scrape_netkeiba.py --races --sleep 1.0
 
+      # ── 每日：骑手字典增量（build_jockeys.py，扫 netkeiba_races.json 补缺失 jockey_id 全名）──
+      - name: 骑手字典增量 (jockeys.json)
+        if: steps.mode.outputs.mode == 'daily'
+        run: python scripts/tools/build_jockeys.py --sleep 1.0
+
       # ── 每周：netkeiba 血统/クロス 补全（--ped）──
       - name: netkeiba 血统/クロス (weekly)
         if: steps.mode.outputs.mode == 'weekly'

@@ -48,7 +48,9 @@ JOCKEYS_PATH = ROOT / "data" / "jockeys.json"
 LEDGER_PATH = ROOT / "data" / "races" / "google_ledger.csv"   # 台账全量（Track A 检测源）
 ROTATION_PATH = ROOT / "data" / "raw" / "rotation_queue.json"  # 轮换循环队列（Track B）
 RACE_URL = "https://db.netkeiba.com/race/{id}/"                              # db 域（EUC-JP，回退用）
-RACE_SP_URL = "https://race.netkeiba.com/race/result.html?race_id={id}"      # SP 域（UTF-8，本賞金主源）
+RACE_SP_URL = "https://race.netkeiba.com/race/result.html?race_id={id}"      # SP 域（UTF-8，中央/海外 本賞金主源）
+RACE_URL_NAR = "https://nar.netkeiba.com/race/{id}/"                          # NAR db 域（地方，回退用）
+RACE_SP_URL_NAR = "https://nar.netkeiba.com/race/result.html?race_id={id}"   # NAR SP 域（地方重賞 本賞金主源）
 
 # 重赏（含障害 JG*）1/2着 → 需要本賞金
 GRADED_RE = re.compile(r"\((J?G[I]{1,3})\)")
@@ -56,6 +58,8 @@ GRADED_RE = re.compile(r"\((J?G[I]{1,3})\)")
 STATE_MAP = {"稍": "稍重", "不": "不良"}
 # SP 接口本賞金：`<span>本賞金:4100,1600,1000,620,410万円</span>` = 1着~5着本賞金（付加賞-free）
 HONSHO_RE = re.compile(r"本賞金:([\d,]+(?:,[\d,]+)*)万円")
+# NAR 接口本賞金：`本賞金:10000.0、3500.0、2000.0、1000.0、500.0万円`（十进制浮点、顿号分隔）
+NAR_HONSHO_RE = re.compile(r"本賞金:([\d.,]+(?:[、,][\d.,]+)*)万円")
 
 # ── 双轨制（2026-08-19 用户拍板）──
 # Track A 台账检测窗口（天，从比赛日起算）：台账有 netkeiba 尚缺的场次 → 窗口内天天重抓，
@@ -273,16 +277,33 @@ def fetch(name_by_nk=None):
 
 
 def parse_sp_honsho(html):
-    """race.netkeiba.com 比赛结果页 → 1着本賞金（円）。
+    """race.netkeiba.com 比赛结果页 → 本賞金阶梯 [1着,2着,3着,4着,5着]（円）。
     页内 `<span>本賞金:4100,1600,1000,620,410万円</span>` = 1着~5着本賞金（付加賞-free，2026-08-19 实测 13/13）。
-    返回首个值（1着本賞金）×10000；找不到返回 None。"""
+    返回阶梯列表（长度 2~5）；找不到返回 None。"""
     m = HONSHO_RE.search(html or "")
     if not m:
         return None
-    first = m.group(1).split(",")[0]
     try:
-        return int(first.replace(",", "")) * 10000
-    except (ValueError, IndexError):
+        return [int(x.replace(",", "")) * 10000 for x in m.group(1).split(",")]
+    except (ValueError, TypeError):
+        return None
+
+
+def parse_sp_honsho_nar(html):
+    """nar.netkeiba.com 比赛结果页 → 本賞金阶梯 [1着,2着,3着,4着,5着]（円）。
+    地方（NAR）格式 `本賞金:10000.0、3500.0、2000.0、1000.0、500.0万円`（十进制浮点、顿号分隔）。
+    返回阶梯列表（长度 2~5）；找不到返回 None。"""
+    m = NAR_HONSHO_RE.search(html or "")
+    if not m:
+        return None
+    try:
+        vals = []
+        for x in re.split(r"[、,]", m.group(1)):
+            x = x.strip()
+            if x:
+                vals.append(int(float(x) * 10000))
+        return vals or None
+    except (ValueError, TypeError):
         return None
 
 
@@ -295,9 +316,10 @@ def _needs_honsho(rec):
 
 
 def backfill_honsho(nk_db, force=False, sleep=1.0, limit=None):
-    """M2.4 第二趟：对 重赏 1/2着 场次抓 SP 比赛页，直接读本賞金（円）写入记录。
-    主源：race.netkeiba.com/race/result.html 的 `本賞金:…万円`（付加賞-free，1着本賞金）。
-    回退：SP 解析失败 → db 域 race_table_01 的 4着/5着 反推（compute_honsho_prize，旧法）。"""
+    """M2.4 第二趟：对 重赏 1/2着 场次抓 SP 比赛页，写该马**自己的着順本賞金**（円）。
+    主源：race.netkeiba.com/race/result.html 的 `本賞金:1着,2着,3着…万円` 阶梯（付加賞-free），
+    按该马 `着順` 取对应档位（1着→首值、2着→次值）。回退：db 域成绩页该马自己的 賞金 行
+    （best-effort，可能含付加賞，仅 SP 解析失败时兜底）。"""
     todo = []
     for nk, recs in nk_db.items():
         for r in recs:
@@ -309,20 +331,32 @@ def backfill_honsho(nk_db, force=False, sleep=1.0, limit=None):
     ok, missing = 0, []
     for i, (nk, r) in enumerate(todo, 1):
         rid = r.get("race_id")
+        place = int(r.get("着順") or 0)  # 重賞 1/2着 → 1 或 2
+        is_local = (r.get("venue_type") or "").strip() == "地方"
+        sp_url = RACE_SP_URL_NAR if is_local else RACE_SP_URL
+        parser = parse_sp_honsho_nar if is_local else parse_sp_honsho
+        db_url = RACE_URL_NAR if is_local else RACE_URL
         try:
-            honsho = None
+            own = None
             try:
-                honsho = parse_sp_honsho(nk_fetch(RACE_SP_URL.format(id=rid), encoding="utf-8"))
+                ladder = parser(nk_fetch(sp_url.format(id=rid), encoding="utf-8"))
+                if ladder and 1 <= place <= len(ladder):
+                    own = ladder[place - 1]   # 该马自己的着順本賞金（付加賞-free）
             except Exception:  # noqa: BLE001
-                honsho = None
-            if not honsho:
-                # 回退：db 域 4/5着 反推（付加賞不派给 4/5着）
-                rows = parse_race_page(nk_fetch(RACE_URL.format(id=rid)))
-                honsho = racelib.compute_honsho_prize(rows)
-            if honsho:
-                r["本賞金"] = honsho
+                own = None
+            if not own:
+                # 回退：db 域成绩页该马自己的 賞金 行（best-effort，可能含付加賞）
+                try:
+                    rows = parse_race_page(nk_fetch(db_url.format(id=rid)))
+                    own = next((int(float(str(x.get("賞金", "")).replace(",", "")) * 10000)
+                                for x in rows
+                                if str(x.get("着順", "")).strip() == str(place) and x.get("賞金")), 0)
+                except Exception:  # noqa: BLE001
+                    own = 0
+            if own:
+                r["本賞金"] = own
                 ok += 1
-                print(f"  [{i}/{len(todo)}] {nk} {r['日付']} {r['レース名']} 本賞金={honsho/10000:,.0f}万")
+                print(f"  [{i}/{len(todo)}] {nk} {r['日付']} {r['レース名']} {place}着本賞金={own/10000:,.0f}万")
             else:
                 r["本賞金"] = 0
                 missing.append((nk, rid, r["レース名"]))
@@ -345,6 +379,8 @@ def update(force=False, limit=None, sleep=6.5, fetch_pages=True):
     if not BASIC_PATH.exists():
         raise SystemExit("❌ 无 data/basic.json（需先构建）")
     basic = json.loads(BASIC_PATH.read_text(encoding="utf-8"))
+    # basic.json = {_meta, horses}（basic/v1）；历史快照 = v1 裸数组（兼容）
+    basic = basic.get("horses") if isinstance(basic, dict) and "horses" in basic else basic
     nk_names = {h.get("nk_id"): h.get("馬名", "") for h in basic if h.get("nk_id")}
 
     def fetch_one(nk, name, tag, i, total):

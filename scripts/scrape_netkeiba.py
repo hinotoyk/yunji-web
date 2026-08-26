@@ -392,7 +392,9 @@ def run_races(args):
     if races_path.exists():
         races_db = _json.loads(races_path.read_text(encoding="utf-8"))
     basic_path = DEFAULT_OUT.parent.parent / "basic.json"
-    basic = _json.loads(basic_path.read_text(encoding="utf-8"))
+    basic_data = _json.loads(basic_path.read_text(encoding="utf-8"))
+    # basic.json = {_meta, horses}（basic/v1）；历史快照 = v1 裸数组（兼容）
+    basic = basic_data.get("horses") if isinstance(basic_data, dict) and "horses" in basic_data else basic_data
 
     raced_nk = [(h.get("nk_id"), h.get("馬名", ""), h.get("races") or [])
                 for h in basic if h.get("nk_id") and h.get("races")]
@@ -538,6 +540,8 @@ def main():
     else:
         list_hits = fetch_list_all(args.limit, args.sleep)
         ids = list(list_hits.keys())
+        if args.limit:
+            ids = ids[:args.limit]   # --limit 调试：只处理前 n 匹（与 --ped 行为一致）
         print(f"✔ 列表共 {len(ids)} 匹")
 
     todo = [i for i in ids if args.force or i not in merged or args.ped and not merged[i].get("pedigree")]

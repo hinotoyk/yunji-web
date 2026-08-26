@@ -242,6 +242,12 @@ def _fill_from_jbis(target, j, reg):
 def merge(nk_records, jbis_records, jbis_ped_records, reg):
     """netkeiba 主 + jbis 兜底 + jbis_pedigree 增强（M1：身份经 registry 解析，输出带 id）。
     返回 [马档案]，每匹含 id（registry 分配/沿用）。"""
+    # M5.6：id 分配顺序。处理顺序 = (生年月日, 馬名) 升序，只影响「新马 id 的先后」：
+    # - from-0（空 registry）：全部都是新马 → id 1..N 严格按生年月日从小到大分配。
+    # - 增量：既有马经 nk_id 命中 → 保留原 id、不重排；新增马（如一次性 +10 匹）只在这批
+    #   内部按生年月日从小到大依次 max+1（排在既有 id 之后），不再对整库重新排序。
+    nk_records = sorted(nk_records,
+                        key=lambda r: (racelib.birth_date_key(r), norm(r.get("馬名", ""))))
     jbis = {norm(h.get("馬名", "")): h for h in jbis_records}
     enrich = {norm(h.get("馬名", "")): h for h in jbis_ped_records if h.get("pedigree")}
     nk_keys = {norm(r.get("馬名", "")) for r in nk_records}
@@ -417,12 +423,16 @@ def _race_key(r):
     return (str(r.get("日付", "")), str(r.get("場名", "")), str(r.get("R", "")))
 
 
-def _shutoku_of(recs):
-    """収得計算（M4.3）→ 剥离缺失报告后写入 stats 的 {平地, 障害}（円）"""
-    got = racelib.compute_shutoku(recs)
-    if got["缺失"]:
-        print(f"  ⚠ 収得缺失 {len(got['缺失'])} 场（本賞金未抓到，按 0 暂计）: {got['缺失'][:5]}")
-    return {"平地": got["平地"], "障害": got["障害"]}
+def _shutoku_of(recs, birth_year=None):
+    """収得計算（M4.3）→ 剥离缺失报告后写入 stats 的 {平地, 障害, Jpn}（円）。
+    中央（平地/障害）用 racelib.compute_shutoku；地方重賞 JpnI/II/III 用 compute_shutoku_jpn 并入。
+    birth_year 用于 2歳重賞 GⅢ 固定额判定（JRA，见 racelib.compute_shutoku）。"""
+    got = racelib.compute_shutoku(recs, birth_year)
+    jpn = racelib.compute_shutoku_jpn(recs)
+    missing = got["缺失"] + jpn["缺失"]
+    if missing:
+        print(f"  ⚠ 収得缺失 {len(missing)} 场（本賞金未抓到，按 0 暂计）: {missing[:5]}")
+    return {"平地": got["平地"], "障害": got["障害"], "Jpn": jpn["Jpn"]}
 
 
 def _match_ledger_to_existing(g, reg, by_norm):
@@ -544,12 +554,12 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
                 if not r.get("調教師"):
                     r["調教師"] = h.get("調教師", "")
             h["stats"] = racelib.compute_stats(h["races"])
-            h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
+            h["stats"]["収得賞金"] = _shutoku_of(h["races"], h.get("生年"))  # M4.3
             n_with += 1
         else:
             h.setdefault("races", [])
             h.setdefault("stats", racelib.compute_stats([]))
-            h["stats"]["収得賞金"] = _shutoku_of(h["races"])  # M4.3
+            h["stats"]["収得賞金"] = _shutoku_of(h["races"], h.get("生年"))  # M4.3
         h.setdefault("photo", "")
 
     # W1/D1：自动建档分支已移除（台账海外马走匹配链，匹配不到进「待确认」），created 恒空。
@@ -703,9 +713,9 @@ def main():
     save_registry(reg)
     print(f"✔ 已写回: data/registry.json（{len(reg['horses'])} 条）")
 
-    # ── 输出排序 = 生年月日（缺失退生年）从小到大，与 registry id 顺序一致 ──
+    # ── 输出排序 = id 升序（id 已在 merge 阶段按生年月日升序分配；改名马也按占位名位置稳定）──
     # 台账建档马由 attach_races 追加，需在最后统一重排，保证 basic.json 顺序 = id 顺序
-    records.sort(key=lambda h: (racelib.birth_date_key(h), norm(h["馬名"] or "")))
+    records.sort(key=lambda h: h["id"])
 
     os.makedirs(HISTORY, exist_ok=True)
     cur_id = datetime.now().strftime("%Y%m%d_%H%M")

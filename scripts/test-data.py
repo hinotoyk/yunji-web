@@ -134,6 +134,8 @@ def smoke(netkeiba_sleep=1.0, jbis_sleep=1.5):
     nk = json.loads((RAW / "netkeiba.json").read_text(encoding="utf-8"))
     jb = json.loads((RAW / "jbis.json").read_text(encoding="utf-8"))
     basic = json.loads((ROOT / "data" / "basic.json").read_text(encoding="utf-8"))
+    if isinstance(basic, dict) and "horses" in basic:
+        basic = basic["horses"]   # basic/v1 {_meta, horses} 兼容
 
     snk = load("scrape_netkeiba")
     out.append("── netkeiba 血统冒烟（抽 3 匹）──")

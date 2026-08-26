@@ -367,9 +367,13 @@ SHUTOKU_FIXED = {          # 1着 固定额（万円）
     "新馬": 400, "未勝利": 400, "1勝": 500,
     "2勝": 600, "オープン": 600, "3勝": 900,
 }
-SHUTOKU_GRADE_WIN = 0.50   # 重賞 1着 = 本賞金×50%
-SHUTOKU_GRADE_2ND = 0.20   # 重賞 2着 = 本賞金×20%
+SHUTOKU_GRADE_WIN = 0.50   # 重賞 1着 = 该马1着本賞金×50%
+SHUTOKU_GRADE_2ND = 0.50   # 重賞 2着 = 该马2着本賞金×50%（JRA：对着順本賞金各算半額，见 docs/PROJECT.md §5.3）
+SHUTOKU_2YO_G3_WIN = 16000000  # 2歳重賞 GⅢ 1着 固定（JRA，非本賞金×50%）
+SHUTOKU_2YO_G3_2ND = 6000000   # 2歳重賞 GⅢ 2着 固定
 HALVE_2YO = False          # 2歳赛季収得 → 3歳后折半：默认关（2016 番組改正疑似废止，13 匹拟合均未要求）
+_SHUTOKU_GRADE_HALF = {"GI", "GII", "JGI", "JGII", "JpnI", "JpnII"}  # 2歳重賞 按本賞金×50%（其余 2歳重賞=GⅢ 用固定额）
+_JPN_GRADES = {"JpnI", "JpnII", "JpnIII"}                             # 地方重賞（ダートグレード）収得专用
 
 # 重赏标记（含障害 JG*）：契约B `格` 字段 or レース名括号后缀
 _SHUTOKU_GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}
@@ -406,8 +410,32 @@ def race_shutoku_class(rec):
     return "条件"
 
 
-def compute_shutoku(recs):
-    """契约B 记录列表 → 収得賞金 {平地, 障害}（円）。仅中央；重赏按本賞金×比例，
+def _age_at_race(date, birth_year):
+    """JRA 馬齢 = 比赛年份 - 生年（统一 1月1日 加龄，无生日调整）。返回 int 或 None。"""
+    try:
+        y = int(str(date or "")[:4])
+        by = int(birth_year or 0)
+    except (ValueError, TypeError):
+        return None
+    return y - by if y and by else None
+
+
+def race_grade(r):
+    """记录 → 具体重赏格（GⅠ/GⅡ/GⅢ/JGI…）；契约B `格` 优先，回退レース名括号；非重赏返回空串。"""
+    if isinstance(r, str):
+        m = _SHUTOKU_GRADE_RE.search(r)
+        return m.group(1) if m else ""
+    grade = r.get("格") or ""
+    if grade in _SHUTOKU_GRADES:
+        return grade
+    m = _SHUTOKU_GRADE_RE.search(r.get("レース名") or r.get("競走名") or "")
+    return m.group(1) if m else ""
+
+
+def compute_shutoku(recs, birth_year=None):
+    """契约B 记录列表 → 収得賞金 {平地, 障害}（円）。仅中央；重赏按 JRA 表：
+    - 3歳以上 重賞（含 2歳 GⅠ/GⅡ）：1/2着 = 该马着順本賞金×50%
+    - 2歳 重賞 GⅢ：1着=1600万 / 2着=600万 固定（非本賞金×50%）
     非重赏 1着 按固定额表；2着 仅重赏算。重赏 1/2着 缺本賞金 → 按 0 计并记入 '缺失' 报告。"""
     flat = sho = 0
     missing = []
@@ -423,7 +451,11 @@ def compute_shutoku(recs):
             if not honsho:
                 missing.append((r.get("日付"), r.get("競走名") or r.get("レース名"), result))
                 continue  # 本賞金缺失 → 该场按 0 暂计（収得缺失报告）
-            v = honsho * (SHUTOKU_GRADE_WIN if result == 1 else SHUTOKU_GRADE_2ND)
+            age = _age_at_race(r.get("日付"), birth_year)
+            if age == 2 and race_grade(r) not in _SHUTOKU_GRADE_HALF:
+                v = SHUTOKU_2YO_G3_WIN if result == 1 else SHUTOKU_2YO_G3_2ND  # 2歳 GⅢ 固定
+            else:
+                v = honsho * (SHUTOKU_GRADE_WIN if result == 1 else SHUTOKU_GRADE_2ND)
         elif result == 1 and cls in SHUTOKU_FIXED:
             v = SHUTOKU_FIXED[cls] * 10000
         else:
@@ -433,3 +465,30 @@ def compute_shutoku(recs):
         else:
             flat += v
     return {"平地": int(flat), "障害": int(sho), "缺失": missing}
+
+
+def compute_shutoku_jpn(recs):
+    """地方重賞 JpnI/JpnII/JpnIII 収得（JRA 表，2026-08-26 用户定案；与中央 compute_shutoku 分开）。
+    仅 Jpn 格 + 結果 1/2 着；本賞金 = 该马着順本賞金（地方ダートグレード）。规则（万円）：
+    - 1着：本賞金 ≥1200 → ×50%；400 ≤ x < 1200 → 400万；x < 400 → 全额
+    - 2着：本賞金 ≥480 → ×50%；160 ≤ x < 480 → 160万；x < 160 → 全额
+    返回 {'Jpn': 円, '缺失': [...]}。"""
+    jpn = 0
+    missing = []
+    for r in recs:
+        if race_grade(r) not in _JPN_GRADES:
+            continue
+        result = r.get("結果")
+        if result not in (1, 2):
+            continue
+        honsho = r.get("本賞金") or 0
+        if not honsho:
+            missing.append((r.get("日付"), r.get("競走名") or r.get("レース名"), result))
+            continue  # 本賞金缺失 → 该场按 0 暂计（収得缺失报告）
+        man = honsho // 10000
+        if result == 1:
+            v = honsho * 0.5 if man >= 1200 else (4000000 if man >= 400 else honsho)
+        else:
+            v = honsho * 0.5 if man >= 480 else (1600000 if man >= 160 else honsho)
+        jpn += v
+    return {"Jpn": int(jpn), "缺失": missing}
