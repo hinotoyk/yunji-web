@@ -67,7 +67,6 @@ data/
 ├── jockeys.json       骑手 ID → 全名 字典（解决 netkeiba 截断）
 ├── raw/               抓取原始数据（契约A：netkeiba.json / jbis*.json / netkeiba_races.json / rotation_queue.json / fetch_log.csv）
 ├── races/google_ledger.csv   比赛台账快照（契约B，海外补缺/兜底源）
-├── aliases.json       马名别名表（映射/自动建档控制）
 ├── sync-report.md     台账健康度报告
 ├── merge-report.md    马匹关联/覆盖/待校准报告
 ├── manifest.json      版本清单

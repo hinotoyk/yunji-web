@@ -129,7 +129,7 @@ window.RaceUI = (function () {
     const races = h.races || [];
     if (!races.length) {
       return {
-        html: `<section class="sec" id="race-sec"><div class="sec-head"><span class="n">${n}</span><h2>比赛成绩 · 逐场履历</h2><span class="hint">权威源：Google Sheets 台账</span></div><div class="race-empty">尚未出赛 / 台账无记录</div></section>`,
+        html: `<section class="sec" id="race-sec"><div class="sec-head"><span class="n">${n}</span><h2>比赛成绩 · 逐场履历</h2></div><div class="race-empty">尚未出赛 / 台账无记录</div></section>`,
         bind() {},
       };
     }
@@ -138,7 +138,7 @@ window.RaceUI = (function () {
     const head = `<tr>${COLS.map(([label, col]) =>
       `<th data-col="${col}" class="${SORTABLE.has(col) ? "sortable" : ""}">${label}${SORTABLE.has(col) ? " ⇅" : ""}</th>`).join("")}</tr>`;
     const html = `<section class="sec" id="race-sec">
-      <div class="sec-head"><span class="n">${n}</span><h2>比赛成绩 · 逐场履历</h2><span class="hint">权威源：台账 · 共 <b>${races.length}</b> 场</span></div>
+      <div class="sec-head"><span class="n">${n}</span><h2>比赛成绩 · 逐场履历</h2></div>
       ${graded}
       <div class="rbar">
         <select data-rf="venue"><option value="all">全部场地</option><option value="中央">中央</option><option value="地方">地方</option><option value="海外">海外</option></select>

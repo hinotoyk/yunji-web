@@ -249,5 +249,5 @@ basic.json = { _meta, horses[] }
 
 - `docs/data-contracts.md`（契约活文档，随字段改动更新）
 - `data/merge-report.md` / `new-horses-report.md` / `sync-report.md`（流水线产物，每次 build 重建）
-- `data/registry.json` / `jockeys.json` / `aliases.json`（身份/骑手/别名数据，核心）
+- `data/registry.json` / `jockeys.json`（身份/骑手数据，核心）
 - `history/*.json`（历史快照，manifest 自动滚动保留 ≤30，当前 3 个；前端 index 已不再展示，后续单独做历史查阅页）

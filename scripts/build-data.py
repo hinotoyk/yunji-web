@@ -387,14 +387,6 @@ def update_manifest(current_id, count, note="", versions=None, has_snapshot=True
     return mf
 
 
-def load_aliases():
-    path = os.path.join(DATA, "aliases.json")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-
 def load_ledger():
     """读取契约B快照（pull_races.py 产出）→ 类型化记录 + 校验 issues"""
     path = os.path.join(RACES_DIR, "google_ledger.csv")
@@ -410,13 +402,16 @@ def load_ledger():
     return records, issues
 
 
-def _merge_gap(base, gap, fill_fields):
-    """海外场：netkeiba 为主，台账只补空缺字段"""
-    out = dict(base)
-    for k in fill_fields:
-        if not out.get(k) and gap.get(k):
-            out[k] = gap[k]
-    return out
+def _merge_gap(base, gap, skip_fields=("日付", "場名", "出走馬名", "venue_type", "來源", "調教師")):
+    """海外场：netkeiba 为主，台账只补 netkeiba 空缺字段（原地改 base，不返回副本）。
+    跳过匹配键/身份/来源字段（日付/場名/出走馬名/venue_type/來源）以及 調教師——
+    調教師 由下游「档案级兜底」统一补（h.調教師 更全，如「矢作芳人 (栗東)」），
+    台账值常更短（如「矢作芳人」），不应覆盖；其余字段 netkeiba 为空且有台账值 → 覆盖。"""
+    for k, v in gap.items():
+        if k in skip_fields:
+            continue
+        if not base.get(k) and v:
+            base[k] = v
 
 
 def _race_key(r):
@@ -461,23 +456,19 @@ def _match_ledger_to_existing(g, reg, by_norm):
     return None
 
 
-def attach_races(records, nk_recs, ledger_rows, aliases, reg):
+def attach_races(records, nk_recs, ledger_rows, reg):
     """契约B关联到马档案（M2.5：netkeiba 为主 + 台账海外补缺；M4.3 加収得；W1/D1 移除自动建档）。
     - nk_recs:     netkeiba 契约B 记录列表（主源，含 來源=netkeiba / race_id / 本賞金 / jockey_id）
     - ledger_rows: 台账契约B（coerce 后），只保留 venue_type=海外 参与补缺
-    - 合并键 (日付,場名,R)：netkeiba 优先；海外场 netkeiba 有 → netkeiba 为主、台账补賞金空缺；
+    - 合并键 (日付,場名,R)：netkeiba 优先；海外场 netkeiba 有 → netkeiba 为主、netkeiba 空字段由台账补；
       netkeiba 无 → 台账展示（來源=ledger）
     - W1/D1：台账海外马走匹配链（去后缀名 → registry → (母名,生年) → netkeiba 实体），
-      匹配不到进「待确认」；彻底不再自动建档（action=create 分支已移除）。
-    返回 (matched, created_names, unmatched_names, aliases, n_with_races)
+      匹配不到进「待确认」；彻底不再自动建档。
+    返回 (matched, created_names, unmatched_names, n_with_races)
     """
     by_norm = {}
     for h in records:
         by_norm.setdefault(norm(h.get("馬名", "")), []).append(h)
-    for src, entry in aliases.items():
-        tgt = entry.get("target", "") if isinstance(entry, dict) else entry
-        if tgt:
-            by_norm.setdefault(norm(src), []).extend(by_norm.get(norm(tgt), []))
 
     # 台账只保留海外行（中央/地方由 netkeiba 覆盖）
     ledger_ov = [r for r in ledger_rows if r.get("venue_type") == "海外"]
@@ -496,10 +487,10 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
         for r in ov_list:
             gap_key = (str(r.get("日付", "")), str(r.get("場名", "")))
             if gap_key in nk_dates:
-                # 海外场 netkeiba 有 → netkeiba 为主，台账只补空缺字段
+                # 海外场 netkeiba 有 → netkeiba 为主，netkeiba 空字段由台账补（原地改 base）
                 for base in nk_list:
                     if (str(base.get("日付", "")), str(base.get("場名", ""))) == gap_key:
-                        _merge_gap(base, r, ["賞金"])
+                        _merge_gap(base, r)
             else:
                 # netkeiba 无该海外场 → 台账展示（W1：台账 CSV 无 來源 列，coerce 不产出 → 补标 ledger）
                 merged.append({**r, "來源": "ledger"})
@@ -513,18 +504,10 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
         if key in by_norm:
             assign[key] = ("attach", key)
             continue
-        entry = aliases.get(g["name"]) or aliases.get(key) or {}
-        tgt = entry.get("target") or ""
-        if tgt and norm(tgt) in by_norm:
-            assign[key] = ("attach", norm(tgt))
-            continue
         mkey = _match_ledger_to_existing(g, reg, by_norm)
         if mkey:
             assign[key] = ("attach", mkey)
         else:
-            if not entry:
-                note = "海外登记名，无日文名" if g["name"].isascii() else "台账有、仓库无，待确认"
-                aliases[g["name"]] = {"action": "", "target": "", "note": note}
             assign[key] = (None, None)
 
     matched, created, unmatched = 0, [], []
@@ -565,7 +548,7 @@ def attach_races(records, nk_recs, ledger_rows, aliases, reg):
     # W1/D1：自动建档分支已移除（台账海外马走匹配链，匹配不到进「待确认」），created 恒空。
 
     return matched, [horse_recs[k]["name"] for k in created], \
-        [horse_recs[k]["name"] for k in unmatched], aliases, n_with
+        [horse_recs[k]["name"] for k in unmatched], n_with
 
 
 def build_merge_report(records, matched, created, unmatched, ledger_issues):
@@ -573,7 +556,7 @@ def build_merge_report(records, matched, created, unmatched, ledger_issues):
     lines.append(f"- 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append(f"- 关联成功: {matched} 匹")
     lines.append(f"- 自动建档: 0 匹（W1/D1 已停用：台账海外马走匹配链并入已有 netkeiba 实体，不再自动建档）")
-    lines.append(f"- 待确认: {len(unmatched)} 匹" + (f" → {'、'.join(unmatched)}（已写入 data/aliases.json）" if unmatched else ""))
+    lines.append(f"- 待确认: {len(unmatched)} 匹" + (f" → {'、'.join(unmatched)}" if unmatched else ""))
     lines.append(f"- ledger 校验异常: {len(ledger_issues)} 条")
     for it in ledger_issues[:20]:
         lines.append(f"  - **{it['type']}**: {it}")
@@ -684,7 +667,6 @@ def main():
     print(f"✔ クロス增强: {with_cross} 匹")
 
     # ── 比赛数据（M2.5 主源：netkeiba 成绩页 + 台账仅海外补漏）──
-    aliases = load_aliases()
     ledger_rows, ledger_issues = load_ledger()
     netkeiba_db = netkeiba_races.load_races_db()
     jockeys = netkeiba_races.load_jockeys()
@@ -692,16 +674,14 @@ def main():
         # fetch 无参会自读 basic.json 取 nk_id→馬名；basic.json 已改 {_meta,horses}，必须显式传
         name_by_nk = {h["nk_id"]: h.get("馬名", "") for h in records if h.get("nk_id")}
         nk_recs = netkeiba_races.fetch(name_by_nk)
-        matched, created, unmatched, aliases, n_with = attach_races(
-            records, nk_recs, ledger_rows, aliases, reg)
-        with open(os.path.join(DATA, "aliases.json"), "w", encoding="utf-8") as f:
-            json.dump(aliases, f, ensure_ascii=False, indent=1)
+        matched, created, unmatched, n_with = attach_races(
+            records, nk_recs, ledger_rows, reg)
         print(f"✔ 比赛数据: netkeiba 主源 {len(netkeiba_db)} 匹 · 台账海外关联 {matched} 匹"
               f" · 自动建档 {len(created)} 匹 · 待确认 {len(unmatched)} 匹")
         if created:
             print("✔ 自动建档:", "、".join(created))
         if unmatched:
-            print("⚠ 待确认（已写入 aliases.json）:", "、".join(unmatched))
+            print("⚠ 待确认:", "、".join(unmatched))
         mreport = build_merge_report(records, matched, created, unmatched, ledger_issues)
         with open(os.path.join(DATA, "merge-report.md"), "w", encoding="utf-8") as f:
             f.write(mreport)

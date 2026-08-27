@@ -21,7 +21,6 @@ yunji-web/
 │   ├── basic.json       # 站点基本信息（契约C，404 匹，{_meta,horses}；勿手改）
 │   ├── raw/             # 契约A：netkeiba.json / jbis.json / jbis_pedigree.json
 │   ├── races/google_ledger.csv # 契约B：比赛台账快照（649 条 / 135 匹，海外补缺/兜底）
-│   ├── aliases.json     # 马名别名表（映射 / action=create 自动建档）
 │   ├── sync-report.md   # 台账健康度（pull_races 产出）
 │   ├── merge-report.md  # 马匹关联/覆盖/待校准（build-data 产出）
 │   ├── manifest.json    # 版本清单
@@ -66,7 +65,6 @@ yunji-web/
 | 子嗣清单/基础信息 | **netkeiba 主源** | `list.html?sire_id=2017101835` 全量 404 匹 |
 | 5代血统图 | **JBIS** | `/horse/{id}/pedigree/` 结构化 JSON，FNo/クロス |
 | 比赛数据 | **Google Sheets 台账（人工维护，权威源）** | 逐场全字段（日付/場名/競走名/距離/馬場/結果/賞金/騎手…），中央+地方+海外；经 sheets_ledger 适配 |
-| 自动建档 | 台账独有马（如 Grand Warrior） | aliases.json `action=create`，性別/生年由性齢推导 |
 | 人工注释（译名/近况/血统分析/备考） | 直接改 basic.json | 下次全量抓取会覆盖事实字段 |
 
 **已知限制**：
