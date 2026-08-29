@@ -1,13 +1,14 @@
 {
  "id": 167,
- "馬名": "エアジーンの2024",
+ "jbis_id": "0001387230",
+ "馬名": "",
  "pedigree": {
   "父": [
    [
     {
      "name": "コントレイル",
      "sex": "牡",
-     "id": "2017101835",
+     "id": "0001237042",
      "year": "2017",
      "color": "青鹿毛"
     }
@@ -16,387 +17,395 @@
     {
      "name": "ディープインパクト",
      "sex": "牡",
-     "id": "2002100816",
+     "id": "0000742976",
      "year": "2002",
      "color": "鹿毛"
     },
     {
-     "name": "ロードクロサイト",
+     "name": "ロードクロサイト(USA)",
      "sex": "牝",
-     "id": "2010110076",
+     "id": "0001157855",
      "year": "2010",
      "color": "芦毛"
     }
    ],
    [
     {
-     "name": "サンデーサイレンス",
+     "name": "サンデーサイレンス(USA)",
      "sex": "牡",
-     "id": "000a00033a",
-     "year": "1986",
-     "color": "青鹿毛"
+     "id": "0000333862",
+     "year": "1986"
     },
     {
-     "name": "ウインドインハーヘア",
+     "name": "ウインドインハーヘア(IRE)",
      "sex": "牝",
-     "id": "000a0003a2",
-     "year": "1991",
-     "color": "鹿毛"
+     "id": "0000430846",
+     "year": "1991"
     },
     {
-     "name": "Unbridled's Song",
+     "name": "Unbridled's Song(USA)",
      "sex": "牡",
-     "id": "000a002071",
-     "year": "1993",
-     "color": "芦毛"
+     "id": "0000361396",
+     "year": "1993"
     },
     {
-     "name": "Folklore",
+     "name": "Folklore(USA)",
      "sex": "牝",
-     "id": "000a011d47",
-     "year": "2003",
-     "color": "鹿毛"
+     "id": "0000906032",
+     "year": "2003"
     }
    ],
    [
     {
-     "name": "Halo",
+     "name": "Halo(USA)",
      "sex": "牡",
-     "id": "000a0012bf",
-     "year": "1969",
-     "color": "黒鹿毛"
+     "id": "0000335154",
+     "year": "1969"
     },
     {
-     "name": "Wishing Well",
+     "name": "Wishing Well(USA)",
      "sex": "牝",
-     "id": "000a008c1e",
-     "year": "1975",
-     "color": "鹿毛"
+     "id": "0000393162",
+     "year": "1975"
     },
     {
-     "name": "Alzao",
+     "name": "Alzao(USA)",
      "sex": "牡",
-     "id": "000a001cb4",
-     "year": "1980",
-     "color": "鹿毛"
+     "id": "0000339659",
+     "year": "1980"
     },
     {
-     "name": "Burghclere",
+     "name": "Burghclere(GB)",
      "sex": "牝",
-     "id": "000a00922c",
-     "year": "1977",
-     "color": "鹿毛"
+     "id": "0000394655",
+     "year": "1977"
     },
     {
-     "name": "Unbridled",
+     "name": "Unbridled(USA)",
      "sex": "牡",
-     "id": "000a001cd0",
-     "year": "1987",
-     "color": "鹿毛"
+     "id": "0000340629",
+     "year": "1987"
     },
     {
-     "name": "Trolley Song",
+     "name": "Trolley Song(USA)",
      "sex": "牝",
-     "id": "000a009fd9",
-     "year": "1983",
-     "color": "芦毛"
+     "id": "0000423919",
+     "year": "1983"
     },
     {
-     "name": "Tiznow",
+     "name": "Tiznow(USA)",
      "sex": "牡",
-     "id": "000a00fa4b",
-     "year": "1997",
-     "color": "鹿毛"
+     "id": "0000621100",
+     "year": "1997"
     },
     {
-     "name": "Contrive",
+     "name": "Contrive(USA)",
      "sex": "牝",
-     "id": "000a011d46",
-     "year": "1998",
-     "color": "黒鹿毛"
+     "id": "0000795543",
+     "year": "1998"
     }
    ],
    [
     {
-     "name": "Hail to Reason",
+     "name": "Hail to Reason(USA)",
      "sex": "牡",
-     "id": "000a000f2b"
+     "id": "0000334286",
+     "year": "1958"
     },
     {
-     "name": "Cosmah",
+     "name": "Cosmah(USA)",
      "sex": "牝",
-     "id": "000a007459"
+     "id": "0000387273",
+     "year": "1953"
     },
     {
-     "name": "Understanding",
+     "name": "Understanding(USA)",
      "sex": "牡",
-     "id": "000a0019b6"
+     "id": "0000336892",
+     "year": "1963"
     },
     {
-     "name": "Mountain Flower",
+     "name": "Mountain Flower(USA)",
      "sex": "牝",
-     "id": "000a008c1d"
+     "id": "0000393161",
+     "year": "1964"
     },
     {
-     "name": "Lyphard",
+     "name": "Lyphard(USA)",
      "sex": "牡",
-     "id": "000a001205"
+     "id": "0000334968",
+     "year": "1969"
     },
     {
-     "name": "Lady Rebecca",
+     "name": "Lady Rebecca(GB)",
      "sex": "牝",
-     "id": "000a009170"
+     "id": "0000394467",
+     "year": "1971"
     },
     {
-     "name": "Busted",
+     "name": "Busted(GB)",
      "sex": "牡",
-     "id": "000a000e0d"
+     "id": "0000334011",
+     "year": "1963"
     },
     {
-     "name": "Highclere",
+     "name": "Highclere(GB)",
      "sex": "牝",
-     "id": "000a008341"
+     "id": "0000390924",
+     "year": "1971"
     },
     {
-     "name": "Fappiano",
+     "name": "Fappiano(USA)",
      "sex": "牡",
-     "id": "000a001702"
+     "id": "0000336225",
+     "year": "1977"
     },
     {
-     "name": "Gana Facil",
+     "name": "Gana Facil(USA)",
      "sex": "牝",
-     "id": "000a00902d"
+     "id": "0000394149",
+     "year": "1981"
     },
     {
-     "name": "Caro",
+     "name": "Caro(IRE)",
      "sex": "牡",
-     "id": "000a0010ed"
+     "id": "0000334731",
+     "year": "1967"
     },
     {
-     "name": "Lucky Spell",
+     "name": "Lucky Spell(USA)",
      "sex": "牝",
-     "id": "000a00945e"
+     "id": "0000395190",
+     "year": "1971"
     },
     {
-     "name": "Cee's Tizzy",
+     "name": "Cee's Tizzy(USA)",
      "sex": "牡",
-     "id": "000a00fa4c"
+     "id": "0000341817",
+     "year": "1987"
     },
     {
-     "name": "Cee's Song",
+     "name": "Cee's Song(USA)",
      "sex": "牝",
-     "id": "000a00faed"
+     "id": "0000444579",
+     "year": "1986"
     },
     {
-     "name": "Storm Cat",
+     "name": "Storm Cat(USA)",
      "sex": "牡",
-     "id": "000a001a98"
+     "id": "0000337102",
+     "year": "1983"
     },
     {
-     "name": "Jeano",
+     "name": "Jeano(USA)",
      "sex": "牝",
-     "id": "000a00ff90"
+     "id": "0000430565",
+     "year": "1988"
     }
    ]
   ],
   "母": [
    [
     {
-     "name": "エアジーン",
+     "name": "サウンドバリアー",
      "sex": "牝",
-     "id": "2016104649",
-     "year": "2016",
-     "color": "鹿毛"
-    }
-   ],
-   [
-    {
-     "name": "ハービンジャー",
-     "sex": "牡",
-     "id": "000a011996",
-     "year": "2006",
-     "color": "鹿毛"
-    },
-    {
-     "name": "ラスティングソング",
-     "sex": "牝",
-     "id": "2007103282",
+     "id": "0001046374",
      "year": "2007",
-     "color": "青鹿毛"
+     "color": "芦毛"
     }
    ],
    [
     {
-     "name": "Dansili",
+     "name": "アグネスデジタル(USA)",
      "sex": "牡",
-     "id": "000a010a5f",
-     "year": "1996",
-     "color": "黒鹿毛"
-    },
-    {
-     "name": "Penang Pearl",
-     "sex": "牝",
-     "id": "000a011903",
-     "year": "1996",
-     "color": "鹿毛"
-    },
-    {
-     "name": "フジキセキ",
-     "sex": "牡",
-     "id": "1992109618",
-     "year": "1992",
-     "color": "青鹿毛"
-    },
-    {
-     "name": "ハルーワソング",
-     "sex": "牝",
-     "id": "000a00683b",
-     "year": "1996",
-     "color": "栗毛"
-    }
-   ],
-   [
-    {
-     "name": "デインヒル",
-     "sex": "牡",
-     "id": "000a0000d1",
-     "year": "1986",
-     "color": "鹿毛"
-    },
-    {
-     "name": "Hasili",
-     "sex": "牝",
-     "id": "000a010a6a",
-     "year": "1991",
-     "color": "鹿毛"
-    },
-    {
-     "name": "Bering",
-     "sex": "牡",
-     "id": "000a001bd5",
-     "year": "1983",
+     "id": "0000321138",
+     "year": "1997",
      "color": "栗毛"
     },
     {
-     "name": "Guapa",
+     "name": "スリーピングインシアトル(USA)",
      "sex": "牝",
-     "id": "000a00acae",
-     "year": "1988",
-     "color": "鹿毛"
-    },
-    {
-     "name": "サンデーサイレンス",
-     "sex": "牡",
-     "id": "000a00033a",
-     "year": "1986",
-     "color": "青鹿毛"
-    },
-    {
-     "name": "ミルレーサー",
-     "sex": "牝",
-     "id": "000a00021e",
-     "year": "1983",
-     "color": "鹿毛"
-    },
-    {
-     "name": "Nureyev",
-     "sex": "牡",
-     "id": "000a001676",
-     "year": "1977",
-     "color": "鹿毛"
-    },
-    {
-     "name": "Morn of Song",
-     "sex": "牝",
-     "id": "000a00b25b",
-     "year": "1988",
-     "color": "鹿毛"
+     "id": "0000440919",
+     "year": "1995",
+     "color": "芦毛"
     }
    ],
    [
     {
-     "name": "Danzig",
+     "name": "Crafty Prospector(USA)",
      "sex": "牡",
-     "id": "000a0000d3"
+     "id": "0000336770",
+     "year": "1979"
     },
     {
-     "name": "Razyana",
+     "name": "Chancey Squaw(USA)",
      "sex": "牝",
-     "id": "000a009233"
+     "id": "0000397887",
+     "year": "1991"
     },
     {
-     "name": "Kahyasi",
+     "name": "Seattle Slew(USA)",
      "sex": "牡",
-     "id": "000a002048"
+     "id": "0000335964",
+     "year": "1974"
     },
     {
-     "name": "Kerali",
+     "name": "Lady's Secret(USA)",
      "sex": "牝",
-     "id": "000a010a69"
-    },
+     "id": "0000394720",
+     "year": "1982"
+    }
+   ],
+   [
     {
-     "name": "Arctic Tern",
+     "name": "Mr. Prospector(USA)",
      "sex": "牡",
-     "id": "000a001679"
+     "id": "0000335975",
+     "year": "1970"
     },
     {
-     "name": "Beaune",
+     "name": "Real Crafty Lady(USA)",
      "sex": "牝",
-     "id": "000a0081c9"
+     "id": "0000392845",
+     "year": "1975"
     },
     {
-     "name": "Shareef Dancer",
+     "name": "Chief's Crown(USA)",
      "sex": "牡",
-     "id": "000a001a8e"
+     "id": "0000337339",
+     "year": "1982"
     },
     {
-     "name": "Sauceboat",
+     "name": "Allicance(USA)",
      "sex": "牝",
-     "id": "000a009cc9"
+     "id": "0000427735",
+     "year": "1980"
     },
     {
-     "name": "Halo",
+     "name": "Bold Reasoning(USA)",
      "sex": "牡",
-     "id": "000a0012bf"
+     "id": "0000335859",
+     "year": "1968"
     },
     {
-     "name": "Wishing Well",
+     "name": "My Charmer(USA)",
      "sex": "牝",
-     "id": "000a008c1e"
+     "id": "0000390220",
+     "year": "1969"
     },
     {
-     "name": "Le Fabuleux",
+     "name": "Secretariat(USA)",
      "sex": "牡",
-     "id": "000a000e44"
+     "id": "0000333978",
+     "year": "1970"
     },
     {
-     "name": "Marston's Mill",
+     "name": "Great Lady M.(USA)",
      "sex": "牝",
-     "id": "000a008e24"
-    },
+     "id": "0000391228",
+     "year": "1975"
+    }
+   ],
+   [
     {
-     "name": "Northern Dancer",
+     "name": "Raise a Native(USA)",
      "sex": "牡",
-     "id": "000a000e04"
+     "id": "0000334066",
+     "year": "1961"
     },
     {
-     "name": "Special",
+     "name": "Gold Digger(USA)",
      "sex": "牝",
-     "id": "000a0081e9"
+     "id": "0000389632",
+     "year": "1962"
     },
     {
-     "name": "Blushing Groom",
+     "name": "In Reality(USA)",
      "sex": "牡",
-     "id": "000a001340"
+     "id": "0000334720",
+     "year": "1964"
     },
     {
-     "name": "Glorious Song",
+     "name": "Princess Roycraft(USA)",
      "sex": "牝",
-     "id": "000a0085ee"
+     "id": "0000392033",
+     "year": "1967"
+    },
+    {
+     "name": "Danzig(USA)",
+     "sex": "牡",
+     "id": "0000336082",
+     "year": "1977"
+    },
+    {
+     "name": "Six Crowns(USA)",
+     "sex": "牝",
+     "id": "0000394259",
+     "year": "1976"
+    },
+    {
+     "name": "Alleged(USA)",
+     "sex": "牡",
+     "id": "0000335203",
+     "year": "1974"
+    },
+    {
+     "name": "Runaway Bride(GB)",
+     "sex": "牝",
+     "id": "0000388608",
+     "year": "1962"
+    },
+    {
+     "name": "Boldnesian(USA)",
+     "sex": "牡",
+     "id": "0000335860",
+     "year": "1963"
+    },
+    {
+     "name": "Reason to Earn(USA)",
+     "sex": "牝",
+     "id": "0000389628",
+     "year": "1963"
+    },
+    {
+     "name": "Poker(USA)",
+     "sex": "牡",
+     "id": "0000334764",
+     "year": "1963"
+    },
+    {
+     "name": "Fair Charmer(USA)",
+     "sex": "牝",
+     "id": "0000390221",
+     "year": "1959"
+    },
+    {
+     "name": "Bold Ruler(USA)",
+     "sex": "牡",
+     "id": "0000334140",
+     "year": "1954"
+    },
+    {
+     "name": "Somethingroyal(USA)",
+     "sex": "牝",
+     "id": "0000388747",
+     "year": "1952"
+    },
+    {
+     "name": "Icecapade(USA)",
+     "sex": "牡",
+     "id": "0000334747",
+     "year": "1969"
+    },
+    {
+     "name": "Sovereign Lady(USA)",
+     "sex": "牝",
+     "id": "0000391227",
+     "year": "1969"
     }
    ]
   ]
  },
- "fno": "F12-c",
+ "fno": "F22-d",
  "cross": ""
 }

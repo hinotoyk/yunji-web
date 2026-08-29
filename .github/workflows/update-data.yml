@@ -1,122 +1,101 @@
-name: Sync yunji data
+name: update-data
 
+# 数据自动更新（data/ 数据仓库模式：跑完有变化就 commit+push，触发 Pages 部署由仓库其它流程负责）
+# 前置要求：仓库 Settings → Actions → Workflow permissions → 勾选 "Read and write permissions"
 on:
-  # 每日 JST 07:00（UTC 22:00）：新马/改名对账（--new）→ 台账 → netkeiba 成绩 → 重建。
-  # 每周日 JST 11:00（UTC 02:00）：netkeiba 血统/クロス（--ped）+ JBIS 兜底补填（--fill）→ 重建。
-  # 注意：仓库闲置 60 天定时任务会被 GitHub 暂停，届时手动 Run workflow 一次即恢复。
   schedule:
-    - cron: "0 22 * * *"    # 每日 → daily
-    - cron: "0 2 * * 0"     # 每周日 → weekly
-  workflow_dispatch:
+    - cron: '0 22 * * *'          # 每天 UTC 22:00（北京时间 06:00）跑 CI 全自动
+  workflow_dispatch:              # 手动触发：可选更新策略
     inputs:
-      mode:
-        description: 同步模式
-        type: choice
+      strategy:
+        description: 更新策略
         required: true
-        default: daily
+        default: 'ci'
+        type: choice
         options:
-          - daily    # 每日：netkeiba --new（新马/改名）+ 台账 + 成绩 + 重建
-          - weekly   # 每周：netkeiba --ped（血统/クロス）+ jbis --fill + 重建
-          - all      # 全量抓取（重，慎用）
-          - single   # 单匹更新（需填马名）
-      horse_name:
-        description: 马名（仅 single 模式，日文名）
-        type: string
+          - ci            # 基本增量 + 比赛增量 + 校验 + 提交
+          - basic         # 只更新基本数据
+          - races         # 只更新比赛数据
+          - races-force   # 比赛全量刷新（历史数据修正）
+          - check         # 只校验（报告不一致项）
+          - ledger        # 仅台账海外并入
+          - init          # 初始化：删空 data/ 从 0 全量
+          - horse         # 定向更新指定 id 的马
+      year:
+        description: 建档年份（basic / ci 用，逗号分隔，如 2025,2026）
         required: false
-
-permissions:
-  contents: write
-
-concurrency:
-  group: update-data
-  cancel-in-progress: true
+        type: string
+        default: ''
+      since:
+        description: 时段增量天数（races 用，只抓最近 N 天出赛的马）
+        required: false
+        type: number
+        default: 7
+      horse_ids:
+        description: 定向 id（horse 用，逗号分隔）
+        required: false
+        type: string
+        default: ''
+      fix_check:
+        description: check 后自动补跑修复（check 用）
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  sync:
+  update:
     runs-on: ubuntu-latest
+    timeout-minutes: 180          # 初始化全量最长约 1.5~2 小时
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
 
-      - name: Install deps
+      - name: 安装依赖
         run: pip install requests beautifulsoup4 lxml
 
-      # ── 解析本次运行模式：手动走 inputs；定时走「周日=weekly，其余=daily」──
-      - name: Resolve mode
-        id: mode
+      - name: 组装策略参数
+        id: args
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "mode=${{ inputs.mode || 'daily' }}" >> "$GITHUB_OUTPUT"
-          else
-            if [ "$(date +%u)" = "7" ]; then
-              echo "mode=weekly" >> "$GITHUB_OUTPUT"
-            else
-              echo "mode=daily" >> "$GITHUB_OUTPUT"
-            fi
-          fi
+          S="${{ inputs.strategy }}"
+          CMD=""
+          case "$S" in
+            ci)         CMD="--ci" ;;
+            basic)      CMD="--basic" ;;
+            races)      CMD="--races" ;;
+            races-force) CMD="--races-force" ;;
+            check)      CMD="--check" ;;
+            ledger)     CMD="--ledger" ;;
+            init)       CMD="--init" ;;
+            horse)      CMD="--horse ${{ inputs.horse_ids }}" ;;
+          esac
+          [ -n "${{ inputs.year }}" ] && [ "$S" = "basic" -o "$S" = "ci" ] && CMD="$CMD --year ${{ inputs.year }}"
+          [ "${{ inputs.since }}" != "0" ] && [ "$S" = "races" ] && CMD="$CMD --since ${{ inputs.since }}"
+          [ "${{ inputs.fix_check }}" = "true" ] && [ "$S" = "check" ] && CMD="$CMD --fix"
+          echo "cmd=$CMD" >> "$GITHUB_OUTPUT"
 
-      # ── 每日：netkeiba 新马/改名对账（D0：--new 只收新马/改名，零请求增量）──
-      - name: netkeiba 新马/改名对账 (daily/weekly)
-        if: steps.mode.outputs.mode == 'daily' || steps.mode.outputs.mode == 'weekly'
-        run: python scripts/scrape_netkeiba.py --new --sleep 1.0
+      - name: 运行更新
+        run: python run_update.py ${{ steps.args.outputs.cmd }}
 
-      # ── 每日：拉台账（契约B 权威源）──
-      - name: Pull race ledger
-        if: steps.mode.outputs.mode == 'daily' || steps.mode.outputs.mode == 'weekly'
-        run: python scripts/pull_races.py
-
-      # ── 每日：netkeiba 成绩页（--races，双轨制 Track B）──
-      - name: netkeiba 成绩 (daily)
-        if: steps.mode.outputs.mode == 'daily'
-        run: python scripts/scrape_netkeiba.py --races --sleep 1.0
-
-      # ── 每日：骑手字典增量（build_jockeys.py，扫 netkeiba_races.json 补缺失 jockey_id 全名）──
-      - name: 骑手字典增量 (jockeys.json)
-        if: steps.mode.outputs.mode == 'daily'
-        run: python scripts/tools/build_jockeys.py --sleep 1.0
-
-      # ── 每周：netkeiba 血统/クロス 补全（--ped）──
-      - name: netkeiba 血统/クロス (weekly)
-        if: steps.mode.outputs.mode == 'weekly'
-        run: python scripts/scrape_netkeiba.py --ped --sleep 1.0
-
-      # ── 每周：JBIS 兜底补填（--fill，缺 血统/クロス 增量重抓）──
-      - name: JBIS 兜底补填 (weekly)
-        if: steps.mode.outputs.mode == 'weekly'
-        run: python scripts/scrape_jbis.py --fill --sleep 3.0
-
-      # ── 手动：全量抓取（重，慎用）──
-      - name: netkeiba 全量 (mode=all)
-        if: steps.mode.outputs.mode == 'all'
-        run: python scripts/scrape_netkeiba.py --all --sleep 1.0
-      - name: JBIS 全量 (mode=all)
-        if: steps.mode.outputs.mode == 'all'
-        run: python scripts/scrape_jbis.py --all --sleep 1.2
-
-      # ── 手动：单匹更新 ──
-      - name: netkeiba 单匹 (mode=single)
-        if: steps.mode.outputs.mode == 'single'
-        run: python scripts/scrape_netkeiba.py --name "${{ inputs.horse_name }}" --sleep 1.0
-      - name: JBIS 单匹 (mode=single)
-        if: steps.mode.outputs.mode == 'single'
-        run: python scripts/scrape_jbis.py --horse "${{ inputs.horse_name }}" --sleep 1.2
-
-      # ── 构建（契约A + 契约B → crops.json）+ 契约校验 ──
-      - name: Build crops.json
-        run: python scripts/build-data.py --note "${{ steps.mode.outputs.mode }} 同步"
-
-      - name: Contract & data test
-        run: python scripts/test-data.py
-
-      - name: Commit & push
+      - name: 提交数据（有变化才提交）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "sync data (${{ steps.mode.outputs.mode }})"
-          git push
+          git add data/
+          if ! git diff --cached --quiet; then
+            git commit -m "data: auto update $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+            echo "::notice::data/ 已更新并推送"
+          else
+            echo "::notice::data/ 无变化，跳过提交"
+          fi
+
+      - name: 上传运行日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-log-${{ github.run_id }}
+          path: test-logs/
+          retention-days: 14

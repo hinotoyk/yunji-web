@@ -1,6 +1,7 @@
 {
  "id": 48,
- "馬名": "Hazey Jane",
+ "jbis_id": "0001375477",
+ "馬名": "",
  "pedigree": {
   "父": [
    [
@@ -206,118 +207,56 @@
   "母": [
    [
     {
-     "name": "マイミスリリー(USA)",
+     "name": "ティファニーズオナー(USA)",
      "sex": "牝",
-     "id": "0001327913",
-     "year": "2015",
-     "color": "芦毛"
-    }
-   ],
-   [
-    {
-     "name": "Tapit(USA)",
-     "sex": "牡",
-     "id": "0000849372",
-     "year": "2001",
-     "color": "芦毛"
-    },
-    {
-     "name": "Wicked Deed(USA)",
-     "sex": "牝",
-     "id": "0001326260",
-     "year": "2008",
+     "id": "0001314157",
+     "year": "2011",
      "color": "鹿毛"
     }
    ],
    [
     {
-     "name": "Pulpit(USA)",
+     "name": "Street Cry(IRE)",
      "sex": "牡",
-     "id": "0000337958",
-     "year": "1994"
+     "id": "0000621983",
+     "year": "1998",
+     "color": "黒鹿毛"
     },
     {
-     "name": "Tap Your Heels(USA)",
+     "name": "Better Than Honour(USA)",
      "sex": "牝",
-     "id": "0000447042",
-     "year": "1996"
-    },
-    {
-     "name": "Harlan's Holiday(USA)",
-     "sex": "牡",
-     "id": "0000719305",
-     "year": "1999"
-    },
-    {
-     "name": "Marfa's Squall(USA)",
-     "sex": "牝",
-     "id": "0000845076",
-     "year": "1998"
+     "id": "0000448043",
+     "year": "1996",
+     "color": "鹿毛"
     }
    ],
    [
     {
-     "name": "A.P. Indy(USA)",
+     "name": "Machiavellian(USA)",
      "sex": "牡",
-     "id": "0000339653",
-     "year": "1989"
-    },
-    {
-     "name": "Preach(USA)",
-     "sex": "牝",
-     "id": "0000405353",
-     "year": "1989"
-    },
-    {
-     "name": "Unbridled(USA)",
-     "sex": "牡",
-     "id": "0000340629",
+     "id": "0000337496",
      "year": "1987"
     },
     {
-     "name": "Ruby Slippers(USA)",
+     "name": "Helen Street(GB)",
      "sex": "牝",
-     "id": "0000404957",
+     "id": "0000414918",
      "year": "1982"
     },
     {
-     "name": "Harlan(USA)",
+     "name": "Deputy Minister(CAN)",
      "sex": "牡",
-     "id": "0000361873",
-     "year": "1989"
+     "id": "0000338072",
+     "year": "1979"
     },
     {
-     "name": "Christmas in Aiken(USA)",
+     "name": "Blush With Pride(USA)",
      "sex": "牝",
-     "id": "0000714994",
-     "year": "1992"
-    },
-    {
-     "name": "Marfa(USA)",
-     "sex": "牡",
-     "id": "0000339807",
-     "year": "1980"
-    },
-    {
-     "name": "Western Squall(USA)",
-     "sex": "牝",
-     "id": "0000830895",
-     "year": "1989"
+     "id": "0000416899",
+     "year": "1979"
     }
    ],
    [
-    {
-     "name": "Seattle Slew(USA)",
-     "sex": "牡",
-     "id": "0000335964",
-     "year": "1974"
-    },
-    {
-     "name": "Weekend Surprise(USA)",
-     "sex": "牝",
-     "id": "0000404842",
-     "year": "1980"
-    },
     {
      "name": "Mr. Prospector(USA)",
      "sex": "牡",
@@ -325,86 +264,148 @@
      "year": "1970"
     },
     {
-     "name": "Narrate(USA)",
+     "name": "Coup de Folie(USA)",
      "sex": "牝",
-     "id": "0000405352",
-     "year": "1980"
+     "id": "0000394898",
+     "year": "1982"
     },
     {
-     "name": "Fappiano(USA)",
+     "name": "Troy(GB)",
      "sex": "牡",
-     "id": "0000336225",
-     "year": "1977"
-    },
-    {
-     "name": "Gana Facil(USA)",
-     "sex": "牝",
-     "id": "0000394149",
-     "year": "1981"
-    },
-    {
-     "name": "Nijinsky(CAN)",
-     "sex": "牡",
-     "id": "0000333996",
-     "year": "1967"
-    },
-    {
-     "name": "Moon Glitter(USA)",
-     "sex": "牝",
-     "id": "0000404956",
-     "year": "1972"
-    },
-    {
-     "name": "Storm Cat(USA)",
-     "sex": "牡",
-     "id": "0000337102",
-     "year": "1983"
-    },
-    {
-     "name": "Country Romance(CAN)",
-     "sex": "牝",
-     "id": "0000396709",
+     "id": "0000336179",
      "year": "1976"
     },
     {
-     "name": "Affirmed(USA)",
-     "sex": "牡",
-     "id": "0000336350",
-     "year": "1975"
-    },
-    {
-     "name": "Dowager(USA)",
+     "name": "Waterway(FR)",
      "sex": "牝",
-     "id": "0000430068",
-     "year": "1980"
+     "id": "0000394924",
+     "year": "1976"
     },
     {
-     "name": "Foolish Pleasure(USA)",
+     "name": "Vice Regent(CAN)",
      "sex": "牡",
-     "id": "0000334740",
-     "year": "1972"
+     "id": "0000336132",
+     "year": "1967"
     },
     {
-     "name": "Gray Matter(USA)",
+     "name": "Mint Copy(CAN)",
      "sex": "牝",
-     "id": "0000408378",
-     "year": "1966"
+     "id": "0000392196",
+     "year": "1970"
     },
     {
-     "name": "Gone West(USA)",
+     "name": "Blushing Groom(FR)",
      "sex": "牡",
-     "id": "0000337432",
-     "year": "1984"
+     "id": "0000335274",
+     "year": "1974"
     },
     {
-     "name": "Reiterate(USA)",
+     "name": "Best in Show(USA)",
      "sex": "牝",
-     "id": "0000444557",
-     "year": "1984"
+     "id": "0000390753",
+     "year": "1965"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native(USA)",
+     "sex": "牡",
+     "id": "0000334066",
+     "year": "1961"
+    },
+    {
+     "name": "Gold Digger(USA)",
+     "sex": "牝",
+     "id": "0000389632",
+     "year": "1962"
+    },
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Raise the Standard(CAN)",
+     "sex": "牝",
+     "id": "0000394889",
+     "year": "1978"
+    },
+    {
+     "name": "Petingo(GB)",
+     "sex": "牡",
+     "id": "0000334415",
+     "year": "1965"
+    },
+    {
+     "name": "La Milo(GB)",
+     "sex": "牝",
+     "id": "0000390938",
+     "year": "1963"
+    },
+    {
+     "name": "Riverman(USA)",
+     "sex": "牡",
+     "id": "0000335664",
+     "year": "1969"
+    },
+    {
+     "name": "Boulevard(IRE)",
+     "sex": "牝",
+     "id": "0000394923",
+     "year": "1968"
+    },
+    {
+     "name": "Northern Dancer(CAN)",
+     "sex": "牡",
+     "id": "0000334002",
+     "year": "1961"
+    },
+    {
+     "name": "Victoria Regina(CAN)",
+     "sex": "牝",
+     "id": "0000389443",
+     "year": "1958"
+    },
+    {
+     "name": "Bunty's Flight(CAN)",
+     "sex": "牡",
+     "id": "0000336550",
+     "year": "1953"
+    },
+    {
+     "name": "Shakney(USA)",
+     "sex": "牝",
+     "id": "0000392195",
+     "year": "1964"
+    },
+    {
+     "name": "Red God(USA)",
+     "sex": "牡",
+     "id": "0000334068",
+     "year": "1954"
+    },
+    {
+     "name": "Runaway Bride(GB)",
+     "sex": "牝",
+     "id": "0000388608",
+     "year": "1962"
+    },
+    {
+     "name": "Traffic Judge(USA)",
+     "sex": "牡",
+     "id": "0000334552",
+     "year": "1952"
+    },
+    {
+     "name": "Stolen Hour(USA)",
+     "sex": "牝",
+     "id": "0000390752",
+     "year": "1953"
     }
    ]
   ]
  },
- "fno": "F9-h",
- "cross": "Unbridled(USA) ：S4×M4 Storm Cat(USA) ：S5×M5"
+ "fno": "F8-f",
+ "cross": "Halo(USA) ：S4×M5"
 }

@@ -1,102 +1,100 @@
-# yunji-web · 云迹
+# yunji-web-refactor · 重构工作区
 
-铁鸟翱天（コントレイル）产驹资料库 · GitHub Pages 静态站，供个人查阅检索。
+「云迹」业务重构专用副本：**业务流程节点清晰化 + 网络请求线性化**（不兜兜转转）。
+原项目 `Z:\IdeaProjects\yunji-web` 只读参考，本目录是全部重构工作的落脚点。
 
-## 在线访问
+## 目录结构
 
-`https://hinotoyk.github.io/yunji-web/page/`
-
-## 本地预览
-
-```bash
-python -m http.server 8000
-# 打开 http://localhost:8000/page/index.html （主列表页）
+```
+yunji-web-refactor/
+├── scripts/
+│   ├── basic/                 # 基础部分脚本（建档 + 基本信息，更新少）
+│   │   ├── common.py          #   共享：请求/限速/缓存（指向根 data/）
+│   │   ├── build_registry.py  #   建档：JBIS 産駒一覧 → basic.json
+│   │   ├── fetch_pedigree.py  #   并发1：JBIS 血統
+│   │   ├── fetch_nk_id.py     #   并发2：netkeiba 列表 → nk_id
+│   │   ├── fetch_studbook.py  #   并发3：studbook 意味・由来
+│   │   ├── fetch_detail.py    #   阶段四：netkeiba 详情字段
+│   │   ├── merge_basic.py     #   合并 → basic.json → 删 _tmp/basic/
+│   │   ├── run_all.py         #   基础编排
+│   │   └── README.md          #   基础部分说明
+│   └── races/                 # 竞赛部分脚本（逐场成绩 + 収得，更新频繁）
+│       ├── common.py          #   共享：请求/限速/缓存（独立副本，指向根 data/）
+│       ├── racelib.py         #   域规则：场地分类/格推导/収得賞金
+│       ├── fetch_detail.py    #   ① 详情更新 + 通算成績判变
+│       ├── fetch_races.py     #   ② 成绩页增量
+│       ├── fetch_prize.py     #   ③ 本賞金（race/nar SP 域）
+│       ├── fetch_ledger.py    #   ④ 台账海外
+│       ├── merge_races.py     #   ⑤ 合并回写 → 删 _tmp/races/
+│       ├── run_all.py         #   竞赛编排
+│       └── README.md          #   竞赛部分说明
+├── data/                      # ★ 全部数据统一存放（两部分的共同产物）
+│   ├── basic.json             #   唯一数据源（建档 + 基本信息 + 竞赛字段）
+│   ├── pedigree/{id}.json     #   基础产出：5 代血统拆分文件
+│   ├── races/{id}.json        #   竞赛产出：逐场成绩文件
+│   ├── _tmp/
+│   │   ├── basic/             #   基础并发缓存（merge_basic 后删）
+│   │   └── races/             #   竞赛环节缓存（merge_races 后删）
+│   ├── fetch_log.csv          #   风控请求日志（基础+竞赛统一记录，script 列区分）
+│   ├── studbook_report.md     #   基础：意味匹配报告
+│   └── races_report.md        #   竞赛：每次合并更新报告
+├── request-path.html          # ★ 唯一「请求·数据流」路径图（基础+竞赛 6 场景）
+├── README.md                  # 本文件（总览）
+└── HANDOFF.md                 # 交接文档（含数据契约与历史）
 ```
 
-## 数据源（契约分层，与数据源无关）
+## 设计要点
 
-> 数据流通与数据源无关：每层只消费契约格式，换数据源只改适配器，其余零改动。
-> 详见 [`docs/data-contracts.md`](docs/data-contracts.md)。
+1. **脚本分开 · 数据统一**：`scripts/basic/` 与 `scripts/races/` 代码完全隔绝（各自独立
+   `common.py`，互不 import）；但**全部数据都落在根 `data/`**，两个部分共享同一个
+   `data/basic.json`，引用零跨目录。
+2. **引用口径 = 站点根相对**：basic.json 里的 `pedigree_file = "data/pedigree/{id}.json"`、
+   `races_file = "data/races/{id}.json"`，`data/` 整体就是将来站点根的 `data/`，无需改写。
+3. **两条线性单链**（详见 request-path.html）：
+   - 基础：JBIS 建档 → 并发三件套（血统/nk_id/意味）→ netkeiba 详情 → merge_basic
+   - 竞赛：详情更新+判变 → 成绩增量 → 本賞金 → 台账海外 → merge_races
+4. **缓存 + 合并模式**：抓取脚本只写 `data/_tmp/{basic,races}/` 独立缓存，merge 时统一写
+   basic.json 并删缓存 → 可并发、无覆盖。
+5. **按域名限速 + 统一风控日志**：`data/fetch_log.csv` 含 `script/host` 列，可全局观测
+   各域名 403/失败率，据此调 `DOMAIN_SLEEP`。
 
-| 数据 | 来源 | 契约 | 说明 |
+## 运行流程
+
+```bash
+# 基础部分（建档，一般只跑一次）—— scripts/basic/ 下
+python run_all.py                          # 并行抓取(血统/nk_id/意味) + 详情 + 合并
+
+# 竞赛部分（每次出赛日/海外赛后跑）—— scripts/races/ 下
+python run_all.py                          # ①详情+判变 → ②成绩增量 → ③本賞金 → ④台账 → ⑤合并
+python run_all.py --limit 20               # 试跑（看风控）
+python run_all.py --force                  # 成绩页全量重抓
+```
+
+依赖：`requests`、`beautifulsoup4`、`lxml`。
+
+## 更新策略（统一入口 `python run_update.py <策略>`）
+
+日常更新与 GitHub Actions 定时都走这一个入口（详细输出进 `test-logs/update-<时间戳>.log`，stdout 每步一行状态）：
+
+| 策略 | 命令 | 做什么 | 适用 |
 |---|---|---|---|
-| 子嗣清单/基础信息 | netkeiba（主源） | 契约A `data/raw/netkeiba.json` | `horse/list.html?sire_id=2017101835` 全量 400+ 匹 |
-| 血统数据 | JBIS（辅） | 契约A `data/raw/jbis*.json` | 5代血统图 + FNo/クロス |
-| 比赛数据 | netkeiba 成绩页（主源，M2）+ Google Sheets 台账（海外补缺/兜底） | 契约B `data/races/google_ledger.csv` + `data/raw/netkeiba_races.json` | 中央+地方+海外统一契约B；台账经 `scripts/adapters/sheets_ledger.py` 适配 |
-| 马匹身份 | registry 映射表（M1） | `data/registry.json` | 本地自增 id + 外部键(nk_id/jbis_id)映射 + 名字历史 |
-| 合并产物 | build-data.py | 契约C `data/basic.json`（马基本信息 + races_file/pedigree_file 引用） | 前端唯一数据源 |
-| 图片 | 用户自己上传（预留） | `photo` 字段 + `data/images/` | 管理页上传（阶段4） |
+| 初始化 | `--init` | 删空 data/ 从 0 全量（= run_full_test.py 完整自测流程） | 首次部署 / 重建 |
+| 基本增量 | `--basic [--year 2025,2026]` | 新马对账建档（同 jbis_id/(母名,生年) 自动跳过）+ 补缺（血统/nk_id/意味/详情，已有跳过）+ merge | 日常基本数据 |
+| 比赛增量 | `--races` | 详情更新+判变 → 成绩增量(判变∪缺失∪无文件) → 本賞金 → 台账海外 → 合并 | 赛后日常 |
+| 定向更新 | `--horse 1,2,3` | 只处理指定 id 的马（详情+成绩+本賞金+合并） | 手动补单匹 |
+| 比赛全量刷新 | `--races-force` | 全部马重抓成绩页（覆盖式重建） | 规则变更 / 历史数据修正 |
+| 数据校验 | `--check [--fix]` | 引用完整性 + 通算战数 vs 文件出赛 + 重复检测；`--fix` 自动补跑/清理 | 健康检查 / CI 收尾 |
+| 轻量时段增量 | `--races --since N` | 只抓最近 N 天内出赛的马 + 无文件马（不跑详情/判变） | 高频定时轻量跑 |
+| 仅台账 | `--ledger` | 只拉台账海外并入 | 台账更新频繁时 |
+| CI 全自动 | `--ci [--year …]` | 基本增量 + 比赛增量 + 校验 + git 提交（data/ 有变化才提交） | GitHub Actions 每日 |
 
-## 同步链路（定时自动 + 手动兜底）
+> GitHub Actions：`.github/workflows/update-data.yml` 每天 UTC 22:00 定时跑 `--ci`，也支持手动触发选策略。
+> 数据仓库模式：`data/` 直接提交进 git，跑完有变化就 commit+push（需仓库开启 Actions 读写权限）。
+> 部署（GitHub Pages 前端）不在本次范围内，后续另配 workflow 监听数据变更触发。
 
-**定时自动**：GitHub Actions `schedule`，每天 UTC 22:00（JST 07:00）`daily`：
-新马/改名对账 `--new`（D0：只收新马/改名，不再自动建档）→ 台账 `pull_races.py` →
-成绩增量 `--races`（双轨制）→ `build-data.py`（重建）→ `test-data.py`（契约校验）→ 提交；
-每周日 UTC 02:00（JST 11:00）`weekly`：血统/クロス 补全 `--ped` + JBIS 兜底补填 `--fill` → 重建 → 校验 → 提交。
-（注意：仓库闲置 60 天定时任务会被 GitHub 暂停，届时手动 Run workflow 一次即恢复。）
+## 边界 / 纪律
 
-**手动按钮**：Actions 页 → **Sync yunji data** → Run workflow，四种模式：
-- `daily`：新马对账 + 台账 + 成绩 + 重建（每日默认）
-- `weekly`：netkeiba 血统/クロス + JBIS 兜底补填 + 重建（每周默认）
-- `all`：netkeiba 全量 + JBIS 血统 + 台账 + 重建（重，慎用）
-- `single` + 马名：只更新某一匹
-
-本地手动跑：
-
-```bash
-python scripts/scrape_netkeiba.py --new            # 契约A：新马/改名对账（每日增量；D0 后不再自动建档）
-python scripts/pull_races.py                       # 契约B：拉台账 → data/races/google_ledger.csv + sync-report.md
-python scripts/scrape_netkeiba.py --races          # 契约B：成绩页双轨制增量（主源）
-python scripts/scrape_netkeiba.py --ped            # 契约A：血统/クロス 补全（每周）
-python scripts/scrape_jbis.py --fill               # 契约A：JBIS 兜底补填（每周，缺 血统/クロス）
-python scripts/scrape_netkeiba.py --all            # 契约A：netkeiba 全部子嗣 + 基础信息（全量，慎用）
-python scripts/scrape_jbis.py --all                # 契约A：JBIS 5代血统图（全量，慎用）
-python scripts/build-data.py --note "备注"         # 契约A+契约B → basic.json + merge-report.md + 快照
-python scripts/test-data.py                        # 抽样 + 契约B/C 全量校验
-```
-
-换比赛数据源：在 `scripts/adapters/` 新增模块实现 `fetch()` 输出契约B字段，然后
-`python scripts/pull_races.py --adapter 新模块名`，下游零改动。
-
-## 结构
-
-```
-data/
-├── basic.json         站点基本信息（契约C，由构建脚本生成，勿手改）
-├── registry.json      马匹身份映射表（本地 id + 外部键 + 名字历史，M1）
-├── jockeys.json       骑手 ID → 全名 字典（解决 netkeiba 截断）
-├── raw/               抓取原始数据（契约A：netkeiba.json / jbis*.json / netkeiba_races.json / rotation_queue.json / fetch_log.csv）
-├── races/google_ledger.csv   比赛台账快照（契约B，海外补缺/兜底源）
-├── sync-report.md     台账健康度报告
-├── merge-report.md    马匹关联/覆盖/待校准报告
-├── manifest.json      版本清单
-├── images/            图片目录（预留）
-history/               历史版本快照（最多 30 个）
-page/
-├── index.html         主从分栏 SPA（列表 + 详情，含血统/成绩/近况，hash 深链接）
-└── pedigree.html      完整血统图（hash 深链接）
-scripts/
-├── adapters/          数据源适配器（当前：sheets_ledger.py / netkeiba_races.py）
-├── racelib.py         比赛域公共逻辑（契约B：校验/推导/汇总/収得，与源无关）
-├── pull_races.py      比赛流水线（适配器 → 契约B → google_ledger.csv）
-├── scrape_netkeiba.py netkeiba 抓取（--new 对账 / --races 增量 / --all / --horse / --name）
-├── scrape_jbis.py     JBIS 血统抓取（--all / --horse / --fill）
-├── build-data.py      唯一构建器（契约A + 契约B + registry → basic.json）
-├── test-data.py       抽样 + 契约校验
-└── tools/             一次性/维护工具
-    ├── build_registry.py  身份映射表种子生成（M1，一次性）
-    └── build_jockeys.py   骑手字典构建（M2，一次性）
-docs/
-├── PROJECT.md   项目总纲与数据知识库（唯一入口，读它）
-└── data-contracts.md 数据契约定义（A/B/C + 换源规则）
-```
-
-## 数据说明
-
-- 数据仅供分享交流，严禁用于任何违法行为
-- 比赛记录以 netkeiba 成绩页为主源；Google Sheets 台账仅用于海外场补缺/兜底（海外赛事赏金未在台账记录，赏金合计 = 中央 + 地方）
-- 取消/除外不计入出赛数；中止计入
-- 収得賞金（平地/障害）由 racelib 规则表计算（M4），仅计中央，口径见 `docs/PROJECT.md` §5.3
-- 自动建档马（如 Grand Warrior）由台账生成，基本信息待补
-
-License: CC BY-NC-SA 4.0
+- **本目录** = 重构工作区，随便改；**原项目** `Z:\IdeaProjects\yunji-web` = 只读参考，严禁改动。
+- 参考底线：请求怎么发、结果怎么解析可以抄；业务流程怎么组织必须自己重新设计（线性化）。
+- 两个部分的 `common.py` 各自独立维护，不要互相 import（保持代码隔绝，仅数据层汇合）。
+- 缓存命名空间已按 `_tmp/basic/`、`_tmp/races/` 分开，两部分的 `detail.json` 等缓存不会互踩。

@@ -1,6 +1,4 @@
 /.idea/
 __pycache__/
 *.pyc
-# 运行时产物（保留在磁盘，不进版本库）
-data/raw/fetch_log.csv
-data/probe_race_report*.md
+test-logs/
