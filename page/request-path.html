@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单匹马请求链路 · 云迹数据流</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4ee; --card:#ffffff; --card-soft:#fbf9f4;
+  --line:#ece6da; --line-2:#ddd5c4;
+  --ink:#34302a; --muted:#8d8678; --muted-2:#b3ab9a;
+  --green:#3f8f78; --green-soft:#eef5f1; --green-line:#d8e8e0; --green-deep:#2d6e5f;
+  --amber:#c98a3d; --amber-soft:#fbf4e6; --amber-line:#ecdcc0; --amber-deep:#a96f2b;
+  --steel:#4a6fa5; --steel-soft:#eef2f8; --steel-line:#d7e0ee; --steel-deep:#375a8a;
+  --wine:#8a5a6f; --wine-soft:#f7f0f3; --wine-line:#e6d4dd;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,sans-serif;font-size:14px;line-height:1.7}
+.wrap{max-width:1160px;margin:0 auto;padding:34px 26px 90px}
+
+header{margin-bottom:20px}
+.kicker{font-size:11px;letter-spacing:4px;color:var(--amber);font-weight:600;text-transform:uppercase}
+h1{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;letter-spacing:.5px;margin-top:6px}
+h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:10px}
+.sub{margin-top:8px;color:var(--muted);font-size:13px;max-width:74ch}
+.sub b{color:var(--ink)}
+
+.ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:22px 0 6px}
+.ctl .g-label{font-size:11px;letter-spacing:2px;color:var(--muted-2);font-weight:600}
+.segs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:5px}
+.seg{border:1px solid transparent;background:transparent;font-family:inherit;font-size:12.5px;color:var(--muted);padding:7px 16px;border-radius:9px;cursor:pointer;transition:all .16s}
+.seg:hover{color:var(--ink)}
+.seg.on{background:var(--green-soft);border-color:var(--green-line);color:var(--green-deep);font-weight:700}
+.seg.on.s2{background:var(--steel-soft);border-color:var(--steel-line);color:var(--steel-deep)}
+.seg.on.s3{background:var(--wine-soft);border-color:var(--wine-line);color:var(--wine)}
+.scen-desc{margin:10px 2px 0;font-size:12.5px;color:var(--muted)}
+
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0 14px;font-size:12px;color:var(--muted)}
+.lg{display:flex;align-items:center;gap:7px}
+.sw{width:13px;height:13px;border-radius:4px;flex:none}
+.sw.nk{background:var(--green)}
+.sw.jb{background:var(--steel)}
+.sw.pr{background:var(--amber)}
+.sw.mg{background:var(--ink)}
+.lg .dash{width:22px;border-top:2px dashed var(--line-2);flex:none}
+.lg b{color:var(--ink);font-weight:600}
+
+.graph-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 18px 14px;box-shadow:0 1px 3px rgba(60,50,30,.05);overflow-x:auto}
+svg#graph{display:block}
+.node{transition:opacity .18s}
+.node rect{transition:fill .18s, stroke .18s, stroke-width .18s}
+.node .nm{font-family:'Noto Sans SC';font-size:12px;font-weight:600;fill:var(--ink)}
+.node .url{font-family:var(--mono);font-size:8.4px;fill:var(--muted)}
+.node .fn{font-family:'Noto Sans SC';font-size:8.6px;fill:var(--muted-2)}
+.node .tag{font-family:'Noto Sans SC';font-size:7.6px;font-weight:700;letter-spacing:.5px}
+.glow{cursor:pointer}
+.glow:hover rect{stroke-width:2.5}
+.glow:focus{outline:none}
+.glow:focus rect{stroke-width:2.5;stroke-dasharray:5 3}
+.stage-tag{font-family:'Noto Serif SC',serif;font-weight:700}
+.edge path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.edge .lbl{font-family:'Noto Sans SC';font-size:9px;fill:var(--muted);font-weight:500}
+.edge.on path{stroke-width:2.6}
+.edge .arr{fill:none;stroke-linecap:round}
+
+.detail-panel{margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.dp-head{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card-soft)}
+.dp-num{width:30px;height:30px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px}
+.dp-num.nk{background:var(--green-soft);color:var(--green-deep);border:1px solid var(--green-line)}
+.dp-num.jb{background:var(--steel-soft);color:var(--steel-deep);border:1px solid var(--steel-line)}
+.dp-num.pr{background:var(--amber-soft);color:var(--amber-deep);border:1px solid var(--amber-line)}
+.dp-num.mg{background:#efece6;color:var(--ink);border:1px solid var(--line-2)}
+.dp-title{flex:1;min-width:0}
+.dp-title h3{font-size:15px;font-weight:700}
+.dp-title .dsub{font-size:11px;color:var(--muted);font-family:var(--mono);word-break:break-all}
+.dp-close{font-family:inherit;border:1px solid var(--line-2);background:var(--card);color:var(--muted);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:14px;line-height:1}
+.dp-close:hover{color:var(--ink);border-color:var(--muted)}
+.dp-body{padding:18px 22px;font-size:13px;color:#4d483e}
+.dp-row{display:grid;grid-template-columns:80px 1fr;gap:8px 14px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.dp-row:last-child{border-bottom:none}
+.dp-row .k{color:var(--muted-2);font-size:11px;letter-spacing:1px;padding-top:2px}
+.dp-row .v{font-family:var(--mono);font-size:11.5px;color:var(--ink);word-break:break-all}
+.dp-row .v.plain{font-family:'Noto Sans SC';font-size:13px}
+.dp-row .v .tick{color:var(--green);font-weight:600}
+.dp-foot{margin-top:14px;padding:12px 14px;background:var(--card-soft);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted)}
+.dp-foot b{color:var(--ink)}
+
+.reqbar{margin-top:20px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 22px}
+.reqbar h4{font-size:11px;letter-spacing:2px;color:var(--muted-2);font-weight:600;margin-bottom:10px}
+.req-meter{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.req-total{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;color:var(--green)}
+.req-total small{font-size:13px;color:var(--muted);font-weight:500}
+.req-list{flex:1;min-width:220px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 18px}
+.req-i{font-size:11.5px;color:var(--muted);display:flex;align-items:baseline;gap:6px}
+.req-i .c{color:var(--ink);font-weight:700;font-family:var(--mono)}
+
+.foot{margin-top:34px;border-top:1px solid var(--line);padding-top:18px;font-size:11.5px;color:var(--muted-2);display:flex;flex-wrap:wrap;gap:8px 22px}
+.foot .b{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);background:var(--card);padding:2px 9px;border-radius:7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Cloud Tracks · Data Pipeline</div>
+  <h1><span class="dot"></span>单匹马「请求链路」路径图</h1>
+  <p class="sub">以 <b>URL 为节点</b>、<b>数据处理为箭头</b>，展示抓取一匹马的完整逻辑。点击任一节点看它抓什么、怎么处理、产出哪些字段；切换下方<b>场景</b>，只有该场景真实会发的请求会被点亮（其余淡出）。</p>
+</header>
+
+<div class="ctl">
+  <span class="g-label">场景</span>
+  <div class="segs" id="scenSegs">
+    <button class="seg on s1" data-s="1">① 基础 · 仅 netkeiba</button>
+    <button class="seg s2" data-s="2">② netkeiba 兜底 · 含 JBIS</button>
+    <button class="seg s3" data-s="3">③ 重赏 · 含本賞金</button>
+  </div>
+</div>
+<div class="scen-desc" id="scenDesc"></div>
+
+<div class="legend">
+  <span class="lg"><span class="sw nk"></span><b>netkeiba</b> 主源</span>
+  <span class="lg"><span class="sw jb"></span><b>JBIS</b> 兜底</span>
+  <span class="lg"><span class="sw pr"></span><b>本賞金</b> 条件分支</span>
+  <span class="lg"><span class="sw mg"></span><b>合并产物</b></span>
+  <span class="lg"><span class="dash"></span><b>条件触发</b>（虚线 · 未必每次都发）</span>
+</div>
+
+<div class="graph-card">
+  <svg id="graph" width="1100" height="1240" role="img" aria-label="单匹马请求链路路径图"></svg>
+</div>
+
+<div class="detail-panel" id="detailPanel" hidden>
+  <div class="dp-head">
+    <div class="dp-num" id="dpNum"></div>
+    <div class="dp-title">
+      <h3 id="dpTitle"></h3>
+      <div class="dsub" id="dpSub"></div>
+    </div>
+    <button class="dp-close" id="dpClose" aria-label="关闭">✕</button>
+  </div>
+  <div class="dp-body" id="dpBody"></div>
+</div>
+
+<div class="reqbar">
+  <h4>请求计数（当前场景 · 单匹马单次完整抓取）</h4>
+  <div class="req-meter">
+    <div class="req-total" id="reqTotal">0<small> 次请求</small></div>
+    <div class="req-list" id="reqList"></div>
+  </div>
+</div>
+
+<div class="foot">
+  <span>触发入口</span>
+  <span class="b">scrape_netkeiba.py --all / --name / --horse</span>
+  <span class="b">scrape_jbis.py --all / --horse</span>
+  <span class="b">adapters/netkeiba_races.py update()</span>
+  <span class="b">build-data.py</span>
+</div>
+
+</div>
+
+<script>
+"use strict";
+/* ────────────────────────────────────────────────────────────
+   数据模型：节点 = URL；边 = 数据处理（箭头）
+   c: nk=netkeiba绿 / jb=JBIS钢蓝 / pr=本賞金琥珀 / mg=合并墨
+   scen: 该节点/边在哪个场景点亮 (1基础 2含JBIS 3含本賞金)
+   布局：左右两列 + 底部全宽 merge 栏；合并边沿左右边槽正交走线，避免穿节点。
+   ──────────────────────────────────────────────────────────── */
+const W=1100, H=1240, NH=60;
+const C={nk:'#3f8f78',jb:'#4a6fa5',pr:'#c98a3d',mg:'#34302a'};
+const COL={L:90, LW:320, R:600, RW:320};   // left/right column x + width
+const MRG={y:1120, h:60, x:90, w:920};     // merge bar
+
+const NODES={
+  // 1 定位
+  n1:{col:'L',x:COL.L,y:70,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 列表页',
+      url:'db.netkeiba.com/horse/list.html?sire_id=2017101835&range=all&page={n}',
+      fn:'parse_list_row()',tag:'LOCATE · 主',
+      out:'nk_id, 馬名, 性別, 生年, 母名, 母父名, 調教師, 馬主, 生産牧場, 総賞金',
+      role:'全量或 --name 时逐页翻找，从列表行拿到 nk_id 与基础概要。'},
+  n2:{col:'R',x:COL.R,y:70,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 産駒一覧',
+      url:'www.jbis.or.jp/horse/{sid}/sire/progeny/?year={y}&page={n}',
+      fn:'parse_progeny_rows()',tag:'LOCATE · 兜底',
+      out:'{馬名:{jbis_id, 生年}}',
+      role:'netkeiba 无此马时的兜底定位，按 5 个生年逐页扫産駒，拿到 jbis_id。'},
+  n3:{col:'R',x:COL.R,y:170,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 搜索页',
+      url:'www.jbis.or.jp/horse/result/?keyword={马名}&match=exact',
+      fn:'search_candidates()',tag:'LOCATE · 单匹',
+      out:'前 5 个 jbis_id 候选',
+      role:'--name 单匹时按马名精确搜索，取前 5 候选（用于防同名异马）。'},
+  // 2 主干 netkeiba（左列）
+  n4:{col:'L',x:COL.L,y:330,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 马详情页',
+      url:'db.netkeiba.com/horse/{nk_id}/',
+      fn:'parse_detail()',tag:'MAIN',
+      out:'登録状態,性別,毛色,馬齢,生年月日,産地,馬主,調教師,生産牧場,通算成績,獲得賞金,英文名,セリ取引価格',
+      role:'主源基础信息（EUC-JP 解码）。netkeiba 有这匹马就走这里。'},
+  n5:{col:'L',x:COL.L,y:410,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 血統页',
+      url:'db.netkeiba.com/horse/ped/{nk_id}/',
+      fn:'parse_pedigree()',tag:'MAIN',
+      out:'血統树（DFS重建 父/母各5层）+ fno + cross',
+      role:'5代血統表，DFS 先序重建二叉树 → BFS 分层；含 FNo 与クロス。'},
+  n6:{col:'L',x:COL.L,y:490,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 成绩页',
+      url:'db.netkeiba.com/horse/result/{nk_id}/',
+      fn:'parse_races()',tag:'MAIN',
+      out:'逐场契约D记录（含 race_id / jockey_id；本賞金不在此产出）',
+      role:'戦績 tab，逐场成绩 → netkeiba_races.json。本賞金要靠第 4 段单独抓。'},
+  // 3 兜底 JBIS（右列）
+  n7:{col:'R',x:COL.R,y:330,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 马详情页',
+      url:'www.jbis.or.jp/horse/{jbis_id}/',
+      fn:'parse_detail()',tag:'FALLBACK',
+      out:'馬名,生年月日,総賞金,…（补 netkeiba 缺字段）',
+      role:'netkeiba 无此马时用 JBIS 兜底详情。'},
+  n8:{col:'R',x:COL.R,y:410,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 血統页',
+      url:'www.jbis.or.jp/horse/{jbis_id}/pedigree/',
+      fn:'parse_pedigree() + is_contrail_progeny()',tag:'FALLBACK',
+      out:'血統树 + 校验父侧=コントレイル（防同名异马）',
+      role:'5代血統图，抓后校验父侧 G1 是否コントレイル，防同名异马。'},
+  // 4 本賞金
+  n9:{col:'L',x:COL.L,y:800,w:COL.LW,c:'pr',scen:[3],nm:'SP 域比赛结果页（中央/海外）',
+      url:'race.netkeiba.com/race/result.html?race_id={id}',
+      fn:'parse_sp_honsho()',tag:'PRIZE · 主源',
+      out:'本賞金阶梯[1着~5着] → 按该马着順取档',
+      role:'重赏 1/2着 才发。读「本賞金:…万円」（付加賞-free）。'},
+  n10:{col:'R',x:COL.R,y:800,w:COL.RW,c:'pr',scen:[3],nm:'SP 域比赛结果页（地方 NAR）',
+      url:'nar.netkeiba.com/race/result.html?race_id={id}',
+      fn:'parse_sp_honsho_nar()',tag:'PRIZE · 地方',
+      out:'本賞金阶梯（十进制浮点、顿号分隔）→ 取档',
+      role:'地方（NAR）重赏走独立解析器，格式不同。'},
+  n11:{col:'L',x:COL.L,y:900,w:COL.LW,c:'pr',scen:[3],nm:'db 域比赛页（回退）',
+      url:'db.netkeiba.com/race/{id}/ · nar.netkeiba.com/race/{id}/',
+      fn:'parse_race_page()',tag:'PRIZE · 回退',
+      out:'该马自己的 賞金 行（可能含付加賞）',
+      role:'SP 解析失败才回退；best-effort 取该马着順的賞金。'},
+  // 5 汇入（merge 全宽栏）
+  n12:{x:MRG.x,y:MRG.y,w:MRG.w,h:MRG.h,c:'mg',scen:[1,2,3],nm:'build-data.py · merge',
+      url:'读 netkeiba.json / jbis*.json / netkeiba_races.json / google_ledger.csv',
+      fn:'merge() + attach_races() + registry 映射',tag:'MERGE',
+      out:'basic.json（前端唯一数据源）',
+      role:'registry 映射 (nk_id/jbis_id→本地id)，关联比赛数据，落 basic.json。'},
+};
+// 统一 height（merge 用 MRG.h，其余 NH）
+Object.keys(NODES).forEach(k=>{ if(!NODES[k].h) NODES[k].h=NH; });
+
+/* 每条边：from=从源节点哪一侧出发(L/R/B)，via=正交拐点(绝对坐标)，to=进目标哪一侧(L/R/T)
+   所有线段相邻两点共享 x 或 y（正交），且绕开节点（用左右边槽走线）。 */
+const EDGES=[
+  // 定位 → 主干 / 兜底
+  {s:'n1',t:'n4',l:'nk_id → 抓详情',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
+  {s:'n1',t:'n2',l:'netkeiba 无马 → 兜底定位',cond:true,scen:[2,3], from:'R', via:[[600,100]], to:'L'},
+  {s:'n2',t:'n7',l:'jbis_id → 抓详情',cond:false,scen:[2,3], from:'R', via:[[1070,100],[1070,360]], to:'L'},
+  {s:'n3',t:'n7',l:'jbis_id → 抓详情',cond:true,scen:[2,3], from:'B', via:[], to:'T'},
+  // 主干
+  {s:'n4',t:'n5',l:'nk_id → 抓血統',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
+  {s:'n5',t:'n6',l:'nk_id → 抓成绩',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
+  {s:'n7',t:'n8',l:'jbis_id → 抓血統',cond:false,scen:[2,3], from:'B', via:[], to:'T'},
+  // 成绩 → 本賞金
+  {s:'n6',t:'n9',l:'backfill_honsho · race_id',cond:true,scen:[3], from:'B', via:[], to:'T'},
+  {s:'n6',t:'n10',l:'地方重赏 · race_id',cond:true,scen:[3], from:'R', via:[[410,770],[600,770]], to:'L'},
+  // 本賞金 → 回退
+  {s:'n9',t:'n11',l:'SP 解析失败 → 回退',cond:true,scen:[3], from:'B', via:[], to:'T'},
+  {s:'n10',t:'n11',l:'SP 解析失败 → 回退',cond:true,scen:[3], from:'B', via:[[760,1000],[250,1000]], to:'B'},
+  // 各源 → merge（左右边槽）
+  {s:'n4',t:'n12',l:'详情 → merge',cond:false,scen:[1,2,3], from:'L', via:[[40,360],[40,1150]], to:'L'},
+  {s:'n5',t:'n12',l:'血統 → merge',cond:false,scen:[1,2,3], from:'L', via:[[40,440],[40,1150]], to:'L'},
+  {s:'n6',t:'n12',l:'成绩 → attach_races',cond:false,scen:[1,2,3], from:'L', via:[[40,520],[40,1150]], to:'L'},
+  {s:'n7',t:'n12',l:'详情 → merge',cond:true,scen:[2,3], from:'R', via:[[1070,360],[1070,1150]], to:'R'},
+  {s:'n8',t:'n12',l:'血統 → merge',cond:true,scen:[2,3], from:'R', via:[[1070,440],[1070,1150]], to:'R'},
+  {s:'n9',t:'n12',l:'本賞金写回 → 収得',cond:true,scen:[3], from:'L', via:[[40,830],[40,1150]], to:'L'},
+  {s:'n10',t:'n12',l:'本賞金写回 → 収得',cond:true,scen:[3], from:'R', via:[[1070,830],[1070,1150]], to:'R'},
+  {s:'n11',t:'n12',l:'回退賞金 → 収得',cond:true,scen:[3], from:'L', via:[[40,930],[40,1150]], to:'L'},
+];
+
+const SCEN_DESC={
+  1:'netkeiba 主源一条链：列表定位 → 详情 → 血統 → 成绩 → 合并。每日最常用路径。',
+  2:'netkeiba 找不到时的兜底场景：追加 JBIS 産駒一覧/搜索定位 + 详情 + 血統。',
+  3:'该马跑过重赏且 1/2 着：追加比赛页抓「本賞金」→ 供収得計算。',
+};
+const REQ={
+  1:['netkeiba 列表','netkeiba 详情','netkeiba 血統','netkeiba 成绩'],
+  2:['JBIS 産駒一覧','JBIS 详情','JBIS 血統'],
+  3:['SP 比赛页(本賞金)','NAR 比赛页(地方)','db 回退比赛页'],
+};
+let scen=1;
+const svg=document.getElementById('graph');
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){
+  const n=document.createElementNS(NS,tag);
+  for(const k in attrs)n.setAttribute(k,attrs[k]);
+  (parent||svg).appendChild(n); return n;
+}
+
+/* ── 节点锚点 ── */
+function anchor(nid,side){
+  const n=NODES[nid];
+  if(side==='L') return [n.x, n.y+n.h/2];
+  if(side==='R') return [n.x+n.w, n.y+n.h/2];
+  if(side==='B') return [n.x+n.w/2, n.y+n.h];
+  if(side==='T') return [n.x+n.w/2, n.y];
+}
+/* 解析 e.from/via/to 到绝对正交路径：
+   起点 = 源节点 from 侧锚点 → 各 via 拐点 → 终点 = 目标节点 to 侧锚点 */
+function buildPath(e){
+  const start=anchor(e.s, e.from);
+  const end=anchor(e.t, e.to);
+  let d=`M${start[0]},${start[1]}`;
+  for(const v of e.via){ d+=` L${v[0]},${v[1]}`; }
+  d+=` L${end[0]},${end[1]}`;
+  return d;
+}
+
+/* ── stage band labels ── */
+const STAGE_BANDS=[
+  {y:24, t:'1 · 定位 LOCATE'},
+  {y:286,t:'2 · 主干 MAIN'},
+  {y:286,t:'3 · 兜底 FALLBACK', x:COL.R+20},
+  {y:756,t:'4 · 本賞金 PRIZE'},
+  {y:1078,t:'5 · 汇入 MERGE'},
+];
+STAGE_BANDS.forEach(b=>{
+  const t=el('text',{x:b.x||24,y:b.y,'class':'stage-tag',fill:'#b3ab9a','font-size':13});
+  t.textContent=b.t;
+});
+
+/* ── 边几何：解析路径为点列，用于箭头方向 + 标签定位 ── */
+function pathPoints(e){
+  const pts=[anchor(e.s,e.from)];
+  for(const v of e.via) pts.push(v);
+  pts.push(anchor(e.t,e.to));
+  return pts;
+}
+function arrPath(x,y,ang){
+  return `M${x},${y} L${x-Math.cos(ang-0.42)*11},${y-Math.sin(ang-0.42)*11} M${x},${y} L${x-Math.cos(ang+0.42)*11},${y-Math.sin(ang+0.42)*11}`;
+}
+
+/* ── edges ── */
+const edgeEls={};
+EDGES.forEach(e=>{
+  const g=el('g',{'class':'edge','data-k':e.s+'→'+e.t});
+  const d=buildPath(e);
+  const p=el('path',{d,stroke:'#ddd5c4','stroke-width':2});
+  if(e.cond)p.setAttribute('stroke-dasharray','6 5');
+  g.appendChild(p);
+  // 箭头方向 = 最后一段的方向；箭头置于终点锚点
+  const pts=pathPoints(e);
+  const end=pts[pts.length-1], prev=pts[pts.length-2];
+  const ang=Math.atan2(end[1]-prev[1], end[0]-prev[0]);
+  const arr=el('path',{'class':'arr',stroke:'#ddd5c4','stroke-width':2,'d':arrPath(end[0],end[1],ang)});
+  g.appendChild(arr);
+  // 标签：置于路径中点（正交段中点取整）
+  let mid;
+  if(pts.length>=2){
+    const p1=pts[Math.floor((pts.length-1)/2)], p2=pts[Math.ceil((pts.length-1)/2)];
+    mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
+  } else { mid=[end[0],end[1]]; }
+  const dx=pts.length>=2 ? pts[1][0]-pts[0][0] : 0;
+  const lblX=mid[0], lblY=mid[1]-6;
+  const t=el('text',{x:lblX,y:lblY,'text-anchor':'middle','class':'lbl'}); t.textContent=e.l;
+  g.appendChild(t);
+  edgeEls[e.s+'→'+e.t]=g;
+});
+
+/* ── nodes ── */
+Object.keys(NODES).forEach(nid=>{
+  const n=NODES[nid];
+  const g=el('g',{'class':'node','data-n':nid});
+  const tab=el('g',{'class':'glow',tabindex:'0',role:'button','aria-label':n.nm});
+  const r=el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:11,fill:'#fff',stroke:C[n.c],'stroke-width':1.5});
+  tab.appendChild(r);
+  const tag=el('text',{x:n.x+12,y:n.y+18,'class':'tag',fill:C[n.c]}); tag.textContent=n.tag; tab.appendChild(tag);
+  const nm=el('text',{x:n.x+n.w/2,y:n.y+36,'text-anchor':'middle','class':'nm'}); nm.textContent=n.nm; tab.appendChild(nm);
+  const u=el('text',{x:n.x+n.w/2,y:n.y+50,'text-anchor':'middle','class':'url'});
+  u.textContent=n.url.length>40?n.url.slice(0,40)+'…':n.url; tab.appendChild(u);
+  const fn=el('text',{x:n.x+n.w/2,y:n.y+64,'text-anchor':'middle','class':'fn'}); fn.textContent='⟶ '+n.fn; tab.appendChild(fn);
+  g.appendChild(tab);
+  tab.addEventListener('click',()=>select(nid));
+  tab.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();select(nid);}});
+});
+
+/* ── apply scenario ── */
+function applyScen(){
+  const sc=scen;
+  document.querySelectorAll('.node').forEach(g=>{
+    const n=NODES[g.dataset.n]; const on=n.scen.includes(sc);
+    g.style.opacity=on?'1':'0.15';
+    const r=g.querySelector('rect');
+    r.setAttribute('stroke',on?C[n.c]:'#ddd5c4');
+    r.setAttribute('fill',on?'#fff':'transparent');
+    r.setAttribute('stroke-width',on?'1.5':'1');
+    g.style.filter=on?'drop-shadow(0 1px 2px rgba(60,50,30,.10))':'none';
+  });
+  document.querySelectorAll('.edge').forEach(g=>{
+    const e=EDGES.find(x=>x.s+'→'+x.t===g.dataset.k); const on=e.scen.includes(sc);
+    g.style.opacity=on?'1':'0.08';
+    const p=g.querySelector('path');
+    p.setAttribute('stroke',on?'#8a9380':'#ddd5c4');
+    p.setAttribute('stroke-width',on?'2.6':'2');
+    g.querySelector('.arr').setAttribute('stroke',on?'#6f7a66':'#ddd5c4');
+    const l=g.querySelector('.lbl');
+    l.setAttribute('fill',on?'#5f6757':'#b3ab9a');
+    l.setAttribute('font-weight',on?'600':'400');
+  });
+  document.getElementById('scenDesc').innerHTML='当前：<b>场景 '+sc+'</b> — '+SCEN_DESC[sc];
+  const list=REQ[sc];
+  document.getElementById('reqTotal').innerHTML=list.length+'<small> 次请求</small>';
+  document.getElementById('reqList').innerHTML=list.map((x,i)=>
+    `<span class="req-i"><span class="c">${String(i+1).padStart(2,'0')}</span>${x}</span>`).join('');
+  const panel=document.getElementById('detailPanel');
+  if(!panel.hidden&&panel.dataset.n)select(panel.dataset.n,true);
+}
+
+/* ── detail panel ── */
+function select(nid,noScroll){
+  const n=NODES[nid]; const panel=document.getElementById('detailPanel');
+  panel.dataset.n=nid;
+  const num=document.getElementById('dpNum');
+  num.className='dp-num '+n.c;
+  num.textContent=n.c==='nk'?'N':n.c==='jb'?'J':n.c==='pr'?'P':'M';
+  document.getElementById('dpTitle').textContent=n.nm;
+  document.getElementById('dpSub').textContent=n.url;
+  const on=n.scen.includes(scen);
+  const rows=[
+    ['URL',n.url,'plain',false],
+    ['处理',n.fn,'plain',false],
+    ['产出字段',n.out,'plain',false],
+    ['覆盖场景','1 基础 · 2 含JBIS · 3 含本賞金','plain',false],
+    ['本场景',on?'会请求此节点':'不会请求此节点','plain',on],
+  ];
+  document.getElementById('dpBody').innerHTML=
+    rows.map(([k,v,cls,tk])=>`<div class="dp-row"><div class="k">${k}</div><div class="v ${cls}">${tk?'<span class="tick">✔</span> ':''}${v}</div></div>`).join('')+
+    `<div class="dp-foot"><b>说明</b>　${n.role}</div>`;
+  panel.hidden=false;
+  if(!noScroll)panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+document.getElementById('scenSegs').addEventListener('click',ev=>{
+  const b=ev.target.closest('.seg'); if(!b)return;
+  scen=+b.dataset.s;
+  document.querySelectorAll('.seg').forEach(s=>s.classList.toggle('on',+s.dataset.s===scen));
+  applyScen();
+});
+document.getElementById('dpClose').addEventListener('click',()=>{
+  document.getElementById('detailPanel').hidden=true;
+});
+
+applyScen();
+</script>
+</body>
+</html>
