@@ -92,6 +92,8 @@ python run_all.py --force                  # 成绩页全量重抓
 > 数据仓库模式：`data/` 直接提交进 git，跑完有变化就 commit+push（需仓库开启 Actions 读写权限）。
 > 部署（GitHub Pages 前端）不在本次范围内，后续另配 workflow 监听数据变更触发。
 
+> 测试与排查：各策略的**验证点 / 回归清单 / 排查指南 / 安全注意**见 [TESTING.md](TESTING.md)（新增策略或改代码后回归用）。
+
 ## 边界 / 纪律
 
 - **本目录** = 重构工作区，随便改；**原项目** `Z:\IdeaProjects\yunji-web` = 只读参考，严禁改动。
