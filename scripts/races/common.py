@@ -31,6 +31,8 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+import racelib  # noqa: E402  name_key 用于跨源去重键
+
 if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     try:
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -206,3 +208,19 @@ def race_key(r):
     if rid:
         return "race:" + rid
     return "slot:{}|{}|{}".format(r.get("日付", ""), r.get("場名", ""), r.get("R", ""))
+
+
+def record_keys(r):
+    """比赛记录 → 去重键集合（对称双键）：
+    - race:{race_id}（有 race_id 时）
+    - horse:{馬名}|{日付}（馬名+日付，跨源一致，一匹马同一天只能跑一场）
+    任一键命中即判重；台账记录无 race_id，跨源去重靠 馬名+日付。"""
+    keys = set()
+    rid = str(r.get("race_id") or "").strip()
+    if rid:
+        keys.add("race:" + rid)
+    name = racelib.name_key(r.get("出走馬名") or "")
+    date = str(r.get("日付") or "").strip()
+    if name and date:
+        keys.add("horse:{}|{}".format(name, date))
+    return keys

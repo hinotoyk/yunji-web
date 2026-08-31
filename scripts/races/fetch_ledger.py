@@ -20,7 +20,6 @@
 import argparse
 import csv
 import io
-import re
 import ssl
 import sys
 import urllib.request
@@ -32,19 +31,7 @@ import racelib  # noqa: E402
 DEFAULT_URL = ("https://docs.google.com/spreadsheets/d/1PPasJnqqBQy_cbhXLDJ0V11CTUDJs6UBtRwe-nsCNfc"
                "/export?format=csv&gid=1454271910")
 
-# 国家后缀（台账/basic 两侧记法可能不一致）：`Grand Warrior(JPN)` 与 `Grand Warrior` 是同一匹
-_COUNTRY_SUFFIX_RE = re.compile(
-    r"\((?:(?:JPN|USA|GB|IRE|NZ|FR|AU|AUS|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK))\)$")
-
-
-def _name_key(s):
-    """馬名匹配键：去国家后缀（链式）+ 去空白。两侧统一后再比较。"""
-    s = (s or "").strip()
-    prev = None
-    while prev != s:
-        prev = s
-        s = _COUNTRY_SUFFIX_RE.sub("", s).strip()
-    return s.replace(" ", "").replace("　", "")
+# 馬名匹配键统一走 racelib.name_key（去国家后缀+去空白）
 
 # 台账列名 → 记录字段名（台账列名变了只改这里）
 COLUMN_MAP = {
@@ -126,7 +113,7 @@ def main():
     name_to_h = {}
     for h in horses:
         if h.get("馬名"):
-            name_to_h.setdefault(_name_key(h["馬名"]), h)
+            name_to_h.setdefault(racelib.name_key(h["馬名"]), h)
 
     rows = fetch_rows(args.url)
     issues = []
@@ -144,22 +131,23 @@ def main():
         rec["本賞金"] = 0
         rec["race_id"] = ""
         rec["jockey_id"] = ""
-        h = name_to_h.get(_name_key(rec.get("出走馬名") or ""))
+        h = name_to_h.get(racelib.name_key(rec.get("出走馬名") or ""))
         if not h:
             unmatched.append(rec.get("出走馬名", ""))
             continue
-        # 与已有 races 文件去重 → 只留新增。
-        # 海外场用 (日付, 場名) 宽松键：netkeiba 海外记录 R 常空/不一致，避免同场被两个来源各存一条。
+        # 双键去重（race_id OR 馬名+日付）：与磁盘已合并文件 + 本次 netkeiba 缓存一起去重，
+        # 避免同一场海外赛被两源各入库一条（含同 run 内 netkeiba 先抓、台账后补的情况）。
         id_s = str(h["id"])
-        p = common.RACES_DATA_DIR / f"{id_s}.json"
         import json
         exist_keys = set()
+        p = common.RACES_DATA_DIR / f"{id_s}.json"
         if p.exists():
-            exist_keys = {
-                "ov:{}|{}".format(x.get("日付", ""), x.get("場名", ""))
-                for x in json.loads(p.read_text(encoding="utf-8"))
-            }
-        if "ov:{}|{}".format(rec["日付"], rec["場名"]) in exist_keys:
+            for x in json.loads(p.read_text(encoding="utf-8")):
+                exist_keys |= common.record_keys(x)
+        cur = common.read_cache("races") or {}
+        for x in cur.get(id_s, []):
+            exist_keys |= common.record_keys(x)
+        if common.record_keys(rec) & exist_keys:
             continue
         ledger.setdefault(id_s, []).append(rec)
 

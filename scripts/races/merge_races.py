@@ -92,30 +92,34 @@ def main():
     # 2)+3) 新增成绩记录 → races 文件（按比赛键去重，已有不动），附本賞金
     for id_s, new_recs in races.items():
         recs = load_races_file(id_s)
-        exist_keys = {common.race_key(r) for r in recs}
+        exist_keys = set()
+        for r in recs:
+            exist_keys |= common.record_keys(r)
         pz = prize.get(id_s, {})
         added = 0
         for r in new_recs:
-            if common.race_key(r) in exist_keys:
+            if common.record_keys(r) & exist_keys:
                 continue
             r["本賞金"] = pz.get(str(r.get("race_id") or ""), 0)
             recs.append(r)
-            exist_keys.add(common.race_key(r))
+            exist_keys |= common.record_keys(r)
             added += 1
         n_new += added
         # 目标马总是保存：触发 结果字段归一（历史单字 DNF → 全称）与日付排序（幂等）
         save_races_file(id_s, recs)
 
-    # 4) 台账海外记录 → races 文件（同样去重）
+    # 4) 台账海外记录 → races 文件（同样去重，双键）
     for id_s, new_led in ledger.items():
         recs = load_races_file(id_s)
-        exist_keys = {common.race_key(r) for r in recs}
+        exist_keys = set()
+        for r in recs:
+            exist_keys |= common.record_keys(r)
         added = 0
         for r in new_led:
-            if common.race_key(r) in exist_keys:
+            if common.record_keys(r) & exist_keys:
                 continue
             recs.append(r)
-            exist_keys.add(common.race_key(r))
+            exist_keys |= common.record_keys(r)
             added += 1
         n_led += added
         if added:

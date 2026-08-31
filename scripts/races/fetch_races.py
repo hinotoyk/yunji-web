@@ -127,7 +127,7 @@ def parse_races(html):
             "タイム": c("タイム"), "着差": c("着差"), "通過": c("通過"),
             "ペース": c("ペース"), "上り": c("上り"),
             "馬体重": bw_v, "増減": bw_d, "賞金": num(c("賞金")),
-            "race_id": link_id(tds[idx["レース名"]], r"/race/(\d+)/"),
+            "race_id": link_id(tds[idx["レース名"]], r"/race/([0-9A-Za-z]+)/"),
             "jockey_id": link_id(tds[idx["騎手"]], r"/jockey/result/(?:recent/)?(\d+)/"),
         })
     out.sort(key=lambda r: r["日付"], reverse=True)
@@ -135,8 +135,8 @@ def parse_races(html):
 
 
 def to_contract_b(rec, horse_name):
-    """成绩页原始记录 → 规范记录（赏金 万円→円；着順 文本→int/DNF；附 格/venue_type/race_id）。"""
-    grade, _cond = racelib.race_meta_from_name(rec.get("レース名", ""))
+    """成绩页原始记录 → 规范记录（赏金 万円→円；着順 文本→int/DNF；附 格/条件/venue_type/race_id）。"""
+    grade, cond = racelib.race_meta_from_name(rec.get("レース名", ""))
     state = STATE_MAP.get((rec.get("状態") or "").strip(), (rec.get("状態") or "").strip())
     result = racelib.normalize_result(rec.get("着順", ""))
     prize_raw = rec.get("賞金")
@@ -149,7 +149,7 @@ def to_contract_b(rec, horse_name):
             prize_yen = ""
     return {
         "日付": rec.get("日付", ""), "開催": rec.get("開催", ""), "場名": rec.get("場名", ""),
-        "R": rec.get("R", ""), "レース名": rec.get("レース名", ""), "格": grade,
+        "R": rec.get("R", ""), "レース名": rec.get("レース名", ""), "格": grade, "条件": cond,
         "距離": rec.get("距離", ""), "芝ダ": racelib._normalize_surface(rec.get("馬場", "")),
         "馬場": state, "天候": rec.get("天気", ""), "出走馬名": horse_name,
         "騎手": rec.get("騎手", ""), "斤量": rec.get("斤量", ""), "頭数": rec.get("頭数", ""),
@@ -161,6 +161,36 @@ def to_contract_b(rec, horse_name):
         "race_id": rec.get("race_id", ""), "jockey_id": rec.get("jockey_id", ""),
         "本賞金": 0, "來源": "netkeiba",
     }
+
+
+def enrich_grade_cond(cb):
+    """按场地抓 SP 比赛页，回填 格（图标优先，无图标名字解析）+ 条件（RaceData02）。
+    抓取失败/无 race_id → 用名字解析兜底，不阻塞入库。"""
+    rid = str(cb.get("race_id") or "").strip()
+    name = cb.get("レース名", "")
+    venue = cb.get("venue_type", "")
+
+    def fallback():
+        cb["格"] = racelib.race_grade_resolve(None, name, venue)
+        cb["条件"] = racelib.race_meta_from_name(name)[1]
+
+    if not rid:
+        fallback()
+        return
+    is_local = (venue or "").strip() == "地方"
+    url = (common.RACE_SP_URL_NAR if is_local else common.RACE_SP_URL).format(race_id=rid)
+    try:
+        html = common.fetch(url, encoding="utf-8")
+    except Exception:
+        fallback()
+        return
+    icon_m = re.search(r"Icon_GradeType(\d+)", html)
+    icon = icon_m.group(1) if icon_m else None
+    soup = common.BeautifulSoup(html, "lxml")
+    d02 = soup.find("div", class_="RaceData02")
+    d02_text = d02.get_text(" ", strip=True) if d02 else ""
+    cb["格"] = racelib.race_grade_resolve(icon, name, venue)
+    cb["条件"] = racelib.cond_from_racedata02(d02_text) or racelib.race_meta_from_name(name)[1]
 
 
 def main():
@@ -252,10 +282,19 @@ def _fetch(targets):
             p = common.RACES_DATA_DIR / f"{id_s}.json"
             if p.exists():
                 import json
-                exist_keys = {common.race_key(r) for r in json.loads(p.read_text(encoding="utf-8"))}
-            new = [r for r in raw if common.race_key(r) not in exist_keys]
+                for r in json.loads(p.read_text(encoding="utf-8")):
+                    exist_keys |= common.record_keys(r)
+            # 双键去重（race_id OR 馬名+日付）：netkeiba 同源按 race_id，跨源（台账先入库的海外场）按馬名+日付
+            new = []
+            for r in raw:
+                cb = to_contract_b(r, h.get("馬名", ""))
+                if common.record_keys(cb) & exist_keys:
+                    continue
+                enrich_grade_cond(cb)          # 抓 SP 页回填 格/条件
+                time.sleep(common.sleep_for(common.RACE_SP_URL))
+                new.append(cb)
             if raw:
-                races[id_s] = [to_contract_b(r, h.get("馬名", "")) for r in new]
+                races[id_s] = new
                 print(f"  [{i}/{len(targets)}] {h['id']} {h.get('馬名','')} "
                       f"页 {len(raw)} 场 · 新增 {len(new)} 场")
             else:

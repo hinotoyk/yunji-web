@@ -112,6 +112,7 @@ def coerce_record(row, issues):
         "R": _cell(row, "R"),
         "レース名": _cell(row, "レース名") or _cell(row, "競走名"),
         "格": _cell(row, "格"),
+        "条件": _cell(row, "条件"),
         "距離": dist if dist is not None else _cell(row, "距離"),
         "芝ダ": _normalize_surface(_cell(row, "芝ダ") or _cell(row, "馬場")),
         "馬場": _cell(row, "馬場"),
@@ -147,8 +148,15 @@ GRADE_SUFFIX_RE = re.compile(rf"\(({_GRADE_PATTERN}|L|OP)\)\s*$")
 _GRADE_ROMAN = {"G1": "GI", "G2": "GII", "G3": "GIII",
                 "JG1": "JGI", "JG2": "JGII", "JG3": "JGIII"}
 COND_SUFFIX_RE = re.compile(r"\((1勝クラス|2勝クラス|3勝クラス|OP)\)")
-PLAIN_COND_RE = re.compile(r"\d+歳(?:以上)?(?:新馬|未勝利|\d*勝クラス)")
+PLAIN_COND_RE = re.compile(r"(?:\d+歳(?:以上)?)?(?:新馬|未勝利|メイクデビュー|\d*勝クラス)")
 COND_NAR_RE = re.compile(r"(C\d|\d+歳\s*[A-Z]|\d+歳ー?\d+)")
+
+# 全角数字/括号 → 半角（netkeiba SP 正文用全角，统一折叠后匹配）
+_FULLWIDTH = str.maketrans("０１２３４５６７８９（）", "0123456789()")
+
+
+def _fold_fullwidth(s):
+    return (s or "").translate(_FULLWIDTH)
 
 
 def _norm_grade(g):
@@ -160,7 +168,7 @@ def race_meta_from_name(name):
     """レース名 → (格, 条件)。格 = 规范后缀（GI/GII/GIII/JpnI/JpnII/JpnIII/L/OP，含障害 JGI~JGIII）。
     例: '札幌2歳S(GIII)'→('GIII',''); '摩周湖特別(2勝クラス)'→('','2勝クラス');
         '野路菊S(OP)'→('OP',''); '2歳新馬'→('','2歳新馬'); '3歳A　4'→('','3歳A')。"""
-    name = (name or "").strip()
+    name = _fold_fullwidth((name or "").strip())
     m = GRADE_SUFFIX_RE.search(name)
     grade = _norm_grade(m.group(1)) if m else ""
     cond = ""
@@ -170,12 +178,112 @@ def race_meta_from_name(name):
     elif not grade:  # 重赏后缀优先；无后缀才尝试条件关键词
         pm = PLAIN_COND_RE.search(name)
         if pm:
-            cond = pm.group(0)
+            cond = "新馬" if pm.group(0) == "メイクデビュー" else pm.group(0)
         else:
             nm = COND_NAR_RE.search(name)
             if nm:
                 cond = nm.group(1).replace("ー", "-")
     return grade, cond
+
+
+# ── 格：Icon_GradeType 图标类号 → 格（netkeiba CSS :before 文本，HTML 只有类号）──
+# JRA 与 NAR 映射范围不同（NAR 只取 Jpn1-3 与 G1-3），故拆成两个独立函数。
+# JRA：重赏级图标 + 特别班赛的 クラス 图标（1勝/2勝/3勝クラス，含旧 500/900/1000/1600万下）。
+_JRA_ICON_GRADE = {
+    1: "GI", 2: "GII", 3: "GIII", 5: "OP", 10: "JGI", 11: "JGII", 12: "JGIII", 15: "L",
+    6: "3勝クラス", 7: "2勝クラス", 8: "2勝クラス", 9: "1勝クラス",
+    13: "3勝クラス", 16: "3勝クラス", 17: "2勝クラス", 18: "1勝クラス",
+}
+_NAR_ICON_GRADE = {
+    1: "GI", 2: "GII", 3: "GIII", 19: "JpnI", 20: "JpnII", 21: "JpnIII",
+}
+
+
+def grade_from_icon_jra(icon_num):
+    """中央(JRA)比赛：图标类号 → 格（GI/GII/GIII/OP/L/JGI/JGII/JGIII）；不识别返回空串。"""
+    try:
+        return _JRA_ICON_GRADE.get(int(icon_num), "")
+    except (TypeError, ValueError):
+        return ""
+
+
+def grade_from_icon_nar(icon_num):
+    """地方(NAR)比赛：只映射 G1-3 与 Jpn1-3；其余（重賞/OP/L/JG*）不映射，返回空串。"""
+    try:
+        return _NAR_ICON_GRADE.get(int(icon_num), "")
+    except (TypeError, ValueError):
+        return ""
+
+
+def grade_from_icon(icon_num, venue_type):
+    """按场地分发：地方走 NAR，其余走 JRA。"""
+    if venue_type == "地方":
+        return grade_from_icon_nar(icon_num)
+    return grade_from_icon_jra(icon_num)
+
+
+# ── 条件：RaceData02 → 条件串 ──
+# 终止于 性别/括号/重量/頭数/本賞金；セン 作为整体匹配（避免误切 オープン 的 ン）
+_COND_END = re.compile(r"牡|牝|セン|[（(【\[/]|定量|別定|馬齢|ハンデ|交換|\d+頭|本賞金")
+
+
+def cond_from_racedata02(text):
+    """从 RaceData02 提取条件串：省略 サラ系，去性别/重量/頭数，全角转半角，无空格。
+    例：'サラ系３歳以上 １勝クラス 牝[指] 定量 8頭' → '3歳以上1勝クラス'。"""
+    s = text or ""
+    i = s.find("サラ系")
+    if i < 0:
+        return ""
+    tail = s[i + 3:]            # 去掉 サラ系
+    m = _COND_END.search(tail)
+    if m:
+        tail = tail[:m.start()]
+    return re.sub(r"[ 　]", "", tail).translate(_FULLWIDTH)
+
+
+def _class_token(name):
+    """从比赛名提取班赛クラス token（1勝クラス/2勝クラス/3勝クラス/新馬/未勝利/オープン），
+    重赏后缀存在时返回空（由图标映射处理）。"""
+    name = _fold_fullwidth((name or "").strip())
+    if GRADE_SUFFIX_RE.search(name):
+        return ""
+    cm = COND_SUFFIX_RE.search(name)
+    if cm:
+        return "オープン" if cm.group(1) == "OP" else cm.group(1)
+    for kw in ("3勝クラス", "2勝クラス", "1勝クラス"):
+        if kw in name:
+            return kw
+    if "メイクデビュー" in name or "新馬" in name:
+        return "新馬"
+    if "未勝利" in name:
+        return "未勝利"
+    if "オープン" in name or "(OP)" in name or "(L)" in name:
+        return "オープン"
+    return ""
+
+
+def race_grade_resolve(icon_num, name, venue_type):
+    """格：优先图标映射（重赏/特别班赛），无图标从名字提取班赛クラス。"""
+    g = grade_from_icon(icon_num, venue_type)
+    if g:
+        return g
+    return _class_token(name)
+
+
+
+# ── 馬名匹配键 ──
+_COUNTRY_SUFFIX_RE = re.compile(
+    r"\((?:(?:JPN|USA|GB|IRE|NZ|FR|AU|AUS|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK))\)$")
+
+
+def name_key(s):
+    """馬名匹配键：去国家后缀（链式）+ 去空白，两侧统一后比较。"""
+    s = (s or "").strip()
+    prev = None
+    while prev != s:
+        prev = s
+        s = _COUNTRY_SUFFIX_RE.sub("", s).strip()
+    return s.replace(" ", "").replace("　", "")
 
 
 # netkeiba 着順 DNF：成绩页用单字（中/取/除/失），台账/详情用全称（中止/取消/除外/失格）
@@ -230,7 +338,8 @@ def race_shutoku_class(rec):
     for src in (cond, name):
         if not src:
             continue
-        if "新馬" in src:
+        src = _fold_fullwidth(src)
+        if "メイクデビュー" in src or "新馬" in src:
             return "新馬"
         if "未勝利" in src:
             return "未勝利"
