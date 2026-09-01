@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本信息 · 云迹</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+.page{max-width:1180px;margin:0 auto;padding:22px 24px 60px}
+
+/* 上段：头像 + 信息 */
+.phead{display:flex;gap:24px;padding:22px 26px}
+.pava{flex:none;width:176px;height:176px;border-radius:14px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/.3);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pava img{width:100%;height:100%;object-fit:cover;display:block}
+.pava .ph-ico{font-size:56px;color:hsl(var(--muted-foreground));opacity:.5}
+.pinfo{flex:1;min-width:0}
+.pnames{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.ncard{display:flex;flex-direction:column;justify-content:center;min-width:0;background:hsl(var(--muted)/.25);border:1px solid hsl(var(--border));border-radius:10px;padding:7px 14px}
+.ncard .nk{font-size:10px;letter-spacing:1px;color:hsl(var(--muted-foreground));text-transform:uppercase;margin-bottom:2px}
+.ncard .nv{font-size:16px;font-weight:600;color:hsl(var(--foreground));white-space:nowrap}
+.ncard .nv.jp{font-size:24px;font-weight:700}
+.nsep{display:flex;align-items:center;color:hsl(var(--muted-foreground));font-weight:600;font-size:15px}
+.pmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 20px;margin-top:16px;border-top:1px solid hsl(var(--border));padding-top:14px}
+.pmeta .m .k{font-size:10.5px;letter-spacing:.5px;color:hsl(var(--muted-foreground));text-transform:uppercase}
+.pmeta .m .v{font-size:13.5px;font-weight:500;margin-top:1px}
+
+/* 下段：内嵌比赛 */
+.raceframe{width:100%;height:600px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--background));display:block}
+.racebar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.racebar .lbl{font-size:11px;letter-spacing:2px;color:hsl(var(--muted-foreground));text-transform:uppercase;font-weight:600}
+/* 血统简约版区块 */
+.pg-loading{color:hsl(var(--muted-foreground));font-size:12.5px;padding:6px 2px}
+.pg-hint{font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px}
+.pg-hint b{color:hsl(var(--primary));font-weight:500}
+
+.hint-empty{text-align:center;padding:60px 20px;color:hsl(var(--muted-foreground));font-size:13px}
+@media (max-width:768px){
+  .page{padding:16px 14px 48px}
+  .phead{flex-direction:column;gap:16px;padding:18px}
+  .pava{width:120px;height:120px}
+  .ncard .nv.jp{font-size:20px}
+  .ncard .nv{font-size:14px}
+  .raceframe{height:520px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sec-title">基本信息 · PROFILE</div>
+  <div id="selector"></div>
+  <div id="body">
+    <div class="hint-empty">↑ 请在上方选择一匹马，查看其基本信息</div>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="selector.js"></script>
+<script src="bus.js"></script>
+<script src="pedigree.js"></script>
+<script>
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* 通算成績 形如 "5戦1勝 [ 1-0-0-4 ]" → 转中文符号 */
+function transStats(v){
+  if(!v) return v;
+  return String(v).replace(/戦/g,"战").replace(/勝/g,"胜").replace(/着/g,"名");
+}
+
+/* 头像：photo 兼容 数组/网络/本地 */
+function avatarHTML(photo){
+  var list=[];
+  if(Array.isArray(photo)) list=photo.slice();
+  else if(typeof photo==="string" && photo) list=[photo];
+  var src=list[0];
+  if(!src) return '<div class="pava"><span class="ph-ico">🐎</span></div>';
+  return '<div class="pava"><img src="'+esc(src)+'" alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=ph-ico>🐎</span>\'"></div>';
+}
+
+function render(h){
+  var t=YJ.i18n.t, g=YJ.i18n.g;
+  var title = h.自译馬名 || h.欧字馬名 || h.馬名 || ('#'+h.id);
+
+  /* 上段：头像 + 信息。名字 = 横排小卡片，卡片间用 - 分隔，卡片内上方小字标注类型；缺名字则不显示该卡 */
+  var ncard=function(lbl,cls,v){ return v? '<div class="ncard"><span class="nk">'+lbl+'</span><span class="nv '+cls+'">'+esc(v)+'</span></div>' : ''; };
+  var nparts=[];
+  if(h.馬名) nparts.push(ncard('日本名','jp',h.馬名));
+  if(h.欧字馬名) nparts.push(ncard('英文名','',h.欧字馬名));
+  if(h.香港馬名) nparts.push(ncard('香港名','',h.香港馬名));
+  if(h.自译馬名) nparts.push(ncard('自译','',h.自译馬名));
+  var nameLines='<div class="pnames">'+nparts.join('<span class="nsep">-</span>')+'</div>';
+
+  var meta='<div class="pmeta">'+
+    m(t("生年月日"), h.生年月日||"—")+
+    m(t("産地"), h.産地||"—")+
+    m(t("馬主"), h.馬主||"—")+
+    m(t("調教師"), h.調教師||"—")+
+    m(t("生産牧場"), h.生産牧場||"—")+
+    m(t("セリ取引価格"), h.セリ取引価格||"—")+
+  '</div>';
+
+  /* 中段：通算/赏金/收得（KPI 卡片保留） */
+  var prize=h.収得賞金||{};
+  var prizeRows=YJ.i18n.prizeEntries(prize);
+  var prizeTxt=prizeRows.length
+    ? prizeRows.map(function(x){return x.k+' '+x.v.toLocaleString()+' 円';}).join(' · ')
+    : '—';
+  var kpis='<div class="kpis">'+
+    '<div class="kpi"><div class="v hi">'+esc(transStats(h.通算成績||"未出赛"))+'</div><div class="k">'+t("通算成績")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+esc(h.獲得賞金||"—")+'</div><div class="k">'+t("獲得賞金")+'</div></div>'+
+    '<div class="kpi"><div class="v" style="font-size:14px">'+esc(prizeTxt)+'</div><div class="k">'+t("収得賞金")+'</div></div>'+
+  '</div>';
+
+  /* 下段：内嵌比赛（embed 模式，联动选中） */
+  var raceSection=
+    '<div class="racebar"><span class="lbl">'+t("比赛记录")+' · RACES</span></div>'+
+    '<iframe class="raceframe" src="races.html?embed=1" title="比赛记录"></iframe>';
+
+  document.title=title+' · 基本信息 · 云迹';
+  document.getElementById("body").innerHTML =
+    '<div class="card phead" style="margin-bottom:14px">'+avatarHTML(h.photo)+
+      '<div class="pinfo">'+nameLines+meta+'</div></div>'+
+    '<div class="card" style="padding:16px 20px;margin-bottom:14px" id="pedBox">'+
+      '<div class="racebar"><span class="lbl">'+t("血统")+' · PEDIGREE</span></div>'+
+      '<div class="pg-loading" id="pedBody">加载中…</div>'+
+    '</div>'+
+    '<div style="margin-bottom:16px">'+kpis+'</div>'+
+    raceSection;
+
+  /* 按需加载血统：简约版，点击弹窗完整版 */
+  (function(){
+    var pedBody=document.getElementById("pedBody");
+    YJ.pedigree.load(h.id, "../../data/pedigree/").then(function(ped){
+      pedBody.innerHTML = YJ.pedigree.simpleHTML(ped) +
+        '<div class="pg-hint">点击查看 <b>完整 5 代血统图</b> →</div>';
+      YJ.pedigree.bindSimple(pedBody, ped, title+' · 血统图');
+    }).catch(function(e){
+      pedBody.innerHTML='<div class="pg-loading">血统加载失败（'+esc(e.message)+'）</div>';
+    });
+  })();
+
+  /* 通知内嵌 races 联动：broadcast 写 localStorage（子 iframe 收 storage 事件 + 晚加载重放）+ 直接 postMessage 即时更新 */
+  YJ.bus.broadcast(h.id);
+  var fr=document.querySelector(".raceframe");
+  if(fr && fr.contentWindow) fr.contentWindow.postMessage({type:"yj:horse", id:h.id},"*");
+}
+
+function m(k,v){
+  return '<div class="m"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';
+}
+
+YJ.selector.init({
+  el: document.getElementById("selector"),
+  base: "../../data/basic.json",
+  onSelect: render
+}).catch(function(e){
+  document.getElementById("body").innerHTML='<div class="hint-empty">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
+});
+</script>
+</body>
+</html>

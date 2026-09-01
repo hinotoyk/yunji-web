@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>比赛记录 · 云迹</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+.page{max-width:1140px;margin:0 auto;padding:22px 24px 60px}
+/* 嵌入模式：隐藏页标题与选马器，紧凑 */
+.page.embed{padding-top:4px}
+.embed-hide{display:none}
+.race-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.race-head h2{font-size:17px;font-weight:700}
+.race-head .sub{font-size:12px;color:hsl(var(--muted-foreground))}
+.rbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.rbar select{height:32px;font-size:12.5px}
+.rhint{font-size:11.5px;color:hsl(var(--muted-foreground));margin-left:auto}
+.rhint b{color:hsl(var(--primary))}
+/* 成绩着色（沿用数据语义色） */
+td.place-1{color:hsl(var(--primary));font-weight:700}
+td.place-2{color:hsl(var(--chart-2));font-weight:600}
+td.place-3{color:hsl(var(--chart-3));font-weight:600}
+td.place-dnf{color:hsl(var(--destructive));font-weight:600}
+td.num{font-variant-numeric:tabular-nums}
+.rtag{display:inline-block;border-radius:4px;padding:0 5px;font-size:10px;margin-left:5px;vertical-align:1px;font-weight:600}
+.rtag.g1{background:hsl(var(--destructive)/.14);color:hsl(var(--destructive))}
+.rtag.g2{background:hsl(var(--chart-3)/.16);color:hsl(var(--chart-3))}
+.rtag.g3{background:hsl(var(--chart-2)/.16);color:hsl(var(--chart-2))}
+.rtag.gL{background:hsl(var(--primary)/.14);color:hsl(var(--primary))}
+.hint-empty{text-align:center;padding:60px 20px;color:hsl(var(--muted-foreground));font-size:13px}
+@media (max-width:768px){
+  .page{padding:16px 14px 48px}
+  .page.embed{padding-top:2px}
+}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div id="selector" class="embed-hide"></div>
+  <div id="body"><div class="hint-empty">↑ 请在上方选择一匹马，查看其比赛记录</div></div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="selector.js"></script>
+<script src="bus.js"></script>
+<script>
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+var EMBED = /[?&]embed=1/.test(location.search);
+var PAGE = document.getElementById("page");
+if (EMBED) PAGE.classList.add("embed");
+
+var G = { "GI":"g1","GII":"g2","GIII":"g3","L":"gL","OP":"gL",
+          "JpnI":"g1","JpnII":"g2","JpnIII":"g3" };
+
+/* ---- 统计（由逐场实时计算）---- */
+function computeStats(rs){
+  var s = {出赛:0, 胜:0, 二:0, 三:0, 着外:0, 未完走:0, 赏金:0};
+  rs.forEach(function(r){
+    s.出赛++;
+    var n = r.結果;
+    if (n === 1) s.胜++;
+    else if (n === 2) s.二++;
+    else if (n === 3) s.三++;
+    else if (typeof n === "number") s.着外++;
+    else s.未完走++;
+    if (r.賞金) s.赏金 += r.賞金;
+  });
+  s.胜率 = s.出赛 ? (s.胜/s.出赛*100).toFixed(1) : "0.0";
+  s.连对 = s.出赛 ? ((s.胜+s.二)/s.出赛*100).toFixed(1) : "0.0";
+  s.入赏 = s.出赛 ? ((s.胜+s.二+s.三)/s.出赛*100).toFixed(1) : "0.0";
+  return s;
+}
+
+function placeClass(r){
+  var n = r.結果;
+  if (n === 1) return "place-1";
+  if (n === 2) return "place-2";
+  if (n === 3) return "place-3";
+  if (typeof n === "string") return "place-dnf";
+  return "";
+}
+
+function rowHTML(r){
+  var pc = placeClass(r);
+  var grade = r.格 && G[r.格] ? '<span class="rtag '+G[r.格]+'">'+esc(r.格)+'</span>' : "";
+  var num = function(v){ return (v==null||v==="") ? "" : esc(String(v)); };
+  return '<tr>'+
+    '<td class="num">'+esc(r.日付)+'</td>'+
+    '<td>'+esc(r.場名||"")+'</td>'+
+    '<td>'+esc(r.レース名||"")+grade+'</td>'+
+    '<td class="num">'+num(r.距離)+'</td>'+
+    '<td>'+esc(YJ.i18n.e("芝ダ", r.芝ダ))+'</td>'+
+    '<td class="'+pc+'">'+esc(r.結果)+'</td>'+
+    '<td>'+esc(r.タイム||"")+'</td>'+
+    '<td>'+esc(r.着差||"")+'</td>'+
+    '<td>'+esc(r.騎手||"")+'</td>'+
+    '<td class="num">'+(r.賞金 ? r.賞金.toLocaleString() : "")+'</td>'+
+  '</tr>';
+}
+
+function renderRaces(h, races){
+  var t = YJ.i18n.t;
+  var s = computeStats(races);
+  var title = h.自译馬名 || h.欧字馬名 || h.馬名 || ("#"+h.id);
+
+  var head = !EMBED
+    ? '<div class="sec-title">比赛记录 · RACES</div>'
+    : '';
+  var hname = EMBED
+    ? '<div class="race-head"><h2>'+esc(title)+'</h2><span class="sub">共 '+s.出赛+' 场</span></div>'
+    : '<div class="race-head"><h2>'+esc(title)+'</h2><span class="sub">'+esc(YJ.i18n.g(h,"性別"))+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';
+
+  // KPI 仅在独立模式显示；嵌入 profile 时隐藏（profile 已不展示这些汇总）
+  var kpis = EMBED ? '' : '<div class="kpis">'+
+    '<div class="kpi"><div class="v hi">'+s.出赛+'</div><div class="k">'+t("出赛")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+s.胜+'</div><div class="k">'+t("胜")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+s.二+' / '+s.三+'</div><div class="k">'+t("2着")+' / '+t("3着")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+s.胜率+'%</div><div class="k">'+t("胜率")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+s.连对+'%</div><div class="k">'+t("连对率")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+(s.赏金?(s.赏金/10000).toLocaleString()+' 万':'—')+'</div><div class="k">'+t("赏金合计")+'</div></div>'+
+  '</div>';
+
+  var rows = races.length ? races.map(rowHTML).join("")
+    : '<tr><td colspan="10" style="text-align:center;color:hsl(var(--muted-foreground))">暂无比赛记录</td></tr>';
+
+  document.getElementById("body").innerHTML =
+    head + hname + kpis +
+    '<div class="rbar">'+
+      '<select id="fVenue"><option value="all">全部场地</option><option value="中央">中央</option><option value="地方">地方</option><option value="海外">海外</option></select>'+
+      '<select id="fRes"><option value="all">全部着顺</option><option value="win">胜</option><option value="top3">前三</option><option value="dnf">未完走</option></select>'+
+      '<span class="rhint">显示 <b>'+s.出赛+'</b> 场</span>'+
+    '</div>'+
+    '<div class="tblwrap"><table>'+
+      '<thead><tr>'+
+        '<th>'+t("日付")+'</th><th>'+t("場名")+'</th><th>'+t("レース名")+'</th>'+
+        '<th>'+t("距離")+'</th><th>'+t("芝ダ")+'</th><th>'+t("着順")+'</th>'+
+        '<th>'+t("タイム")+'</th><th>'+t("着差")+'</th><th>'+t("騎手")+'</th><th>'+t("賞金")+'</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table></div>';
+
+  // 过滤
+  var fVenue=document.getElementById("fVenue"), fRes=document.getElementById("fRes");
+  function applyFilter(){
+    var v=fVenue.value, r=fRes.value;
+    var list=races.filter(function(x){
+      if(v!=="all" && x.venue_type!==v) return false;
+      if(r==="win" && x.結果!==1) return false;
+      if(r==="top3" && !(x.結果===1||x.結果===2||x.結果===3)) return false;
+      if(r==="dnf" && typeof x.結果!=="string") return false;
+      return true;
+    });
+    var tb=document.querySelector("#body tbody");
+    tb.innerHTML = list.length ? list.map(rowHTML).join("")
+      : '<tr><td colspan="10" style="text-align:center;color:hsl(var(--muted-foreground))">无符合条件的记录</td></tr>';
+    document.querySelector(".rhint b").textContent = list.length;
+  }
+  fVenue.addEventListener("change", applyFilter);
+  fRes.addEventListener("change", applyFilter);
+}
+
+function renderHorse(id){
+  if (id == null) return;
+  // 从已加载的马匹里找基本信息（用于标题/性別）；没有则直接拉 basic.json
+  var list = (YJ.selector.getHorses ? YJ.selector.getHorses() : []) || [];
+  var h = list.find(function(x){return x.id===id;});
+  var url = "../../data/races/"+id+".json";
+  var renderR = function(hh){
+    fetch(url).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    }).then(function(races){
+      var hs = Array.isArray(races) ? races : (races && races.races ? races.races : []);
+      renderRaces(hh || {id:id}, hs);
+    }).catch(function(e){
+      document.getElementById("body").innerHTML='<div class="hint-empty">比赛数据加载失败（'+esc(e.message)+'）</div>';
+    });
+  };
+  if (h) { renderR(h); return; }
+  fetch("../../data/basic.json").then(function(r){return r.json();}).then(function(d){
+    var arr = Array.isArray(d)?d:(d.horses||[]);
+    renderR(arr.find(function(x){return x.id===id;}));
+  }).catch(function(){ renderR(null); });
+}
+
+if (EMBED) {
+  // 嵌入模式：无选马器，只响应 bus 选中
+  document.querySelector(".embed-hide").style.display="none";
+  document.getElementById("selector").style.display="none";
+  YJ.bus.onChange(function(id){ renderHorse(id); });
+} else {
+  // 独立模式：自带选马器
+  YJ.selector.init({
+    el: document.getElementById("selector"),
+    base: "../../data/basic.json",
+    onSelect: function(h){ renderHorse(h.id); }
+  }).catch(function(e){
+    document.getElementById("body").innerHTML='<div class="hint-empty">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
+  });
+}
+</script>
+</body>
+</html>

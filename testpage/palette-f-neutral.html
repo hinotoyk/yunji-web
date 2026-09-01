@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云迹 · 方案F×shadcn Neutral · 定稿主题</title>
+<style>
+/* ============================================================
+ * 云迹 定稿主题：方案 F 青绿 × shadcn Neutral 底色（仅亮色）
+ *  - 底色：shadcn Neutral（纯黑白灰中性）
+ *  - 强调：方案 F 的青绿科技感（teal primary + 青辅助）
+ *  忠实 shadcn CSS 变量系统（HSL）。
+ * ============================================================ */
+:root{
+  /* —— 亮色：Neutral 底 + F 青绿强调 —— */
+  --background:0 0% 100%; --foreground:0 0% 3.9%;
+  --card:0 0% 100%; --card-foreground:0 0% 3.9%;
+  --popover:0 0% 100%; --popover-foreground:0 0% 3.9%;
+  --primary:177 88.7% 34.7%; --primary-foreground:0 0% 100%;
+  --secondary:0 0% 96.1%; --secondary-foreground:0 0% 9%;
+  --muted:0 0% 96.1%; --muted-foreground:0 0% 45.1%;
+  --accent:177 88.7% 95%; --accent-foreground:177 80% 22%;
+  --destructive:0 84.2% 60.2%; --destructive-foreground:0 0% 98%;
+  --border:0 0% 89.8%; --input:0 0% 89.8%; --ring:177 88.7% 34.7%;
+  --chart-1:177 88.7% 34.7%; --chart-2:201 86.9% 44.9%; --chart-3:23 80.5% 53.7%; --chart-4:177 86.7% 41.2%; --chart-5:201 60% 62%;
+}
+:root{color-scheme:light}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:hsl(var(--background)); color:hsl(var(--foreground));
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',Roboto,'Helvetica Neue',Arial,sans-serif;
+  font-size:14px; line-height:1.5; padding-bottom:70px; transition:background .2s,color .2s;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 24px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:22px 0 6px}
+.topbar h1{font-size:20px;font-weight:600;letter-spacing:.2px}
+.topbar h1 em{font-style:normal;color:hsl(var(--primary))}
+.topbar .sub{width:100%;color:hsl(var(--muted-foreground));font-size:12.5px}
+.controls{display:flex;gap:10px;margin:16px 0 4px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:6px;font-size:13.5px;font-weight:500;border:1px solid transparent;cursor:pointer;background:hsl(var(--primary));color:hsl(var(--primary-foreground));transition:opacity .12s}
+.btn:hover{opacity:.9}
+.btn.sec{background:hsl(var(--secondary));color:hsl(var(--secondary-foreground))}
+.btn.out{background:transparent;border-color:hsl(var(--border));color:hsl(var(--foreground))}
+.btn.ghost{background:transparent;color:hsl(var(--foreground))}
+.sec{margin-top:30px}
+.sec h2{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.kpi{border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--card));color:hsl(var(--card-foreground));padding:16px}
+.kpi .v{font-size:24px;font-weight:600}
+.kpi .v.hi{color:hsl(var(--primary))}
+.kpi .k{font-size:11px;color:hsl(var(--muted-foreground));margin-top:4px}
+.tblwrap{overflow-x:auto;margin-top:14px;border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--card));color:hsl(var(--card-foreground))}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+thead th{background:hsl(var(--muted)/.4);font-weight:500;font-size:11px;letter-spacing:.5px;text-align:left;padding:10px 14px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
+tbody td{padding:9px 14px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.sub td{background:hsl(var(--muted)/.25);color:hsl(var(--muted-foreground));font-size:12px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.win{color:hsl(var(--primary));font-weight:600}
+.group{font-weight:600}
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid hsl(var(--border));color:hsl(var(--muted-foreground));background:hsl(var(--secondary))}
+.badge.acc{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:transparent}
+.tabs{display:flex;gap:2px;border-bottom:1px solid hsl(var(--border));margin-top:14px}
+.tab{padding:8px 14px;font-size:13px;color:hsl(var(--muted-foreground));cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent}
+.tab.on{color:hsl(var(--foreground));border-bottom-color:hsl(var(--primary))}
+.bars{display:flex;align-items:flex-end;gap:26px;height:140px;margin-top:16px;padding:0 4px}
+.bcol{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.bcol .l{font-size:11px;color:hsl(var(--muted-foreground))}
+.bset{display:flex;gap:6px;align-items:flex-end;height:104px}
+.bset .b{width:18px;border-radius:4px 4px 0 0}
+.bset .b.win{background:hsl(var(--chart-1))}
+.bset .b.plc{background:hsl(var(--chart-2))}
+.sw{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.sw i{width:40px;height:40px;border-radius:8px;border:1px solid hsl(var(--border))}
+.sw .t{font-size:11px;color:hsl(var(--muted-foreground));margin-top:4px;text-align:center}
+.switem{display:flex;flex-direction:column;align-items:center}
+.note{margin-top:30px;font-size:12px;color:hsl(var(--muted-foreground));line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h1>云迹 · <em>方案F青绿</em> × shadcn Neutral 底色</h1>
+    <div class="sub">定稿主题：shadcn 中性黑白灰底框 + 方案 F 青绿科技感强调（仅亮色）。这是最终配色。</div>
+  </div>
+
+  <div class="sec"><h2>色板</h2></div>
+  <div class="sw">
+    <div class="switem"><i style="background:hsl(var(--background))"></i><div class="t">底</div></div>
+    <div class="switem"><i style="background:hsl(var(--card))"></i><div class="t">卡片</div></div>
+    <div class="switem"><i style="background:hsl(var(--foreground))"></i><div class="t">文字</div></div>
+    <div class="switem"><i style="background:hsl(var(--primary))"></i><div class="t">主强调·青绿</div></div>
+    <div class="switem"><i style="background:hsl(var(--chart-2))"></i><div class="t">辅助青</div></div>
+    <div class="switem"><i style="background:hsl(var(--border))"></i><div class="t">边框</div></div>
+  </div>
+
+  <div class="sec"><h2>按钮 / 徽章</h2></div>
+  <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+    <button class="btn">主要按钮</button>
+    <button class="btn sec">次要按钮</button>
+    <button class="btn out">描边按钮</button>
+    <button class="btn ghost">幽灵按钮</button>
+    <span class="badge acc">GI</span><span class="badge">GII</span><span class="badge">OP</span><span class="badge">未胜利</span>
+  </div>
+
+  <div class="sec"><h2>KPI 卡片</h2></div>
+  <div class="kpis">
+    <div class="kpi"><div class="v hi">691</div><div class="k">总出赛</div></div>
+    <div class="kpi"><div class="v hi">77</div><div class="k">胜</div></div>
+    <div class="kpi"><div class="v">11.1%</div><div class="k">胜率</div></div>
+    <div class="kpi"><div class="v">21.6%</div><div class="k">连对率</div></div>
+  </div>
+
+  <div class="sec"><h2>按年胜场 / 入赏 趋势（示意）</h2></div>
+  <div class="bars">
+    <div class="bcol"><div class="bset"><div class="b win" style="height:34%"></div><div class="b plc" style="height:52%"></div></div><div class="l">2025</div></div>
+    <div class="bcol"><div class="bset"><div class="b win" style="height:82%"></div><div class="b plc" style="height:100%"></div></div><div class="l">2026</div></div>
+  </div>
+
+  <div class="sec"><h2>全成绩 示例表</h2></div>
+  <div class="tabs"><span class="tab on">全成绩</span><span class="tab">竞马场别</span><span class="tab">芝/ダ</span><span class="tab">クラス别</span></div>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>项目</th><th class="num">1着</th><th class="num">2着</th><th class="num">3着</th><th class="num">着外</th><th class="num">合计</th><th class="num">胜率</th><th class="num">连对率</th></tr></thead>
+      <tbody>
+        <tr><td class="group">全成绩</td><td class="num win">77</td><td class="num">72</td><td class="num">74</td><td class="num">468</td><td class="num">691</td><td class="num">11.1%</td><td class="num">21.6%</td></tr>
+        <tr class="sub"><td>└ 2026年</td><td class="num win">59</td><td class="num">52</td><td class="num">54</td><td class="num">368</td><td class="num">533</td><td class="num">11.1%</td><td class="num">20.8%</td></tr>
+        <tr class="sub"><td>└ 2025年</td><td class="num win">18</td><td class="num">20</td><td class="num">20</td><td class="num">100</td><td class="num">158</td><td class="num">11.4%</td><td class="num">24.1%</td></tr>
+        <tr><td class="group">芝</td><td class="num win">56</td><td class="num">55</td><td class="num">57</td><td class="num">367</td><td class="num">535</td><td class="num">10.5%</td><td class="num">20.7%</td></tr>
+        <tr class="sub"><td>└ 2026年</td><td class="num win">42</td><td class="num">39</td><td class="num">41</td><td class="num">290</td><td class="num">412</td><td class="num">10.2%</td><td class="num">19.7%</td></tr>
+        <tr class="sub"><td>└ 2025年</td><td class="num win">14</td><td class="num">16</td><td class="num">16</td><td class="num">77</td><td class="num">123</td><td class="num">11.4%</td><td class="num">24.4%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">示例数据仅供配色审阅。底色 = shadcn Neutral（`#fff`，灰阶边框与文字），强调 = 方案 F 青绿（primary `#0aa7a0`）。仅亮色，无暗黑模式。这套将作为正式页面主题。</div>
+</div>
+</body>
+</html>
