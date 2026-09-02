@@ -59,7 +59,7 @@ python build_registry.py --year 2025,2026 --dry-run   # 后续加年份（预览
 | 并发 | 脚本 | 来源 | 产出（缓存） |
 |------|------|------|------|
 | 1 | `fetch_pedigree.py` | JBIS `/horse/{jbis_id}/pedigree/` | `data/pedigree/{id}.json` + `_tmp/basic/pedigree.json` 引用 |
-| 2 | `fetch_nk_id.py` | netkeiba `list.html?sire_id=...&sort=age-asc` | `_tmp/basic/nk_id.json`（按生年数组过滤 + 罗马数字归一化匹配） |
+| 2 | `fetch_nk_id.py` | netkeiba `list.html?sire_id=...&sort=age-asc` | `_tmp/basic/nk_id.json`（按生年数组过滤 + 罗马数字归一化匹配）；另写 `_tmp/basic/总赏金.json`（列表页 `総賞金(万円)` 列） |
 | 3 | `fetch_studbook.py` | studbook.jp `Honba?sid=` | `_tmp/basic/studbook.json`（按归一化馬名匹配） |
 
 > 并发2：netkeiba 列表不能指定生年，需翻遍全部分页，只取生年在数组的马；
@@ -69,7 +69,7 @@ python build_registry.py --year 2025,2026 --dry-run   # 后续加年份（预览
 ### 3. 阶段四 `fetch_detail.py`
 - **依赖 nk_id**：读取 `_tmp/basic/nk_id.json` 缓存（或 basic.json 的 nk_id）。
 - **不依赖**血统/意味・由来是否完成——nk_id 齐了就能跑。
-- 抓 `db.netkeiba.com/horse/{nk_id}/` → 写 `_tmp/basic/detail.json`（登録状態/性別/毛色/馬齢/生年月日/産地/馬主/調教師/生産牧場/通算成績/獲得賞金/欧字馬名/セリ取引価格）。
+- 抓 `db.netkeiba.com/horse/{nk_id}/` → 写 `_tmp/basic/detail.json`（登録状態/性別/毛色/馬齢/生年月日/産地/馬主/調教師/生産牧場/通算成績/獲得賞金 (中央)/獲得賞金 (地方)/欧字馬名/セリ取引価格）。
 
 ### 4. 合并 `merge_basic.py`
 ```bash

@@ -116,7 +116,7 @@ def summary():
         hs = b["horses"]
         lines += ["", "数据（data/）:"]
         lines.append(f"  basic.json: {b['_meta'].get('count')} 匹")
-        for fld in ("nk_id", "欧字馬名", "馬名意味", "pedigree_file", "races_file"):
+        for fld in ("nk_id", "欧字馬名", "馬名意味", "総賞金", "pedigree_file", "races_file"):
             n = sum(1 for h in hs if h.get(fld))
             lines.append(f"  {fld}: {n}/{len(hs)}")
         n_sd = sum(1 for h in hs if h.get("収得賞金"))

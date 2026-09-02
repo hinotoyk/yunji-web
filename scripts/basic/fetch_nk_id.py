@@ -39,6 +39,38 @@ def clean_mare_display(s):
     return re.sub(r"\[.*?\]", "", s or "").replace(" ", "").replace("　", "")
 
 
+def fmt_man(man):
+    """万円金额 → 展示串：'269万円'；≥1億(10000万) → '1億1615.8万円'；0/空 → 0（数字）。"""
+    if man in (None, ""):
+        return 0
+    try:
+        v = float(str(man).replace(",", ""))
+    except (ValueError, TypeError):
+        return man
+    if v == 0:
+        return 0
+    if v >= 10000:
+        yi = int(v // 10000)
+        rest = v - yi * 10000
+        if abs(rest) < 1e-9:
+            return f"{yi}億円"
+        rest = int(rest) if abs(rest - round(rest)) < 1e-9 else round(rest, 1)
+        return f"{yi}億{rest}万円"
+    iv = int(v) if abs(v - round(v)) < 1e-9 else v
+    return f"{iv}万円"
+
+
+def norm_total(v):
+    """列表页 総賞金(万円) 原始值（如 '269.0'）→ 格式化串（'269万円'/'1億1615.8万円'；空 → 0）。"""
+    v = (v or "").strip().replace(",", "")
+    if v in ("", "-", "--"):
+        return 0
+    try:
+        return fmt_man(float(v))
+    except (ValueError, TypeError):
+        return v
+
+
 def parse_row(tr):
     tds = tr.find_all("td")
     if len(tds) < 12:
@@ -52,7 +84,8 @@ def parse_row(tr):
     return {"nk_id": m.group(1),
             "馬名": a.get_text(" ", strip=True),
             "生年": tds[3].get_text(" ", strip=True),
-            "母名": clean_mare_display(tds[7].get_text(" ", strip=True))}
+            "母名": clean_mare_display(tds[7].get_text(" ", strip=True)),
+            "総賞金": norm_total(tds[11].get_text(" ", strip=True))}
 
 
 def fetch_list_all(years, sleep=0.6):
@@ -98,18 +131,21 @@ def main():
     nk_rows = fetch_list_all(years, args.sleep)
     print(f"✔ 生年{years} 的马 {len(nk_rows)} 匹")
 
-    matched, miss, cache = 0, [], {}
+    matched, miss, cache, total = 0, [], {}, {}
     for nk, r in nk_rows.items():
         key = (norm_mare(r["母名"]), r["生年"])
         h = by_key.get(key)
         if h:
             cache[str(h["id"])] = nk       # 写独立缓存，不碰 basic.json
+            total[str(h["id"])] = r["総賞金"]   # 总赏金（列表页 総賞金(万円)，0 也写入）
             matched += 1
         else:
             miss.append((nk, r["馬名"], r["母名"], r["生年"]))
 
     common.write_cache("nk_id", cache)
+    common.write_cache("总赏金", total)
     print(f"✔ 匹配回写 nk_id：{matched}/{len(nk_rows)}（缓存 _tmp/nk_id.json）")
+    print(f"✔ 总赏金 総賞金(万円)：{len(total)} 匹（缓存 _tmp/总赏金.json）")
     if miss:
         print(f"⚠ 未匹配 {len(miss)} 匹（nk_id 未写入，可后续补）：")
         for nk, name, mare, yr in miss[:20]:

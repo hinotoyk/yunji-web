@@ -102,11 +102,12 @@ function render(h){
   var prize=h.収得賞金||{};
   var prizeRows=YJ.i18n.prizeEntries(prize);
   var prizeTxt=prizeRows.length
-    ? prizeRows.map(function(x){return x.k+' '+x.v.toLocaleString()+' 円';}).join(' · ')
+    ? prizeRows.map(function(x){return x.k+' '+x.v;}).join(' · ')
     : '—';
   var kpis='<div class="kpis">'+
     '<div class="kpi"><div class="v hi">'+esc(transStats(h.通算成績||"未出赛"))+'</div><div class="k">'+t("通算成績")+'</div></div>'+
-    '<div class="kpi"><div class="v">'+esc(h.獲得賞金||"—")+'</div><div class="k">'+t("獲得賞金")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+esc(h["獲得賞金 (中央)"]||"—")+'</div><div class="k">'+t("獲得賞金 (中央)")+'</div></div>'+
+    '<div class="kpi"><div class="v">'+esc(h["獲得賞金 (地方)"]||"—")+'</div><div class="k">'+t("獲得賞金 (地方)")+'</div></div>'+
     '<div class="kpi"><div class="v" style="font-size:14px">'+esc(prizeTxt)+'</div><div class="k">'+t("収得賞金")+'</div></div>'+
   '</div>';
 

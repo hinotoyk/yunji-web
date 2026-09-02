@@ -3,7 +3,7 @@
 """合并竞赛缓存 → races 文件 + basic.json，合并后删除临时数据（竞赛流水线最后一环）。
 
 输入缓存（key 均为 str(id)）：
-  _tmp/detail.json    {id: {登録状態, 性別, ..., 通算成績, 獲得賞金, 欧字馬名, ...}}
+  _tmp/detail.json    {id: {登録状態, 性別, ..., 通算成績, 獲得賞金 (中央), 獲得賞金 (地方), 欧字馬名, ...}}
   _tmp/changed.json   {id: {"旧", "新"}}              （报告用）
   _tmp/races.json     {id: [新增 netkeiba 成绩记录]}
   _tmp/prize.json     {id: {race_id: 该马着順本賞金(円)}}
@@ -11,12 +11,12 @@
   _tmp/failures.json  {id: 错误信息}
 
 做的事：
-  1. 详情字段回填 basic.json：会变化字段（登録状態/性別/馬齢/馬主/調教師/通算成績/獲得賞金）
+  1. 详情字段回填 basic.json：会变化字段（登録状態/性別/馬齢/馬主/調教師/通算成績/獲得賞金 (中央)/獲得賞金 (地方)）
      无条件覆盖；稳定字段只在抓取值非空时覆盖。
   2. 新增成绩/台账记录合并进 data/races/{id}.json（按比赛键去重，已有记录不动）。
   3. 新增记录附上本賞金（按 race_id 查 prize 缓存）。
   4. 由合并后的完整履历统一计算 収得賞金（中央 compute_shutoku + 地方 Jpn
-     compute_shutoku_jpn，纯规则无网络），写 basic.json 新字段。
+     compute_shutoku_jpn，纯规则无网络），写 basic.json 新字段（円 → 'xx万円'/'xx億xx万円'，零值保留 0）。
   5. 回填 races_file（"data/races/{id}.json"，站点根相对，与 pedigree_file 同口径）。
   6. 写 data/races_report.md 报告，删除 _tmp 缓存（--keep 保留调试）。
 
@@ -34,10 +34,38 @@ import common  # noqa: E402
 import racelib  # noqa: E402
 
 # 会变化字段：无条件覆盖；稳定字段：抓取值非空才覆盖（与 fetch_detail 定义一致）
-VOLATILE_FIELDS = ["登録状態", "性別", "馬齢", "馬主", "調教師", "通算成績", "獲得賞金"]
+VOLATILE_FIELDS = ["登録状態", "性別", "馬齢", "馬主", "調教師", "通算成績", "獲得賞金 (中央)", "獲得賞金 (地方)"]
 STABLE_FIELDS = ["毛色", "生年月日", "産地", "生産牧場", "欧字馬名", "セリ取引価格"]
 
 RACES_FILE_PREFIX = "data/races/{id}.json"   # basic.json 里 races_file 的引用口径（站点根相对）
+
+
+def fmt_man(man):
+    """万円金额 → 展示串：'400万円'；≥1億(10000万) → '1億1615.8万円'；0/空 → 0（数字）。"""
+    if man in (None, ""):
+        return 0
+    try:
+        v = float(str(man).replace(",", ""))
+    except (ValueError, TypeError):
+        return man
+    if v == 0:
+        return 0
+    if v >= 10000:
+        yi = int(v // 10000)
+        rest = v - yi * 10000
+        if abs(rest) < 1e-9:
+            return f"{yi}億円"
+        rest = int(rest) if abs(rest - round(rest)) < 1e-9 else round(rest, 1)
+        return f"{yi}億{rest}万円"
+    iv = int(v) if abs(v - round(v)) < 1e-9 else v
+    return f"{iv}万円"
+
+
+def fmt_yen(yen):
+    """円金额 → 万円格式串：4000000円 → '400万円'；0 → 0（数字）。"""
+    if not yen:
+        return 0
+    return fmt_man(yen / 10000)
 
 
 def load_races_file(id_s):
@@ -134,7 +162,9 @@ def main():
         recs = json.loads(p.read_text(encoding="utf-8"))
         flat = racelib.compute_shutoku(recs, birth_year=h.get("生年"))
         jpn = racelib.compute_shutoku_jpn(recs)
-        h["収得賞金"] = {"平地": flat["平地"], "障害": flat["障害"], "Jpn": jpn["Jpn"]}
+        h["収得賞金"] = {"平地": fmt_yen(flat["平地"]),
+                        "障害": fmt_yen(flat["障害"]),
+                        "Jpn": fmt_yen(jpn["Jpn"])}
         for it in flat["缺失"]:
             shutoku_missing.append((h.get("馬名"), *it))
         for it in jpn["缺失"]:

@@ -20,7 +20,7 @@ scripts/races/                 # 竞赛部分脚本（成绩/収得，更新频�
 └── README.md
 
 data/                      # 统一数据根（根目录，两部分的共同产物）
-├── basic.json           # 唯一数据源（竞赛回填 通算成績/獲得賞金/収得賞金/races_file）
+├── basic.json           # 唯一数据源（竞赛回填 通算成績/獲得賞金 (中央)/獲得賞金 (地方)/総賞金/収得賞金/races_file）
 ├── races/{id}.json      # 每匹逐场成绩（持久，增量只增不覆盖）
 ├── _tmp/races/          # 各环独立缓存（merge 后自动删除）
 ├── races_report.md      # 每次合并的更新报告
@@ -32,7 +32,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 ```
 data/basic.json (id, nk_id)
    │  ① fetch_detail：db.netkeiba.com/horse/{nk_id}/（EUC-JP）
-   │     会变化字段无条件覆盖：登録状態/性別/馬齢/馬主/調教師/通算成績/獲得賞金
+   │     会变化字段无条件覆盖：登録状態/性別/馬齢/馬主/調教師/通算成績/獲得賞金 (中央)/獲得賞金 (地方)
    │     稳定字段非空才覆盖：毛色/生年月日/産地/生産牧場/欧字馬名/セリ取引価格
    │     通算成績 判变（两侧去空白后精确比较）→ _tmp/races/changed.json
    ▼
@@ -48,8 +48,8 @@ data/basic.json (id, nk_id)
    ▼
   ⑤ merge_races：
      合并新增记录进 data/races/{id}.json（按比赛键去重，已有不动）
-     附本賞金 → 由完整履历统一计算 収得賞金（racelib 规则，无网络）
-     回填 basic.json（通算成績/獲得賞金/収得賞金/races_file）→ 写报告 → 删缓存
+     附本賞金 → 由完整履历统一计算 収得賞金（racelib 规则，无网络，円 → 'xx万円'/'xx億xx万円'，零值保留 0）
+     回填 basic.json（通算成績/獲得賞金 (中央)/獲得賞金 (地方)/収得賞金/races_file）→ 写报告 → 删缓存
 ```
 
 ## 常用命令（在 scripts/races/ 下）

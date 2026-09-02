@@ -38,6 +38,7 @@ def main():
     ped = common.read_cache("pedigree")     # {id: pedigree_file}
     nk = common.read_cache("nk_id")         # {id: nk_id}
     stud = common.read_cache("studbook")    # {id: 馬名意味}
+    total = common.read_cache("总赏金")     # {id: 総賞金(万円)}（列表页）
     det = common.read_cache("detail")       # {id: {详情字段}}
 
     def apply(cache, field, is_dict=False):
@@ -59,15 +60,25 @@ def main():
     n_ped = apply(ped, PEDIGREE_FIELD)
     n_nk = apply(nk, "nk_id")
     n_stud = apply(stud, "馬名意味")
+    # 総賞金：0 也需写入（不能走 apply 的真值过滤），单独处理
+    n_total = 0
+    for id_s, val in (total or {}).items():
+        h = by_id.get(id_s)
+        if not h:
+            continue
+        if val is not None:
+            h["総賞金"] = val
+        n_total += 1
     n_det = apply(det, None, is_dict=True)
 
     # 按标准字段顺序重排（模板见 build_registry.BASIC_TEMPLATE，此处固定顺序）
     ORDER = ["id", "nk_id", "jbis_id", "馬名", "欧字馬名", "香港馬名", "自译馬名", "母名", "生年", "馬名意味",
              "登録状態", "性別", "毛色", "馬齢", "生年月日", "産地", "馬主", "調教師",
-             "生産牧場", "通算成績", "獲得賞金", "セリ取引価格", "photo", "races_file",
+             "生産牧場", "通算成績", "獲得賞金 (中央)", "獲得賞金 (地方)", "総賞金", "収得賞金", "セリ取引価格", "photo", "races_file",
              "pedigree_file"]
+    LEGACY_DROP = {"獲得賞金", "獲得賞金地方"}   # 旧字段名（已改名为 獲得賞金 (中央)/(地方)），丢弃
     for h in horses:
-        extra = {k: v for k, v in h.items() if k not in ORDER}
+        extra = {k: v for k, v in h.items() if k not in ORDER and k not in LEGACY_DROP}
         reordered = {k: h.get(k, "") for k in ORDER}
         reordered.update(extra)          # 模板外的新字段（如后续竞赛字段）保留在末尾
         h.clear()
@@ -78,6 +89,7 @@ def main():
     print(f"   - pedigree_file: {n_ped}")
     print(f"   - nk_id:         {n_nk}")
     print(f"   - 馬名意味:      {n_stud}")
+    print(f"   - 総賞金:        {n_total}")
     print(f"   - 详情字段:      {n_det}")
 
     if not args.keep:

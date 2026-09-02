@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>单匹马请求链路 · 云迹数据流</title>
+<title>云迹数据流 · 抓取流水线路径图</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -20,13 +20,13 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',system-ui,sans-serif;font-size:14px;line-height:1.7}
-.wrap{max-width:1160px;margin:0 auto;padding:34px 26px 90px}
+.wrap{max-width:1280px;margin:0 auto;padding:34px 26px 90px}
 
 header{margin-bottom:20px}
 .kicker{font-size:11px;letter-spacing:4px;color:var(--amber);font-weight:600;text-transform:uppercase}
 h1{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;letter-spacing:.5px;margin-top:6px}
 h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:10px}
-.sub{margin-top:8px;color:var(--muted);font-size:13px;max-width:74ch}
+.sub{margin-top:8px;color:var(--muted);font-size:13px;max-width:78ch}
 .sub b{color:var(--ink)}
 
 .ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:22px 0 6px}
@@ -36,7 +36,6 @@ h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background
 .seg:hover{color:var(--ink)}
 .seg.on{background:var(--green-soft);border-color:var(--green-line);color:var(--green-deep);font-weight:700}
 .seg.on.s2{background:var(--steel-soft);border-color:var(--steel-line);color:var(--steel-deep)}
-.seg.on.s3{background:var(--wine-soft);border-color:var(--wine-line);color:var(--wine)}
 .scen-desc{margin:10px 2px 0;font-size:12.5px;color:var(--muted)}
 
 .legend{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0 14px;font-size:12px;color:var(--muted)}
@@ -44,7 +43,8 @@ h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background
 .sw{width:13px;height:13px;border-radius:4px;flex:none}
 .sw.nk{background:var(--green)}
 .sw.jb{background:var(--steel)}
-.sw.pr{background:var(--amber)}
+.sw.sd{background:var(--amber)}
+.sw.sp{background:var(--wine)}
 .sw.mg{background:var(--ink)}
 .lg .dash{width:22px;border-top:2px dashed var(--line-2);flex:none}
 .lg b{color:var(--ink);font-weight:600}
@@ -54,7 +54,7 @@ svg#graph{display:block}
 .node{transition:opacity .18s}
 .node rect{transition:fill .18s, stroke .18s, stroke-width .18s}
 .node .nm{font-family:'Noto Sans SC';font-size:12px;font-weight:600;fill:var(--ink)}
-.node .url{font-family:var(--mono);font-size:8.4px;fill:var(--muted)}
+.node .url{font-family:var(--mono);font-size:8.2px;fill:var(--muted)}
 .node .fn{font-family:'Noto Sans SC';font-size:8.6px;fill:var(--muted-2)}
 .node .tag{font-family:'Noto Sans SC';font-size:7.6px;font-weight:700;letter-spacing:.5px}
 .glow{cursor:pointer}
@@ -72,7 +72,8 @@ svg#graph{display:block}
 .dp-num{width:30px;height:30px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px}
 .dp-num.nk{background:var(--green-soft);color:var(--green-deep);border:1px solid var(--green-line)}
 .dp-num.jb{background:var(--steel-soft);color:var(--steel-deep);border:1px solid var(--steel-line)}
-.dp-num.pr{background:var(--amber-soft);color:var(--amber-deep);border:1px solid var(--amber-line)}
+.dp-num.sd{background:var(--amber-soft);color:var(--amber-deep);border:1px solid var(--amber-line)}
+.dp-num.sp{background:var(--wine-soft);color:var(--wine);border:1px solid var(--wine-line)}
 .dp-num.mg{background:#efece6;color:var(--ink);border:1px solid var(--line-2)}
 .dp-title{flex:1;min-width:0}
 .dp-title h3{font-size:15px;font-weight:700}
@@ -94,7 +95,7 @@ svg#graph{display:block}
 .req-meter{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .req-total{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;color:var(--green)}
 .req-total small{font-size:13px;color:var(--muted);font-weight:500}
-.req-list{flex:1;min-width:220px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 18px}
+.req-list{flex:1;min-width:220px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px 18px}
 .req-i{font-size:11.5px;color:var(--muted);display:flex;align-items:baseline;gap:6px}
 .req-i .c{color:var(--ink);font-weight:700;font-family:var(--mono)}
 
@@ -107,30 +108,31 @@ svg#graph{display:block}
 
 <header>
   <div class="kicker">Cloud Tracks · Data Pipeline</div>
-  <h1><span class="dot"></span>单匹马「请求链路」路径图</h1>
-  <p class="sub">以 <b>URL 为节点</b>、<b>数据处理为箭头</b>，展示抓取一匹马的完整逻辑。点击任一节点看它抓什么、怎么处理、产出哪些字段；切换下方<b>场景</b>，只有该场景真实会发的请求会被点亮（其余淡出）。</p>
+  <h1><span class="dot"></span>云迹「数据流水线」路径图</h1>
+  <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>，展示从建档到产出的完整抓取流水线。点击任一节点看它抓什么、怎么处理、产出哪些字段；切换下方<b>视图</b>，只点亮对应流水线（其余淡出）。</p>
 </header>
 
 <div class="ctl">
-  <span class="g-label">场景</span>
+  <span class="g-label">视图</span>
   <div class="segs" id="scenSegs">
-    <button class="seg on s1" data-s="1">① 基础 · 仅 netkeiba</button>
-    <button class="seg s2" data-s="2">② netkeiba 兜底 · 含 JBIS</button>
-    <button class="seg s3" data-s="3">③ 重赏 · 含本賞金</button>
+    <button class="seg on s1" data-s="1">① 全流程</button>
+    <button class="seg s2" data-s="2">② 基础部分</button>
+    <button class="seg s3" data-s="3">③ 竞赛部分</button>
   </div>
 </div>
 <div class="scen-desc" id="scenDesc"></div>
 
 <div class="legend">
-  <span class="lg"><span class="sw nk"></span><b>netkeiba</b> 主源</span>
-  <span class="lg"><span class="sw jb"></span><b>JBIS</b> 兜底</span>
-  <span class="lg"><span class="sw pr"></span><b>本賞金</b> 条件分支</span>
-  <span class="lg"><span class="sw mg"></span><b>合并产物</b></span>
+  <span class="lg"><span class="sw jb"></span><b>JBIS</b> 建档 / 血統</span>
+  <span class="lg"><span class="sw nk"></span><b>netkeiba</b> 列表 / 详情 / 成绩</span>
+  <span class="lg"><span class="sw sp"></span><b>SP 域</b> 比赛结果（格 / 本賞金）</span>
+  <span class="lg"><span class="sw sd"></span><b>studbook / 台账</b> 意味・海外</span>
+  <span class="lg"><span class="sw mg"></span><b>合并产物 / 编排</b></span>
   <span class="lg"><span class="dash"></span><b>条件触发</b>（虚线 · 未必每次都发）</span>
 </div>
 
 <div class="graph-card">
-  <svg id="graph" width="1100" height="1240" role="img" aria-label="单匹马请求链路路径图"></svg>
+  <svg id="graph" width="1200" height="1520" role="img" aria-label="云迹数据流水线路径图"></svg>
 </div>
 
 <div class="detail-panel" id="detailPanel" hidden>
@@ -146,19 +148,19 @@ svg#graph{display:block}
 </div>
 
 <div class="reqbar">
-  <h4>请求计数（当前场景 · 单匹马单次完整抓取）</h4>
+  <h4>网络请求类型（当前视图 · 一次完整流水线会触发的请求）</h4>
   <div class="req-meter">
-    <div class="req-total" id="reqTotal">0<small> 次请求</small></div>
+    <div class="req-total" id="reqTotal">0<small> 类请求</small></div>
     <div class="req-list" id="reqList"></div>
   </div>
 </div>
 
 <div class="foot">
-  <span>触发入口</span>
-  <span class="b">scrape_netkeiba.py --all / --name / --horse</span>
-  <span class="b">scrape_jbis.py --all / --horse</span>
-  <span class="b">adapters/netkeiba_races.py update()</span>
-  <span class="b">build-data.py</span>
+  <span>统一入口</span>
+  <span class="b">run_update.py --init / --basic / --races / --horse / --ci …</span>
+  <span class="b">run_full_test.py</span>
+  <span class="b">scripts/basic/run_all.py</span>
+  <span class="b">scripts/races/run_all.py</span>
 </div>
 
 </div>
@@ -166,124 +168,148 @@ svg#graph{display:block}
 <script>
 "use strict";
 /* ────────────────────────────────────────────────────────────
-   数据模型：节点 = URL；边 = 数据处理（箭头）
-   c: nk=netkeiba绿 / jb=JBIS钢蓝 / pr=本賞金琥珀 / mg=合并墨
-   scen: 该节点/边在哪个场景点亮 (1基础 2含JBIS 3含本賞金)
-   布局：左右两列 + 底部全宽 merge 栏；合并边沿左右边槽正交走线，避免穿节点。
+   数据模型：节点 = 脚本 / 数据源；边 = 数据流向（箭头）
+   c: nk=netkeiba绿 / jb=JBIS钢蓝 / sd=studbook&台账琥珀 / sp=SP域酒红 / mg=合并&编排墨
+   scen: 该节点/边在哪个视图点亮 (1全流程 2基础 3竞赛)
+   布局：顶部入口/建档全宽 → 左右两列（基础 / 竞赛）→ 底部校验/产物全宽。
    ──────────────────────────────────────────────────────────── */
-const W=1100, H=1240, NH=60;
-const C={nk:'#3f8f78',jb:'#4a6fa5',pr:'#c98a3d',mg:'#34302a'};
-const COL={L:90, LW:320, R:600, RW:320};   // left/right column x + width
-const MRG={y:1120, h:60, x:90, w:920};     // merge bar
+const W=1200, H=1520, NH=60;
+const C={nk:'#3f8f78',jb:'#4a6fa5',sd:'#c98a3d',sp:'#8a5a6f',mg:'#34302a'};
+const COL={L:70, LW:470, R:660, RW:470};   // left/right column x + width
 
 const NODES={
-  // 1 定位
-  n1:{col:'L',x:COL.L,y:70,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 列表页',
-      url:'db.netkeiba.com/horse/list.html?sire_id=2017101835&range=all&page={n}',
-      fn:'parse_list_row()',tag:'LOCATE · 主',
-      out:'nk_id, 馬名, 性別, 生年, 母名, 母父名, 調教師, 馬主, 生産牧場, 総賞金',
-      role:'全量或 --name 时逐页翻找，从列表行拿到 nk_id 与基础概要。'},
-  n2:{col:'R',x:COL.R,y:70,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 産駒一覧',
+  // 0 统一入口（全宽）
+  g0:{x:70,y:40,w:1060,c:'mg',scen:[1,2,3],nm:'run_update.py / run_full_test.py',
+      url:'统一更新入口 · 9 种策略互斥；输出进 test-logs/*.log',
+      fn:'init / basic / races / horse / races-force / check / since / ledger / ci',tag:'ENTRY · 编排',
+      out:'按策略调度下方各环节（--ci 额外 git 提交 data/）',
+      role:'日常与 GitHub Actions 的调用入口。--init 复用 run_full_test.py 从 0 全量；其余按策略串起 基础/竞赛/校验。'},
+  // 1 建档（全宽）
+  g1:{x:70,y:130,w:1060,c:'jb',scen:[1,2,3],nm:'build_registry.py · 建档',
       url:'www.jbis.or.jp/horse/{sid}/sire/progeny/?year={y}&page={n}',
-      fn:'parse_progeny_rows()',tag:'LOCATE · 兜底',
-      out:'{馬名:{jbis_id, 生年}}',
-      role:'netkeiba 无此马时的兜底定位，按 5 个生年逐页扫産駒，拿到 jbis_id。'},
-  n3:{col:'R',x:COL.R,y:170,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 搜索页',
-      url:'www.jbis.or.jp/horse/result/?keyword={马名}&match=exact',
-      fn:'search_candidates()',tag:'LOCATE · 单匹',
-      out:'前 5 个 jbis_id 候选',
-      role:'--name 单匹时按马名精确搜索，取前 5 候选（用于防同名异马）。'},
-  // 2 主干 netkeiba（左列）
-  n4:{col:'L',x:COL.L,y:330,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 马详情页',
-      url:'db.netkeiba.com/horse/{nk_id}/',
-      fn:'parse_detail()',tag:'MAIN',
-      out:'登録状態,性別,毛色,馬齢,生年月日,産地,馬主,調教師,生産牧場,通算成績,獲得賞金,英文名,セリ取引価格',
-      role:'主源基础信息（EUC-JP 解码）。netkeiba 有这匹马就走这里。'},
-  n5:{col:'L',x:COL.L,y:410,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 血統页',
-      url:'db.netkeiba.com/horse/ped/{nk_id}/',
-      fn:'parse_pedigree()',tag:'MAIN',
-      out:'血統树（DFS重建 父/母各5层）+ fno + cross',
-      role:'5代血統表，DFS 先序重建二叉树 → BFS 分层；含 FNo 与クロス。'},
-  n6:{col:'L',x:COL.L,y:490,w:COL.LW,c:'nk',scen:[1,2,3],nm:'netkeiba 成绩页',
-      url:'db.netkeiba.com/horse/result/{nk_id}/',
-      fn:'parse_races()',tag:'MAIN',
-      out:'逐场契约D记录（含 race_id / jockey_id；本賞金不在此产出）',
-      role:'戦績 tab，逐场成绩 → netkeiba_races.json。本賞金要靠第 4 段单独抓。'},
-  // 3 兜底 JBIS（右列）
-  n7:{col:'R',x:COL.R,y:330,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 马详情页',
-      url:'www.jbis.or.jp/horse/{jbis_id}/',
-      fn:'parse_detail()',tag:'FALLBACK',
-      out:'馬名,生年月日,総賞金,…（补 netkeiba 缺字段）',
-      role:'netkeiba 无此马时用 JBIS 兜底详情。'},
-  n8:{col:'R',x:COL.R,y:410,w:COL.RW,c:'jb',scen:[2,3],nm:'JBIS 血統页',
+      fn:'parse_progeny_page()',tag:'LOCATE · 建档',
+      out:'jbis_id, 生年, 馬名, 母名 → basic.json（唯一性=(母名,生年)）',
+      role:'从 JBIS 産駒一覧拉取コントレイル子嗣建档，分配自增业务主键 id，后续全部按 id 关联。'},
+  // 2 基础部分（左列）
+  b1:{x:COL.L,y:260,w:COL.LW,c:'jb',scen:[1,2],nm:'fetch_pedigree.py · 血統',
       url:'www.jbis.or.jp/horse/{jbis_id}/pedigree/',
-      fn:'parse_pedigree() + is_contrail_progeny()',tag:'FALLBACK',
-      out:'血統树 + 校验父侧=コントレイル（防同名异马）',
-      role:'5代血統图，抓后校验父侧 G1 是否コントレイル，防同名异马。'},
-  // 4 本賞金
-  n9:{col:'L',x:COL.L,y:800,w:COL.LW,c:'pr',scen:[3],nm:'SP 域比赛结果页（中央/海外）',
-      url:'race.netkeiba.com/race/result.html?race_id={id}',
-      fn:'parse_sp_honsho()',tag:'PRIZE · 主源',
-      out:'本賞金阶梯[1着~5着] → 按该马着順取档',
-      role:'重赏 1/2着 才发。读「本賞金:…万円」（付加賞-free）。'},
-  n10:{col:'R',x:COL.R,y:800,w:COL.RW,c:'pr',scen:[3],nm:'SP 域比赛结果页（地方 NAR）',
-      url:'nar.netkeiba.com/race/result.html?race_id={id}',
-      fn:'parse_sp_honsho_nar()',tag:'PRIZE · 地方',
-      out:'本賞金阶梯（十进制浮点、顿号分隔）→ 取档',
-      role:'地方（NAR）重赏走独立解析器，格式不同。'},
-  n11:{col:'L',x:COL.L,y:900,w:COL.LW,c:'pr',scen:[3],nm:'db 域比赛页（回退）',
-      url:'db.netkeiba.com/race/{id}/ · nar.netkeiba.com/race/{id}/',
-      fn:'parse_race_page()',tag:'PRIZE · 回退',
-      out:'该马自己的 賞金 行（可能含付加賞）',
-      role:'SP 解析失败才回退；best-effort 取该马着順的賞金。'},
-  // 5 汇入（merge 全宽栏）
-  n12:{x:MRG.x,y:MRG.y,w:MRG.w,h:MRG.h,c:'mg',scen:[1,2,3],nm:'build-data.py · merge',
-      url:'读 netkeiba.json / jbis*.json / netkeiba_races.json / google_ledger.csv',
-      fn:'merge() + attach_races() + registry 映射',tag:'MERGE',
-      out:'basic.json（前端唯一数据源）',
-      role:'registry 映射 (nk_id/jbis_id→本地id)，关联比赛数据，落 basic.json。'},
+      fn:'parse_pedigree()',tag:'BASIC · 并发①',
+      out:'data/pedigree/{id}.json（父/母 5 代 + fno + cross）',
+      role:'按 id 抓 JBIS 血統页，写血統文件并回填 pedigree_file。与 nk_id / studbook 真并行。'},
+  b2:{x:COL.L,y:340,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_nk_id.py · netkeiba 列表',
+      url:'db.netkeiba.com/horse/list.html?sire_id={sid}&limit=100&page={n}',
+      fn:'fetch_list_all() → (母名,生年) 匹配',tag:'BASIC · 并发②',
+      out:'nk_id → basic.json；另取列表页 総賞金(万円) 列 → 総賞金',
+      role:'翻遍 netkeiba 列表全部分页，只收集指定生年（默认 2023/2024）的马，按 (母名,生年) 匹配回写 nk_id，并顺带抓取列表页的 総賞金(万円)（中央+地方总赏金）。'},
+  b3:{x:COL.L,y:420,w:COL.LW,c:'sd',scen:[1,2],nm:'fetch_studbook.py · 意味・由来',
+      url:'www.studbook.jp/users/ja/SearchBameiList → Honba?sid=',
+      fn:'get_hid() → get_progeny_paged() → get_honba_meaning()',tag:'BASIC · 并发③',
+      out:'馬名意味 → basic.json',
+      role:'studbook 独立链路：搜父名定位 hid，按生年翻产驹，再读每匹 Honba 的「意味・由来」，按馬名匹配回填。'},
+  b4:{x:COL.L,y:500,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_detail.py · netkeiba 详情',
+      url:'db.netkeiba.com/horse/{nk_id}/（EUC-JP）',
+      fn:'parse_detail()',tag:'BASIC · 阶段2',
+      out:'登録状態,性別,毛色,馬齢,生年月日,産地,馬主,調教師,生産牧場,通算成績,獲得賞金(中央),獲得賞金(地方),欧字馬名,セリ取引価格',
+      role:'逻辑上依赖 nk_id 就绪，放第二阶段。已有关键字段则跳过（增量）。'},
+  b5:{x:COL.L,y:580,w:COL.LW,c:'mg',scen:[1,2],nm:'merge_basic.py · 合并',
+      url:'读 _tmp/{pedigree,nk_id,studbook,detail}.json',
+      fn:'apply() 按 id 回填字段 + 字段重排',tag:'BASIC · MERGE',
+      out:'回写 basic.json → 删缓存',
+      role:'把并发三件套 + 详情的独立缓存统一合并进 basic.json，并按标准字段顺序重排。'},
+  b6:{x:COL.L,y:660,w:COL.LW,c:'mg',scen:[1,2,3],nm:'basic.json · 共享数据源',
+      url:'data/basic.json（basic/v1 schema）',
+      fn:'load_basic() / save_basic()',tag:'DATA · 中枢',
+      out:'horses[]（每匹含 id/nk_id/jbis_id/馬名/母名/生年/血統/詳情…）',
+      role:'基础部分产物，也是竞赛部分与校验的输入源。建档与基础合并都写它。'},
+  // 3 竞赛部分（右列）
+  c1:{x:COL.R,y:260,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_detail.py · 详情判变',
+      url:'db.netkeiba.com/horse/{nk_id}/（EUC-JP）',
+      fn:'parse_detail() + 通算成績判变',tag:'RACES · ①',
+      out:'detail.json（登録状態/性別/…/獲得賞金(中央)/獲得賞金(地方)/…）+ changed.json',
+      role:'对全部有 nk_id 的马抓详情，解析中央与地方的獲得賞金；通算成績空白折叠后精确比较，有变化才标记为成绩增量目标。'},
+  c2:{x:COL.R,y:340,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_races.py · 成绩增量',
+      url:'db.netkeiba.com/horse/result/{nk_id}/ + SP 比赛页回填格/条件',
+      fn:'parse_races() → to_contract_b() + enrich_grade_cond()',tag:'RACES · ②',
+      out:'races.json（新增逐场记录，含 race_id/jockey_id）',
+      role:'只抓 判变 / 无文件 / 数据缺失 的马；与已有文件按比赛键去重。新增记录回填格与条件（抓 SP 页图标 + RaceData02）。'},
+  c3:{x:COL.R,y:420,w:COL.RW,c:'sp',scen:[1,3],nm:'fetch_prize.py · 本賞金',
+      url:'race.netkeiba.com/race/result.html?race_id={id} · nar.netkeiba.com/…',
+      fn:'parse_honsho() / parse_honsho_nar()',tag:'RACES · ③',
+      out:'prize.json（该马着順本賞金）→ 収得計算用',
+      role:'只处理新增记录里的 重赏 1/2着（中央 GI~JGIII、地方 JpnI~III）；按场地选源解析阶梯，取该马着順那档。'},
+  c4:{x:COL.R,y:500,w:COL.RW,c:'sd',scen:[1,3],nm:'fetch_ledger.py · 台账海外',
+      url:'docs.google.com/spreadsheets/…/export?format=csv（比赛台账）',
+      fn:'fetch_rows() → coerce_record() → 按馬名匹配',tag:'RACES · ④',
+      out:'ledger.json（新增海外记录）',
+      role:'拉取 Google Sheets 比赛台账 CSV，只保留海外场（venue_type=海外），按馬名匹配 basic.json 的马，与既有记录去重后补进逐场履历。'},
+  c5:{x:COL.R,y:580,w:COL.RW,c:'mg',scen:[1,3],nm:'merge_races.py · 合并',
+      url:'读 _tmp/{detail,changed,races,prize,ledger,failures}.json',
+      fn:'merge() + compute_shutoku / compute_shutoku_jpn',tag:'RACES · MERGE',
+      out:'data/races/{id}.json + 収得賞金 + 回填 basic.json → 删缓存',
+      role:'详情字段回填；新增成绩/台账记录按键去重并入 races 文件并附本賞金；由合并后完整履历统一计算 収得賞金（纯规则）。'},
+  c6:{x:COL.R,y:660,w:COL.RW,c:'mg',scen:[1,3],nm:'races 文件 + 収得賞金',
+      url:'data/races/{id}.json · basic.json 的 収得賞金/races_file',
+      fn:'racelib：compute_shutoku（中央） / compute_shutoku_jpn（地方）',tag:'DATA · 产物',
+      out:'每匹逐场履历 + 収得賞金（平地/障害/Jpn）',
+      role:'竞赛产物：逐场成绩文件 + 収得賞金。中央収得仅重赏 1/2着按本賞金×50%，非重赏 1着固定额；地方 Jpn 重赏按档位规则。'},
+  // 4 校验（全宽）
+  d1:{x:70,y:820,w:1060,c:'mg',scen:[1,2,3],nm:'check_data.py · 数据校验',
+      url:'读 basic.json + data/pedigree/* + data/races/*',
+      fn:'引用完整性 + 通算战数 vs 文件出赛数 + 重复检测 + 填充统计',tag:'CHECK',
+      out:'check_report.md（--fix 自动补跑对应环节）',
+      role:'校验引用文件存在、比赛数据是否缺（通算战数>文件出赛）、重复比赛记录，并统计字段填充。--fix 可自动补跑血統/nk_id/成绩。'},
+  // 5 产物（全宽）
+  e1:{x:70,y:900,w:1060,c:'mg',scen:[1,2,3],nm:'前端数据产物',
+      url:'data/basic.json · data/races/{id}.json · data/pedigree/{id}.json · data/fetch_log.csv',
+      fn:'被 page/ 前端读取渲染',tag:'OUTPUT',
+      out:'页面数据源 + 风控观测日志',
+      role:'全部数据落 data/ 下；fetch_log.csv 记录每次请求的域名/状态/耗时用于风控调优。'},
 };
-// 统一 height（merge 用 MRG.h，其余 NH）
+// 统一 height
 Object.keys(NODES).forEach(k=>{ if(!NODES[k].h) NODES[k].h=NH; });
 
-/* 每条边：from=从源节点哪一侧出发(L/R/B)，via=正交拐点(绝对坐标)，to=进目标哪一侧(L/R/T)
-   所有线段相邻两点共享 x 或 y（正交），且绕开节点（用左右边槽走线）。 */
+/* 每条边：from=源节点哪侧(L/R/B)，via=正交拐点(绝对坐标)，to=进目标哪侧(L/R/T) */
 const EDGES=[
-  // 定位 → 主干 / 兜底
-  {s:'n1',t:'n4',l:'nk_id → 抓详情',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
-  {s:'n1',t:'n2',l:'netkeiba 无马 → 兜底定位',cond:true,scen:[2,3], from:'R', via:[[600,100]], to:'L'},
-  {s:'n2',t:'n7',l:'jbis_id → 抓详情',cond:false,scen:[2,3], from:'R', via:[[1070,100],[1070,360]], to:'L'},
-  {s:'n3',t:'n7',l:'jbis_id → 抓详情',cond:true,scen:[2,3], from:'B', via:[], to:'T'},
-  // 主干
-  {s:'n4',t:'n5',l:'nk_id → 抓血統',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
-  {s:'n5',t:'n6',l:'nk_id → 抓成绩',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
-  {s:'n7',t:'n8',l:'jbis_id → 抓血統',cond:false,scen:[2,3], from:'B', via:[], to:'T'},
-  // 成绩 → 本賞金
-  {s:'n6',t:'n9',l:'backfill_honsho · race_id',cond:true,scen:[3], from:'B', via:[], to:'T'},
-  {s:'n6',t:'n10',l:'地方重赏 · race_id',cond:true,scen:[3], from:'R', via:[[410,770],[600,770]], to:'L'},
-  // 本賞金 → 回退
-  {s:'n9',t:'n11',l:'SP 解析失败 → 回退',cond:true,scen:[3], from:'B', via:[], to:'T'},
-  {s:'n10',t:'n11',l:'SP 解析失败 → 回退',cond:true,scen:[3], from:'B', via:[[760,1000],[250,1000]], to:'B'},
-  // 各源 → merge（左右边槽）
-  {s:'n4',t:'n12',l:'详情 → merge',cond:false,scen:[1,2,3], from:'L', via:[[40,360],[40,1150]], to:'L'},
-  {s:'n5',t:'n12',l:'血統 → merge',cond:false,scen:[1,2,3], from:'L', via:[[40,440],[40,1150]], to:'L'},
-  {s:'n6',t:'n12',l:'成绩 → attach_races',cond:false,scen:[1,2,3], from:'L', via:[[40,520],[40,1150]], to:'L'},
-  {s:'n7',t:'n12',l:'详情 → merge',cond:true,scen:[2,3], from:'R', via:[[1070,360],[1070,1150]], to:'R'},
-  {s:'n8',t:'n12',l:'血統 → merge',cond:true,scen:[2,3], from:'R', via:[[1070,440],[1070,1150]], to:'R'},
-  {s:'n9',t:'n12',l:'本賞金写回 → 収得',cond:true,scen:[3], from:'L', via:[[40,830],[40,1150]], to:'L'},
-  {s:'n10',t:'n12',l:'本賞金写回 → 収得',cond:true,scen:[3], from:'R', via:[[1070,830],[1070,1150]], to:'R'},
-  {s:'n11',t:'n12',l:'回退賞金 → 収得',cond:true,scen:[3], from:'L', via:[[40,930],[40,1150]], to:'L'},
+  // 入口 → 建档
+  {s:'g0',t:'g1',l:'--basic / --init / --ci → 建档',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
+  // 建档 → 基础并发三件套
+  {s:'g1',t:'b1',l:'建档 → 抓血統',cond:false,scen:[1,2], from:'L', via:[[24,160],[24,290]], to:'L'},
+  {s:'g1',t:'b2',l:'建档 → 找 nk_id',cond:false,scen:[1,2], from:'L', via:[[24,160],[24,370]], to:'L'},
+  {s:'g1',t:'b3',l:'建档 → 抓意味',cond:false,scen:[1,2], from:'L', via:[[24,160],[24,450]], to:'L'},
+  // 建档 → 竞赛入口（basic 已建好）
+  {s:'g1',t:'c1',l:'--races 直接进竞赛',cond:true,scen:[1,3], from:'R', via:[[1130,160],[1130,290]], to:'R'},
+  // 基础：并发三件套 → merge_basic
+  {s:'b2',t:'b4',l:'nk_id 就绪 → 详情',cond:false,scen:[1,2], from:'B', via:[], to:'T'},
+  {s:'b1',t:'b5',l:'血統引用 → merge',cond:false,scen:[1,2], from:'B', via:[], to:'T'},
+  {s:'b3',t:'b5',l:'意味 → merge',cond:false,scen:[1,2], from:'B', via:[[305,480],[305,580]], to:'L'},
+  {s:'b4',t:'b5',l:'详情 → merge',cond:false,scen:[1,2], from:'B', via:[], to:'T'},
+  // merge_basic → basic.json
+  {s:'b5',t:'b6',l:'合并 → 写回 basic.json',cond:false,scen:[1,2], from:'B', via:[], to:'T'},
+  // basic.json → 竞赛流水线（读中枢）
+  {s:'b6',t:'c1',l:'读 basic.json（id/nk_id）',cond:false,scen:[1,3], from:'R', via:[[630,690],[630,290]], to:'L'},
+  {s:'b6',t:'c4',l:'台账按馬名匹配 basic',cond:false,scen:[1,3], from:'R', via:[[630,690],[630,530]], to:'L'},
+  // 竞赛流水线
+  {s:'c1',t:'c2',l:'判变马 → 成绩增量',cond:false,scen:[1,3], from:'B', via:[], to:'T'},
+  {s:'c2',t:'c3',l:'新增重赏1/2着 → 本賞金',cond:true,scen:[1,3], from:'B', via:[], to:'T'},
+  {s:'c3',t:'c5',l:'本賞金 → merge',cond:false,scen:[1,3], from:'B', via:[], to:'T'},
+  {s:'c4',t:'c5',l:'海外记录 → merge',cond:false,scen:[1,3], from:'B', via:[], to:'T'},
+  // merge_races → 产物
+  {s:'c5',t:'c6',l:'合并 → races 文件 + 収得',cond:false,scen:[1,3], from:'B', via:[], to:'T'},
+  // 校验 / 产物（读两侧）
+  {s:'b6',t:'d1',l:'校验 basic',cond:false,scen:[1,2,3], from:'L', via:[[24,720],[24,850]], to:'L'},
+  {s:'c6',t:'d1',l:'校验 races',cond:false,scen:[1,3], from:'R', via:[[1130,720],[1130,850]], to:'R'},
+  {s:'d1',t:'e1',l:'数据就绪 → 前端产物',cond:false,scen:[1,2,3], from:'B', via:[], to:'T'},
 ];
 
 const SCEN_DESC={
-  1:'netkeiba 主源一条链：列表定位 → 详情 → 血統 → 成绩 → 合并。每日最常用路径。',
-  2:'netkeiba 找不到时的兜底场景：追加 JBIS 産駒一覧/搜索定位 + 详情 + 血統。',
-  3:'该马跑过重赏且 1/2 着：追加比赛页抓「本賞金」→ 供収得計算。',
+  1:'全流程：建档 → 基础并发（血統/nk_id/意味 ∥）+ 详情 → basic.json → 竞赛（判变→成绩→本賞金→台账）→ 校验 → 产物。',
+  2:'基础部分（scripts/basic/）：建档 → 并发三件套 + 详情 → merge_basic → basic.json。',
+  3:'竞赛部分（scripts/races/）：读 basic.json → 详情判变 → 成绩增量 → 本賞金 → 台账海外 → merge_races → races 文件 + 収得賞金。',
 };
 const REQ={
-  1:['netkeiba 列表','netkeiba 详情','netkeiba 血統','netkeiba 成绩'],
-  2:['JBIS 産駒一覧','JBIS 详情','JBIS 血統'],
-  3:['SP 比赛页(本賞金)','NAR 比赛页(地方)','db 回退比赛页'],
+  1:['JBIS 産駒一覧(建档)','JBIS 血統','netkeiba 列表(nk_id)','studbook 意味','netkeiba 详情','netkeiba 成绩','SP 比赛页(格/条件)','SP 比赛页(本賞金)','台账 CSV(海外)'],
+  2:['JBIS 産駒一覧(建档)','JBIS 血統','netkeiba 列表(nk_id)','studbook 意味','netkeiba 详情'],
+  3:['netkeiba 详情(判变)','netkeiba 成绩','SP 比赛页(格/条件)','SP 比赛页(本賞金)','台账 CSV(海外)'],
 };
 let scen=1;
 const svg=document.getElementById('graph');
@@ -302,8 +328,6 @@ function anchor(nid,side){
   if(side==='B') return [n.x+n.w/2, n.y+n.h];
   if(side==='T') return [n.x+n.w/2, n.y];
 }
-/* 解析 e.from/via/to 到绝对正交路径：
-   起点 = 源节点 from 侧锚点 → 各 via 拐点 → 终点 = 目标节点 to 侧锚点 */
 function buildPath(e){
   const start=anchor(e.s, e.from);
   const end=anchor(e.t, e.to);
@@ -315,18 +339,18 @@ function buildPath(e){
 
 /* ── stage band labels ── */
 const STAGE_BANDS=[
-  {y:24, t:'1 · 定位 LOCATE'},
-  {y:286,t:'2 · 主干 MAIN'},
-  {y:286,t:'3 · 兜底 FALLBACK', x:COL.R+20},
-  {y:756,t:'4 · 本賞金 PRIZE'},
-  {y:1078,t:'5 · 汇入 MERGE'},
+  {y:24,  t:'0 · 统一入口 ENTRY'},
+  {y:114, t:'1 · 建档 LOCATE'},
+  {y:240, t:'2 · 基础部分 BASIC（scripts/basic/ · 并发∥）'},
+  {y:240, t:'3 · 竞赛部分 RACES（scripts/races/ · 线性）', x:COL.R+6},
+  {y:800, t:'4 · 校验 CHECK'},
+  {y:882, t:'5 · 产物 OUTPUT'},
 ];
 STAGE_BANDS.forEach(b=>{
   const t=el('text',{x:b.x||24,y:b.y,'class':'stage-tag',fill:'#b3ab9a','font-size':13});
   t.textContent=b.t;
 });
 
-/* ── 边几何：解析路径为点列，用于箭头方向 + 标签定位 ── */
 function pathPoints(e){
   const pts=[anchor(e.s,e.from)];
   for(const v of e.via) pts.push(v);
@@ -345,19 +369,16 @@ EDGES.forEach(e=>{
   const p=el('path',{d,stroke:'#ddd5c4','stroke-width':2});
   if(e.cond)p.setAttribute('stroke-dasharray','6 5');
   g.appendChild(p);
-  // 箭头方向 = 最后一段的方向；箭头置于终点锚点
   const pts=pathPoints(e);
   const end=pts[pts.length-1], prev=pts[pts.length-2];
   const ang=Math.atan2(end[1]-prev[1], end[0]-prev[0]);
   const arr=el('path',{'class':'arr',stroke:'#ddd5c4','stroke-width':2,'d':arrPath(end[0],end[1],ang)});
   g.appendChild(arr);
-  // 标签：置于路径中点（正交段中点取整）
   let mid;
   if(pts.length>=2){
     const p1=pts[Math.floor((pts.length-1)/2)], p2=pts[Math.ceil((pts.length-1)/2)];
     mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
   } else { mid=[end[0],end[1]]; }
-  const dx=pts.length>=2 ? pts[1][0]-pts[0][0] : 0;
   const lblX=mid[0], lblY=mid[1]-6;
   const t=el('text',{x:lblX,y:lblY,'text-anchor':'middle','class':'lbl'}); t.textContent=e.l;
   g.appendChild(t);
@@ -374,14 +395,14 @@ Object.keys(NODES).forEach(nid=>{
   const tag=el('text',{x:n.x+12,y:n.y+18,'class':'tag',fill:C[n.c]}); tag.textContent=n.tag; tab.appendChild(tag);
   const nm=el('text',{x:n.x+n.w/2,y:n.y+36,'text-anchor':'middle','class':'nm'}); nm.textContent=n.nm; tab.appendChild(nm);
   const u=el('text',{x:n.x+n.w/2,y:n.y+50,'text-anchor':'middle','class':'url'});
-  u.textContent=n.url.length>40?n.url.slice(0,40)+'…':n.url; tab.appendChild(u);
+  u.textContent=n.url.length>52?n.url.slice(0,52)+'…':n.url; tab.appendChild(u);
   const fn=el('text',{x:n.x+n.w/2,y:n.y+64,'text-anchor':'middle','class':'fn'}); fn.textContent='⟶ '+n.fn; tab.appendChild(fn);
   g.appendChild(tab);
   tab.addEventListener('click',()=>select(nid));
   tab.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();select(nid);}});
 });
 
-/* ── apply scenario ── */
+/* ── apply view ── */
 function applyScen(){
   const sc=scen;
   document.querySelectorAll('.node').forEach(g=>{
@@ -404,9 +425,9 @@ function applyScen(){
     l.setAttribute('fill',on?'#5f6757':'#b3ab9a');
     l.setAttribute('font-weight',on?'600':'400');
   });
-  document.getElementById('scenDesc').innerHTML='当前：<b>场景 '+sc+'</b> — '+SCEN_DESC[sc];
+  document.getElementById('scenDesc').innerHTML='当前：<b>视图 '+sc+'</b> — '+SCEN_DESC[sc];
   const list=REQ[sc];
-  document.getElementById('reqTotal').innerHTML=list.length+'<small> 次请求</small>';
+  document.getElementById('reqTotal').innerHTML=list.length+'<small> 类请求</small>';
   document.getElementById('reqList').innerHTML=list.map((x,i)=>
     `<span class="req-i"><span class="c">${String(i+1).padStart(2,'0')}</span>${x}</span>`).join('');
   const panel=document.getElementById('detailPanel');
@@ -419,7 +440,7 @@ function select(nid,noScroll){
   panel.dataset.n=nid;
   const num=document.getElementById('dpNum');
   num.className='dp-num '+n.c;
-  num.textContent=n.c==='nk'?'N':n.c==='jb'?'J':n.c==='pr'?'P':'M';
+  num.textContent=n.c==='nk'?'N':n.c==='jb'?'J':n.c==='sd'?'S':n.c==='sp'?'P':'M';
   document.getElementById('dpTitle').textContent=n.nm;
   document.getElementById('dpSub').textContent=n.url;
   const on=n.scen.includes(scen);
@@ -427,8 +448,8 @@ function select(nid,noScroll){
     ['URL',n.url,'plain',false],
     ['处理',n.fn,'plain',false],
     ['产出字段',n.out,'plain',false],
-    ['覆盖场景','1 基础 · 2 含JBIS · 3 含本賞金','plain',false],
-    ['本场景',on?'会请求此节点':'不会请求此节点','plain',on],
+    ['覆盖视图','1 全流程 · 2 基础 · 3 竞赛','plain',false],
+    ['本视图',on?'会参与此节点':'不参与此节点','plain',on],
   ];
   document.getElementById('dpBody').innerHTML=
     rows.map(([k,v,cls,tk])=>`<div class="dp-row"><div class="k">${k}</div><div class="v ${cls}">${tk?'<span class="tick">✔</span> ':''}${v}</div></div>`).join('')+

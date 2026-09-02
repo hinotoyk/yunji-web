@@ -215,7 +215,7 @@ async function renderDetail(h){
           ${h.性別?`<span class="badge ${h.性別==="牡"?"m":"f"}">${esc(h.性別)}</span>`:""}
           ${h.毛色?`<span class="badge">${esc(h.毛色)}</span>`:""}
           ${h.馬主?`<span class="badge">${esc(h.馬主)}</span>`:""}
-          ${h.総賞金?`<span class="badge prize">${esc(h.総賞金)}万円</span>`:""}
+          ${h.総賞金?`<span class="badge prize">${esc(h.総賞金)}</span>`:""}
         </div>
         ${h.通算成績?`<div class="sum">通算成绩 ${esc(h.通算成績)}${h.主な勝鞍?` · 主胜鞍 ${esc(h.主な勝鞍)}`:""}</div>`:""}
         ${RaceUI.statsHTML(h)}
