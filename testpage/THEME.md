@@ -102,6 +102,10 @@ testpage/
 
 ## 5. 应用到正式页面的约定（后续开发用）
 
+- **字体（已定稿）**：正文 `font-family:'Noto Sans SC','Noto Sans CJK SC','Geist','PingFang SC','Microsoft YaHei',sans-serif`，`font-size:16px; line-height:1.40; letter-spacing:0.10px`，`font-variant-numeric:tabular-nums` + `-webkit-font-smoothing:antialiased`。
+  - 中文默认**思源黑体 Noto Sans SC（本地自托管）**；拉丁/数字回退 Geist（本地）。
+  - 苹方 PingFang SC / 微软雅黑 Microsoft YaHei **仅作系统回退，不打包分发**。
+  - 本地字体资产与授权说明见 `UI优化记录.md` 模块 2（试衣间 fontlab.html 已随封版移除，不再保留）。
 - **统一使用上面这套 CSS 变量**，不要散落写死 hex。页面只需在 `<head>` 引入一份共享的 `pages/theme.css`（变量 + 基础组件样式），再按需写页面特有样式。
 - **数据语义色**约定（保证全站一致）：
   - 1着/胜 = `--primary`（青绿）

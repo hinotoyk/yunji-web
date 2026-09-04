@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>云迹 · 方案F×shadcn Neutral · 定稿主题</title>
+<link rel="stylesheet" href="pages/fonts/noto-sc.css">
 <style>
 /* ============================================================
  * 云迹 定稿主题：方案 F 青绿 × shadcn Neutral 底色（仅亮色）
@@ -25,11 +26,17 @@
   --chart-1:177 88.7% 34.7%; --chart-2:201 86.9% 44.9%; --chart-3:23 80.5% 53.7%; --chart-4:177 86.7% 41.2%; --chart-5:201 60% 62%;
 }
 :root{color-scheme:light}
+@font-face{
+  font-family:'Geist';
+  src:url('pages/fonts/geist-latin.woff2') format('woff2');
+  font-weight:100 900; font-style:normal; font-display:swap;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   background:hsl(var(--background)); color:hsl(var(--foreground));
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',Roboto,'Helvetica Neue',Arial,sans-serif;
-  font-size:14px; line-height:1.5; padding-bottom:70px; transition:background .2s,color .2s;
+  font-family:'Noto Sans SC','Noto Sans CJK SC','Geist','PingFang SC','Microsoft YaHei',sans-serif;
+  font-size:16px; line-height:1.40; letter-spacing:0.10px; padding-bottom:70px; transition:background .2s,color .2s;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; font-variant-numeric:tabular-nums;
 }
 .wrap{max-width:920px;margin:0 auto;padding:0 24px}
 .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:22px 0 6px}

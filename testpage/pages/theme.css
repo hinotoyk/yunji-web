@@ -6,6 +6,9 @@
  * 说明见 testpage/THEME.md
  * ============================================================ */
 
+/* 本地思源黑体 Noto Sans SC（101 子集按 unicode-range 分段按需加载；@import 须置于所有规则之前） */
+@import url('fonts/noto-sc.css');
+
 /* ---------- 亮色变量（定稿） ---------- */
 :root{
   --background:0 0% 100%; --foreground:0 0% 3.9%;
@@ -22,13 +25,27 @@
 }
 :root{color-scheme:light}
 
+/* ---------- 字体（定稿：用户拍板方案） ----------
+ * 中文默认思源黑体 Noto Sans SC（本地自托管）；拉丁/数字回退到 Geist（自托管）或系统。
+ * 苹方 PingFang SC / 微软雅黑 Microsoft YaHei 仅作系统回退，不打包分发。
+ * 详见 testpage/UI优化记录.md 模块 2。 */
+@font-face{
+  font-family:'Geist';
+  src:url('fonts/geist-latin.woff2') format('woff2');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
 /* ---------- 基础 ---------- */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{
   background:hsl(var(--background)); color:hsl(var(--foreground));
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',Roboto,'Helvetica Neue',Arial,sans-serif;
-  font-size:14px; line-height:1.5;
+  font-family:'Noto Sans SC','Noto Sans CJK SC','Geist','PingFang SC','Microsoft YaHei',sans-serif;
+  font-size:16px; line-height:1.40; letter-spacing:0.10px;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-variant-numeric:tabular-nums;
 }
 a{color:hsl(var(--primary));text-decoration:none}
 
@@ -39,7 +56,7 @@ a{color:hsl(var(--primary));text-decoration:none}
 .btn.out{background:transparent;border-color:hsl(var(--border));color:hsl(var(--foreground))}
 .btn.ghost{background:transparent;color:hsl(var(--foreground))}
 select,input{height:36px;padding:0 10px;border-radius:6px;border:1px solid hsl(var(--input));background:hsl(var(--background));color:hsl(var(--foreground));font-size:13px}
-.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid hsl(var(--border));color:hsl(var(--muted-foreground));background:hsl(var(--secondary))}
+.badge{display:inline-block;font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid hsl(var(--border));color:hsl(var(--foreground));background:hsl(var(--secondary))}
 .badge.acc{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:transparent}
 
 /* 卡片 / KPI / 表格 / 标签 / 图表（供子页面复用） */
@@ -48,16 +65,17 @@ select,input{height:36px;padding:0 10px;border-radius:6px;border:1px solid hsl(v
 .kpi{padding:16px}
 .kpi .v{font-size:24px;font-weight:600}
 .kpi .v.hi{color:hsl(var(--primary))}
-.kpi .k{font-size:11px;color:hsl(var(--muted-foreground));margin-top:4px}
+.kpi .k{font-size:12.5px;color:hsl(var(--secondary-foreground));margin-top:4px}
 .tblwrap{overflow-x:auto;border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--card));color:hsl(var(--card-foreground))}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:hsl(var(--muted)/.4);font-weight:500;font-size:11px;letter-spacing:.5px;text-align:left;padding:9px 13px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead th{background:hsl(var(--muted)/.4);font-weight:600;font-size:12.5px;letter-spacing:.5px;text-align:left;padding:9px 13px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
 tbody td{padding:8px 13px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
 tbody tr:last-child td{border-bottom:none}
-tbody tr.sub td{background:hsl(var(--muted)/.25);color:hsl(var(--muted-foreground));font-size:12px}
+tbody tr.sub td{background:hsl(var(--muted)/.25);color:hsl(var(--muted-foreground));font-size:12.5px}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 td.win{color:hsl(var(--primary));font-weight:600}
-.sec-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:hsl(var(--muted-foreground));margin:26px 0 12px}
+.sec-title{font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:hsl(var(--secondary-foreground));margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+.sec-title::before{content:"";width:4px;height:16px;border-radius:2px;background:hsl(var(--primary));flex:none}
 
 /* ---------- 信息头（单马页复用） ---------- */
 .hinfo{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
@@ -73,12 +91,12 @@ td.win{color:hsl(var(--primary));font-weight:600}
 /* ---------- 字段分组（label/value 紧凑栅格） ---------- */
 .fieldgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:hsl(var(--border));border:1px solid hsl(var(--border));border-radius:10px;overflow:hidden}
 .field{background:hsl(var(--card));padding:12px 16px}
-.field .k{font-size:10.5px;letter-spacing:.5px;color:hsl(var(--muted-foreground));text-transform:uppercase;margin-bottom:3px}
+.field .k{font-size:12px;letter-spacing:.5px;color:hsl(var(--secondary-foreground));text-transform:uppercase;margin-bottom:3px}
 .field .v{font-size:14px;font-weight:500;color:hsl(var(--foreground))}
 .field .v.sub{font-size:12.5px;font-weight:400;color:hsl(var(--muted-foreground))}
 
 /* ---------- 空态提示 ---------- */
-.hint-empty{text-align:center;padding:60px 20px;color:hsl(var(--muted-foreground));font-size:13px}
+.hint-empty{text-align:center;padding:60px 20px;color:hsl(var(--muted-foreground));font-size:13.5px}
 
 /* ---------- 手机（≤768px）：非桌面即手机 ---------- */
 @media (max-width:768px){

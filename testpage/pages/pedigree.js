@@ -120,17 +120,17 @@ YJ.pedigree = (function () {
 .pcell:not(.inline) .meta{display:block;font-size:9px;margin-top:1px;overflow:hidden;text-overflow:ellipsis}
 .pcell.inline{flex-direction:row;align-items:center;gap:6px}
 .pcell.inline .meta{flex:none;font-size:10px;margin-left:auto;padding-left:6px}
-.pedi-foot{margin-top:8px;font-size:11px;color:hsl(var(--muted-foreground));display:flex;gap:16px;flex-wrap:wrap}
+.pedi-foot{margin-top:8px;font-size:12.5px;color:hsl(var(--secondary-foreground));display:flex;gap:16px;flex-wrap:wrap}
 .pedi-foot b{color:hsl(var(--primary));font-weight:600}
-.pg-empty{color:hsl(var(--muted-foreground));font-size:12.5px;padding:10px 0}
-.pg-hint{font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px}
+.pg-empty{color:hsl(var(--muted-foreground));font-size:13px;padding:10px 0}
+.pg-hint{font-size:12px;color:hsl(var(--secondary-foreground));margin-top:8px}
 .pg-hint b{color:hsl(var(--primary));font-weight:500}
 
 /* 简约版：完整版只取前 2 代，紧凑适配容器（高度≈完整版同结构，行高压到 2/3） */
-.pside-simple{grid-template-columns:repeat(2,1fr);min-width:0;grid-auto-rows:15px;border-radius:6px}
+.pside-simple{grid-template-columns:repeat(2,1fr);min-width:0;grid-auto-rows:17px;border-radius:6px}
 .pside-simple .pcell{padding:1px 8px}
-.pside-simple .pcell .name{font-size:11px}
-.pside-simple .pcell .meta{font-size:7px}
+.pside-simple .pcell .name{font-size:11.5px}
+.pside-simple .pcell .meta{font-size:8px}
 
 /* 弹窗壳（完整版，大弹窗可滚动，优先可读） */
 .pg-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px}
