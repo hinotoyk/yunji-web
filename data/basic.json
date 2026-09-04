@@ -1361,7 +1361,7 @@
     "Jpn": 0
    },
    "セリ取引価格": "3,300万円 (2023年 セレクトセール)",
-   "photo": "",
+   "photo": ["https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail"],
    "races_file": "data/races/40.json",
    "pedigree_file": "data/pedigree/40.json"
   },
@@ -4399,7 +4399,7 @@
    "生年": "2023",
    "馬名意味": "",
    "登録状態": "",
-   "性別": "牡",
+   "性別": "セン",
    "毛色": "芦毛",
    "馬齢": "",
    "生年月日": "2023年4月16日",
@@ -4802,7 +4802,7 @@
    "馬名": "ヴァンドレスト",
    "欧字馬名": "Vent de l'Est",
    "香港馬名": "",
-   "自译馬名": "",
+   "自译馬名": "东风驹",
    "母名": "イースト",
    "生年": "2024",
    "馬名意味": "東風（仏）",
@@ -4825,7 +4825,7 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": ["data/photos/142-1.jpg", "data/photos/142-2.jpg"],
    "races_file": "data/races/142.json",
    "pedigree_file": "data/pedigree/142.json"
   },

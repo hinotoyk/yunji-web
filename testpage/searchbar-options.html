@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜索栏 · 方案 A 预览 · 云迹</title>
+<link rel="stylesheet" href="pages/theme.css">
+<style>
+.page{max-width:860px;margin:0 auto;padding:24px 24px 80px}
+
+/* ---- 预览提示条（仅预览用，正式版不进入） ---- */
+.pv-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 6px;padding:12px 14px;border:1px dashed hsl(var(--border));border-radius:10px;background:hsl(var(--secondary)/.55)}
+.pv-top .t{font-size:11px;letter-spacing:2px;color:hsl(var(--muted-foreground));text-transform:uppercase;font-weight:600}
+.desc{font-size:12px;color:hsl(var(--muted-foreground));margin:2px 0 18px;line-height:1.7}
+.desc b{color:hsl(var(--primary));font-weight:600}
+.back{font-size:11px;color:hsl(var(--muted-foreground))}
+.back a{color:hsl(var(--primary));text-decoration:none}
+
+/* ---- 选中马预览小卡 ---- */
+.pick{display:flex;gap:14px;align-items:flex-start;margin-top:20px;padding:16px}
+.pick .ava{width:54px;height:54px;flex:none;border-radius:12px;background:hsl(var(--accent));color:hsl(var(--accent-foreground));display:flex;align-items:center;justify-content:center;font-size:27px}
+.pick .pn{font-size:18px;font-weight:700;line-height:1.25}
+.pick .pm{display:flex;align-items:center;gap:8px;font-size:12px;color:hsl(var(--muted-foreground));margin-top:5px;flex-wrap:wrap}
+.pick .pm .pmx{display:inline-flex;align-items:center;gap:4px}
+.pick .pc{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pick .pc i{font-style:normal;font-size:10.5px;padding:2px 8px;border-radius:6px;background:hsl(var(--muted)/.55);color:hsl(var(--muted-foreground))}
+.pick .pc i b{color:hsl(var(--foreground));font-weight:500;margin-right:4px}
+.pick .ph{font-size:10.5px;letter-spacing:1px;color:hsl(var(--muted-foreground));margin-top:8px;text-transform:uppercase}
+.empty-note{text-align:center;padding:34px 16px;color:hsl(var(--muted-foreground));font-size:12.5px}
+
+/* ================= 方案 A · 单框全字段智能搜索 ================= */
+.sb-a{position:relative;margin-bottom:6px}
+.sb-a .box{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border:1px solid hsl(var(--input));border-radius:10px;background:hsl(var(--card));transition:border-color .15s,box-shadow .15s}
+.sb-a .box:hover{border-color:hsl(var(--border)/.6)}
+.sb-a .box:focus-within{border-color:hsl(var(--primary));box-shadow:0 0 0 3px hsl(var(--ring)/.16),0 2px 8px rgba(0,0,0,.04)}
+.sb-a .box .ic{color:hsl(var(--muted-foreground));flex:none;display:flex}
+.sb-a .box input{flex:1;min-width:0;border:none;outline:none;background:transparent;color:hsl(var(--foreground));font-size:13.5px}
+.sb-a .box input::placeholder{color:hsl(var(--muted-foreground)/.65);font-size:12.5px}
+.sb-a .box .cnt{flex:none;font-size:11px;font-weight:600;color:hsl(var(--muted-foreground));background:hsl(var(--muted)/.6);padding:2px 8px;border-radius:99px;font-variant-numeric:tabular-nums;transition:color .12s,background .12s}
+.sb-a .box .cnt.on{color:hsl(var(--primary));background:hsl(var(--accent))}
+.sb-a .box .clear{flex:none;width:22px;height:22px;border:none;border-radius:6px;background:hsl(var(--muted));color:hsl(var(--muted-foreground));cursor:pointer;font-size:12px;line-height:1;display:none}
+.sb-a .box .clear.on{display:block}
+.sb-a .box .clear:hover{background:hsl(var(--muted)/.8);color:hsl(var(--foreground))}
+.sb-a .drop{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;max-height:360px;overflow-y:auto;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.05);display:none}
+.sb-a .drop.show{display:block;animation:yjDropIn .15s ease}
+.sb-a .drop::-webkit-scrollbar{width:8px}
+.sb-a .drop::-webkit-scrollbar-thumb{background:hsl(var(--border));border-radius:99px;border:2px solid hsl(var(--card))}
+.sb-a .drop::-webkit-scrollbar-thumb:hover{background:hsl(var(--muted-foreground)/.5)}
+.sb-a .drop::-webkit-scrollbar-track{background:transparent}
+@keyframes yjDropIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.sb-a .drop.show{animation:none}}
+.sb-a .row{padding:9px 14px;border-bottom:1px solid hsl(var(--border));cursor:pointer;transition:background .1s}
+.sb-a .row:last-child{border-bottom:none}
+.sb-a .row:hover,.sb-a .row.hl{background:hsl(var(--muted)/.5)}
+.sb-a .row.hl{box-shadow:inset 2px 0 0 hsl(var(--primary))}
+.sb-a .row .top{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.sb-a .row .names{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 6px}
+.nblock{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12.5px;line-height:1.7;white-space:nowrap}
+.nblock.main{font-weight:600}
+.nblock.jp{background:#E0F5F4;color:#0B6B64}
+.nblock.en{background:#E4F0FC;color:#0F7FD0}
+.nblock.hk{background:#FFF0E0;color:#B25E10}
+.nblock.zh{background:#EFEAFB;color:#6D4FC4}
+.nblock.miss{background:#F1F1F1;color:#B0B0B0}
+.nblock.id{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}
+.sx{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;line-height:1.7}
+.sx.colt{background:#C9EFFE;color:#0B5A8C}
+.sx.filly{background:#FFDBD5;color:#B03A30}
+.sx.geld{background:#EFEFEF;color:#5A5A5A}
+.sb-a .row .chip{flex:none;font-size:9.5px;padding:1.5px 7px;border-radius:99px;background:hsl(var(--accent));color:hsl(var(--accent-foreground));letter-spacing:.3px;font-weight:600;margin-top:1px}
+.sb-a .row .mt{margin-left:auto;flex:none;font-size:11px;color:hsl(var(--muted-foreground));white-space:nowrap;display:flex;align-items:center;gap:5px}
+.sb-a .row .sub{font-size:11px;color:hsl(var(--muted-foreground));margin-top:2px}
+.sb-a .empty{padding:16px 14px;font-size:12.5px;color:hsl(var(--muted-foreground));text-align:center}
+.sb-a .dhead{font-size:10.5px;color:hsl(var(--muted-foreground));padding:7px 14px 5px;letter-spacing:.5px;border-bottom:1px solid hsl(var(--border));background:hsl(var(--muted)/.35)}
+.sb-a .dhead b{color:hsl(var(--primary))}
+
+/* 图例提示（预览用） */
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:12px 0 0;padding:8px 12px;border:1px dashed hsl(var(--border));border-radius:8px;font-size:10.5px;color:hsl(var(--muted-foreground))}
+.legend .g{display:inline-flex;align-items:center;gap:5px}
+.legend .sw{display:inline-block;width:22px;height:15px;border-radius:4px;vertical-align:-2px}
+.legend .sw.jp{background:#E0F5F4}
+.legend .sw.en{background:#E4F0FC}
+.legend .sw.hk{background:#FFF0E0}
+.legend .sw.zh{background:#EFEAFB}
+.legend .sw.miss{background:#F1F1F1;border:1px solid hsl(var(--border))}
+
+@media (max-width:768px){
+  .page{padding:16px 14px 60px}
+  .pv-top{flex-direction:column;align-items:flex-start}
+  .sb-a .row{padding:8px 10px}
+  .sb-a .box{height:42px;padding:0 12px}
+  .sb-a .box input{font-size:13px}
+  .nblock{font-size:12px;padding:0 6px}
+  .sb-a .row .mt{font-size:10.5px}
+  .sb-a .row .sub{font-size:10.5px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="pv-top">
+    <span class="t">搜索栏 · 方案 A（已定稿预览）</span>
+  </div>
+  <div class="desc" id="desc"></div>
+
+  <div class="sec-title">基本信息 · PROFILE</div>
+  <div id="stage"></div>
+  <div class="pick card" id="pick"><div class="empty-note">↑ 从上方搜索结果中选择一匹马，预览其基本信息</div></div>
+  <div class="legend">
+    <span class="g">名字：</span>
+    <span class="g"><span class="sw jp"></span>日文名</span>
+    <span class="g"><span class="sw en"></span>英文名</span>
+    <span class="g"><span class="sw hk"></span>港译名</span>
+    <span class="g"><span class="sw zh"></span>自译名</span>
+    <span class="g"><span class="sw miss"></span>缺失</span>
+    <span class="g" style="margin-left:6px">性别：</span>
+    <span class="g"><span class="sx colt">♂ 牡</span></span>
+    <span class="g"><span class="sx filly">♀ 牝</span></span>
+    <span class="g"><span class="sx geld">⚲ セン</span></span>
+  </div>
+
+  <div class="back" style="margin-top:26px">← <a href="index.html">返回 testpage 外壳</a></div>
+</div>
+
+<script src="pages/i18n.js"></script>
+<script>
+(function(){
+  "use strict";
+  var i18n = YJ.i18n;
+  var NAME = ["馬名","欧字馬名","自译馬名","香港馬名"];
+  var EXTRA = [["母名","母名"],["馬主","马主"],["調教師","调教师"],["生産牧場","牧场"]];
+  var EXTRA_LABEL = { "母名":"母名","馬主":"马主","調教師":"调教师","生産牧場":"牧场" };
+  var horses = [];
+  var $ = function(id){ return document.getElementById(id); };
+
+  var DESC = '单框输入，一次搜索 <b>全部 8 类字段</b>：日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场。每个名字用 <b>彩色色块</b> 包着字体区分类型（青绿=日文 / 蓝=英文 / 橙=港译 / 紫=自译），中间缺口显示灰块 <b>—</b>；性别徽章 <b>♂牡 / ♀牝 / ⚲セン</b> 用浅色底区分。命中非名字字段时自动标注字段标签与命中值。';
+
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function dname(h){ return h.自译馬名||h.欧字馬名||h.馬名||('#'+h.id); }
+  function sexHTML(v){
+    if(!v) return '';
+    if(v==='牡') return '<span class="sx colt">♂ 牡</span>';
+    if(v==='牝') return '<span class="sx filly">♀ 牝</span>';
+    if(v==='セ') return '<span class="sx geld">⚲ セン</span>';
+    return '<span class="sx geld">'+esc(v)+'</span>';
+  }
+  function meta(h){ return [sexHTML(h.性別), h.生年].filter(Boolean).join(''); }
+  var NAME_SLOTS = [["馬名","jp"],["欧字馬名","en"],["香港馬名","hk"],["自译馬名","zh"]];
+  var LABEL = { "馬名":"日文名","欧字馬名":"英文名","香港馬名":"港译名","自译馬名":"自译名",
+    "母名":"母名","馬主":"马主","調教師":"调教师","生産牧場":"生产牧场" };
+  function nameHTML(h){
+    var vals = NAME_SLOTS.map(function(s){ return h[s[0]]; });
+    var firstIdx = -1, lastIdx = -1;
+    for(var i=0;i<vals.length;i++){ if(vals[i]){ if(firstIdx<0) firstIdx=i; lastIdx=i; } }
+    if(firstIdx<0) return '<span class="names"><span class="nblock id">#'+esc(h.id)+'</span></span>';
+    var html = '';
+    for(var i=0;i<=lastIdx;i++){
+      if(vals[i]){
+        var cls = 'nblock '+NAME_SLOTS[i][1] + (i===firstIdx ? ' main' : '');
+        html += '<span class="'+cls+'">'+esc(vals[i])+'</span>';
+      } else {
+        html += '<span class="nblock miss">—</span>';
+      }
+    }
+    return '<span class="names">'+html+'</span>';
+  }
+  function norm(q){ return (q||'').trim().toLowerCase(); }
+  function has(v,q){ return v && String(v).toLowerCase().indexOf(q)>=0; }
+  var ICON = '<span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>';
+
+  function renderPick(h){
+    var box = $('pick');
+    if(!h){ box.innerHTML='<div class="empty-note">↑ 从上方搜索结果中选择一匹马，预览其基本信息</div>'; return; }
+    var chips = NAME.concat(EXTRA.map(function(e){return e[0];})).filter(function(f){return h[f];})
+      .map(function(f){ return '<i><b>'+esc(LABEL[f]||i18n.t(f))+'</b>'+esc(h[f])+'</i>'; }).join('');
+    box.innerHTML =
+      '<div class="ava">🐎</div>'+
+      '<div class="pi">'+
+        '<div class="pn">'+esc(dname(h))+'</div>'+
+        '<div class="pm">'+sexHTML(h.性別)+
+          (h.毛色? '<span class="pmx">'+esc(i18n.g(h,'毛色'))+'</span>':'')+
+          (h.生年? '<span class="pmx">'+esc(h.生年)+'</span>':'')+
+          (h.登録状態? '<span class="pmx">'+esc(i18n.g(h,'登録状態'))+'</span>':'')+
+        '</div>'+
+        '<div class="pc">'+chips+'</div>'+
+        '<div class="ph">'+esc(i18n.t('id'))+' '+esc(h.id)+'</div>'+
+      '</div>';
+  }
+
+  function build(){
+    $('desc').innerHTML = DESC;
+    $('stage').innerHTML =
+      '<div class="sb-a">'+
+        '<div class="box">'+ICON+
+          '<input id="aInput" type="text" placeholder="日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场" autocomplete="off">'+
+          '<span class="cnt" id="aCnt">—</span>'+
+          '<button class="clear" id="aClear" type="button" aria-label="清空">✕</button>'+
+        '</div>'+
+        '<div class="drop" id="aDrop"></div>'+
+      '</div>';
+    var input=$('aInput'), drop=$('aDrop'), clear=$('aClear'), cnt=$('aCnt');
+    var selected = false;
+    function rowHTML(h){
+      var q = norm(input.value);
+      var m=null;
+      for(var i=0;i<NAME.length;i++){ if(has(h[NAME[i]],q)){ m={label:'名字',fromExtra:false}; break; } }
+      if(!m){ for(var j=0;j<EXTRA.length;j++){ if(has(h[EXTRA[j][0]],q)){ m={label:EXTRA[j][1],fromExtra:true,key:EXTRA[j][0]}; break; } } }
+      if(!m && String(h.id).toLowerCase().indexOf(q)>=0){ m={label:'ID',fromExtra:true,key:'id'}; }
+      var chip = (m && m.fromExtra) ? '<span class="chip">'+esc(m.label)+'</span>' : '';
+      var sub = (m && m.fromExtra && m.key!=='id') ? '<div class="sub">'+esc(EXTRA_LABEL[m.key]||m.label)+'：'+esc(h[m.key])+'</div>' : '';
+      return '<div class="row" data-id="'+h.id+'"><div class="top">'+nameHTML(h)+chip+'<span class="mt">'+meta(h)+'</span></div>'+sub+'</div>';
+    }
+    function render(){
+      var q = norm(input.value);
+      clear.classList.toggle('on', !!q);
+      var list = horses.filter(function(h){
+        for(var i=0;i<NAME.length;i++){ if(has(h[NAME[i]],q)) return true; }
+        for(var j=0;j<EXTRA.length;j++){ if(has(h[EXTRA[j][0]],q)) return true; }
+        return String(h.id).indexOf(q)>=0;
+      });
+      cnt.textContent = q ? list.length : horses.length;
+      cnt.classList.toggle('on', !!q);
+      if(!q){ drop.classList.remove('show'); return; }
+      if(!list.length){ drop.innerHTML='<div class="empty">未找到匹配的马匹</div>'; drop.classList.add('show'); return; }
+      drop.innerHTML = '<div class="dhead">匹配 <b>'+list.length+'</b> 匹</div>' + list.map(rowHTML).join('');
+      drop.classList.add('show');
+    }
+    function setSel(h){
+      selected = !!h;
+      if(h) input.value = h.馬名 || dname(h) || ('#'+h.id);
+      cnt.textContent = horses.length;
+      cnt.classList.remove('on');
+    }
+    function pick(id){
+      var h = horses.find(function(x){ return x.id===id; });
+      setSel(h);
+      renderPick(h);
+    }
+    var hl=-1;
+    function mark(){ drop.querySelectorAll('.row').forEach(function(r,i){ r.classList.toggle('hl', i===hl); }); }
+    input.addEventListener('focus', function(){
+      if(selected){ selected=false; input.value=''; }
+      render();
+    });
+    input.addEventListener('input', function(){ selected=false; render(); });
+    clear.addEventListener('click', function(){ input.value=''; selected=false; render(); input.focus(); });
+    input.addEventListener('keydown', function(e){
+      var rows = drop.querySelectorAll('.row');
+      if(!drop.classList.contains('show') || !rows.length) return;
+      if(e.key==='ArrowDown'){ e.preventDefault(); hl=(hl+1)%rows.length; mark(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); hl=(hl-1+rows.length)%rows.length; mark(); }
+      else if(e.key==='Enter'){ e.preventDefault(); if(hl>=0) pick(parseInt(rows[hl].dataset.id,10)); drop.classList.remove('show'); input.blur(); }
+      else if(e.key==='Escape'){ drop.classList.remove('show'); hl=-1; input.blur(); }
+    });
+    drop.addEventListener('mousedown', function(e){
+      var r = e.target.closest('.row');
+      if(r){ pick(parseInt(r.dataset.id,10)); drop.classList.remove('show'); input.blur(); }
+    });
+    document.addEventListener('click', function(e){
+      if(!document.querySelector('.sb-a').contains(e.target)) drop.classList.remove('show');
+    });
+  }
+
+  fetch("../../data/basic.json").then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      horses = Array.isArray(d) ? d : (d.horses||[]);
+      build();
+    })
+    .catch(function(e){
+      $('desc').innerHTML = '数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问';
+    });
+})();
+</script>
+</body>
+</html>

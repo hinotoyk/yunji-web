@@ -10,27 +10,37 @@
 
 /* 上段：头像 + 信息 */
 .phead{display:flex;gap:24px;padding:22px 26px}
-.pava{flex:none;width:176px;height:176px;border-radius:14px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/.3);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pava{flex:none;width:176px;height:176px;border-radius:14px;border:1px solid hsl(var(--border));background:hsl(var(--muted)/.3);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .pava img{width:100%;height:100%;object-fit:cover;display:block}
 .pava .ph-ico{font-size:56px;color:hsl(var(--muted-foreground));opacity:.5}
+/* 多图相册：左右箭头 / 计数 / 悬停提示 */
+.pava .pav-img{width:100%;height:100%;object-fit:cover;display:block}
+.pava .pav-nav{position:absolute;top:0;bottom:0;width:44px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .18s;text-shadow:0 1px 4px rgba(0,0,0,.6);user-select:none}
+.pava .pav-prev{left:0;background:linear-gradient(90deg,rgba(0,0,0,.34),rgba(0,0,0,0))}
+.pava .pav-next{right:0;background:linear-gradient(270deg,rgba(0,0,0,.34),rgba(0,0,0,0))}
+.pava .pav-count{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.5);color:#fff;font-size:10.5px;padding:2px 8px;border-radius:99px;letter-spacing:.5px;opacity:0;transition:opacity .18s}
+.pava .pav-hint{position:absolute;left:0;right:0;bottom:0;padding:5px 0 6px;background:linear-gradient(0deg,rgba(0,0,0,.62),rgba(0,0,0,0));color:#fff;font-size:10.5px;text-align:center;letter-spacing:1px;opacity:0;transition:opacity .18s;pointer-events:none}
+.pava.multi:hover .pav-nav,
+.pava.multi:hover .pav-count,
+.pava.multi:hover .pav-hint{opacity:1}
 .pinfo{flex:1;min-width:0}
 .pnames{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
 .ncard{display:flex;flex-direction:column;justify-content:center;min-width:0;background:hsl(var(--muted)/.25);border:1px solid hsl(var(--border));border-radius:10px;padding:7px 14px}
-.ncard .nk{font-size:10px;letter-spacing:1px;color:hsl(var(--muted-foreground));text-transform:uppercase;margin-bottom:2px}
+.ncard .nk{font-size:11px;letter-spacing:1px;color:hsl(var(--secondary-foreground));text-transform:uppercase;margin-bottom:2px}
 .ncard .nv{font-size:16px;font-weight:600;color:hsl(var(--foreground));white-space:nowrap}
 .ncard .nv.jp{font-size:24px;font-weight:700}
 .nsep{display:flex;align-items:center;color:hsl(var(--muted-foreground));font-weight:600;font-size:15px}
 .pmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 20px;margin-top:16px;border-top:1px solid hsl(var(--border));padding-top:14px}
-.pmeta .m .k{font-size:10.5px;letter-spacing:.5px;color:hsl(var(--muted-foreground));text-transform:uppercase}
+.pmeta .m .k{font-size:11.5px;letter-spacing:.5px;color:hsl(var(--secondary-foreground));text-transform:uppercase}
 .pmeta .m .v{font-size:13.5px;font-weight:500;margin-top:1px}
 
 /* 下段：内嵌比赛 */
 .raceframe{width:100%;height:600px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--background));display:block}
 .racebar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.racebar .lbl{font-size:11px;letter-spacing:2px;color:hsl(var(--muted-foreground));text-transform:uppercase;font-weight:600}
+.racebar .lbl{font-size:13px;letter-spacing:1px;color:hsl(var(--secondary-foreground));text-transform:uppercase;font-weight:700}
 /* 血统简约版区块 */
 .pg-loading{color:hsl(var(--muted-foreground));font-size:12.5px;padding:6px 2px}
-.pg-hint{font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px}
+.pg-hint{font-size:12px;color:hsl(var(--secondary-foreground));margin-top:8px}
 .pg-hint b{color:hsl(var(--primary));font-weight:500}
 
 .hint-empty{text-align:center;padding:60px 20px;color:hsl(var(--muted-foreground));font-size:13px}
@@ -66,14 +76,47 @@ function transStats(v){
   return String(v).replace(/戦/g,"战").replace(/勝/g,"胜").replace(/着/g,"名");
 }
 
-/* 头像：photo 兼容 数组/网络/本地 */
+/* 头像：photo 兼容 数组/网络/本地；data/ 开头视为站点根相对本地图，加 ../../ 回到项目根（与数据 fetch 同口径）
+   多图 → 相册：点击左/右切换，悬停提示 */
 function avatarHTML(photo){
   var list=[];
   if(Array.isArray(photo)) list=photo.slice();
   else if(typeof photo==="string" && photo) list=[photo];
-  var src=list[0];
-  if(!src) return '<div class="pava"><span class="ph-ico">🐎</span></div>';
-  return '<div class="pava"><img src="'+esc(src)+'" alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=ph-ico>🐎</span>\'"></div>';
+  list=list.filter(function(p){return p;});
+  if(!list.length) return '<div class="pava"><span class="ph-ico">🐎</span></div>';
+  list=list.map(function(p){ return (String(p).indexOf("data/")===0) ? "../../"+p : p; });
+  if(list.length===1){
+    return '<div class="pava"><img src="'+esc(list[0])+'" alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=ph-ico>🐎</span>\'"></div>';
+  }
+  return '<div class="pava multi" data-photos="'+esc(list.join("|"))+'">'+
+    '<img class="pav-img" src="'+esc(list[0])+'" alt="头像" onerror="this.style.display=\'none\'">'+
+    '<div class="pav-nav pav-prev" title="上一张">‹</div>'+
+    '<div class="pav-nav pav-next" title="下一张">›</div>'+
+    '<div class="pav-count">1/'+list.length+'</div>'+
+    '<div class="pav-hint">◀ 左右点击切换 ▶</div>'+
+  '</div>';
+}
+
+/* 相册切换：点击左半/右半 → 上一张/下一张（‹ › 箭头同理，环形循环） */
+function avatarBind(){
+  var el=document.querySelector(".pava.multi");
+  if(!el) return;
+  var photos=el.getAttribute("data-photos").split("|");
+  var img=el.querySelector(".pav-img");
+  var count=el.querySelector(".pav-count");
+  var idx=0;
+  function show(n){
+    idx=(n+photos.length)%photos.length;
+    img.src=photos[idx];
+    count.textContent=(idx+1)+"/"+photos.length;
+  }
+  el.addEventListener("click",function(e){
+    var rect=el.getBoundingClientRect();
+    if(e.clientX-rect.left < rect.width/2) show(idx-1); else show(idx+1);
+  });
+  var prev=el.querySelector(".pav-prev"), next=el.querySelector(".pav-next");
+  if(prev) prev.addEventListener("click",function(e){e.stopPropagation();show(idx-1);});
+  if(next) next.addEventListener("click",function(e){e.stopPropagation();show(idx+1);});
 }
 
 function render(h){
@@ -83,10 +126,10 @@ function render(h){
   /* 上段：头像 + 信息。名字 = 横排小卡片，卡片间用 - 分隔，卡片内上方小字标注类型；缺名字则不显示该卡 */
   var ncard=function(lbl,cls,v){ return v? '<div class="ncard"><span class="nk">'+lbl+'</span><span class="nv '+cls+'">'+esc(v)+'</span></div>' : ''; };
   var nparts=[];
-  if(h.馬名) nparts.push(ncard('日本名','jp',h.馬名));
+  if(h.馬名) nparts.push(ncard('日文名','jp',h.馬名));
   if(h.欧字馬名) nparts.push(ncard('英文名','',h.欧字馬名));
-  if(h.香港馬名) nparts.push(ncard('香港名','',h.香港馬名));
-  if(h.自译馬名) nparts.push(ncard('自译','',h.自译馬名));
+  if(h.香港馬名) nparts.push(ncard('港译名','',h.香港馬名));
+  if(h.自译馬名) nparts.push(ncard('自译名','',h.自译馬名));
   var nameLines='<div class="pnames">'+nparts.join('<span class="nsep">-</span>')+'</div>';
 
   var meta='<div class="pmeta">'+
@@ -126,6 +169,8 @@ function render(h){
     '</div>'+
     '<div style="margin-bottom:16px">'+kpis+'</div>'+
     raceSection;
+
+  avatarBind(); /* 多图相册：绑定点击切换 */
 
   /* 按需加载血统：简约版，点击弹窗完整版 */
   (function(){
