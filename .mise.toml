@@ -1,0 +1,5 @@
+# 本地 node 版本钉住（开发机 / 家庭机 / 任意 clone 后 `mise install` 即对齐）
+# - 24.13.0 与开发机一致：DSH 依赖 sharp 原生模块，必须与安装时的 Node ABI 一致
+# - 前端构建在 node 20/22/24 均通过；CI（deploy.yml 的 setup-node 22）不受本文件影响
+[tools]
+node = "24.13.0"
