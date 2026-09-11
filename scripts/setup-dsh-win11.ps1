@@ -43,12 +43,15 @@ Write-Host "==== 2/3 安装 node 24.13.0 并设为全局 ===="
 mise install node@24.13.0
 if ($LASTEXITCODE -ne 0) { throw "node 24.13.0 安装失败" }
 mise use -g node@24.13.0
-Write-Host "node: $(mise exec node@24.13.0 -- node --version)   npm: $(mise exec node@24.13.0 -- npm --version)"
+# 直接把 mise 装的 node 目录加进 PATH（避免 mise exec 的 `--` 在不同 mise 版本 / PS 版本下解析不一致）
+$nodeBin = Join-Path $env:LOCALAPPDATA "mise\installs\node\24.13.0"
+$env:Path = $nodeBin + ";" + $env:Path
+Write-Host "node: $(node --version)   npm: $(npm --version)"
 
 Write-Host "==== 3/3 全局安装 DSH ===="
-mise exec node@24.13.0 -- npm install -g @deepseek-ai/dsh@0.1.1-rc.2
+npm install -g @deepseek-ai/dsh@0.1.1-rc.2
 if ($LASTEXITCODE -ne 0) { throw "DSH 安装失败" }
-mise exec node@24.13.0 -- npm ls -g @deepseek-ai/dsh --depth=0
+npm ls -g @deepseek-ai/dsh --depth=0
 
 Write-Host ""
 Write-Host "==== 完成 ✔ 后续 4 步 ===="
