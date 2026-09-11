@@ -700,3 +700,27 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 ### 20.5 状态
 
 ✅ **已完成并合并**（仅 `pages/races.html` 独立 MB 卡片；PC / 内嵌 / i18n / profile 零影响；复刻稿 `tests/_scratch/` 已随本模块清理；随本模块 commit，见 git log）。
+
+---
+
+## 21. 待决策 · 仓库根 `index.html` 跳转（裸根 404 优化）
+
+### 21.1 背景与需求
+
+- 站点已上线（2026-09-11）：正式入口 `https://hinotoyk.github.io/yunji-web/dist/index.html` HTTP 200，数据 `data/basic.json`、页面、样式均正常可访问。
+- 但裸根 `https://hinotoyk.github.io/yunji-web/` 返回 404 —— 仓库根没有 `index.html`。站点根 = 仓库根、正式入口在 `dist/` 下（与本地 `:8090` 结构一致），属当前设计如此，非故障。
+
+### 21.2 拟定方案（未实施）
+
+- 在仓库根新增 `index.html`，一行跳转到正式入口：
+
+  ```html
+  <meta http-equiv="refresh" content="0; url=./dist/index.html">
+  ```
+
+- 效果：访问裸根也能直接进站；`dist/index.html` 与部署链路均不变。
+- 注意：该文件位于仓库根、不参与 `front/` 构建；若后续改动正式入口路径需同步此跳转。
+
+### 21.3 状态
+
+⏳ **等待用户决策**（2026-09-11 提出，尚未实施；用户确认后再落地，并构建/线上验证）。
