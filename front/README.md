@@ -27,6 +27,7 @@
 
 - **commit**：仅在用户明确要求提交时执行；未要求不得自行 `git commit`。
 - **push**：永远不执行 `git push`；推送只能由用户本人操作。
+- **git 身份**：本项目仓库级身份固定为 GitHub noreply 邮箱 `36542325+hinotoyk@users.noreply.github.com`（`git config user.name/user.email` 已在项目内设置）；2026-09-11 历史已整体清洗重建（单一根提交），仓库内**不得再出现**公司邮箱、公司私有 npm 源（`npm.efun.com`）、任何 token。装包必须走项目级 `front/.npmrc` 的官方 registry，禁止引入私有源地址。
 
 ## 目录结构
 
