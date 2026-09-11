@@ -1,0 +1,12 @@
+/.idea/
+__pycache__/
+*.pyc
+test-logs/
+
+# Vite 构建产物（可随时重新生成）
+/dist/
+# 前端依赖（npm install 安装）
+front/node_modules/
+
+# 视觉测试临时产物（无头浏览器截图/OCR 路由缓存）
+/.dsh-vision-router/

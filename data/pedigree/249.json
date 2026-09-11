@@ -1,0 +1,411 @@
+{
+ "id": 249,
+ "jbis_id": "0001391241",
+ "馬名": "ミルトフォルテ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "レジーナフォルテ",
+     "sex": "牝",
+     "id": "0001187857",
+     "year": "2014",
+     "color": "黒鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "アルデバランⅡ(USA)",
+     "sex": "牡",
+     "id": "0000714301",
+     "year": "1998",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ナイキトライアンフ",
+     "sex": "牝",
+     "id": "0000803811",
+     "year": "2004",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Chimes of Freedom(USA)",
+     "sex": "牝",
+     "id": "0000409176",
+     "year": "1987"
+    },
+    {
+     "name": "ボストンハーバー(USA)",
+     "sex": "牡",
+     "id": "0000365330",
+     "year": "1994"
+    },
+    {
+     "name": "ウィンヒストリー",
+     "sex": "牝",
+     "id": "0000306888",
+     "year": "1996"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native(USA)",
+     "sex": "牡",
+     "id": "0000334066",
+     "year": "1961"
+    },
+    {
+     "name": "Gold Digger(USA)",
+     "sex": "牝",
+     "id": "0000389632",
+     "year": "1962"
+    },
+    {
+     "name": "Private Account(USA)",
+     "sex": "牡",
+     "id": "0000336504",
+     "year": "1976"
+    },
+    {
+     "name": "Aviance(IRE)",
+     "sex": "牝",
+     "id": "0000409051",
+     "year": "1982"
+    },
+    {
+     "name": "Capote(USA)",
+     "sex": "牡",
+     "id": "0000336568",
+     "year": "1984"
+    },
+    {
+     "name": "Harbor Springs(USA)",
+     "sex": "牝",
+     "id": "0000438911",
+     "year": "1989"
+    },
+    {
+     "name": "ダンシングブレーヴ(USA)",
+     "sex": "牡",
+     "id": "0000336853",
+     "year": "1983"
+    },
+    {
+     "name": "タレンテイドガール",
+     "sex": "牝",
+     "id": "0000165634",
+     "year": "1984"
+    }
+   ],
+   [
+    {
+     "name": "Native Dancer(USA)",
+     "sex": "牡",
+     "id": "0000334375",
+     "year": "1950"
+    },
+    {
+     "name": "Raise You(USA)",
+     "sex": "牝",
+     "id": "0000388521",
+     "year": "1946"
+    },
+    {
+     "name": "Nashua(USA)",
+     "sex": "牡",
+     "id": "0000334373",
+     "year": "1952"
+    },
+    {
+     "name": "Sequence(USA)",
+     "sex": "牝",
+     "id": "0000389398",
+     "year": "1946"
+    },
+    {
+     "name": "Damascus(USA)",
+     "sex": "牡",
+     "id": "0000334660",
+     "year": "1964"
+    },
+    {
+     "name": "Numbered Account(USA)",
+     "sex": "牝",
+     "id": "0000391993",
+     "year": "1969"
+    },
+    {
+     "name": "Northfields(USA)",
+     "sex": "牡",
+     "id": "0000334003",
+     "year": "1968"
+    },
+    {
+     "name": "Minnie Hauk(USA)",
+     "sex": "牝",
+     "id": "0000409050",
+     "year": "1975"
+    },
+    {
+     "name": "Seattle Slew(USA)",
+     "sex": "牡",
+     "id": "0000335964",
+     "year": "1974"
+    },
+    {
+     "name": "Too Bald(USA)",
+     "sex": "牝",
+     "id": "0000391529",
+     "year": "1964"
+    },
+    {
+     "name": "Vice Regent(CAN)",
+     "sex": "牡",
+     "id": "0000336132",
+     "year": "1967"
+    },
+    {
+     "name": "Tinnitus(USA)",
+     "sex": "牝",
+     "id": "0000408890",
+     "year": "1975"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Navajo Princess(USA)",
+     "sex": "牝",
+     "id": "0000390533",
+     "year": "1974"
+    },
+    {
+     "name": "リマンド(GB)",
+     "sex": "牡",
+     "id": "0000333363",
+     "year": "1965"
+    },
+    {
+     "name": "チヨダマサコ",
+     "sex": "牝",
+     "id": "0000095247",
+     "year": "1977"
+    }
+   ]
+  ]
+ },
+ "fno": "F12",
+ "cross": "Lyphard(USA) ：S5×M5"
+}

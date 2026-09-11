@@ -1,0 +1,411 @@
+{
+ "id": 162,
+ "jbis_id": "0001394871",
+ "馬名": "ケッパレ",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ユニキャラ(USA)",
+     "sex": "牝",
+     "id": "0001296855",
+     "year": "2016",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Into Mischief(USA)",
+     "sex": "牡",
+     "id": "0001084779",
+     "year": "2005",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Joke(USA)",
+     "sex": "牝",
+     "id": "0001063779",
+     "year": "1998",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Harlan's Holiday(USA)",
+     "sex": "牡",
+     "id": "0000719305",
+     "year": "1999"
+    },
+    {
+     "name": "Leslie's Lady(USA)",
+     "sex": "牝",
+     "id": "0000722017",
+     "year": "1996"
+    },
+    {
+     "name": "Phone Trick(USA)",
+     "sex": "牡",
+     "id": "0000336875",
+     "year": "1982"
+    },
+    {
+     "name": "Tour(USA)",
+     "sex": "牝",
+     "id": "0000621440",
+     "year": "1990"
+    }
+   ],
+   [
+    {
+     "name": "Harlan(USA)",
+     "sex": "牡",
+     "id": "0000361873",
+     "year": "1989"
+    },
+    {
+     "name": "Christmas in Aiken(USA)",
+     "sex": "牝",
+     "id": "0000714994",
+     "year": "1992"
+    },
+    {
+     "name": "Tricky Creek(USA)",
+     "sex": "牡",
+     "id": "0000340580",
+     "year": "1986"
+    },
+    {
+     "name": "Crystal Lady(CAN)",
+     "sex": "牝",
+     "id": "0000450116",
+     "year": "1990"
+    },
+    {
+     "name": "Clever Trick(USA)",
+     "sex": "牡",
+     "id": "0000336401",
+     "year": "1976"
+    },
+    {
+     "name": "Over the Phone(USA)",
+     "sex": "牝",
+     "id": "0000393100",
+     "year": "1965"
+    },
+    {
+     "name": "フォーティナイナー(USA)",
+     "sex": "牡",
+     "id": "0000337550",
+     "year": "1985"
+    },
+    {
+     "name": "Fun Flight(USA)",
+     "sex": "牝",
+     "id": "0000621441",
+     "year": "1985"
+    }
+   ],
+   [
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Country Romance(CAN)",
+     "sex": "牝",
+     "id": "0000396709",
+     "year": "1976"
+    },
+    {
+     "name": "Affirmed(USA)",
+     "sex": "牡",
+     "id": "0000336350",
+     "year": "1975"
+    },
+    {
+     "name": "Dowager(USA)",
+     "sex": "牝",
+     "id": "0000430068",
+     "year": "1980"
+    },
+    {
+     "name": "Clever Trick(USA)",
+     "sex": "牡",
+     "id": "0000336401",
+     "year": "1976"
+    },
+    {
+     "name": "Battle Creek Girl(USA)",
+     "sex": "牝",
+     "id": "0000406565",
+     "year": "1977"
+    },
+    {
+     "name": "Stop the Music(USA)",
+     "sex": "牡",
+     "id": "0000335155",
+     "year": "1970"
+    },
+    {
+     "name": "One Last Bird(USA)",
+     "sex": "牝",
+     "id": "0000449833",
+     "year": "1980"
+    },
+    {
+     "name": "Icecapade(USA)",
+     "sex": "牡",
+     "id": "0000334747",
+     "year": "1969"
+    },
+    {
+     "name": "Kankakee Miss(USA)",
+     "sex": "牝",
+     "id": "0000391593",
+     "year": "1967"
+    },
+    {
+     "name": "Finnegan(USA)",
+     "sex": "牡",
+     "id": "0000334255",
+     "year": "1956"
+    },
+    {
+     "name": "Prattle(USA)",
+     "sex": "牝",
+     "id": "0000393099",
+     "year": "1957"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "File(USA)",
+     "sex": "牝",
+     "id": "0000395261",
+     "year": "1976"
+    },
+    {
+     "name": "Full Pocket(USA)",
+     "sex": "牡",
+     "id": "0000335311",
+     "year": "1969"
+    },
+    {
+     "name": "Fun and Tears(USA)",
+     "sex": "牝",
+     "id": "0000411419",
+     "year": "1974"
+    }
+   ]
+  ]
+ },
+ "fno": "F13-c",
+ "cross": "Clever Trick(USA) ：M4×M5 Storm Cat(USA) ：S5×M5"
+}

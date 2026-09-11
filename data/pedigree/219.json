@@ -1,0 +1,411 @@
+{
+ "id": 219,
+ "jbis_id": "0001396744",
+ "馬名": "ヒシホライゾン",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "イスパニダ(ARG)",
+     "sex": "牝",
+     "id": "0001296022",
+     "year": "2013",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Pure Prize(USA)",
+     "sex": "牡",
+     "id": "0000745154",
+     "year": "1998",
+     "color": "栗毛"
+    },
+    {
+     "name": "Historia(ARG)",
+     "sex": "牝",
+     "id": "0001295940",
+     "year": "1999",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Heavenly Prize(USA)",
+     "sex": "牝",
+     "id": "0000432359",
+     "year": "1991"
+    },
+    {
+     "name": "フレンチデピュティ(USA)",
+     "sex": "牡",
+     "id": "0000362799",
+     "year": "1992"
+    },
+    {
+     "name": "Honoris Causa(USA)",
+     "sex": "牝",
+     "id": "0000833985",
+     "year": "1991"
+    }
+   ],
+   [
+    {
+     "name": "Storm Bird(CAN)",
+     "sex": "牡",
+     "id": "0000336177",
+     "year": "1978"
+    },
+    {
+     "name": "Terlingua(USA)",
+     "sex": "牝",
+     "id": "0000393602",
+     "year": "1976"
+    },
+    {
+     "name": "Seeking the Gold(USA)",
+     "sex": "牡",
+     "id": "0000337444",
+     "year": "1985"
+    },
+    {
+     "name": "Oh What a Dance(USA)",
+     "sex": "牝",
+     "id": "0000433098",
+     "year": "1987"
+    },
+    {
+     "name": "Deputy Minister(CAN)",
+     "sex": "牡",
+     "id": "0000338072",
+     "year": "1979"
+    },
+    {
+     "name": "Mitterand(USA)",
+     "sex": "牝",
+     "id": "0000415165",
+     "year": "1981"
+    },
+    {
+     "name": "Miswaki(USA)",
+     "sex": "牡",
+     "id": "0000336395",
+     "year": "1978"
+    },
+    {
+     "name": "Islands(USA)",
+     "sex": "牝",
+     "id": "0000432950",
+     "year": "1981"
+    }
+   ],
+   [
+    {
+     "name": "Northern Dancer(CAN)",
+     "sex": "牡",
+     "id": "0000334002",
+     "year": "1961"
+    },
+    {
+     "name": "South Ocean(CAN)",
+     "sex": "牝",
+     "id": "0000390935",
+     "year": "1967"
+    },
+    {
+     "name": "Secretariat(USA)",
+     "sex": "牡",
+     "id": "0000333978",
+     "year": "1970"
+    },
+    {
+     "name": "Crimson Saint(USA)",
+     "sex": "牝",
+     "id": "0000393601",
+     "year": "1969"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Con Game(USA)",
+     "sex": "牝",
+     "id": "0000392025",
+     "year": "1974"
+    },
+    {
+     "name": "Nijinsky(CAN)",
+     "sex": "牡",
+     "id": "0000333996",
+     "year": "1967"
+    },
+    {
+     "name": "Blitey(USA)",
+     "sex": "牝",
+     "id": "0000395275",
+     "year": "1976"
+    },
+    {
+     "name": "Vice Regent(CAN)",
+     "sex": "牡",
+     "id": "0000336132",
+     "year": "1967"
+    },
+    {
+     "name": "Mint Copy(CAN)",
+     "sex": "牝",
+     "id": "0000392196",
+     "year": "1970"
+    },
+    {
+     "name": "Hold Your Peace(USA)",
+     "sex": "牡",
+     "id": "0000336555",
+     "year": "1969"
+    },
+    {
+     "name": "Laredo Lass(USA)",
+     "sex": "牝",
+     "id": "0000415164",
+     "year": "1971"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Hopespringseternal(USA)",
+     "sex": "牝",
+     "id": "0000390586",
+     "year": "1971"
+    },
+    {
+     "name": "Forli(ARG)",
+     "sex": "牡",
+     "id": "0000334262",
+     "year": "1963"
+    },
+    {
+     "name": "Grand Luxe(CAN)",
+     "sex": "牝",
+     "id": "0000393485",
+     "year": "1974"
+    }
+   ]
+  ]
+ },
+ "fno": "F4-g",
+ "cross": "Storm Cat(USA) ：M3×S5 Mr. Prospector(USA) ：M5×M5"
+}

@@ -1,0 +1,411 @@
+{
+ "id": 257,
+ "jbis_id": "0001396756",
+ "馬名": "",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "リフレイム(USA)",
+     "sex": "牝",
+     "id": "0001317590",
+     "year": "2018",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "アメリカンファラオ(USA)",
+     "sex": "牡",
+     "id": "0001238289",
+     "year": "2012",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Careless Jewel(USA)",
+     "sex": "牝",
+     "id": "0001114664",
+     "year": "2006",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "Pioneerof the Nile(USA)",
+     "sex": "牡",
+     "id": "0001127396",
+     "year": "2006"
+    },
+    {
+     "name": "Littleprincessemma(USA)",
+     "sex": "牝",
+     "id": "0001238284",
+     "year": "2006"
+    },
+    {
+     "name": "Tapit(USA)",
+     "sex": "牡",
+     "id": "0000849372",
+     "year": "2001"
+    },
+    {
+     "name": "Sweet and Careless(USA)",
+     "sex": "牝",
+     "id": "0001016873",
+     "year": "1999"
+    }
+   ],
+   [
+    {
+     "name": "エンパイアメーカー(USA)",
+     "sex": "牡",
+     "id": "0000749845",
+     "year": "2000"
+    },
+    {
+     "name": "Star of Goshen(USA)",
+     "sex": "牝",
+     "id": "0000620783",
+     "year": "1994"
+    },
+    {
+     "name": "Yankee Gentleman(USA)",
+     "sex": "牡",
+     "id": "0001015914",
+     "year": "1999"
+    },
+    {
+     "name": "Exclusive Rosette(USA)",
+     "sex": "牝",
+     "id": "0000971398",
+     "year": "1993"
+    },
+    {
+     "name": "Pulpit(USA)",
+     "sex": "牡",
+     "id": "0000337958",
+     "year": "1994"
+    },
+    {
+     "name": "Tap Your Heels(USA)",
+     "sex": "牝",
+     "id": "0000447042",
+     "year": "1996"
+    },
+    {
+     "name": "ヘネシー(USA)",
+     "sex": "牡",
+     "id": "0000362819",
+     "year": "1993"
+    },
+    {
+     "name": "Not So Careless(USA)",
+     "sex": "牝",
+     "id": "0000440521",
+     "year": "1987"
+    }
+   ],
+   [
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Toussaud(USA)",
+     "sex": "牝",
+     "id": "0000405617",
+     "year": "1989"
+    },
+    {
+     "name": "Lord At War(ARG)",
+     "sex": "牡",
+     "id": "0000336772",
+     "year": "1980"
+    },
+    {
+     "name": "Castle Eight(USA)",
+     "sex": "牝",
+     "id": "0000424920",
+     "year": "1984"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Key Phrase(USA)",
+     "sex": "牝",
+     "id": "0000434286",
+     "year": "1991"
+    },
+    {
+     "name": "Ecliptical(USA)",
+     "sex": "牡",
+     "id": "0000359908",
+     "year": "1982"
+    },
+    {
+     "name": "Zetta Jet(USA)",
+     "sex": "牝",
+     "id": "0000968086",
+     "year": "1984"
+    },
+    {
+     "name": "A.P. Indy(USA)",
+     "sex": "牡",
+     "id": "0000339653",
+     "year": "1989"
+    },
+    {
+     "name": "Preach(USA)",
+     "sex": "牝",
+     "id": "0000405353",
+     "year": "1989"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Ruby Slippers(USA)",
+     "sex": "牝",
+     "id": "0000404957",
+     "year": "1982"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Island Kitty(USA)",
+     "sex": "牝",
+     "id": "0000406937",
+     "year": "1976"
+    },
+    {
+     "name": "Desert Wine(USA)",
+     "sex": "牡",
+     "id": "0000338064",
+     "year": "1980"
+    },
+    {
+     "name": "Careless Notion(USA)",
+     "sex": "牝",
+     "id": "0000394297",
+     "year": "1970"
+    }
+   ]
+  ]
+ },
+ "fno": "F2-e",
+ "cross": "Unbridled(USA) ：S4×M5×M5 Storm Cat(USA) ：S5×M5×M5"
+}

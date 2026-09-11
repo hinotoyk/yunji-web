@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # node 20 已在 runner 上弃用（checkout/setup-node 被强制跑 node 24，见运行注解警告）；
+          # 升到 LTS 22，本地已用 node 22.12 验证 npm ci + build 通过。
+          node-version: 22
+          # 去掉 cache: npm —— 排除 GitHub actions 缓存导致的偶发 npm ci 失败；构建仅 ~30s，缓存收益低
+
+      # 前端构建：产物输出到仓库根 dist/（与 data/ 同级），随后随仓库根整体发布
+      - name: Build frontend
+        run: |
+          cd front
+          npm ci
+          npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # 站点根 = 仓库根：dist/pages/*.html 里的 ../../data 指向站点根 data/（与本地 :8090 结构一致）
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

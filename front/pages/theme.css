@@ -1,0 +1,94 @@
+/* ============================================================
+ * 云迹 · 正式前端主题（Vite + Tailwind）
+ * 方案 F 青绿 × shadcn Neutral 底色（仅亮色）
+ * 本文件是 Tailwind 输入：@tailwind 指令 + 字体 + 基础组件类
+ * 所有页面 <link rel="stylesheet" href="theme.css"> 共享编译产物
+ * ============================================================ */
+
+/* 字体必须置于所有规则之前 */
+@import url('../assets/fonts/noto-sc.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- 字体（定稿：思源黑体默认 + Geist 拉丁回退） ---------- */
+@font-face{
+  font-family:'Geist';
+  src:url('../assets/fonts/geist-latin.woff2') format('woff2');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
+
+@layer base {
+  html, body { height: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Noto Sans SC','Noto Sans CJK SC','Geist','PingFang SC','Microsoft YaHei',sans-serif;
+    font-size: 16px; line-height: 1.40; letter-spacing: 0.10px;
+    text-rendering: optimizeLegibility;
+    font-variant-numeric: tabular-nums;
+  }
+  a { @apply text-primary no-underline; }
+}
+
+/* ---------- 通用组件（Tailwind 组合类，@apply 封装复用） ---------- */
+@layer components {
+  .card { @apply rounded-[10px] border border-border bg-card text-card-foreground; }
+  .kpis { @apply grid gap-3; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); }
+  .kpi { @apply p-4; }
+  .kpi .v { @apply text-2xl font-semibold; }
+  .kpi .v.hi { @apply text-primary; }
+  .kpi .k { @apply mt-1 text-[12.5px] text-secondary-foreground; }
+  .tblwrap { @apply overflow-x-auto rounded-[10px] border border-border bg-card text-card-foreground; }
+  table { @apply w-full border-collapse text-[13.5px]; }
+  thead th { @apply whitespace-nowrap border-b border-border bg-muted/40 px-[13px] py-[9px] text-left text-[12.5px] font-semibold tracking-[.5px]; }
+  tbody td { @apply whitespace-nowrap border-b border-border px-[13px] py-2; }
+  tbody tr:last-child td { @apply border-b-0; }
+  tbody tr.sub td { @apply bg-muted/25 text-[12.5px] text-muted-foreground; }
+  td.num { @apply text-right tabular-nums; }
+  td.win { @apply font-semibold text-primary; }
+  .sec-title { @apply mt-7 mb-3 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground; }
+  .sec-title::before { content:""; width:4px; height:16px; border-radius:2px; background:hsl(177 88.7% 34.7%); flex:none; }
+  .badge { @apply inline-block rounded-full border border-border bg-secondary px-[10px] py-0.5 text-[12px] text-foreground; }
+  .badge.acc { @apply border-transparent bg-primary text-primary-foreground; }
+  .btn { @apply inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-transparent bg-primary px-4 text-[13.5px] font-medium text-primary-foreground transition-opacity; }
+  .btn:hover { @apply opacity-90; }
+  .btn.sec { @apply bg-secondary text-secondary-foreground; }
+  .btn.out { @apply border-border bg-transparent text-foreground; }
+  .btn.ghost { @apply bg-transparent text-foreground; }
+  select, input { @apply h-9 rounded-md border border-input bg-background px-2.5 text-[13px] text-foreground; }
+  .fieldgrid { @apply grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-border bg-border; }
+  .field { @apply bg-card p-3 px-4; }
+  .field .k { @apply mb-[3px] text-[12px] uppercase tracking-[.5px] text-secondary-foreground; }
+  .field .v { @apply text-[14px] font-medium text-foreground; }
+  .field .v.sub { @apply text-[12.5px] font-normal text-muted-foreground; }
+  .hint-empty { @apply py-[60px] px-5 text-center text-[13.5px] text-muted-foreground; }
+}
+
+/* ---------- 手机（≤768px）：非桌面即手机 ---------- */
+@media (max-width:768px){
+  .fieldgrid{grid-template-columns:1fr}
+  .field{padding:11px 14px}
+}
+
+/* ---------- 搜索下拉：滚动条（与定稿方案 A 一致） ---------- */
+.yj-drop-scroll::-webkit-scrollbar{width:8px}
+.yj-drop-scroll::-webkit-scrollbar-thumb{background:#e5e5e5;border-radius:99px;border:2px solid #fff}
+.yj-drop-scroll::-webkit-scrollbar-thumb:hover{background:rgba(115,115,115,.5)}
+.yj-drop-scroll::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 三栏面板（目录 / 详情）：细滚动条 ---------- */
+.yj-pane{scrollbar-width:thin;scrollbar-color:#e5e5e5 transparent}
+.yj-pane::-webkit-scrollbar{width:8px}
+.yj-pane::-webkit-scrollbar-thumb{background:#e5e5e5;border-radius:99px;border:2px solid #fff}
+.yj-pane::-webkit-scrollbar-thumb:hover{background:rgba(115,115,115,.5)}
+.yj-pane::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 搜索下拉：入场动画（定稿 yjDropIn） ---------- */
+.yj-drop{animation:yjDropIn .15s ease}
+@keyframes yjDropIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){
+  .yj-drop{animation:none}
+}

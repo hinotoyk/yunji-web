@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本信息 · 云迹</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+/* 仅布局微调（骨架无法用 utility 表达的部分，如 iframe 初始高度）
+ * 详情为「上中下」一体式版面：无卡片、无分割线，靠留白/背景层次/字体层级分区。
+ * iframe 均无外框，嵌入内容与页面融为一体；高度由 fitFrames() 自适应。 */
+.raceframe{height:520px}
+.pedframe{height:200px}
+@media (max-width:768px){ .raceframe{height:520px} .pedframe{height:200px} }
+</style>
+</head>
+<body class="bg-background text-foreground antialiased">
+<div class="flex h-screen flex-col max-md:h-auto">
+
+  <!-- 页头 -->
+  <header class="flex w-full flex-none items-center gap-2.5 px-6 pt-[18px] pb-4 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground max-md:px-3.5 max-md:pt-4 max-md:pb-3">
+    <span class="h-4 w-1 flex-none rounded bg-primary"></span>基本信息 · PROFILE
+  </header>
+
+  <!-- 两栏：左=常驻过滤搜索 / 右=详情（目录 = 外壳侧边栏，已存在；铺满内容区避免两侧留白） -->
+  <div class="grid w-full min-h-0 flex-1 grid-cols-[350px_minmax(0,1fr)] gap-5 px-6 pb-6 max-md:block max-md:gap-4 max-md:px-3.5 max-md:pb-12">
+
+    <!-- 左：常驻过滤式搜索（复用原搜索框，缩短宽度；下拉做成常驻列表） -->
+    <div class="flex min-h-0 flex-col max-md:h-auto">
+      <div id="selector" class="min-h-0 flex-1 max-md:h-auto"></div>
+    </div>
+
+    <!-- 右：详情 -->
+    <main id="detailCol" class="yj-pane relative min-h-0 overflow-y-auto pr-1.5 max-md:h-auto max-md:overflow-visible max-md:pr-0">
+      <div id="body" class="min-h-full"></div>
+    </main>
+  </div>
+</div>
+
+<script src="../data-config.js"></script>
+<script src="../i18n.js"></script>
+<script src="../selector.js"></script>
+<script src="../bus.js"></script>
+<script src="../device.js"></script>
+<script src="../pedigree.js"></script>
+<script>
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* 通算成績 形如 "5戦1勝 [ 1-0-0-4 ]" → 转中文符号 */
+function transStats(v){
+  if(!v) return v;
+  return String(v).replace(/戦/g,"战").replace(/勝/g,"胜").replace(/着/g,"名");
+}
+
+/* 性别徽章（沿用搜索列表的配色语言：牡/牝/セン 原生显示） */
+function sexBadge(v){
+  if(v==="牡") return '<span class="inline-flex items-center rounded-full bg-[#C9EFFE] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#0B5A8C]">♂ 牡</span>';
+  if(v==="牝") return '<span class="inline-flex items-center rounded-full bg-[#FFDBD5] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#B03A30]">♀ 牝</span>';
+  if(v==="セ") return '<span class="inline-flex items-center rounded-full bg-[#EFEFEF] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#5A5A5A]">⚲ セン</span>';
+  return esc(v||"—");
+}
+
+/* iframe 高度自适应：嵌入内容随内容伸缩，避免无边框下的空白框。
+ * 血统图(pedframe)：高度取 max(内容高, 所在栏高) —— 内容矮时填满右栏与资料表对齐，内容高时撑开整块 */
+function fitFrames(){
+  [".pedframe",".raceframe"].forEach(function(sel){
+    var fr=document.querySelector(sel);
+    if(!fr) return;
+    var tries=0;
+    (function tick(){
+      if(tries++>50) return;
+      try{
+        var w=fr.contentWindow, d=w&&w.document;
+        if(!d) return;
+        var h=Math.max(d.body?d.body.scrollHeight:0, d.documentElement?d.documentElement.scrollHeight:0);
+        if(h>40 && Math.abs(h-fr.offsetHeight)>2){
+          var minH=0;
+          if(sel===".pedframe"){
+            var card=fr.closest?fr.closest(".pedcard"):null;
+            if(card) minH=Math.max(0,card.offsetHeight-24); /* p-3 上下 padding 各 12px */
+          }
+          fr.style.height=Math.min(Math.max(h,minH),1400)+"px";
+        }
+      }catch(e){}
+      setTimeout(tick,180);
+    })();
+  });
+}
+
+/* 头像：photo 兼容 数组/网络/本地；多图 → 相册：点击左/右切换，悬停提示
+ * 照片区为弹性大区域（flex-1 撑满剩余宽度）；照片完整展示（object-contain + max 约束，
+ * 不拉伸不裁切），铺满宽度/高度中取最大适配，放不下/不够大时居中 */
+function avatarHTML(photo){
+  var list=[];
+  if(Array.isArray(photo)) list=photo.slice();
+  else if(typeof photo==="string" && photo) list=[photo];
+  list=list.filter(function(p){return p;});
+  var wrap='relative flex min-h-[340px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 max-md:h-[240px] max-md:min-h-0 max-md:flex-none max-md:w-full';
+  if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span></div>';
+  list=list.map(function(p){ return (String(p).indexOf("data/")===0) ? YJ_DATA.url(p) : p; });
+  if(list.length===1){
+    return '<div class="'+wrap+'"><img src="'+esc(list[0])+'" alt="头像" class="absolute inset-0 h-full w-full object-contain" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"></div>';
+  }
+  return '<div class="'+wrap+' group" data-photos="'+esc(list.join("|"))+'">'+
+    '<img class="pav-img absolute inset-0 h-full w-full object-contain" src="'+esc(list[0])+'" alt="头像" onerror="this.style.display=\'none\'">'+
+    '<button type="button" class="pav-nav pav-prev absolute top-1/2 left-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="上一张">‹</button>'+
+    '<button type="button" class="pav-nav pav-next absolute top-1/2 right-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="下一张">›</button>'+
+    '<div class="pav-count absolute top-2.5 right-3 rounded-full border border-black/15 bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums tracking-[.5px] text-foreground/75 shadow-md backdrop-blur-sm">1/'+list.length+'</div>'+
+  '</div>';
+}
+
+/* 相册切换：点击左半/右半 → 上一张/下一张（‹ › 箭头同理，环形循环） */
+function avatarBind(){
+  var el=document.querySelector(".pava.multi") || document.querySelector("[data-photos]");
+  if(!el) return;
+  var photos=el.getAttribute("data-photos").split("|");
+  var img=el.querySelector(".pav-img");
+  var count=el.querySelector(".pav-count");
+  var idx=0;
+  function show(n){
+    idx=(n+photos.length)%photos.length;
+    img.src=photos[idx];
+    count.textContent=(idx+1)+"/"+photos.length;
+  }
+  el.addEventListener("click",function(e){
+    var rect=el.getBoundingClientRect();
+    if(e.clientX-rect.left < rect.width/2) show(idx-1); else show(idx+1);
+  });
+  var prev=el.querySelector(".pav-prev"), next=el.querySelector(".pav-next");
+  if(prev) prev.addEventListener("click",function(e){e.stopPropagation();show(idx-1);});
+  if(next) next.addEventListener("click",function(e){e.stopPropagation();show(idx+1);});
+}
+
+var detailCol=document.getElementById("detailCol");
+
+/* 未选马：目录总览（让右侧不空白，兼做引导；统计卡片分 基础/出生年/性别 三类） */
+function renderOverview(hs){
+  var total=hs.length;
+  var byYear={}, bySex={};
+  var raced=0;
+  hs.forEach(function(h){
+    var y=h.生年||'未知'; byYear[y]=(byYear[y]||0)+1;
+    var s=h.性別;
+    if(s==='セ') s='セン'; /* セ/セン 两种写法都算骟马 */
+    if(s) bySex[s]=(bySex[s]||0)+1;
+    if(h.通算成績) raced++;
+  });
+  var years=Object.keys(byYear).sort().reverse();
+  var stat=function(v,k,hi){ return '<div class="flex flex-col items-start justify-center rounded-md bg-muted/30 px-4 py-3.5"><div class="text-[22px] font-semibold leading-tight '+(hi?'text-primary':'')+'">'+esc(v)+'</div><div class="mt-0.5 text-[12px] text-secondary-foreground">'+esc(k)+'</div></div>'; };
+  var group=function(label, sub, cols, inner){
+    return '<div class="flex min-h-0 flex-1 flex-col rounded-[10px] border border-border bg-card p-5">'+
+      '<div class="mb-3 flex items-baseline gap-2"><span class="text-[12px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+label+'</span>'+(sub?'<span class="text-[10.5px] tracking-[.5px] text-muted-foreground">'+sub+'</span>':'')+'</div>'+
+      '<div class="grid min-h-0 flex-1 gap-3 '+cols+'">'+inner+'</div></div>';
+  };
+  var sexName={'牡':'牡马','牝':'牝马','セン':'骟马'};
+  var statHTML=
+    group('基础','BASIC','grid-cols-2',
+      stat(total,'收录产驹总数',true)+stat(raced,'比赛记录',''))+
+    group('出生年','BY YEAR','grid-cols-2',
+      years.map(function(y){ return stat(byYear[y], y+' 年生',''); }).join(''))+
+    group('性别','BY SEX','grid-cols-3',
+      ['牡','牝','セン'].map(function(s){ return stat(bySex[s]||0, sexName[s], ''); }).join(''));
+  document.getElementById("body").innerHTML =
+    '<div class="flex min-h-full flex-col gap-4">'+
+      '<div class="rounded-[10px] border border-border bg-card p-6">'+
+        '<div class="text-[17px] font-bold">云迹 · コントレイル产驹资料库</div>'+
+        '<div class="mt-1.5 text-[13px] text-muted-foreground">请在左侧搜索栏输入 日文名 / 英文名 / 港译名 / 自译名 / 母名 / 马主 / 调教师 / 生产牧场，或从列表中直接选择一匹马，查看其基本信息。</div>'+
+      '</div>'+statHTML+
+    '</div>';
+}
+
+function render(h){
+  var t=YJ.i18n.t;
+  var title = h.自译馬名 || h.欧字馬名 || h.馬名 || ('#'+h.id);
+
+  /* ── 上段 · 图片 + 基本信息 + 血统（一体式，无卡片无分割线）── */
+
+  /* ── 名字区：日本 / 英文 / 港译 / 自译 同款排版（上小标签 + 下名字），一行，/ 分隔 ── */
+  var ncol=function(lbl,v,big){
+    return '<div class="flex min-w-0 flex-col justify-center">'+
+      '<span class="text-[10.5px] font-semibold uppercase tracking-[1.5px] '+(big?'text-primary':'text-muted-foreground')+'">'+lbl+'</span>'+
+      '<span class="mt-0.5 whitespace-nowrap '+(big?'text-[30px] font-bold leading-tight text-foreground':'text-[19px] font-semibold leading-tight text-secondary-foreground')+'">'+esc(v)+'</span></div>';
+  };
+  /* 空值槽位：名字固定四格（日文/英文/港译/自译），缺名保留位置显示弱化「—」（沿用全站缺失=—惯例），
+   * 标签与名字都比真值淡，一眼区分空槽 vs 数据；四格全空才回退 #id */
+  var nslot=function(lbl){
+    return '<div class="flex min-w-0 flex-col justify-center">'+
+      '<span class="text-[10.5px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/70">'+lbl+'</span>'+
+      '<span class="mt-0.5 text-[19px] font-normal leading-tight text-muted-foreground/60">—</span></div>';
+  };
+  var names=[
+    h.馬名     ? ncol('日文',h.馬名,true)        : nslot('日文'),
+    h.欧字馬名 ? ncol('英文',h.欧字馬名,false)   : nslot('英文'),
+    h.香港馬名 ? ncol('港译',h.香港馬名,false)   : nslot('港译'),
+    h.自译馬名 ? ncol('自译',h.自译馬名,false)   : nslot('自译')
+  ];
+  if(!h.馬名 && !h.欧字馬名 && !h.香港馬名 && !h.自译馬名) names[0]=ncol('日文','#'+h.id,true);
+  var sep='<span class="mb-0.5 select-none text-[15px] font-light text-muted-foreground/45">/</span>';
+  var nameHeader='<div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>';
+
+  /* ── 上段整体：照片（左，铺满占大） + 基本信息 + 血统（右，窄列，成为一体）── */
+  var fi=function(k,v){
+    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span></div>';
+  };
+  var stBadge=h.登録状態 ? (h.登録状態==="現役"
+    ? '<span class="inline-flex items-center rounded-full bg-accent px-2 py-[2px] text-[11.5px] font-semibold text-accent-foreground">现役</span>'
+    : '<span class="inline-flex items-center rounded-full bg-muted px-2 py-[2px] text-[11.5px] font-medium text-muted-foreground">'+esc(YJ.i18n.e("登録状態",h.登録状態))+'</span>')
+    : '<span class="text-muted-foreground">—</span>';
+  var info='<div class="grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border">'+
+    fi(t("性別"), sexBadge(h.性別))+
+    fi(t("生年月日"), esc(h.生年月日||"—"))+
+    fi(t("登録状態"), stBadge)+
+    fi(t("毛色"), esc(YJ.i18n.e("毛色",h.毛色)||"—"))+
+    fi(t("馬齢"), esc(h.馬齢||"—"))+
+    fi(t("産地"), esc(h.産地||"—"))+
+    fi(t("馬主"), esc(h.馬主||"—"))+
+    fi(t("調教師"), esc(h.調教師||"—"))+
+    fi(t("生産牧場"), esc(h.生産牧場||"—"))+
+    fi(t("セリ取引価格"), esc(h.セリ取引価格||"—"))+
+  '</div>';
+  /* 血统图：fitFrames 撑到 max(内容高度, 右栏高度)，内容矮时填满对齐资料表、内容高时撑开整块 */
+  var pedBlock='<div class="pedcard overflow-hidden rounded-[10px] border border-border bg-card">'+
+    '<div class="p-3"><iframe class="pedframe w-full bg-background" src="pedigree.html?embed=1" title="血统图"></iframe></div>'+
+  '</div>';
+  /* 上段宽度比例（PC）：左中右三栏 1:1:1 等高（照片 / 基本信息 / 血统图）。
+   * 容器等高由 items-stretch 保证，总高度以基本资料表为基准；
+   * mb 端退回单列纵向 max-md:flex-col。 */
+  var basicBlock='<div class="mt-6 flex items-stretch gap-6 max-md:flex-col max-md:gap-4">'+
+    avatarHTML(h.photo)+
+    '<div class="min-w-0 flex-1">'+info+'</div>'+
+    '<div class="min-w-0 flex-1">'+pedBlock+'</div></div>';
+
+  /* ── 中段 · 数据概览（v8 卡片方案：主卡通算成績 + 右侧 2×2 副卡）── */
+  /* 通算成績 "5戦1勝 [ 1-0-0-4 ]" → {p1,p2,p3,p4,total}；解析失败 → null */
+  function placeStats(v){
+    var m=String(v||"").match(/\[[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*\]/);
+    if(!m) return null;
+    var a=[+m[1],+m[2],+m[3],+m[4]], total=a[0]+a[1]+a[2]+a[3];
+    return {p1:a[0],p2:a[1],p3:a[2],p4:a[3],total:total};
+  }
+  /* 比率：n/total → "40%"；total 0 → "—" */
+  function ratePct(n,t){ return t>0 ? (Math.round(n/t*1000)/10)+"%" : "—"; }
+
+  var tst=transStats(h.通算成績||"未出赛");
+  var ps=placeStats(tst);
+  var isNR=!ps || ps.total<=0;   /* 未出赛 0戦0勝 */
+  var tstBig=(function(){ var m=String(tst).match(/\s*\[/); return m?String(tst).slice(0,m.index).trim():tst; })();
+  var brack=ps?('['+[ps.p1,ps.p2,ps.p3,ps.p4].join('-')+']'):'';
+  var mainBig=isNR?'未出赛':tstBig;
+
+  /* 収得賞金：主数字=平地；障害/Jpn 非 0 才显示副行 */
+  var prize=h.収得賞金||{};
+  var prizeFlat=(prize.平地&&prize.平地!==0&&prize.平地!=="0")?String(prize.平地):"";
+  var prizeSub=[];
+  if(prize.障害&&prize.障害!==0&&prize.障害!=="0") prizeSub.push('障害 '+prize.障害);
+  if(prize.Jpn&&prize.Jpn!==0&&prize.Jpn!=="0") prizeSub.push('Jpn '+prize.Jpn);
+
+  /* 副卡骨架：上小标签 + 主数字(+单位) + 可选副行 */
+  var ovCard=function(k,inner){
+    return '<div class="flex flex-col justify-center rounded-[12px] border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,.04)] max-md:px-3 max-md:py-3">'+
+      '<div class="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">'+esc(k)+'</div>'+inner+'</div>';
+  };
+  /* 金额数字 + 万円单位；0/— 用浅灰弱化；mb 缩字防溢出 */
+  var ovVal=function(v,u,hi){
+    var dim=(v==="0"||v==="—")?'text-[#d6d6d6]':(hi?'text-primary':'text-foreground');
+    return '<div class="mt-1.5 flex items-baseline gap-1 whitespace-nowrap text-[30px] font-bold leading-none tracking-[-.5px] max-md:text-[22px] '+dim+'">'+esc(v)+(u?'<span class="text-[12.5px] font-medium text-muted-foreground max-md:text-[11px]">'+esc(u)+'</span>':'')+'</div>';
+  };
+  var money=function(raw){
+    raw=(raw==null||raw==="")?"—":String(raw);
+    var u=/万円/.test(raw)?"万円":"";
+    return {v:u?raw.replace(/万円$/,""):raw, u:u};
+  };
+
+  var mainCard='<div class="col-span-1 row-span-2 flex flex-col justify-center rounded-[14px] border border-border bg-card px-6 py-5 shadow-[0_4px_16px_rgba(16,24,40,.05)] max-md:col-span-2">'+
+    '<div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[1.6px] text-primary"><span class="h-[3px] w-3.5 flex-none rounded-full bg-primary"></span>通算成績 · RECORD</div>'+
+    '<div class="mt-3 flex items-baseline gap-1.5 whitespace-nowrap"><span class="text-[36px] font-semibold leading-none tracking-[-.2px] text-foreground max-md:text-[30px]">'+esc(mainBig)+'</span>'+
+      (brack?'<span class="ml-1 text-[14px] font-medium tracking-[.5px] text-[#a6a6a6] max-md:text-[12px]">'+esc(brack)+'</span>':'')+
+    '</div></div>';
+
+  var mC=money(h["獲得賞金 (中央)"]), mL=money(h["獲得賞金 (地方)"]), mF=money(prizeFlat);
+
+  var rateCell=function(v,k,hi){
+    return '<div class="min-w-0"><div class="whitespace-nowrap text-[24px] font-bold leading-none tracking-[-.5px] max-md:text-[16px] '+(hi?'text-primary':'text-foreground')+'">'+esc(v)+'</div>'+
+      '<div class="mt-1.5 whitespace-nowrap text-[10.5px] font-medium tracking-[.5px] text-muted-foreground max-md:text-[9.5px] max-md:tracking-[.2px]">'+esc(k)+'</div></div>';
+  };
+  var sep='<div class="h-6 w-px flex-none bg-border max-md:h-4"></div>';
+  var rateCard=ovCard("胜率",
+    '<div class="mt-2 flex items-center gap-4 max-md:gap-2">'+
+      rateCell(ratePct(ps?ps.p1:0,ps?ps.total:0), "胜率", true)+sep+
+      rateCell(ratePct(ps?ps.p1+ps.p2:0,ps?ps.total:0), "连对率", false)+sep+
+      rateCell(ratePct(ps?ps.p1+ps.p2+ps.p3:0,ps?ps.total:0), "复胜率", false)+
+    '</div>');
+
+  var statsBand='<div class="mt-10">'+
+    '<div class="mb-4 flex items-center gap-2.5"><span class="h-4 w-1 flex-none rounded bg-primary"></span><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">数据概览 · OVERVIEW</span></div>'+
+    '<div class="grid grid-cols-[1.5fr_1fr_1fr] gap-3.5 max-md:grid-cols-2">'+
+      mainCard+
+      ovCard(t("獲得賞金 (中央)"), ovVal(mC.v, mC.u, false))+
+      ovCard(t("獲得賞金 (地方)"), ovVal(mL.v, mL.u, false))+
+      ovCard(t("収得賞金"), ovVal(mF.v, mF.u, false)+(prizeSub.length?'<div class="mt-1 text-[11px] text-muted-foreground">'+esc(prizeSub.join(' · '))+'</div>':''))+
+      rateCard+
+    '</div></div>';
+
+  /* ── 下段 · 比赛记录（内嵌 iframe 无边框）── */
+  var raceSection='<div class="mt-10">'+
+    '<div class="mb-2.5 flex items-center gap-2.5"><span class="h-4 w-1 flex-none rounded bg-primary"></span><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">比赛记录 · RACES</span></div>'+
+    '<iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div>';
+
+  document.title=title+' · 基本信息 · 云迹';
+  document.getElementById("body").innerHTML =
+    '<section id="sec-basic" class="scroll-mt-2">'+nameHeader+basicBlock+'</section>'+
+    '<section id="sec-stats" class="scroll-mt-2">'+statsBand+'</section>'+
+    '<section id="sec-races" class="scroll-mt-2">'+raceSection+'</section>';
+
+  avatarBind(); /* 多图相册：绑定点击切换 */
+
+  /* 通知内嵌 races / 血统联动 */
+  YJ.bus.broadcast(h.id);
+  [".raceframe",".pedframe"].forEach(function(sel){
+    var fr=document.querySelector(sel);
+    if(fr && fr.contentWindow) fr.contentWindow.postMessage({type:"yj:horse", id:h.id},"*");
+  });
+
+  /* iframe 高度自适应（与嵌入内容融为一体，避免空白框） */
+  fitFrames();
+}
+
+YJ.selector.init({
+  el: document.getElementById("selector"),
+  base: YJ_DATA.url('basic.json'),
+  /* 常驻列表仅 pc 端（≥768 两栏布局）使用；mb 端面积小，退回弹层式下拉（聚焦展开、点外/Esc 收起） */
+  persistent: YJ.device.isPc(),
+  onSelect: function(h){
+    render(h);
+    if(YJ.device.isMb()) window.scrollTo({top:0}); else if(detailCol) detailCol.scrollTop=0;
+  }
+}).then(function(horses){
+  renderOverview(horses);
+  /* 从外部（如 races 页全库查询结果）带 ?horse=id 跳转定位 */
+  var m=location.search.match(/[?&]horse=([^&]+)/);
+  if(m && YJ.selector.selectById) YJ.selector.selectById(decodeURIComponent(m[1]));
+}).catch(function(e){
+  document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
+});
+
+/* 血统「完整 5 代」：内嵌 iframe 弹窗会困在小框内，改为通知本页，在本页打开完整弹窗 */
+window.addEventListener("message", function(e){
+  var d=e.data;
+  if(d && d.type==="yj:pedigreeFull" && window.YJ && YJ.pedigree){
+    YJ.pedigree.openModal(d.ped, d.title);
+  }
+});
+</script>
+</body>
+</html>

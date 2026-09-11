@@ -1,0 +1,411 @@
+{
+ "id": 251,
+ "jbis_id": "0001395090",
+ "馬名": "",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ドメニカ(BRZ)",
+     "sex": "牝",
+     "id": "0001327909",
+     "year": "2013",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Redattore(BRZ)",
+     "sex": "牡",
+     "id": "0000719090",
+     "year": "1995",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Jolie Celina(BRZ)",
+     "sex": "牝",
+     "id": "0000846873",
+     "year": "1999",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Roi Normand(USA)",
+     "sex": "牡",
+     "id": "0000343040",
+     "year": "1983"
+    },
+    {
+     "name": "Political Intrigue(CAN)",
+     "sex": "牝",
+     "id": "0000714566",
+     "year": "1989"
+    },
+    {
+     "name": "Trempolino(USA)",
+     "sex": "牡",
+     "id": "0000337461",
+     "year": "1984"
+    },
+    {
+     "name": "China Empress(USA)",
+     "sex": "牝",
+     "id": "0000836344",
+     "year": "1993"
+    }
+   ],
+   [
+    {
+     "name": "Exclusive Native(USA)",
+     "sex": "牡",
+     "id": "0000334242",
+     "year": "1965"
+    },
+    {
+     "name": "Luth de Saron(FR)",
+     "sex": "牝",
+     "id": "0000406261",
+     "year": "1977"
+    },
+    {
+     "name": "Deputy Minister(CAN)",
+     "sex": "牡",
+     "id": "0000338072",
+     "year": "1979"
+    },
+    {
+     "name": "Fascinating Trick(USA)",
+     "sex": "牝",
+     "id": "0000438874",
+     "year": "1970"
+    },
+    {
+     "name": "Sharpen Up(GB)",
+     "sex": "牡",
+     "id": "0000336086",
+     "year": "1969"
+    },
+    {
+     "name": "Trephine(FR)",
+     "sex": "牝",
+     "id": "0000391473",
+     "year": "1977"
+    },
+    {
+     "name": "Wavering Monarch(USA)",
+     "sex": "牡",
+     "id": "0000337546",
+     "year": "1979"
+    },
+    {
+     "name": "Autumn Rythym(USA)",
+     "sex": "牝",
+     "id": "0000827377",
+     "year": "1986"
+    }
+   ],
+   [
+    {
+     "name": "Raise a Native(USA)",
+     "sex": "牡",
+     "id": "0000334066",
+     "year": "1961"
+    },
+    {
+     "name": "Exclusive(USA)",
+     "sex": "牝",
+     "id": "0000387480",
+     "year": "1953"
+    },
+    {
+     "name": "Luthier(FR)",
+     "sex": "牡",
+     "id": "0000334060",
+     "year": "1965"
+    },
+    {
+     "name": "Rose de Saron(FR)",
+     "sex": "牝",
+     "id": "0000392762",
+     "year": "1969"
+    },
+    {
+     "name": "Vice Regent(CAN)",
+     "sex": "牡",
+     "id": "0000336132",
+     "year": "1967"
+    },
+    {
+     "name": "Mint Copy(CAN)",
+     "sex": "牝",
+     "id": "0000392196",
+     "year": "1970"
+    },
+    {
+     "name": "Buckpasser(USA)",
+     "sex": "牡",
+     "id": "0000334012",
+     "year": "1963"
+    },
+    {
+     "name": "Intriguing(USA)",
+     "sex": "牝",
+     "id": "0000389276",
+     "year": "1964"
+    },
+    {
+     "name": "エタン(USA)",
+     "sex": "牡",
+     "id": "0000333331",
+     "year": "1961"
+    },
+    {
+     "name": "Rocchetta(GB)",
+     "sex": "牝",
+     "id": "0000386089",
+     "year": "1961"
+    },
+    {
+     "name": "ヴアイスリーガル(CAN)",
+     "sex": "牡",
+     "id": "0000333611",
+     "year": "1966"
+    },
+    {
+     "name": "Quiriquina(FR)",
+     "sex": "牝",
+     "id": "0000391472",
+     "year": "1966"
+    },
+    {
+     "name": "Majestic Light(USA)",
+     "sex": "牡",
+     "id": "0000336090",
+     "year": "1973"
+    },
+    {
+     "name": "Uncommitted(USA)",
+     "sex": "牝",
+     "id": "0000395209",
+     "year": "1974"
+    },
+    {
+     "name": "Slew o' Gold(USA)",
+     "sex": "牡",
+     "id": "0000336883",
+     "year": "1980"
+    },
+    {
+     "name": "Herecomesthebride(USA)",
+     "sex": "牝",
+     "id": "0000414793",
+     "year": "1974"
+    }
+   ]
+  ]
+ },
+ "fno": "F9-f",
+ "cross": ""
+}

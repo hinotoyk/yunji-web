@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>血统图 · 云迹</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+/* embed 模式：贴满 iframe 宽度并去掉页级留白，还原 profile 内嵌时的样式 */
+#page.embed{max-width:none;padding:0}
+</style>
+</head>
+<body class="bg-background text-foreground antialiased">
+<div class="mx-auto max-w-[880px] px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-4 max-md:pb-12" id="page">
+  <div id="selector" class="embed-hide"></div>
+  <div id="body"><div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">↑ 请在上方选择一匹马，查看其血统</div></div>
+</div>
+
+<script src="../data-config.js"></script>
+<script src="../i18n.js"></script>
+<script src="../selector.js"></script>
+<script src="../bus.js"></script>
+<script src="../pedigree.js"></script>
+<script>
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+var EMBED = /[?&]embed=1/.test(location.search);
+var PAGE = document.getElementById("page");
+if (EMBED) PAGE.classList.add("embed");
+
+/* 血统区块：简约 2 代 + 点击弹窗完整 5 代（样式与 profile 内嵌一致） */
+function renderPedigree(h){
+  if (h == null) return;
+  var t = YJ.i18n.t;
+  var title = h.香港馬名 || h.馬名 || h.欧字馬名 || ('#'+h.id);
+
+  /* 独立模式才有页面头 + 马名头；内嵌模式只渲染血统卡片本身 */
+  var head = EMBED ? '' :
+    '<div class="my-7 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+
+      '<span class="h-4 w-1 flex-none rounded bg-primary"></span>血统图 · PEDIGREE</div>';
+  var hname = EMBED ? '' :
+    '<div class="mb-1.5 flex flex-wrap items-baseline gap-3"><h2 class="text-[17px] font-bold">'+esc(title)+'</h2>'+
+      '<span class="text-[12px] text-muted-foreground">'+esc(YJ.i18n.g(h,"性別"))+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';
+
+  /* 内嵌模式（profile 上段一体式）：不包卡片、不重复标题（label 由 profile 提供）；
+   * 独立模式保留卡片容器。 */
+  var pedBodyHTML = '<div class="pg-loading px-0.5 py-1.5 text-[12.5px] text-muted-foreground" id="pedBody">加载中…</div>';
+  var card = EMBED
+    ? pedBodyHTML
+    : '<div class="mb-3.5 rounded-[10px] border border-border bg-card px-5 py-4">'+
+        '<div class="mb-2.5 flex items-center gap-2.5"><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+t("血统")+' · PEDIGREE</span></div>'+
+        pedBodyHTML+'</div>';
+
+  document.getElementById("body").innerHTML = head + hname + card;
+
+  /* 按需加载血统：简约版，点击弹窗完整版 */
+  (function(){
+    var pedBody = document.getElementById("pedBody");
+    YJ.pedigree.load(h.id, YJ_DATA.url('pedigree/')).then(function(ped){
+      pedBody.innerHTML = YJ.pedigree.simpleHTML(ped) +
+        '<div class="mt-2 text-[12px] text-secondary-foreground">点击查看 <b class="font-medium text-primary">完整 5 代血统图</b> →</div>';
+      if (EMBED) {
+        /* 内嵌在 profile 中：弹窗不能困在 iframe 小框内，通知父页面在本页弹出完整版 */
+        pedBody.addEventListener("click", function(){
+          try { parent.postMessage({ type:"yj:pedigreeFull", ped: ped, title: title+" · 血统图" }, "*"); }
+          catch(e){}
+        });
+      } else {
+        YJ.pedigree.bindSimple(pedBody, ped, title+' · 血统图');
+      }
+    }).catch(function(e){
+      pedBody.innerHTML='<div class="pg-loading px-0.5 py-1.5 text-[12.5px] text-muted-foreground">血统加载失败（'+esc(e.message)+'）</div>';
+    });
+  })();
+}
+
+function renderHorse(id){
+  if (id == null) return;
+  var list = (YJ.selector.getHorses ? YJ.selector.getHorses() : []) || [];
+  var h = list.find(function(x){return x.id===id;});
+  if (h) { renderPedigree(h); return; }
+  fetch(YJ_DATA.url('basic.json')).then(function(r){return r.json();}).then(function(d){
+    var arr = Array.isArray(d)?d:(d.horses||[]);
+    renderPedigree(arr.find(function(x){return x.id===id;}) || {id:id});
+  }).catch(function(){ renderPedigree({id:id}); });
+}
+
+if (EMBED) {
+  document.querySelector(".embed-hide").style.display="none";
+  document.getElementById("selector").style.display="none";
+  YJ.bus.onChange(function(id){ renderHorse(id); });
+} else {
+  YJ.selector.init({
+    el: document.getElementById("selector"),
+    base: YJ_DATA.url('basic.json'),
+    onSelect: function(h){ renderPedigree(h); }
+  }).catch(function(e){
+    document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
+  });
+}
+</script>
+</body>
+</html>

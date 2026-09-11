@@ -1,0 +1,411 @@
+{
+ "id": 218,
+ "jbis_id": "0001393510",
+ "馬名": "",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "クードメイトル",
+     "sex": "牝",
+     "id": "0001221790",
+     "year": "2016",
+     "color": "栗毛"
+    }
+   ],
+   [
+    {
+     "name": "ヴィクトワールピサ",
+     "sex": "牡",
+     "id": "0001046333",
+     "year": "2007",
+     "color": "黒鹿毛"
+    },
+    {
+     "name": "ドリームオブジェニー(FR)",
+     "sex": "牝",
+     "id": "0001157864",
+     "year": "2008",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ネオユニヴァース",
+     "sex": "牡",
+     "id": "0000701577",
+     "year": "2000"
+    },
+    {
+     "name": "ホワイトウォーターアフェア(GB)",
+     "sex": "牝",
+     "id": "0000439039",
+     "year": "1993"
+    },
+    {
+     "name": "Pivotal(GB)",
+     "sex": "牡",
+     "id": "0000365118",
+     "year": "1993"
+    },
+    {
+     "name": "Glia(USA)",
+     "sex": "牝",
+     "id": "0000719021",
+     "year": "1999"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ポインテッドパス(GB)",
+     "sex": "牝",
+     "id": "0000383827",
+     "year": "1984"
+    },
+    {
+     "name": "Machiavellian(USA)",
+     "sex": "牡",
+     "id": "0000337496",
+     "year": "1987"
+    },
+    {
+     "name": "Much Too Risky(GB)",
+     "sex": "牝",
+     "id": "0000409133",
+     "year": "1982"
+    },
+    {
+     "name": "Polar Falcon(USA)",
+     "sex": "牡",
+     "id": "0000341066",
+     "year": "1987"
+    },
+    {
+     "name": "Fearless Revival(GB)",
+     "sex": "牝",
+     "id": "0000410548",
+     "year": "1987"
+    },
+    {
+     "name": "A.P. Indy(USA)",
+     "sex": "牡",
+     "id": "0000339653",
+     "year": "1989"
+    },
+    {
+     "name": "Coup de Genie(USA)",
+     "sex": "牝",
+     "id": "0000422769",
+     "year": "1991"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Kris(GB)",
+     "sex": "牡",
+     "id": "0000336087",
+     "year": "1976"
+    },
+    {
+     "name": "Silken Way(FR)",
+     "sex": "牝",
+     "id": "0000422539",
+     "year": "1973"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Coup de Folie(USA)",
+     "sex": "牝",
+     "id": "0000394898",
+     "year": "1982"
+    },
+    {
+     "name": "Bustino(GB)",
+     "sex": "牡",
+     "id": "0000336185",
+     "year": "1971"
+    },
+    {
+     "name": "Short Rations(GB)",
+     "sex": "牝",
+     "id": "0000409132",
+     "year": "1975"
+    },
+    {
+     "name": "Nureyev(USA)",
+     "sex": "牡",
+     "id": "0000336085",
+     "year": "1977"
+    },
+    {
+     "name": "Marie d'Argonne(FR)",
+     "sex": "牝",
+     "id": "0000407506",
+     "year": "1981"
+    },
+    {
+     "name": "Cozzene(USA)",
+     "sex": "牡",
+     "id": "0000337423",
+     "year": "1980"
+    },
+    {
+     "name": "Stufida(GB)",
+     "sex": "牝",
+     "id": "0000410547",
+     "year": "1981"
+    },
+    {
+     "name": "Seattle Slew(USA)",
+     "sex": "牡",
+     "id": "0000335964",
+     "year": "1974"
+    },
+    {
+     "name": "Weekend Surprise(USA)",
+     "sex": "牝",
+     "id": "0000404842",
+     "year": "1980"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Coup de Folie(USA)",
+     "sex": "牝",
+     "id": "0000394898",
+     "year": "1982"
+    }
+   ]
+  ]
+ },
+ "fno": "F2-d",
+ "cross": "サンデーサイレンス(USA) ：S3×M4 Mr. Prospector(USA) ：M5×M5 Coup de Folie(USA) ：M5×M5"
+}

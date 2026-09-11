@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云迹 · コントレイル产驹资料库</title>
+<link rel="stylesheet" href="pages/theme.css">
+</head>
+<body class="overflow-hidden bg-background text-foreground antialiased">
+<div class="flex h-screen">
+  <!-- 左侧导航 -->
+  <aside id="sidebar" data-open="false"
+    class="fixed inset-y-0 left-0 z-40 flex w-[240px] shrink-0 flex-col border-r border-border bg-card
+           -translate-x-full shadow-[0_0_24px_rgba(0,0,0,.12)] transition-transform duration-200 ease-out
+           data-[open=true]:translate-x-0
+           md:static md:z-auto md:w-[220px] md:translate-x-0 md:shadow-none md:transition-none">
+    <div class="flex items-center gap-2.5 border-b border-border px-[18px] pb-3.5 pt-[18px]">
+      <div class="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">雲</div>
+      <div class="text-[15px] font-semibold tracking-[.5px]">云迹
+        <small class="block text-[11px] font-normal tracking-[1px] text-secondary-foreground">コントレイル产驹资料库</small>
+      </div>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-2.5">
+      <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">云崽档案</div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/profile.html" data-on="false">
+        <span class="w-[18px] text-center text-[14px] opacity-90">ℹ</span>基本信息
+      </div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/races.html" data-on="false">
+        <span class="w-[18px] text-center text-[14px] opacity-90">🏇</span>比赛记录
+      </div>
+      <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">统计</div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/stats.html" data-on="false">
+        <span class="w-[18px] text-center text-[14px] opacity-90">📊</span>统计总览
+      </div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/datechart.html" data-on="false">
+        <span class="w-[18px] text-center text-[14px] opacity-90">📅</span>日期图
+      </div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/timeline.html" data-on="false">
+        <span class="w-[18px] text-center text-[14px] opacity-90">🧭</span>时间线
+      </div>
+    </nav>
+    <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">云迹 · 数据仅供分享交流</div>
+  </aside>
+
+  <!-- 手机端浮动 ☰ 汉堡（抽屉按钮；桌面隐藏，抽屉打开时被侧边栏/遮罩盖住） -->
+  <button id="menuBtn" type="button" aria-label="打开菜单"
+    class="fixed top-3 left-3 z-20 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg border border-border bg-background text-[18px] leading-none text-foreground shadow-[0_2px_8px_rgba(0,0,0,.08)] md:hidden">☰</button>
+
+  <!-- 抽屉遮罩（仅手机） -->
+  <div id="backdrop" data-show="false"
+    class="fixed inset-0 z-30 bg-black/35 opacity-0 invisible transition-opacity duration-200
+           data-[show=true]:opacity-100 data-[show=true]:visible md:hidden"></div>
+
+  <!-- 内容区 -->
+  <div class="flex min-w-0 flex-1 flex-col">
+    <div class="min-h-0 flex-1">
+      <iframe id="frame" class="block h-full w-full border-none bg-background" src="pages/profile.html" title="内容"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+var items=[].slice.call(document.querySelectorAll('.nav-item'));
+var sidebar=document.getElementById('sidebar');
+var backdrop=document.getElementById('backdrop');
+var menuBtn=document.getElementById('menuBtn');
+function closeDrawer(){
+  sidebar.dataset.open='false';
+  backdrop.dataset.show='false';
+  document.body.style.overflow='hidden';
+}
+menuBtn.addEventListener('click',function(){
+  sidebar.dataset.open='true';
+  backdrop.dataset.show='true';
+});
+backdrop.addEventListener('click',closeDrawer);
+function go(href){
+  document.getElementById('frame').src=href;
+  items.forEach(function(it){it.dataset.on=(it.dataset.href===href)?'true':'false';});
+  closeDrawer();
+}
+items.forEach(function(it){it.addEventListener('click',function(){go(it.dataset.href);});});
+</script>
+</body>
+</html>

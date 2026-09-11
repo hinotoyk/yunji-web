@@ -1,0 +1,411 @@
+{
+ "id": 125,
+ "jbis_id": "0001375499",
+ "馬名": "ロックトゥワイス",
+ "pedigree": {
+  "父": [
+   [
+    {
+     "name": "コントレイル",
+     "sex": "牡",
+     "id": "0001237042",
+     "year": "2017",
+     "color": "青鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "ディープインパクト",
+     "sex": "牡",
+     "id": "0000742976",
+     "year": "2002",
+     "color": "鹿毛"
+    },
+    {
+     "name": "ロードクロサイト(USA)",
+     "sex": "牝",
+     "id": "0001157855",
+     "year": "2010",
+     "color": "芦毛"
+    }
+   ],
+   [
+    {
+     "name": "サンデーサイレンス(USA)",
+     "sex": "牡",
+     "id": "0000333862",
+     "year": "1986"
+    },
+    {
+     "name": "ウインドインハーヘア(IRE)",
+     "sex": "牝",
+     "id": "0000430846",
+     "year": "1991"
+    },
+    {
+     "name": "Unbridled's Song(USA)",
+     "sex": "牡",
+     "id": "0000361396",
+     "year": "1993"
+    },
+    {
+     "name": "Folklore(USA)",
+     "sex": "牝",
+     "id": "0000906032",
+     "year": "2003"
+    }
+   ],
+   [
+    {
+     "name": "Halo(USA)",
+     "sex": "牡",
+     "id": "0000335154",
+     "year": "1969"
+    },
+    {
+     "name": "Wishing Well(USA)",
+     "sex": "牝",
+     "id": "0000393162",
+     "year": "1975"
+    },
+    {
+     "name": "Alzao(USA)",
+     "sex": "牡",
+     "id": "0000339659",
+     "year": "1980"
+    },
+    {
+     "name": "Burghclere(GB)",
+     "sex": "牝",
+     "id": "0000394655",
+     "year": "1977"
+    },
+    {
+     "name": "Unbridled(USA)",
+     "sex": "牡",
+     "id": "0000340629",
+     "year": "1987"
+    },
+    {
+     "name": "Trolley Song(USA)",
+     "sex": "牝",
+     "id": "0000423919",
+     "year": "1983"
+    },
+    {
+     "name": "Tiznow(USA)",
+     "sex": "牡",
+     "id": "0000621100",
+     "year": "1997"
+    },
+    {
+     "name": "Contrive(USA)",
+     "sex": "牝",
+     "id": "0000795543",
+     "year": "1998"
+    }
+   ],
+   [
+    {
+     "name": "Hail to Reason(USA)",
+     "sex": "牡",
+     "id": "0000334286",
+     "year": "1958"
+    },
+    {
+     "name": "Cosmah(USA)",
+     "sex": "牝",
+     "id": "0000387273",
+     "year": "1953"
+    },
+    {
+     "name": "Understanding(USA)",
+     "sex": "牡",
+     "id": "0000336892",
+     "year": "1963"
+    },
+    {
+     "name": "Mountain Flower(USA)",
+     "sex": "牝",
+     "id": "0000393161",
+     "year": "1964"
+    },
+    {
+     "name": "Lyphard(USA)",
+     "sex": "牡",
+     "id": "0000334968",
+     "year": "1969"
+    },
+    {
+     "name": "Lady Rebecca(GB)",
+     "sex": "牝",
+     "id": "0000394467",
+     "year": "1971"
+    },
+    {
+     "name": "Busted(GB)",
+     "sex": "牡",
+     "id": "0000334011",
+     "year": "1963"
+    },
+    {
+     "name": "Highclere(GB)",
+     "sex": "牝",
+     "id": "0000390924",
+     "year": "1971"
+    },
+    {
+     "name": "Fappiano(USA)",
+     "sex": "牡",
+     "id": "0000336225",
+     "year": "1977"
+    },
+    {
+     "name": "Gana Facil(USA)",
+     "sex": "牝",
+     "id": "0000394149",
+     "year": "1981"
+    },
+    {
+     "name": "Caro(IRE)",
+     "sex": "牡",
+     "id": "0000334731",
+     "year": "1967"
+    },
+    {
+     "name": "Lucky Spell(USA)",
+     "sex": "牝",
+     "id": "0000395190",
+     "year": "1971"
+    },
+    {
+     "name": "Cee's Tizzy(USA)",
+     "sex": "牡",
+     "id": "0000341817",
+     "year": "1987"
+    },
+    {
+     "name": "Cee's Song(USA)",
+     "sex": "牝",
+     "id": "0000444579",
+     "year": "1986"
+    },
+    {
+     "name": "Storm Cat(USA)",
+     "sex": "牡",
+     "id": "0000337102",
+     "year": "1983"
+    },
+    {
+     "name": "Jeano(USA)",
+     "sex": "牝",
+     "id": "0000430565",
+     "year": "1988"
+    }
+   ]
+  ],
+  "母": [
+   [
+    {
+     "name": "ファタルベーレ(FR)",
+     "sex": "牝",
+     "id": "0001314427",
+     "year": "2015",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Pedro the Great(USA)",
+     "sex": "牡",
+     "id": "0001300338",
+     "year": "2010",
+     "color": "鹿毛"
+    },
+    {
+     "name": "Mofa Bere(FR)",
+     "sex": "牝",
+     "id": "0000860861",
+     "year": "2000",
+     "color": "鹿毛"
+    }
+   ],
+   [
+    {
+     "name": "Henrythenavigator(USA)",
+     "sex": "牡",
+     "id": "0001082309",
+     "year": "2005"
+    },
+    {
+     "name": "Glatisant(GB)",
+     "sex": "牝",
+     "id": "0000432242",
+     "year": "1991"
+    },
+    {
+     "name": "Saumarez(GB)",
+     "sex": "牡",
+     "id": "0000342252",
+     "year": "1987"
+    },
+    {
+     "name": "Sofa(USA)",
+     "sex": "牝",
+     "id": "0000859629",
+     "year": "1992"
+    }
+   ],
+   [
+    {
+     "name": "Kingmambo(USA)",
+     "sex": "牡",
+     "id": "0000347989",
+     "year": "1990"
+    },
+    {
+     "name": "Sequoyah(IRE)",
+     "sex": "牝",
+     "id": "0000621622",
+     "year": "1998"
+    },
+    {
+     "name": "Rainbow Quest(USA)",
+     "sex": "牡",
+     "id": "0000337286",
+     "year": "1981"
+    },
+    {
+     "name": "Dancing Rocks(GB)",
+     "sex": "牝",
+     "id": "0000407564",
+     "year": "1979"
+    },
+    {
+     "name": "Rainbow Quest(USA)",
+     "sex": "牡",
+     "id": "0000337286",
+     "year": "1981"
+    },
+    {
+     "name": "Fiesta Fun(GB)",
+     "sex": "牝",
+     "id": "0000394252",
+     "year": "1978"
+    },
+    {
+     "name": "ジェイドハンター(USA)",
+     "sex": "牡",
+     "id": "0000337289",
+     "year": "1984"
+    },
+    {
+     "name": "Bold Slew(USA)",
+     "sex": "牝",
+     "id": "0000731746",
+     "year": "1984"
+    }
+   ],
+   [
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Miesque(USA)",
+     "sex": "牝",
+     "id": "0000411358",
+     "year": "1984"
+    },
+    {
+     "name": "Sadler's Wells(USA)",
+     "sex": "牡",
+     "id": "0000336572",
+     "year": "1981"
+    },
+    {
+     "name": "Brigid(USA)",
+     "sex": "牝",
+     "id": "0000451665",
+     "year": "1991"
+    },
+    {
+     "name": "Blushing Groom(FR)",
+     "sex": "牡",
+     "id": "0000335274",
+     "year": "1974"
+    },
+    {
+     "name": "I Will Follow(USA)",
+     "sex": "牝",
+     "id": "0000394168",
+     "year": "1975"
+    },
+    {
+     "name": "Green Dancer(USA)",
+     "sex": "牡",
+     "id": "0000335293",
+     "year": "1972"
+    },
+    {
+     "name": "Croda Rossa(ITY)",
+     "sex": "牝",
+     "id": "0000407563",
+     "year": "1967"
+    },
+    {
+     "name": "Blushing Groom(FR)",
+     "sex": "牡",
+     "id": "0000335274",
+     "year": "1974"
+    },
+    {
+     "name": "I Will Follow(USA)",
+     "sex": "牝",
+     "id": "0000394168",
+     "year": "1975"
+    },
+    {
+     "name": "Welsh Pageant(FR)",
+     "sex": "牡",
+     "id": "0000335805",
+     "year": "1966"
+    },
+    {
+     "name": "Antigua(GB)",
+     "sex": "牝",
+     "id": "0000394251",
+     "year": "1958"
+    },
+    {
+     "name": "Mr. Prospector(USA)",
+     "sex": "牡",
+     "id": "0000335975",
+     "year": "1970"
+    },
+    {
+     "name": "Jadana(IRE)",
+     "sex": "牝",
+     "id": "0000394172",
+     "year": "1979"
+    },
+    {
+     "name": "Seattle Slew(USA)",
+     "sex": "牡",
+     "id": "0000335964",
+     "year": "1974"
+    },
+    {
+     "name": "Golden Shore(USA)",
+     "sex": "牝",
+     "id": "0000390123",
+     "year": "1971"
+    }
+   ]
+  ]
+ },
+ "fno": "F3-o",
+ "cross": "Rainbow Quest(USA) ：M4×M4 Mr. Prospector(USA) ：M5×M5"
+}
