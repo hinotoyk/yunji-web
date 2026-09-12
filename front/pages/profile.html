@@ -303,7 +303,11 @@ function render(h){
 
   /* ── 下段 · 比赛记录（内嵌 iframe 无边框）── */
   var raceSection='<div class="mt-10">'+
-    '<div class="mb-2.5 flex items-center gap-2.5"><span class="h-4 w-1 flex-none rounded bg-primary"></span><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">比赛记录 · RACES</span></div>'+
+    '<div class="mb-2.5 flex items-center gap-2.5">'+
+      '<span class="h-4 w-1 flex-none rounded bg-primary"></span>'+
+      '<span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">比赛记录 · RACES</span>'+
+      '<a class="flex-none text-[12px] font-semibold text-accent-foreground hover:text-primary hover:underline" href="races.html?horse='+encodeURIComponent(h.id)+'">详细数据→</a>'+
+    '</div>'+
     '<iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div>';
 
   document.title=title+' · 基本信息 · 云迹';

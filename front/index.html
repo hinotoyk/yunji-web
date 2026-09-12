@@ -80,6 +80,15 @@ function go(href){
   closeDrawer();
 }
 items.forEach(function(it){it.addEventListener('click',function(){go(it.dataset.href);});});
+/* 内容 iframe 内部跳转（如 比赛记录 → 基本信息）后，同步侧边栏高亮与当前页面一致 */
+document.getElementById('frame').addEventListener('load',function(){
+  var path='';
+  try{ path=this.contentWindow.location.pathname||''; }catch(e){}
+  if(!path) return;
+  items.forEach(function(it){
+    it.dataset.on=(path.slice(-it.dataset.href.length)===it.dataset.href)?'true':'false';
+  });
+});
 </script>
 </body>
 </html>

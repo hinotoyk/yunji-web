@@ -152,6 +152,8 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 var EMBED = /[?&]embed=1/.test(location.search);
+/* 从基本信息「在比赛记录中查看详情」跳转带来的 ?horse=id：独立模式预置出走马筛选 */
+var URL_HORSE = (function(){ var m=location.search.match(/[?&]horse=([^&]+)/); return m?decodeURIComponent(m[1]):""; })();
 var PAGE = document.getElementById("page");
 if (EMBED) PAGE.classList.add("embed");
 var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 切换时免请求重渲染 */
@@ -799,7 +801,7 @@ function libRowHTML(en){
   var num=function(v){ return (v==null||v==="")?"":esc(String(v)); };
   var prize=(r.賞金?Math.round(r.賞金/10000).toLocaleString():"");
   var name=horseText(en);
-  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'" target="_blank">'+esc(name)+'</a>';
+  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'">'+esc(name)+'</a>';
   var rowClass='border-b border-border last:border-b-0'+(dnf?' text-muted-foreground':"");
   var tc='px-[2px] py-1.5 text-center tabular-nums whitespace-nowrap';  /* 数字列 */
   var tl='px-[2px] py-1.5 text-center whitespace-nowrap';               /* 文本列（列宽随内容，不省略） */
@@ -842,7 +844,7 @@ function libRowMbHTML(en){
   var num=function(v){ return (v==null||v==="")?"":esc(String(v)); };
   var prize=(r.賞金?Math.round(r.賞金/10000).toLocaleString()+'万':'—');
   var name=(NAME_VIEW ? (h.香港馬名||h.自译馬名) : (h.馬名||h.欧字馬名)) || ("#"+h.id);
-  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'" target="_blank">'+esc(name)+'</a>';
+  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'">'+esc(name)+'</a>';
   var top='<div class="yj-mb-top">'+
     '<span class="yj-mb-date">'+esc(r.日付)+' '+esc(venueR(r))+'</span>'+
     '<span class="yj-mb-race">'+link+'</span>'+
@@ -1161,6 +1163,10 @@ function initLibrary(){
     }
     function finish(){
       LIB={horses:horses, entries:entries};
+      /* ?horse=id 跳转（基本信息内嵌 RACES → 独立模式查看详情）：预置出走马筛选 */
+      if(URL_HORSE && horses.some(function(h){ return String(h.id)===URL_HORSE; })){
+        FLT.horse=[URL_HORSE];
+      }
       renderFilters();
       renderResults();
       bindFilters();

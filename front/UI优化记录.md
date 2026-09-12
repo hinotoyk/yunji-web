@@ -1036,3 +1036,64 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 ### 27.6 状态
 
 ✅ **已完成并合并**（`pages/races.html` + `public/selector.js`；PC/mb 独立模式共用，PROFILE/内嵌零影响）。
+
+## 28. 比赛记录「出走马」跳转优化（不再裸开 profile.html，保留外壳侧边栏）
+
+### 28.1 背景与需求
+
+独立模式的跨马表 / mb 卡片里，点击「出走马」马名跳基本信息。原实现：
+
+```js
+'<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'" target="_blank">'+esc(name)+'</a>'
+```
+
+`target="_blank"` 会在**新标签页**直接打开 `pages/profile.html`（独立页，无外壳），侧边栏消失——用户明确要求：跳转后仍是 `index.html` 的基本信息页面（带侧边栏）。
+
+### 28.2 选定与理由（思路）
+
+- `profile.html` 本就支持 `?horse=id` 定位（`location.search` 匹配 → `YJ.selector.selectById`），注释即写明「从外部（如 races 页全库查询结果）带 ?horse=id 跳转定位」——**跳转机制已有，只差没走对载体**。
+- 去掉 `target="_blank"` 后，链接在当前浏览上下文导航：经外壳访问时 = 外壳内容 iframe 内部跳转 → 外壳与侧边栏保留，内容切到 `pages/profile.html?horse=id`，正好是「index.html 的基本信息页面」。
+- 直接裸开 `dist/pages/races.html`（无外壳）时，点击会在本标签导航到独立 profile——与旧行为等价，无外壳可保留，属可接受边界。
+- 内嵌模式（profile 下段 `races.html?embed=1`）的表里没有出走马跳转链接（只有独立模式跨马表有），不受影响。
+
+### 28.3 最终落地
+
+1. `pages/races.html` `libRowHTML` / `libRowMbHTML` 两处跳转链接：删除 `target="_blank"`。
+2. `index.html`：给内容 iframe 加 `load` 监听，按 `pathname` 后缀匹配页面并同步侧边栏高亮——iframe 内部跳转（比赛记录 → 基本信息）后，侧边栏「基本信息」正确点亮，与所见页面一致。
+
+### 28.4 验证
+
+- 构建：`npm run build` → `dist/` 产物含改动（`dist/pages/races.html` 链接无 `target="_blank"`，`dist/index.html` 含 load 同步）。
+- 逻辑：外壳 iframe 中 比赛记录 → 点击出走马 → iframe 导航到 `pages/profile.html?horse=id`，侧边栏保留且高亮切到「基本信息」。
+
+### 28.5 状态
+
+✅ **已完成并合并**（`pages/races.html` + `index.html`；内嵌模式与其它页面零影响）。
+
+## 29. 基本信息内嵌 RACES 加「在比赛记录中查看详情」跳转
+
+### 29.1 背景与需求
+
+基本信息马匹详情下段的内嵌「比赛记录 · RACES」只展示当前马的紧凑表（14 列 / mb 卡片），想看独立模式的完整跨马表（21 列、可多维筛选）没有入口。需要在内嵌区块加一个按钮/链接，一键跳到独立比赛记录页并直接定位到**这一匹马**的比赛详情。
+
+### 29.2 选定与理由（思路）
+
+- 复用模块 28 建立的「外壳 iframe 内跳转」机制：链接为普通 `<a href="races.html?horse=id">`，在 profile 页（外壳内容 iframe）内点击 = iframe 内部跳转 → 外壳与侧边栏保留，侧边栏高亮由 index.html 的 load 同步切到「比赛记录」。
+- 独立模式 `races.html` 新增 `?horse=id` 支持：初始化完成后预置 `FLT.horse=[id]`（出走马筛选）→ 表/卡片只显示该马的逐场赛绩，等价于「该马的比赛详情」，且用户仍可自由增删筛选条件。
+- 链接紧跟「比赛记录 · RACES」标题（同一行、标题后），不占用表格空间，PC/mb 都可见。
+
+### 29.3 最终落地
+
+1. `pages/profile.html` `render()` 的 raceSection 标题行加链接，紧跟在「比赛记录 · RACES」标题后面：`<a class="flex-none text-[12px] font-semibold text-accent-foreground hover:text-primary hover:underline" href="races.html?horse=<id>">详细数据→</a>`（Tailwind 主题色，不写死 hex；链接不右对齐，紧跟标题）。
+2. `pages/races.html`：
+   - 顶部解析 `URL_HORSE = ?horse=id`；
+   - `initLibrary().finish()` 里若 id 存在于全库马匹 → `FLT.horse=[URL_HORSE]`，再 `renderFilters()+renderResults()`，出走马 tag 胶囊直接出现、结果已过滤。
+
+### 29.4 验证
+
+- 构建：`npm run build` → `dist/` 产物含两处改动。
+- 逻辑：基本信息选马 → 点「在比赛记录中查看详情」→ 外壳内容 iframe 切到 `pages/races.html?horse=id`，侧边栏保留且高亮「比赛记录」，独立表只显示该马逐场记录；移除出走马 tag / 清空条件可恢复全库。
+
+### 29.5 状态
+
+✅ **已完成并合并**（`pages/profile.html` + `pages/races.html`；内嵌模式行为不变，无 id 参数时独立模式行为不变）。
