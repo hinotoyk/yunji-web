@@ -1097,3 +1097,33 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 ### 29.5 状态
 
 ✅ **已完成并合并**（`pages/profile.html` + `pages/races.html`；内嵌模式行为不变，无 id 参数时独立模式行为不变）。
+
+## 30. 基本信息选马器双格式马名（PC 常驻列表 + mb 下拉）
+
+### 30.1 背景与需求
+
+基本信息页选马器（PC 常驻列表 / mb 弹层下拉）每行目前只显示一个马名块（日文→英文→兜底）。需要「双格式」显示：**主名 = 日文名（无日文则英文名）+ 副名 = 港译名（无港译则自译名）**，PC 常驻列表与 mb 下拉都要生效。
+
+### 30.2 选定与理由（思路）
+
+- `selector.js` 是共享组件（profile / races 出走马筛选 / pedigree 三处使用），不能全局改默认行为 → 新增 **opt-in 选项 `doubleName`**，只由基本信息页开启，其余实例保持单格式。
+- 色块体系 `NB` 早已备好四种马名配色（`jp` 青绿 / `en` 蓝 / `hk` 橙 / `zh` 紫），副名直接复用 `hk`/`zh` 配色，与全站马名色块语言一致，无需新增 Tailwind 类。
+- 副名去重：与主名完全相同（如自译=日文）或为空时跳过，避免重复显示。
+
+### 30.3 最终落地
+
+1. `public/selector.js`：
+   - `init` 新增 `const doubleName = !!opts.doubleName;`
+   - `nameHTML(h, dbl)` 改为返回名字块数组：主名 `jp→en→兜底`，`dbl` 时追加 `hk→zh`（`sub && sub!==names[0].v` 才加）；
+   - `render` 内调用改 `nameHTML(h, doubleName)`。
+2. `pages/profile.html`：`YJ.selector.init` 传 `doubleName: true`（PC/mb 同一实例，两端都生效）。
+3. 三页引用 bump：`selector.js?v=2` → `?v=3`（`profile/races/pedigree`，共享文件改动后必须 bump 防缓存）。
+
+### 30.4 验证
+
+- 构建：`npm run build` → `dist/` 产物含改动。
+- 逻辑：基本信息 PC 常驻列表 / mb 下拉每行显示 主名（日文/英文）+ 副名（港译/自译）两个色块；无副名或与主名相同只显示主名；比赛记录出走马筛选 / 血统页未传 `doubleName`，仍为单格式。
+
+### 30.5 状态
+
+✅ **已完成并合并**（`public/selector.js` + `pages/profile.html` + 三页版本号 bump；其它 selector 实例零影响）。

@@ -39,7 +39,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=2"></script>
+<script src="../selector.js?v=3"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js"></script>
@@ -332,8 +332,10 @@ function render(h){
 YJ.selector.init({
   el: document.getElementById("selector"),
   base: YJ_DATA.url('basic.json'),
-  /* 常驻列表仅 pc 端（≥768 两栏布局）使用；mb 端面积小，退回弹层式下拉（聚焦展开、点外/Esc 收起） */
+  /* 常驻列表仅 pc 端（≥768 两栏布局）使用；mb 端面积小，退回弹层式下拉（聚焦展开、点外/Esc 收起）
+   * doubleName：PC 常驻列表与 mb 下拉均双格式显示马名（日文/英文 + 港译/自译） */
   persistent: YJ.device.isPc(),
+  doubleName: true,
   onSelect: function(h){
     render(h);
     if(YJ.device.isMb()) window.scrollTo({top:0}); else if(detailCol) detailCol.scrollTop=0;

@@ -31,19 +31,25 @@ YJ.selector = (function () {
   function metaHTML(h) {
     return h.生年 || '';
   }
-  /* 主名单选：日文 → 英文 → 兜底「母名の生年」（母名也没有才退化 #id）。
-   * 不再把日/英/港/译四个名字槽全堆在下拉行里，pc 常驻列表与 mb 弹层通用。 */
-  function nameHTML(h) {
-    var key, v;
-    if (h.馬名)            { key = 'jp'; v = h.馬名; }
-    else if (h.欧字馬名)   { key = 'en'; v = h.欧字馬名; }
+  /* 主名 = 日文 → 英文 → 兜底「母名の生年」（母名也没有才退化 #id）。
+   * doubleName 双格式（基本信息用）：主名之后追加 港译(无则自译)，与主名相同/为空则跳过；
+   * 默认单格式行为与之前完全一致。 */
+  function nameHTML(h, dbl) {
+    var names = [];
+    if (h.馬名)            names.push({ key: 'jp', v: h.馬名 });
+    else if (h.欧字馬名)   names.push({ key: 'en', v: h.欧字馬名 });
     else {
-      v = fallbackName(h);
-      key = String(v).charAt(0) === '#' ? 'id' : 'miss';
+      var fb = fallbackName(h);
+      names.push({ key: String(fb).charAt(0) === '#' ? 'id' : 'miss', v: fb });
     }
-    var cls = 'nblock ' + key + ' inline-block max-w-full truncate rounded-md px-2 py-0.5 text-[12.5px] leading-[1.7] max-md:px-1.5 max-md:text-[12px] font-semibold ' + NB[key];
-    return '<span class="names flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-[3px]">' +
-      '<span class="' + cls + '">' + esc(v) + '</span></span>';
+    if (dbl) {
+      var sub = h.香港馬名 || h.自译馬名;
+      if (sub && sub !== names[0].v) names.push({ key: h.香港馬名 ? 'hk' : 'zh', v: sub });
+    }
+    var chips = names.map(function (n) {
+      return '<span class="nblock ' + n.key + ' inline-block max-w-full truncate rounded-md px-2 py-0.5 text-[12.5px] leading-[1.7] max-md:px-1.5 max-md:text-[12px] font-semibold ' + NB[n.key] + '">' + esc(n.v) + '</span>';
+    }).join("");
+    return '<span class="names flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-[3px]">' + chips + '</span>';
   }
 
   let horsesCache = null;
@@ -127,6 +133,9 @@ YJ.selector = (function () {
     const excluded = opts.excluded || null;
     /* compact: 紧凑样式（筛选条内嵌用）：h-26px、去图标/计数/清空按钮 */
     const compact = !!opts.compact;
+    /* doubleName: 双格式马名（基本信息 PC 常驻列表 + mb 下拉用）——
+     * 主名=日文(无则英文) + 副名=港译(无则自译)；其余实例不传即保持单格式 */
+    const doubleName = !!opts.doubleName;
     const placeholder = opts.placeholder || "日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场";
 
     el.innerHTML =
@@ -195,7 +204,7 @@ YJ.selector = (function () {
           const sxBar = h.性別 === '牡' ? 'bg-[#C9EFFE]' : (h.性別 === '牝' ? 'bg-[#FFDBD5]' : '');
           return '<div class="row relative cursor-pointer border-b border-border px-3.5 py-[9px] transition-colors duration-100 last:border-b-0 hover:bg-muted/50 max-md:px-2.5 max-md:py-2" data-i="' + i + '">' +
             (sxBar ? '<span class="sxbar absolute inset-y-0 left-0 w-2 ' + sxBar + '"></span>' : '') +
-            '<div class="top flex items-start gap-2 min-w-0">' + nameHTML(h) + chip + '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + metaHTML(h) + '</span></div>' + sub + '</div>';
+            '<div class="top flex items-start gap-2 min-w-0">' + nameHTML(h, doubleName) + chip + '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + metaHTML(h) + '</span></div>' + sub + '</div>';
         }).join("");
       if (!persistent) drop.classList.remove("hidden");
     }
