@@ -49,6 +49,7 @@ YJ.selector = (function () {
   let horsesCache = null;
   let cachePromise = null;
   let selFn = null; /* 当前 init 实例的 select（左栏目录联动用） */
+  let docClickHandler = null; /* document 关闭监听去重：多次 init 只保留最新一个（多实例/重建场景） */
 
   async function loadHorses(base) {
     if (horsesCache) return horsesCache;
@@ -120,17 +121,27 @@ YJ.selector = (function () {
     /* persistent: 常驻列表模式（pc 端用）——下拉改为始终可见的纵向列表，
      * 随父容器高度伸缩；默认模式（弹层）行为完全不变 */
     const persistent = !!opts.persistent;
+    /* multi: 多选添加模式（筛选条用）——选完不占位、清空输入、保持下拉展开，可连续添加多匹 */
+    const multi = !!opts.multi;
+    /* excluded: h → bool，render 时从候选排除（已选马，multi 用） */
+    const excluded = opts.excluded || null;
+    /* compact: 紧凑样式（筛选条内嵌用）：h-26px、去图标/计数/清空按钮 */
+    const compact = !!opts.compact;
+    const placeholder = opts.placeholder || "日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场";
 
     el.innerHTML =
       '<div class="yj-sel ' + (persistent ? 'flex h-full min-h-0 flex-col max-md:h-auto' : 'relative mb-1.5') + '">' +
-        '<div class="box flex h-[46px] items-center gap-2.5 rounded-[10px] border border-input bg-card px-3.5 transition-[border-color,box-shadow] duration-150 hover:border-border/60 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(10,167,160,.16),0_2px_8px_rgba(0,0,0,.04)] max-md:h-[42px] max-md:px-3">' + ICON +
-          '<input type="text" placeholder="日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场" autocomplete="off" class="min-w-0 flex-1 border-none bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-[12.5px] placeholder:text-muted-foreground/65 max-md:text-[13px]">' +
-          '<span class="cnt flex-none rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground transition-colors duration-100 max-md:px-2"></span>' +
-          '<button class="clear hidden w-[22px] h-[22px] flex-none cursor-pointer rounded-md border-none bg-muted text-[12px] leading-none text-muted-foreground hover:bg-muted/80 hover:text-foreground" type="button" aria-label="清空">✕</button>' +
+        '<div class="box flex items-center gap-2.5 rounded-[10px] border border-input bg-card transition-[border-color,box-shadow] duration-150 hover:border-border/60 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(10,167,160,.16),0_2px_8px_rgba(0,0,0,.04)] ' +
+          (compact ? 'h-[26px] px-2' : 'h-[46px] px-3.5 max-md:h-[42px] max-md:px-3') + '">' +
+          (compact ? '' : ICON) +
+          '<input type="text" placeholder="' + placeholder + '" autocomplete="off" class="min-w-0 flex-1 border-none bg-transparent text-foreground outline-none ' +
+            (compact ? 'text-[12px] placeholder:text-[11.5px] placeholder:text-muted-foreground/65' : 'text-[13.5px] placeholder:text-[12.5px] placeholder:text-muted-foreground/65 max-md:text-[13px]') + '">' +
+          (compact ? '' : '<span class="cnt flex-none rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground transition-colors duration-100 max-md:px-2"></span>') +
+          (compact ? '' : '<button class="clear hidden w-[22px] h-[22px] flex-none cursor-pointer rounded-md border-none bg-muted text-[12px] leading-none text-muted-foreground hover:bg-muted/80 hover:text-foreground" type="button" aria-label="清空">✕</button>') +
         '</div>' +
         '<div class="drop yj-drop yj-drop-scroll ' + (persistent
             ? 'mt-1.5 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card shadow-sm max-md:max-h-[45vh]'
-            : 'absolute left-0 right-0 top-[calc(100%+6px)] z-50 hidden max-h-[360px] overflow-y-auto rounded-xl border border-border bg-card shadow-[0_16px_40px_rgba(0,0,0,.12),0_4px_12px_rgba(0,0,0,.05)]')
+            : 'absolute left-0 right-0 top-[calc(100%+6px)] z-50 hidden ' + (compact ? 'max-h-[250px]' : 'max-h-[360px]') + ' overflow-y-auto rounded-xl border border-border bg-card shadow-[0_16px_40px_rgba(0,0,0,.12),0_4px_12px_rgba(0,0,0,.05)]')
           + '"></div>' +
       '</div>';
 
@@ -149,18 +160,25 @@ YJ.selector = (function () {
     function setSel(h) {
       selected = !!h;
       if (h) input.value = h.馬名 || displayName(h);
-      cnt.textContent = horses.length;
-      cnt.classList.remove("on");
+      if (cnt) {
+        cnt.textContent = horses.length;
+        cnt.classList.remove("on");
+      }
     }
 
     function render(q) {
       q = (q == null ? "" : q).trim().toLowerCase();
-      clear.classList.toggle("on", !!q);
-      clear.classList.toggle("hidden", !q);
-      list = q ? horses.filter(function (h) { return matches(h, q); }) : horses.slice();
-      cnt.textContent = q ? list.length : horses.length;
-      cnt.classList.toggle("on", !!q);
-      if (q) { cnt.classList.add("text-primary","bg-accent"); } else { cnt.classList.remove("text-primary","bg-accent"); }
+      if (clear) {
+        clear.classList.toggle("on", !!q);
+        clear.classList.toggle("hidden", !q);
+      }
+      /* multi + excluded：空输入也排除已选马，其余行为与原版一致 */
+      list = horses.filter(function (h) { return (!excluded || !excluded(h)) && (!q || matches(h, q)); });
+      if (cnt) {
+        cnt.textContent = q ? list.length : horses.length;
+        cnt.classList.toggle("on", !!q);
+        if (q) { cnt.classList.add("text-primary","bg-accent"); } else { cnt.classList.remove("text-primary","bg-accent"); }
+      }
       hl = -1;
       /* 与正式版 testpage 一致：聚焦即展开全部列表（即使未输入） */
       if (!list.length) {
@@ -198,9 +216,17 @@ YJ.selector = (function () {
     function choose(i) {
       const h = list[i];
       if (!h) return;
-      if (!persistent) drop.classList.add("hidden");
-      setSel(h);
+      if (!persistent && !multi) drop.classList.add("hidden");
       onSelect(h);
+      if (multi) {
+        /* 多选添加：不占位、清空输入、保持展开，可连续添加；已选马由 excluded 排除 */
+        input.value = "";
+        selected = false;
+        render("");
+        input.focus();
+      } else {
+        setSel(h);
+      }
     }
 
     /* 外部选中（左栏目录联动）：按对象或 id 选中，刷新 input 并触发 onSelect */
@@ -218,13 +244,15 @@ YJ.selector = (function () {
       onSelect(h);
     }
     selFn = select;
+    /* 对外刷新钩子：外部（如筛选条 tag 变化）重渲染下拉（排除已选），不重建实例、保留焦点 */
+    el.__selRefresh = render;
 
     input.addEventListener("focus", function () {
       if (selected) { selected = false; input.value = ""; }
       render(input.value);
     });
     input.addEventListener("input", function () { selected = false; render(input.value); });
-    clear.addEventListener("click", function () { input.value = ""; selected = false; render(""); input.focus(); });
+    if (clear) clear.addEventListener("click", function () { input.value = ""; selected = false; render(""); input.focus(); });
     input.addEventListener("keydown", function (e) {
       if (drop.classList.contains("hidden") || !list.length) return;
       if (e.key === "ArrowDown") { e.preventDefault(); hl = (hl + 1) % list.length; markHl(); }
@@ -236,9 +264,12 @@ YJ.selector = (function () {
       const it = e.target.closest ? e.target.closest(".row") : null;
       if (it) choose(parseInt(it.dataset.i, 10));
     });
-    document.addEventListener("click", function (e) {
+    /* document 关闭监听去重：多次 init 只保留最新一个，避免累积（筛选条重建场景） */
+    if (docClickHandler) document.removeEventListener("click", docClickHandler);
+    docClickHandler = function (e) {
       if (!persistent && !wrap.contains(e.target)) drop.classList.add("hidden");
-    });
+    };
+    document.addEventListener("click", docClickHandler);
 
     return loadHorses(base).then(function (hs) {
       horses = hs;

@@ -67,6 +67,16 @@
 .filter-chip.on{border-color:#0aa7a0;background:#e6f6f5;color:#0b6b64;font-weight:600;box-shadow:inset 0 0 0 1px #0aa7a0}
 .filter-chip.on:hover{background:#d9f1ef}
 .filter-grp{flex:none;align-self:center;margin-right:2px;padding:2px 8px;border-radius:6px;background:#f2f4f5;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#7a7a7a;text-transform:uppercase}
+/* ===== 出走马筛选（tag 型多选）：已选马胶囊；搜索添加复用 public/selector.js 组件（compact+multi） ===== */
+.f-tag{display:inline-flex;align-items:center;gap:1px;height:26px;padding:0 3px 0 11px;border:1px solid #0aa7a0;border-radius:7px;background:#e6f6f5;color:#0b6b64;font-size:12px;font-weight:600;white-space:nowrap}
+.f-tag-x{width:19px;height:19px;border:0;border-radius:5px;background:transparent;color:#0b6b64;font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.f-tag-x:hover{background:rgba(10,167,160,.16);color:#ef4444}
+/* 出走马搜索框（compact selector）：圆角 7px / 边框 #e3e3e3 / 去下边距 —— 与 .filter-chip 完全统一 */
+.f-horse-sel .box{border-radius:7px;border-color:#e3e3e3}
+.f-horse-sel .box:hover{border-color:rgba(10,167,160,.55)}
+.f-horse-sel .yj-sel{margin-bottom:0}
+/* selector 组件挂载点：与 tag 胶囊同高，下拉绝对定位随组件自身 */
+.f-horse-sel{min-width:180px}
 /* 自定义 tooltip（悬停显示聚合含义） */
 .filter-chip[data-tip]{position:relative}
 .filter-chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
@@ -135,7 +145,7 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 
 <script src="../data-config.js"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js"></script>
+<script src="../selector.js?v=2"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script>
@@ -511,8 +521,8 @@ YJ.device.onChange(function(){
 var LIB = null;   /* {horses:[], entries:[{h,r}]} */
 /* 已选维度：每个维度是数组，同维度多选=OR，跨维度=AND；空数组=不限
  * year=比赛年份（按比赛日付），byear=出生年份（按马 h.生年），两套独立可叠加 */
-var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[] };
-var DIM_KEYS = ["venue","track","surface","dist","cond","grade","result","year","byear"];
+var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[], horse:[] };
+var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear"];
 /* 分页：每页条数按设备固定（PC 100 / mb 10，不允许用户选择），页码按钮式 */
 var PG = { page:1, size:pgSizeDef() };
 function pgSizeDef(){ return isMb() ? 10 : 100; }
@@ -616,6 +626,10 @@ function matchEntry(en){
       for(var j=0;j<arr.length;j++){ if(gradeMatches(r.格,arr[j])){ hit=true; break; } }
     } else if(k==="result"){
       for(var j=0;j<arr.length;j++){ if(resultMatches(r.結果,arr[j])){ hit=true; break; } }
+    } else if(k==="horse"){
+      /* 出走马维度：FLT.horse 存马 id 字符串，任一命中（同维多选=OR） */
+      var enId=String(en.h.id);
+      for(var j=0;j<arr.length;j++){ if(arr[j]===enId){ hit=true; break; } }
     } else {
       var v=entryVal(en,k);
       if(arr.indexOf(v)>=0) hit=true;
@@ -661,11 +675,27 @@ function renderFilters(){
   var showOversea=!vSel.length||vSel.indexOf("海外")>=0;
 
   var active=DIM_KEYS.some(function(k){ return FLT[k] && FLT[k].length; });
+
+  /* 出走马筛选（tag 型多选）：已选马胶囊 + selector 组件挂载点（第一行、跨两列）
+   * 搜索/下拉由 public/selector.js 的 compact+multi 实例负责（复用 PROFILE 同款交互与性能） */
+  var byId={};
+  LIB.horses.forEach(function(h){ byId[h.id]=h; });
+  var selTags=FLT.horse.map(function(id){
+    var h=byId[id];
+    var nm=h?horseText({h:h}):("#"+id);
+    return '<span class="f-tag">'+esc(nm)+'<button type="button" class="f-tag-x" data-hid="'+esc(id)+'" title="移除该马">×</button></span>';
+  }).join("");
+  var horseRow='<div class="filter-row wide"><span class="filter-label">出走马</span>'+
+    '<div class="filter-chips" id="fHorseChips">'+selTags+
+      '<div class="f-horse-sel" id="fHorseSel"></div>'+
+    '</div></div>';
+
   el.innerHTML=
     '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
     (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
     '</div>'+
     '<div class="filter-card"><div class="filter-grid">'+
+      horseRow+
       row("venue","场地",VENUE_OPTS)+
       row("surface","跑道",SURFACE_OPTS)+
       row("dist","距离",DIST_OPTS)+
@@ -678,6 +708,8 @@ function renderFilters(){
       (showLocal?rowWide("track","竞马场·地方",TRACK_LOCAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showOversea?rowWide("track","竞马场·海外",[{v:"海外",l:"海外"}]):"")+
     '</div></div>';
+  /* 筛选条重建后重新挂载出走马搜索（selector 组件，compact+multi 模式；loadHorses 走缓存） */
+  initHorseSel();
 }
 
 /* ===== 独立 PC 跨马表：列宽策略（v6，取代模块 18 固定百分比 / v5 只喂弹性列）=====
@@ -1012,9 +1044,63 @@ function renderResults(){
   body.innerHTML=summary+listHtml+(list.length&&pages>1?pagerHTML(PG.page,pages,total):"");
 }
 
+/* ===== 出走马筛选（tag 型多选）辅助 ===== */
+/* 挂载出走马搜索：复用 public/selector.js 组件（PROFILE 同款交互/性能）
+ * - multi：选完不占位、清空输入、保持下拉展开，可连续添加多匹
+ * - excluded：已选马从候选排除（下拉里不再出现）
+ * - compact：筛选条内嵌紧凑样式（h-26px、去图标/计数/清空按钮） */
+function initHorseSel(){
+  var el=document.getElementById("fHorseSel");
+  if(!el || !LIB) return;
+  YJ.selector.init({
+    el: el,
+    multi: true,
+    compact: true,
+    placeholder: "搜索马名添加…",
+    excluded: function(h){ return FLT.horse.indexOf(String(h.id))>=0; },
+    onSelect: function(h){ addHorse(h.id); }
+  });
+}
+/* 只更新 tag 区（不动 selector 实例）：替换已选胶囊 → 调 __selRefresh 重渲染下拉（排除已选），保留输入焦点 */
+function refreshHorseUI(){
+  var chips=document.getElementById("fHorseChips");
+  if(!chips || !LIB) return false;
+  var byId={};
+  LIB.horses.forEach(function(h){ byId[h.id]=h; });
+  var tags=FLT.horse.map(function(hid){
+    var h=byId[hid];
+    var nm=h?horseText({h:h}):("#"+hid);
+    return '<span class="f-tag">'+esc(nm)+'<button type="button" class="f-tag-x" data-hid="'+esc(hid)+'" title="移除该马">×</button></span>';
+  }).join("");
+  chips.querySelectorAll(".f-tag").forEach(function(t){ t.remove(); });
+  var selEl=document.getElementById("fHorseSel");
+  if(selEl) selEl.insertAdjacentHTML("beforebegin", tags);
+  if(selEl && selEl.__selRefresh) selEl.__selRefresh("");
+  return true;
+}
+/* 添加一匹马到筛选（去重，id 统一存字符串，与 data-hid/删除匹配），回第 1 页并重渲染 */
+function addHorse(id){
+  var arr=FLT.horse || (FLT.horse=[]);
+  var sid=String(id);
+  if(arr.indexOf(sid)<0) arr.push(sid);
+  PG.page=1;
+  refreshHorseUI();
+  renderResults();
+}
+
 function bindFilters(){
   var el=document.getElementById("filters");
   el.addEventListener("click",function(e){
+    var x=e.target.closest?e.target.closest(".f-tag-x"):null;
+    if(x){
+      var arr=FLT.horse || (FLT.horse=[]);
+      var i=arr.indexOf(x.dataset.hid);
+      if(i>=0) arr.splice(i,1);
+      PG.page=1;
+      refreshHorseUI();
+      renderResults();
+      return;
+    }
     var c=e.target.closest?e.target.closest(".filter-chip"):null;
     if(c){
       var k=c.dataset.k, v=c.dataset.v;
@@ -1040,7 +1126,7 @@ function bindPager(){
   var body=document.getElementById("body");
   body.addEventListener("click",function(e){
     var tgl=e.target.closest?e.target.closest(".yj-name-toggle"):null;
-    if(tgl){ NAME_VIEW=NAME_VIEW?0:1; renderResults(); return; }
+    if(tgl){ NAME_VIEW=NAME_VIEW?0:1; renderFilters(); renderResults(); return; }
     var btn=e.target.closest?e.target.closest(".pg-btn, .pg-nav"):null;
     if(btn && !btn.disabled && btn.dataset.page){
       var p=parseInt(btn.dataset.page,10);

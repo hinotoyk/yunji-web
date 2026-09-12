@@ -42,6 +42,7 @@
 | 24 | 比赛记录·等级徽章 L / OP 不可见修复 | ✅ 已完成 | `pages/races.html` | `G` 表写 `"L":"gL"/"OP":"gOP"`，而 `<style>` 是 `.yj-gl/.yj-gop` —— class 选择器区分大小写 → 无底色 + 白字 = 看不见（模块 22 去掉 `(L)``(OP)` 尾缀后暴露）；取值统一改小写，徽章恢复金底 L / 浅青绿 OP |
 | 25 | 比赛记录·人气徽章改「着顺同款颜色文字」 | ✅ 已完成 | `pages/races.html` | 人气不再复用着顺彩色方块/胶囊，只把 1/2/3 数字染成着顺同款颜色（1黄 `#e2cc38`/2蓝 `#87aee6`/3橙 `#dca167` 文字色，无底无框），突出又不抢着顺彩色方块风头；4+ 纯数字；6 处渲染共用 `ninkiBadge()` 同步生效 |
 | 26 | 比赛记录·注水上限随档位（v7：赛事名限宽 + 数字列放开） | ✅ 已完成 | `pages/races.html` | 全局 `CAP_TXT 2.0/CAP_NUM 1.5` → `TIER_CAP` 随档位表（race/txt/num 三组上限）；档位越高赛事名/文本列越收、数字列越放；27 寸赛事名 2.0×→1.3× 封顶、富余流向数字列；15/24 寸 slack 撞不到上限 → 行为与 v6 完全一致（见 §26） |
+| 27 | 比赛记录·筛选加「出走马」（tag 型多选） | ✅ 已完成 | `pages/races.html` + `public/selector.js` | `FLT` 新增 `horse` 维度（id 字符串数组）；筛选条第一行「出走马」= 已选马胶囊（可 × 删）+ 搜索添加；**搜索下拉复用 PROFILE 的 selector 组件**（新增 multi/excluded/compact/placeholder 选项，向后兼容）；同维多选 OR、跨维 AND；只更新 tag 区保留输入焦点；PC/mb 共用（见 §27） |
 
 ---
 
@@ -976,3 +977,62 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 ### 26.7 状态
 
 ✅ **已完成并合并**（仅 `pages/races.html`；15/24 寸零变化，27 寸赛事名收窄、数字列宽松）。
+
+---
+
+## 27. 比赛记录·筛选加「出走马」（tag 型多选）
+
+### 27.1 背景与需求
+
+- 独立模式（PC/mb）的筛选条现有 9 维（场地/竞马场/跑道/距离/马场/级别/着顺/年份/出生年），都是「按场次条件」筛。
+- 用户诉求：**加一维「出走马筛选」，tag 类型，可添加多匹马**（如只查某几匹指定马的记录）；筛选条文案统一用赛马用语「出走马」（与跨马表列头一致）。
+
+### 27.2 选定与理由（思路）
+
+- **方案：`FLT` 新增 `horse` 维度（存马 id 字符串数组）+ 筛选条第一行「出走马」tag 区**：
+  - 已选马 = 青绿胶囊 tag（马名 + × 删除），可加多匹；
+  - 语义与其它维度一致：**同维多选 = OR，跨维 = AND**（`matchEntry` 特判 `k==="horse"`）。
+- **搜索/下拉复用 `public/selector.js` 组件**（基本信息页同款交互与性能）——初版自写下拉被用户反馈「非常卡 + 没生效」，根因：① 每次 input 全量 filter + 重建 DOM、且调用 `YJ.i18n.g`/`horseText` 开销大；② 事件委托与重建竞态导致点选不可靠。改为给 selector 组件加 **`multi`（选完清空输入、保持展开连续添加）+ `excluded`（已选排除）+ `compact`（h-26px、去图标/计数/清空按钮）+ `placeholder`** 四个向后兼容选项，PROFILE/血统页默认行为零变化。
+- 交互细节：添加/删除马只更新 tag 区（`refreshHorseUI`），通过组件暴露的 `el.__selRefresh` 刷新下拉（排除已选），**selector 实例不重建、输入焦点保留**；tag 名字跟随马名语言切换（`NAME_VIEW`）。
+- 落选：把全部马渲染成 toggle chips（全库几百匹，chips 爆炸）。
+
+### 27.3 最终落地
+
+- **合并文件**：`pages/races.html` + `public/selector.js`
+  1. `FLT` 加 `horse:[]`，`DIM_KEYS` 头部插入 `"horse"`（`清空条件`/分页回 1 页自动覆盖）；
+  2. `matchEntry` 加 `k==="horse"` 分支（`String(en.h.id)` 与数组元素严格相等——**id 统一存字符串**，避免数字 id 与 `data-hid` 字符串 `indexOf` 失配导致删除失效）；
+  3. `renderFilters` 第一行（wide 跨两列）渲染「出走马」：已选 tag 胶囊 + `#fHorseSel` 挂载点；末尾调 `initHorseSel()`；
+  4. 新增 `initHorseSel()`（`YJ.selector.init({multi, compact, excluded, placeholder, onSelect})`）/ `refreshHorseUI`（只替换 `.f-tag` + `__selRefresh("")`）/ `addHorse`（id 转字符串去重）；
+  5. `bindFilters` 保留 tag × 删除（click 委托）；搜索/键盘/关闭等交互全部交给 selector 组件；
+  6. `<style>` 保留 `.f-tag/.f-tag-x`，新增 `.f-horse-sel{min-width:180px}`；删除自写 `.f-horse-input/list/opt` 系列。
+  7. `selector.js`：`init` 支持 `multi/excluded/compact/placeholder`；`choose` 在 multi 下不 `setSel`、清空输入、`render("")` 保持展开；`render` 经 `excluded` 过滤候选；compact 下隐藏图标/计数/清空并防御空引用；`el.__selRefresh=render` 对外刷新钩子；document 关闭监听去重（重建场景不累积）。
+- **零改动**：PROFILE/血统页 selector 用法（默认参数）、内嵌模式、`i18n.js`、`data/`、其它页面。
+- **构建**：`npm run build` → `dist/`；两个脚本 `node --check` 通过。
+
+### 27.4 验证
+
+- **逻辑单测**（从 `dist` 提取真实 `matchEntry` 及依赖，vm 执行）：出走马多选 OR（含数字 id `2` 命中字符串 `"2"`）、跨维 AND（horse+G1 命中 / horse+OP 不命中）、未选不限 — 全过。
+- **CDP 端到端**（无头 Chrome + DevTools Protocol 真实模拟交互，`tests/_scratch/cdp-horse-test.js`）：
+  1. 聚焦展开下拉（277 匹候选）；
+  2. 输入「アオイハルカ」→ 匹配 1 匹（`dhead: 匹配 1 匹`）；
+  3. 点选 → tag 出现、表格 100 行 → **6 行**（筛选生效）；
+  4. 下拉排除已选（276）；再输入「エースフライト」点选 → 2 个 tag、11 行；
+  5. 点 × 删除 → 剩 1 个 tag、5 行（修复了数字/字符串 id 失配导致的删除失效）。
+- **截图**：PC（1650px）与 mb（390px）筛选条含主题青绿元素，确认渲染。
+- **样式统一**（CDP 读计算样式，与 `.filter-chip` 逐项对齐）：搜索框 / tag / chip 三者 = 高 **26px**、圆角 **7px**、边框 **#e3e3e3**、字号 12px；出走马行行高 **42→36px**，与其它筛选行一致（去掉 selector 自带 `mb-1.5`）。
+- **缓存**：`dist/selector.js` 是 public 原样拷贝、无内容 hash，浏览器会命中旧缓存（曾出现「页面是新的、下拉还是旧全尺寸样式」的混合状态）。已在 `races/profile/pedigree` 三页引用改为 `../selector.js?v=2`——**今后每次改 `selector.js` 需 bump 该版本号**（同时更新三页），否则用户端可能继续用旧组件。
+
+### 27.5 调参指引
+
+| 想改什么 | 改哪里 | 怎么改 |
+|---|---|---|
+| 出走马搜索占位符 | `initHorseSel` 的 `placeholder` | 改文案 |
+| 下拉候选行高/数量 | `selector.js` compact 样式 / `.drop` max-h | 改 Tailwind 类 |
+| tag / 挂载点样式 | `<style>` 的 `.f-tag*` / `.f-horse-sel` | 色值、圆角、min-width 直接改类；`.f-horse-sel .box` 三条覆盖规则负责与 `.filter-chip` 对齐（圆角/边框/hover） |
+| 共享 JS 缓存 | 三页 `<script src="../selector.js?v=N">` | 改 `public/selector.js` 后必须 bump N（否则浏览器继续用旧组件） |
+| 出走马行位置 | `renderFilters` 里 `horseRow` 拼接位置 | 移到其它维度行前后 |
+| selector 默认行为 | `selector.js` 的 `multi/excluded/compact` 选项 | 不传即原版单选行为，PROFILE 不受影响 |
+
+### 27.6 状态
+
+✅ **已完成并合并**（`pages/races.html` + `public/selector.js`；PC/mb 独立模式共用，PROFILE/内嵌零影响）。
