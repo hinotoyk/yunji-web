@@ -95,10 +95,12 @@
 /* 独立 PC 跨马表：窄屏（≤1180px iframe，约等于 1280 显示器）字号再收紧一档，避免 2 字列/日期/徽章被省略 */
 @media (max-width:1180px){table.yj-lib{font-size:10.5px}}
 
-/* ===== 独立 PC 跨马表：宽屏密度分档（v6）=====
+/* ===== 独立 PC 跨马表：宽屏密度分档（v7）=====
  * JS 按「表内留白 ≤40%」自动给 table.yj-lib 挂 fs125/fs135/fs145/fs155（表体 12.5~15.5px）。
- * 24 寸及以下（容器宽 < 约 1595px）留白本就 35% 上下 → 稳在默认 11.5px，老观感零变化；
+ * 24 寸及以下（容器宽 < 约 1700px）留白本就 35% 上下 → 稳在默认 11.5px，老观感零变化；
  * 27 寸（容器 ≈2050px）落到 fs155：表体 15.5px、行高 +2px、徽章同步放大。
+ * 注水分配（v7 新增）：上限随档位走（TIER_CAP）——档位越高赛事名/文本列越收、数字列越放，
+ * 27 寸赛事名不再一列独大；15/24 寸 slack 被文本列吃光、撞不到上限 → 行为与 v6 完全一致。
  * 只作用在跨马表（.yj-lib），内嵌表 / mb 卡片 / 其它页面不受影响。 */
 table.yj-lib.fs125{font-size:12.5px}
 table.yj-lib.fs135{font-size:13.5px}
@@ -732,7 +734,7 @@ function txtW(s,px){
 /* 固定列宽 = 格式串实际宽 + 单元格左右 padding(4px) + 安全余量(4px) */
 function colW(fmt){ return Math.ceil(txtW(fmt)) + 8; }
 
-/* ===== 宽屏密度分档（v6）：字号档位随「表内留白」自动升档 =====
+/* ===== 宽屏密度分档（v7）：字号档位随「表内留白」自动升档 =====
  * 判据：留白 = 1 − 内容墨迹总宽 ÷ 容器宽；从最小档起取第一个 ≤ AIR_TARGET 的档，都达不到就用最高档。
  * 24 寸及以下（容器 < 约 1595px）留白本就 35% 上下 → 稳在 11.5px，老观感零变化；
  * 27 寸（容器 ≈2050）→ 15.5px（留白 53%→38%）。量宽、表头字号、徽章尺寸都跟着档位走。 */
@@ -740,7 +742,17 @@ var TIER_FS=[11.5, 12.5, 13.5, 14.5, 15.5];
 var TIER_CLS={ 11.5:"", 12.5:"fs125", 13.5:"fs135", 14.5:"fs145", 15.5:"fs155" };
 var TIER_TH ={ 11.5:10, 12.5:11, 13.5:11.5, 14.5:12, 15.5:12.5 };   /* 该档表头量宽字号 */
 var AIR_TARGET=0.40;                          /* 表内留白目标上限 */
-var CAP_TXT=2.0, CAP_NUM=1.5;                 /* 列宽软上限：文本列 2.0×、数字列 1.5× */
+/* 注水上限随档位（v7，取代 v6 全局 CAP_TXT/CAP_NUM）：
+ * race=赛事名列（idx 3，内容最长且带级徽章，最容易一列独大）、txt=其余弹性文本列、num=数字列。
+ * 档位越高（屏越大）→ race/txt 上限收窄、num 上限放宽，27 寸 slack 从赛事名流向数字列；
+ * 15/24 寸（≤1700px 容器）slack 被文本列吃光、撞不到上限 → 行为与 v6 完全一致。 */
+var TIER_CAP={
+  11.5:{race:2.0,  txt:2.0,  num:1.5},
+  12.5:{race:1.8,  txt:1.85, num:1.75},
+  13.5:{race:1.6,  txt:1.7,  num:1.9},
+  14.5:{race:1.45, txt:1.55, num:2.0},
+  15.5:{race:1.3,  txt:1.45, num:2.0}
+};
 var CUR_FS=11.5, CUR_TH=10;                    /* 当前档位（量尺用） */
 /* 跨马表列分组：弹性=马名/场地/赛事/天气/马场/骑手/调教师；其余 14 个数字列为固定列 */
 var LIB_EL=[0,2,3,5,6,19,20], LIB_FIX=[1,4,7,8,9,10,11,12,13,14,15,16,17,18];
@@ -879,9 +891,9 @@ function renderResults(){
   else if(isMb()){
     listHtml='<div id="yj-mb-list" class="rounded-[10px] border border-border bg-card">'+list.map(libRowMbHTML).join("")+'</div>';
   } else {
-    /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v6（详见文件上方 v6 说明）：
+    /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v7（详见文件上方 v7 说明）：
      * ① 量最小宽：固定列按格式上限 colW、弹性列按当前页最长内容 pageW（canvas 粗排 + DOM 精量）；
-     * ② 按档位分配留白（弹性列软上限 2.0× → 数字列软上限 1.5× → 余量全表均分）→ 表宽恒等于容器；
+     * ② 按档位分配留白（TIER_CAP：文本列上限随档收窄、数字列随档放宽 → 余量全表均分）→ 表宽恒等于容器；
      * ③ 表内留白 > AIR_TARGET 就升一档字号重算（11.5 → 15.5px），量尺/表头/徽章同步换档。
      * 表头 马场/体重/赔率 为短标签，仅本表硬编码（不改 i18n，内嵌/mb 页仍用全称） */
     /* 页内最长内容量宽：fn(en) 返回字符串或 {t:文本, x:额外宽}
@@ -924,16 +936,17 @@ function renderResults(){
         pageW(function(en){ return en.r.調教師; })
       ];
     }
-    /* 加权注水：把 budget 按 base 占比发给 idx 各列，单列增量不超过 base[i]×(cap−1)（cap=null 不限量）；
-     * 返回没发完的余量 */
-    function fill(base,add,idx,budget,cap){
+    /* 加权注水：把 budget 按 base 占比发给 idx 各列，单列增量不超过 base[i]×(capFn(i)−1)
+     * （capFn 返回该列软上限倍数，null=不限量）；返回没发完的余量 */
+    function fill(base,add,idx,budget,capFn){
       var left=budget;
       for(var pass=0; pass<8 && left>0.5; pass++){
         var wsum=0;
-        idx.forEach(function(i){ if(cap==null || base[i]*cap-(base[i]+add[i])>0.5) wsum+=base[i]; });
+        idx.forEach(function(i){ if(capFn(i)==null || base[i]*capFn(i)-(base[i]+add[i])>0.5) wsum+=base[i]; });
         if(!wsum) break;
         var spent=0;
         idx.forEach(function(i){
+          var cap=capFn(i);
           var room=(cap==null)?Infinity:Math.max(0, base[i]*cap-(base[i]+add[i]));
           if(room<=0.5) return;
           var share=Math.min(room, left*base[i]/wsum);
@@ -952,9 +965,13 @@ function renderResults(){
       var add=base.map(function(){ return 0; });
       var slack=containerW-2-base.reduce(function(a,b){ return a+b; },0);
       if(slack>0){
-        var left=fill(base,add,LIB_EL,slack,CAP_TXT);          /* ① 弹性文本列（≤2.0×） */
-        if(left>0) left=fill(base,add,LIB_FIX,left,CAP_NUM);   /* ② 数字列（≤1.5×） */
-        if(left>0) fill(base,add,LIB_EL.concat(LIB_FIX),left,null); /* ③ 余量全表均分，保证铺满 */
+        var caps=TIER_CAP[fs]||TIER_CAP[11.5];
+        /* ① 弹性文本列（赛事名列 idx 3 单独上限，其余走 txt） */
+        var left=fill(base,add,LIB_EL,slack,function(i){ return i===3?caps.race:caps.txt; });
+        /* ② 数字列 */
+        if(left>0) left=fill(base,add,LIB_FIX,left,function(){ return caps.num; });
+        /* ③ 余量全表均分，保证铺满；赛事名仍封顶在 race，不再被均分撑宽 */
+        if(left>0) fill(base,add,LIB_EL.concat(LIB_FIX),left,function(i){ return i===3?caps.race:null; });
       }
       var ink=VAL.reduce(function(a,b){ return a+Math.max(0, b-8); }, 0);  /* 去掉每列 8px 余量 */
       return { MIN:base.map(function(b,i){ return Math.round(b+add[i]); }), ink:ink };
