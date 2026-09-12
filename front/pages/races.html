@@ -9,7 +9,9 @@
 /* embed 模式：贴满 iframe 宽度并去掉页级留白，还原 profile 内嵌时的样式（宽度必须 100%，覆盖独立页 80% 布局） */
 #page.embed{max-width:none;padding:0;width:100%}
 
-/* ===== 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 保留浅青绿现状）===== */
+/* ===== 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 保留浅青绿现状）=====
+ * ★ 类名全部小写（yj-g1/g2/g3/gl/gop），与 G 表的取值一一对应；
+ *   HTML 的 class 选择器区分大小写，写成 yj-gL / yj-gOP 会匹配不上 → 徽章只剩白字 = 白底上看不见。 */
 .yj-grade{display:inline-block;margin-left:6px;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
 .yj-g1{background-color:#d5302a}
 .yj-g2{background-color:#0a3b7e}
@@ -86,6 +88,30 @@
 @media (max-width:768px){.pager{justify-content:center;gap:4px}.pg-btn{min-width:26px;height:26px}.pg-nav{padding:0 9px}}
 /* 独立 PC 跨马表：窄屏（≤1180px iframe，约等于 1280 显示器）字号再收紧一档，避免 2 字列/日期/徽章被省略 */
 @media (max-width:1180px){table.yj-lib{font-size:10.5px}}
+
+/* ===== 独立 PC 跨马表：宽屏密度分档（v6）=====
+ * JS 按「表内留白 ≤40%」自动给 table.yj-lib 挂 fs125/fs135/fs145/fs155（表体 12.5~15.5px）。
+ * 24 寸及以下（容器宽 < 约 1595px）留白本就 35% 上下 → 稳在默认 11.5px，老观感零变化；
+ * 27 寸（容器 ≈2050px）落到 fs155：表体 15.5px、行高 +2px、徽章同步放大。
+ * 只作用在跨马表（.yj-lib），内嵌表 / mb 卡片 / 其它页面不受影响。 */
+table.yj-lib.fs125{font-size:12.5px}
+table.yj-lib.fs135{font-size:13.5px}
+table.yj-lib.fs145{font-size:14.5px}
+table.yj-lib.fs155{font-size:15.5px}
+table.yj-lib.fs125 th{font-size:11px}
+table.yj-lib.fs135 th{font-size:11.5px}
+table.yj-lib.fs145 th{font-size:12px}
+table.yj-lib.fs155 th{font-size:12.5px}
+table.yj-lib.fs125 td{padding-top:7px;padding-bottom:7px}
+table.yj-lib.fs135 td,table.yj-lib.fs145 td,table.yj-lib.fs155 td{padding-top:8px;padding-bottom:8px}
+table.yj-lib.fs125 .yj-no{width:28px;height:28px;font-size:14px}
+table.yj-lib.fs135 .yj-no{width:30px;height:30px;font-size:15px}
+table.yj-lib.fs145 .yj-no{width:31px;height:31px;font-size:15.5px}
+table.yj-lib.fs155 .yj-no{width:33px;height:33px;font-size:16.5px}
+table.yj-lib.fs125 .yj-grade{font-size:11.5px}
+table.yj-lib.fs135 .yj-grade{font-size:12.5px;padding:2px 8px}
+table.yj-lib.fs145 .yj-grade{font-size:13px;padding:2px 8px}
+table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
@@ -112,12 +138,25 @@ var PAGE = document.getElementById("page");
 if (EMBED) PAGE.classList.add("embed");
 var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 切换时免请求重渲染 */
 
-/* 等级→徽章配色键（g1 红 / g2 深蓝 / g3 绿 / gL 金(L) / gOP 浅青绿(OP 保留现状)） */
-var G = { "GI":"g1","GII":"g2","GIII":"g3","L":"gL","OP":"gOP",
+/* 等级→徽章配色键（g1 红 / g2 深蓝 / g3 绿 / gl 金(L) / gop 浅青绿(OP 保留现状)）
+ * ★ 取值必须与 <style> 里的 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见 */
+var G = { "GI":"g1","GII":"g2","GIII":"g3","L":"gl","OP":"gop",
           "JpnI":"g1","JpnII":"g2","JpnIII":"g3" };
 /* 等级→显示文字（JBIS 风格 G1/G2/G3/Jpn1…） */
 var GLABEL = { "GI":"G1","GII":"G2","GIII":"G3","L":"L","OP":"OP",
                "JpnI":"Jpn1","JpnII":"Jpn2","JpnIII":"Jpn3" };
+
+/* ===== 赛事名去冗余尾缀 =====
+ * 数据里重赏/L/OP 的赛事名自带等级尾缀：「東京優駿(GI)」「野路菊S(OP)」「白百合S(L)」。
+ * 本表已用等级徽章（G1/G2/G3/L/OP）表达同一信息 → 尾缀是重复内容、白占列宽，渲染前去掉。
+ * 只在「该场确实会渲染徽章」时去（尾缀与 格 相等且级别在 G 表内）；
+ * (1勝クラス)/(2勝クラス)/(3歳)/(C4) 等没有对应徽章的尾缀必须保留，否则会丢信息。 */
+function raceNameText(r){
+  var s = String((r && r.レース名) || "");
+  var m = s.match(/[（(]([^()（）]*)[)）]\s*$/);
+  if (m && G[m[1]] && r.格 === m[1]) return s.slice(0, m.index).replace(/\s+$/, "");
+  return s;
+}
 
 /* ---- 统计（由逐场实时计算）---- */
 function computeStats(rs){
@@ -181,7 +220,7 @@ function rowHTML(r){
     '<td class="'+tc+'">'+esc(r.日付)+'</td>'+
     '<td class="'+tl+'">'+esc(r.場名||"")+'</td>'+
     '<td class="'+tl+' text-muted-foreground">'+num(r.R)+'</td>'+
-    '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(r.レース名||"")+grade+'</td>'+
+    '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(raceNameText(r))+grade+'</td>'+
     '<td class="'+tc+'">'+num(r.距離)+'</td>'+
     '<td class="'+tl+'">'+esc(YJ.i18n.e("芝ダ", r.芝ダ))+'</td>'+
     '<td class="'+tl+'">'+placeBadge(r.結果)+'</td>'+
@@ -216,7 +255,7 @@ function rowMbHTML(r){
   var prize = (r.賞金 ? Math.round(r.賞金/10000).toLocaleString()+'万' : '—');
   var top = '<div class="yj-mb-top">'+
     '<span class="yj-mb-date">'+esc(r.日付)+' '+esc(r.場名||"")+(r.R?' R'+num(r.R):'')+'</span>'+
-    '<span class="yj-mb-race">'+esc(r.レース名||"")+grade+'</span>'+
+    '<span class="yj-mb-race">'+esc(raceNameText(r))+grade+'</span>'+
     '<span class="yj-mb-place">'+placeBadge(r.結果)+'</span>'+
   '</div>';
   var dist = (r.芝ダ ? esc(YJ.i18n.e("芝ダ", r.芝ダ)) : '') + (r.距離 ? num(r.距離)+'m' : '');
@@ -273,7 +312,7 @@ function rowEmbedHTML(r){
   return '<tr class="'+rowClass+'">'+
     tc(esc(r.日付))+
     tc(esc(venueR(r)))+
-    '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(r.レース名||"")+grade+'</td>'+
+    '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(raceNameText(r))+grade+'</td>'+
     tc(num(r.距離))+
     tc(esc(YJ.i18n.e("芝ダ", r.芝ダ)))+
     tc(esc(r.馬場||""))+
@@ -301,7 +340,7 @@ function rowEmbedMbHTML(r){
   var prize = (r.賞金 ? Math.round(r.賞金/10000).toLocaleString()+'万' : '—');
   var top = '<div class="yj-mb-top">'+
     '<span class="yj-mb-date">'+esc(r.日付)+' '+esc(venueR(r))+'</span>'+
-    '<span class="yj-mb-race">'+esc(r.レース名||"")+grade+'</span>'+
+    '<span class="yj-mb-race">'+esc(raceNameText(r))+grade+'</span>'+
     '<span class="yj-mb-place">'+placeBadge(r.結果)+'</span>'+
   '</div>';
   var dist = (r.芝ダ ? esc(YJ.i18n.e("芝ダ", r.芝ダ)) : '') + (r.距離 ? num(r.距離)+'m' : '');
@@ -633,13 +672,13 @@ function renderFilters(){
     '</div></div>';
 }
 
-/* ===== 独立 PC 跨马表：列宽策略（v5，取代模块 18 固定百分比强制无横滚）=====
+/* ===== 独立 PC 跨马表：列宽策略（v6，取代模块 18 固定百分比 / v5 只喂弹性列）=====
  * 1) 跑道+距离合并为一列「距离」：草1200 / 泥1200 / 障1000 / AW1000
- * 2) 固定列：可固定长度字段按格式上限 colW 最小固定；
- * 3) 弹性列 = 除固定列外的全部（马名/赛事名/场地/天气/马场/骑手/调教师）：最小宽按当前页
- *    最长内容 pageW（马名/赛事名含级徽章宽）量好保证完整展示后，两遍渲染——先最小宽量容器，
- *    把空余按内容占比「评分」分给弹性列 → 表恒等于容器宽，内容短不露右侧空白、各列更舒展；
- *    内容长（名字超长）时弹性列退回内容宽、表格自然超宽，overflow-x-auto 兜底横滚 */
+ * 2) 固定列（日期/距离/枠番…赏金）= 格式上限 colW；弹性列（马名/赛事名/场地/天气/马场/骑手/调教师）
+ *    = 当前页最长内容 pageW（马名/赛事名含级徽章宽）——都只是「最小宽」，不再决定最终宽。
+ * 3) 留白分配（三阶段加权注水 fill()）：弹性文本列先吃（软上限 2.0×）→ 余量给数字列（软上限 1.5×）
+ *    → 再有余量全表均分（保证表宽恒等于容器，右侧不留空条）。24 寸及以下留白本就被弹性列吃光，
+ *    所以数字列不参与，观感与 v5 完全一致；只有宽屏（弹性列撞上限）数字列才开始吃掉富余。 */
 var SURF_SHORT = { 芝:"草", ダ:"泥", 障害:"障", AW:"AW" };
 function surfaceShort(v){ return SURF_SHORT[v] || ""; }
 /* 马名显示文本（与 NAME_VIEW 一致，量尺与渲染共用同一来源） */
@@ -647,22 +686,58 @@ function horseText(en){
   var h=en.h;
   return (NAME_VIEW ? (h.香港馬名||h.自译馬名) : (h.馬名||h.欧字馬名)) || ("#"+h.id);
 }
-/* 赛事名显示文本 + 级徽章额外宽（margin-left 6 + padding 14） */
+/* 赛事名显示文本 + 级徽章额外宽（margin-left 6 + 徽章左右 padding；都随档位放大）
+ * 文本走 raceNameText（去冗余等级尾缀），量尺与渲染必须共用同一来源，否则列宽失真 */
 function raceText(en){
   var r=en.r, gk=r.格&&G[r.格];
-  return { t: r.レース名||"", x: gk ? (txtW(GLABEL[r.格])+20) : 0 };
+  var pad = CUR_FS >= 13.5 ? 8 : 7;
+  return { t: raceNameText(r), x: gk ? (txtW(GLABEL[r.格], CUR_TH+1) + 6 + pad*2) : 0 };
 }
 
-/* 文本宽度量尺：canvas 固定 11.5px 表体字号 + 页面字体栈
- * （勿用 getComputedStyle().font，其简写常为空串、静默回退 16px，见模块 18 踩坑记录） */
+/* ===== 文本宽度量尺（v6 起：canvas 粗排 + DOM 精量）=====
+ * 量宽必须与「浏览器真实排版」同源，否则 colgroup 给的最小宽偏窄，浏览器会自己从别的列
+ * 偷偷挪宽度补上（实测每列差 3~4px），列宽就不再完全由算法决定。
+ * - txtWc：canvas 粗量（快，只用来排序挑候选，不参与最终宽度）
+ * - txtW ：DOM 探针精量（与表格同一字体栈、同一字号；带缓存）
+ * 勿用 getComputedStyle().font：其简写常为空串、静默回退 16px（见模块 18 踩坑记录） */
 var _mx=null;
-function txtW(s,px){
+function txtWc(s,px){
   if(!_mx){ _mx=document.createElement("canvas").getContext("2d"); }
-  _mx.font='400 '+(px||11.5)+'px "Noto Sans SC","Noto Sans CJK SC","Geist","PingFang SC","Microsoft YaHei",sans-serif';
+  _mx.font='400 '+(px||CUR_FS)+'px "Noto Sans SC","Noto Sans CJK SC","Geist","PingFang SC","Microsoft YaHei",sans-serif';
   return _mx.measureText(String(s)).width;
+}
+var _mw=null, _mwCache={};
+function txtW(s,px){
+  px = px || CUR_FS;
+  var key = px+"|"+s;
+  if(_mwCache[key]!=null) return _mwCache[key];
+  if(!_mw){
+    _mw=document.createElement("span");
+    /* 不设 font-family：让它继承 body 字体栈，与表格完全一致 */
+    _mw.style.cssText="position:absolute;left:-99999px;top:0;white-space:pre;visibility:hidden;pointer-events:none";
+    document.body.appendChild(_mw);
+  }
+  _mw.style.fontSize=px+"px";
+  _mw.textContent=String(s);
+  var w=_mw.getBoundingClientRect().width;
+  _mwCache[key]=w;
+  return w;
 }
 /* 固定列宽 = 格式串实际宽 + 单元格左右 padding(4px) + 安全余量(4px) */
 function colW(fmt){ return Math.ceil(txtW(fmt)) + 8; }
+
+/* ===== 宽屏密度分档（v6）：字号档位随「表内留白」自动升档 =====
+ * 判据：留白 = 1 − 内容墨迹总宽 ÷ 容器宽；从最小档起取第一个 ≤ AIR_TARGET 的档，都达不到就用最高档。
+ * 24 寸及以下（容器 < 约 1595px）留白本就 35% 上下 → 稳在 11.5px，老观感零变化；
+ * 27 寸（容器 ≈2050）→ 15.5px（留白 53%→38%）。量宽、表头字号、徽章尺寸都跟着档位走。 */
+var TIER_FS=[11.5, 12.5, 13.5, 14.5, 15.5];
+var TIER_CLS={ 11.5:"", 12.5:"fs125", 13.5:"fs135", 14.5:"fs145", 15.5:"fs155" };
+var TIER_TH ={ 11.5:10, 12.5:11, 13.5:11.5, 14.5:12, 15.5:12.5 };   /* 该档表头量宽字号 */
+var AIR_TARGET=0.40;                          /* 表内留白目标上限 */
+var CAP_TXT=2.0, CAP_NUM=1.5;                 /* 列宽软上限：文本列 2.0×、数字列 1.5× */
+var CUR_FS=11.5, CUR_TH=10;                    /* 当前档位（量尺用） */
+/* 跨马表列分组：弹性=马名/场地/赛事/天气/马场/骑手/调教师；其余 14 个数字列为固定列 */
+var LIB_EL=[0,2,3,5,6,19,20], LIB_FIX=[1,4,7,8,9,10,11,12,13,14,15,16,17,18];
 
 /* 跨马 PC 行：马名(可点击跳档案) + 核心赛绩字段
  * 列宽 v2：可固定长度字段=最小固定 px（colgroup），变长文本列由浏览器按当前页最长内容撑开，全列 nowrap 不截断 */
@@ -725,7 +800,7 @@ function libRowMbHTML(en){
   '</div>';
   var dist=(r.芝ダ?esc(YJ.i18n.e("芝ダ",r.芝ダ)):"")+(r.距離?num(r.距離)+'m':"");
   var distItem=dist?'<span class="yj-mb-item yj-mb-dist"><b>'+dist+'</b></span>':null;
-  var raceItem=(r.レース名?'<span class="yj-mb-item"><b class="yj-race">'+esc(r.レース名)+'</b>'+grade+'</span>':(grade?'<span class="yj-mb-item">'+grade+'</span>':""));
+  var raceItem=(raceNameText(r)?'<span class="yj-mb-item"><b class="yj-race">'+esc(raceNameText(r))+'</b>'+grade+'</span>':(grade?'<span class="yj-mb-item">'+grade+'</span>':""));
   var item=function(label,v,vcls){
     if(v==null||v==="")return null;
     return '<span class="yj-mb-item">'+(label?'<i>'+esc(label)+'：</i>':"")+'<b'+(vcls?' class="'+vcls+'"':"")+'>'+v+'</b></span>';
@@ -798,45 +873,86 @@ function renderResults(){
   else if(isMb()){
     listHtml='<div id="yj-mb-list" class="rounded-[10px] border border-border bg-card">'+list.map(libRowMbHTML).join("")+'</div>';
   } else {
-    /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v5：
-     * 固定列（日期/距离/枠番…赏金）按格式上限 colW 最小固定；
-     * 弹性列 = 除固定列外的全部（马名/赛事名/场地/天气/马场/骑手/调教师）：最小宽按当前页
-     *   最长内容 pageW（马名/赛事名含级徽章宽）量好保证完整展示，两遍渲染——先最小宽量容器宽，
-     *   把空余按内容占比「评分」分给弹性列 → 表宽恒等于容器，内容短不露右侧空白、各列更舒展；
-     *   内容长（名字超长）时弹性列退回内容宽、表格自然超宽，overflow-x-auto 兜底横滚。
+    /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v6（详见文件上方 v6 说明）：
+     * ① 量最小宽：固定列按格式上限 colW、弹性列按当前页最长内容 pageW（canvas 粗排 + DOM 精量）；
+     * ② 按档位分配留白（弹性列软上限 2.0× → 数字列软上限 1.5× → 余量全表均分）→ 表宽恒等于容器；
+     * ③ 表内留白 > AIR_TARGET 就升一档字号重算（11.5 → 15.5px），量尺/表头/徽章同步换档。
      * 表头 马场/体重/赔率 为短标签，仅本表硬编码（不改 i18n，内嵌/mb 页仍用全称） */
-    /* 页内最长内容量宽：fn(en) 返回字符串或 {t:文本, x:额外宽} */
+    /* 页内最长内容量宽：fn(en) 返回字符串或 {t:文本, x:额外宽}
+     * canvas 粗排取前 5 名 → 只对这 5 个候选做 DOM 精量（避免 100 行逐格触发排版） */
     function pageW(fn){
-      var m=0;
+      var cand=[];
       list.forEach(function(en){
         var o=fn(en);
         if(o==null) return;
         var s=typeof o==="string"?o:o.t, x=typeof o==="string"?0:(o.x||0);
-        if(s){ var w=txtW(s)+x; if(w>m) m=w; }
+        if(s) cand.push({ s:s, x:x, w:txtWc(s) });
+      });
+      if(!cand.length) return 8;
+      cand.sort(function(a,b){ return b.w-a.w; });
+      var m=0;
+      cand.slice(0,5).forEach(function(c){
+        var w=txtW(c.s)+c.x;
+        if(w>m) m=w;
       });
       return Math.ceil(m)+8;
     }
-    /* 列最小宽 = 值宽与表头宽（10px 量尺）取大，加 padding/余量 */
-    function colMin(vw,h){ return Math.max(vw, Math.ceil(txtW(h,10))+8); }
+    /* 列最小宽 = 值宽与表头宽（该档表头字号）取大，加 padding/余量 */
+    function colMin(vw,h){ return Math.max(vw, Math.ceil(txtW(h,CUR_TH))+8); }
     var TH=[ "出走马 ⇄", t("日付"), t("場名"), t("レース名"), t("距離"), t("天候"), "马场",
       t("枠番"),t("馬番"),t("頭数"),t("斤量"),t("人気"),t("着順"),t("タイム"),t("着差"),t("上り"),
       "体重","赔率",t("賞金")+"(万円)", t("騎手"), t("調教師") ];
-    var VAL=[
-      pageW(horseText),
-      colW("2026-08-30"),
-      pageW(function(en){ return venueR(en.r); }),
-      pageW(raceText),
-      colW("AW1200"),
-      pageW(function(en){ return en.r.天候; }),
-      pageW(function(en){ return en.r.馬場; }),
-      colW("18"), colW("18"), colW("18"), colW("60.0"), colW("18"), colW("18"),
-      colW("12:34.5"), colW("±1.1"), colW("36.3"),
-      colW("500(+20)"), colW("100.11"), colW("90000"),
-      pageW(function(en){ return en.r.騎手; }),
-      pageW(function(en){ return en.r.調教師; })
-    ];
-    var MIN=VAL.map(function(v,i){ return colMin(v,TH[i]); });   /* 21 列最小宽 */
-    var EL=[0,2,3,5,6,19,20];  /* 弹性列：马名/赛事名/场地/天气/马场/骑手/调教师（除固定列外全部） */
+    function libVal(){
+      return [
+        pageW(horseText),
+        colW("2026-08-30"),
+        pageW(function(en){ return venueR(en.r); }),
+        pageW(raceText),
+        colW("AW1200"),
+        pageW(function(en){ return en.r.天候; }),
+        pageW(function(en){ return en.r.馬場; }),
+        colW("18"), colW("18"), colW("18"), colW("60.0"), colW("18"), colW("18"),
+        colW("12:34.5"), colW("±1.1"), colW("36.3"),
+        colW("500(+20)"), colW("100.11"), colW("90000"),
+        pageW(function(en){ return en.r.騎手; }),
+        pageW(function(en){ return en.r.調教師; })
+      ];
+    }
+    /* 加权注水：把 budget 按 base 占比发给 idx 各列，单列增量不超过 base[i]×(cap−1)（cap=null 不限量）；
+     * 返回没发完的余量 */
+    function fill(base,add,idx,budget,cap){
+      var left=budget;
+      for(var pass=0; pass<8 && left>0.5; pass++){
+        var wsum=0;
+        idx.forEach(function(i){ if(cap==null || base[i]*cap-(base[i]+add[i])>0.5) wsum+=base[i]; });
+        if(!wsum) break;
+        var spent=0;
+        idx.forEach(function(i){
+          var room=(cap==null)?Infinity:Math.max(0, base[i]*cap-(base[i]+add[i]));
+          if(room<=0.5) return;
+          var share=Math.min(room, left*base[i]/wsum);
+          add[i]+=share; spent+=share;
+        });
+        if(spent<=0.5) break;
+        left-=spent;
+      }
+      return left;
+    }
+    /* 给定档位字号 + 容器宽 → 最终 21 列宽度 + 该档「内容墨迹总宽」（供留白判据） */
+    function libLayout(fs, containerW){
+      CUR_FS=fs; CUR_TH=TIER_TH[fs]||10;
+      var VAL=libVal();
+      var base=VAL.map(function(v,i){ return colMin(v,TH[i]); });
+      var add=base.map(function(){ return 0; });
+      var slack=containerW-2-base.reduce(function(a,b){ return a+b; },0);
+      if(slack>0){
+        var left=fill(base,add,LIB_EL,slack,CAP_TXT);          /* ① 弹性文本列（≤2.0×） */
+        if(left>0) left=fill(base,add,LIB_FIX,left,CAP_NUM);   /* ② 数字列（≤1.5×） */
+        if(left>0) fill(base,add,LIB_EL.concat(LIB_FIX),left,null); /* ③ 余量全表均分，保证铺满 */
+      }
+      var ink=VAL.reduce(function(a,b){ return a+Math.max(0, b-8); }, 0);  /* 去掉每列 8px 余量 */
+      return { MIN:base.map(function(b,i){ return Math.round(b+add[i]); }), ink:ink };
+    }
     var th=function(label){ return '<th class="px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]">'+label+'</th>'; };
     var thName='<th class="px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]">'+
       '<button type="button" class="yj-name-toggle" data-tip="点击切换马名：日文名/英文名 ⇄ 港译名/自译名">出走马 <span class="yj-name-ico">⇄</span></button></th>';
@@ -845,26 +961,30 @@ function renderResults(){
       th(t("枠番"))+th(t("馬番"))+th(t("頭数"))+th(t("斤量"))+th(t("人気"))+th(t("着順"))+th(t("タイム"))+th(t("着差"))+th(t("上り"))+th("体重")+th("赔率")+th(t("賞金")+'(万円)')+th(t("騎手"))+th(t("調教師"))+
       '</tr></thead>';
     var rows=list.map(libRowHTML).join("");
-    var cardHtml=function(cg){
+    var cgHtml=function(MIN){ return '<colgroup>'+MIN.map(function(w){ return '<col style="width:'+w+'px">'; }).join('')+'</colgroup>'; };
+    var cardHtml=function(MIN,fs){
       return '<div id="yj-lib-wrap" class="overflow-x-auto rounded-[10px] border border-border bg-card">'+
-        '<table class="yj-lib border-collapse text-[11.5px]">'+cg+thead+'<tbody>'+rows+'</tbody></table></div>';
+        '<table class="yj-lib '+(TIER_CLS[fs]||"")+' border-collapse text-[11.5px]">'+cgHtml(MIN)+thead+'<tbody>'+rows+'</tbody></table></div>';
     };
     var tail=(list.length&&pages>1?pagerHTML(PG.page,pages,total):"");
-    /* 第一遍：最小宽渲染 → 量容器宽 */
-    body.innerHTML=summary+cardHtml('<colgroup>'+MIN.map(function(w){ return '<col style="width:'+w+'px">'; }).join('')+'</colgroup>')+tail;
+    /* 第一遍：最小档最小宽渲染 → 量容器宽（列宽算法需要先知道容器有多宽） */
+    body.innerHTML=summary+cardHtml(libLayout(TIER_FS[0], 0).MIN, TIER_FS[0])+tail;
     var wrap=document.getElementById("yj-lib-wrap");
     var container=wrap?wrap.clientWidth:0;
-    var sum=0; MIN.forEach(function(w){ sum+=w; });
-    var slack=container-sum-2;
-    if(slack>0){
-      var eSum=0; EL.forEach(function(i){ eSum+=MIN[i]; });
-      var used=0;
-      EL.forEach(function(i,k){
-        var share=(k===EL.length-1)?(slack-used):Math.floor(slack*MIN[i]/eSum);
-        MIN[i]+=share; used+=share;
-      });
+    /* 选档：从最小档起，取第一个「表内留白 ≤ AIR_TARGET」的档；都达不到就用最高档。
+     * 容器量不到宽（隐藏/未布局）时退回最小档，避免误判成大屏而放大字号 */
+    var chosen=TIER_FS[0], res=null;
+    if(container<=0){
+      res=libLayout(TIER_FS[0], 0);
+    } else {
+      for(var ti=0; ti<TIER_FS.length; ti++){
+        res=libLayout(TIER_FS[ti], container);
+        chosen=TIER_FS[ti];
+        if((1 - res.ink/container) <= AIR_TARGET) break;
+      }
     }
-    listHtml=cardHtml('<colgroup>'+MIN.map(function(w){ return '<col style="width:'+w+'px">'; }).join('')+'</colgroup>');
+    CUR_FS=chosen; CUR_TH=TIER_TH[chosen]||10;
+    listHtml=cardHtml(res.MIN, chosen);
   }
   body.innerHTML=summary+listHtml+(list.length&&pages>1?pagerHTML(PG.page,pages,total):"");
 }
