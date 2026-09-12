@@ -25,6 +25,12 @@
 .yj-no2{background-color:#cbdeff;border-color:#87aee6;color:#000}
 .yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
 
+/* ===== 人气徽章：数字文字用着顺同款配色（1黄/2蓝/3橙文字色，无底无框）
+ * 只染字色、不加重不加底，突出又不抢着顺彩色方块的风头；4+ 纯数字不变 */
+.yj-nk1{color:#e2cc38}
+.yj-nk2{color:#87aee6}
+.yj-nk3{color:#dca167}
+
 /* ===== mb 卡片（≤768px，JS 渲染时用；PC 不渲染该容器）=====
  * 软分行：标题一行 + 固定分组行（行内项超宽时在项边界自然折行），无横线分隔 */
 .yj-mb.dnf{opacity:.5}
@@ -185,11 +191,11 @@ function placeBadge(n){
   return esc(n);
 }
 
-/* 人气徽章：与着顺同款配色，仅 1/2/3 标出，其余纯数字 */
+/* 人气徽章：数字文字用着顺同款配色（1/2/3），无底无框，其余纯数字 */
 function ninkiBadge(n){
-  if (n == 1) return '<span class="yj-no yj-no1">1</span>';
-  if (n == 2) return '<span class="yj-no yj-no2">2</span>';
-  if (n == 3) return '<span class="yj-no yj-no3">3</span>';
+  if (n == 1) return '<span class="yj-nk1">1</span>';
+  if (n == 2) return '<span class="yj-nk2">2</span>';
+  if (n == 3) return '<span class="yj-nk3">3</span>';
   return esc(n);
 }
 
