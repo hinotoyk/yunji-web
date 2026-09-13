@@ -1,0 +1,206 @@
+{
+ "meta": {
+  "generated_at": "2026-09-13T17:26:18",
+  "source": "basic.json + races/*.json",
+  "stats": {
+   "events": 6,
+   "horses": 6,
+   "graded_wins": 3,
+   "sire_wins": 0
+  }
+ },
+ "events": [
+  {
+   "date": "2025-07-13",
+   "type": "race",
+   "node": "gen",
+   "horse": {
+    "id": 115,
+    "name": "ルージュボヤージュ",
+    "cn": "翱天赤骥"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "gen",
+     "label": "2023届首个新马胜"
+    }
+   ],
+   "race": {
+    "name": "2歳新馬",
+    "grade": "新馬",
+    "glabel": "",
+    "gbadge": "",
+    "meta": "福島5R · 芝1800m · 良",
+    "time": "1:53.6",
+    "agari": "35.7",
+    "pop": "1番",
+    "team": "騎手 荻野極 · 55kg ｜ 調教師 国枝栄"
+   }
+  },
+  {
+   "date": "2025-10-26",
+   "type": "race",
+   "node": "first",
+   "horse": {
+    "id": 75,
+    "name": "バドリナート",
+    "cn": "印度神庙"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "first",
+     "label": "L初胜"
+    }
+   ],
+   "race": {
+    "name": "萩S(L)",
+    "grade": "L",
+    "glabel": "L",
+    "gbadge": "gl",
+    "meta": "京都9R · 芝1800m · 稍重",
+    "time": "1:47.1",
+    "agari": "34.3",
+    "pop": "3番",
+    "team": "騎手 坂井瑠星 · 56kg ｜ 調教師 松永幹夫"
+   }
+  },
+  {
+   "date": "2026-04-25",
+   "type": "race",
+   "node": "gen",
+   "horse": {
+    "id": 40,
+    "name": "ゴーイントゥスカイ",
+    "cn": "通天飞"
+   },
+   "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "tags": [
+    {
+     "cat": "first",
+     "label": "G2初胜"
+    },
+    {
+     "cat": "graded",
+     "label": "首个重赏"
+    },
+    {
+     "cat": "graded",
+     "label": "G2第1胜"
+    },
+    {
+     "cat": "gen",
+     "label": "2023届首个重赏"
+    }
+   ],
+   "race": {
+    "name": "テレビ東京杯青葉賞(GII)",
+    "grade": "GII",
+    "glabel": "G2",
+    "gbadge": "g2",
+    "meta": "東京11R · 芝2400m · 良",
+    "time": "2:23.0",
+    "agari": "33.4",
+    "pop": "4番",
+    "team": "騎手 武豊 · 57kg ｜ 調教師 上原佑紀"
+   }
+  },
+  {
+   "date": "2026-05-09",
+   "type": "race",
+   "node": "graded",
+   "horse": {
+    "id": 39,
+    "name": "コンジェスタス",
+    "cn": "塔状高云"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "graded",
+     "label": "重赏第2胜"
+    },
+    {
+     "cat": "graded",
+     "label": "G2第2胜"
+    }
+   ],
+   "race": {
+    "name": "京都新聞杯(GII)",
+    "grade": "GII",
+    "glabel": "G2",
+    "gbadge": "g2",
+    "meta": "京都11R · 芝2200m · 良",
+    "time": "2:09.9",
+    "agari": "35.3",
+    "pop": "6番",
+    "team": "騎手 西村淳也 · 57kg ｜ 調教師 高野友和"
+   }
+  },
+  {
+   "date": "2026-08-09",
+   "type": "race",
+   "node": "first",
+   "horse": {
+    "id": 66,
+    "name": "チェリヴェント",
+    "cn": "乘天风"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "first",
+     "label": "G3初胜"
+    },
+    {
+     "cat": "graded",
+     "label": "重赏第3胜"
+    },
+    {
+     "cat": "graded",
+     "label": "G3第1胜"
+    }
+   ],
+   "race": {
+    "name": "レパードS(GIII)",
+    "grade": "GIII",
+    "glabel": "G3",
+    "gbadge": "g3",
+    "meta": "新潟7R · ダ1800m · 良",
+    "time": "1:51.2",
+    "agari": "37.6",
+    "pop": "6番",
+    "team": "騎手 吉村誠之助 · 57kg ｜ 調教師 清水久詞"
+   }
+  },
+  {
+   "date": "2026-08-09",
+   "type": "race",
+   "node": "gen",
+   "horse": {
+    "id": 209,
+    "name": "ドラゴンバルド",
+    "cn": "骁勇龙"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "gen",
+     "label": "2024届首个新马胜"
+    }
+   ],
+   "race": {
+    "name": "2歳新馬",
+    "grade": "新馬",
+    "glabel": "",
+    "gbadge": "",
+    "meta": "中京3R · 芝2000m · 良",
+    "time": "2:03.6",
+    "agari": "33.6",
+    "pop": "1番",
+    "team": "騎手 川田将雅 · 55kg ｜ 調教師 福永祐一"
+   }
+  }
+ ]
+}

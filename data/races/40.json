@@ -34,7 +34,8 @@
   "本賞金": 0,
   "來源": "netkeiba",
   "調教師": "上原佑紀",
-  "trainer_id": "01192"
+  "trainer_id": "01192",
+  "photo": ""
  },
  {
   "日付": "2026-04-25",
@@ -71,7 +72,10 @@
   "本賞金": 54000000,
   "來源": "netkeiba",
   "調教師": "上原佑紀",
-  "trainer_id": "01192"
+  "trainer_id": "01192",
+  "photo": [
+   "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+  ]
  },
  {
   "日付": "2026-02-10",
@@ -108,7 +112,8 @@
   "本賞金": 0,
   "來源": "netkeiba",
   "調教師": "上原佑紀",
-  "trainer_id": "01192"
+  "trainer_id": "01192",
+  "photo": ""
  },
  {
   "日付": "2025-11-29",
@@ -145,7 +150,8 @@
   "本賞金": 0,
   "來源": "netkeiba",
   "調教師": "上原佑紀",
-  "trainer_id": "01192"
+  "trainer_id": "01192",
+  "photo": ""
  },
  {
   "日付": "2025-10-05",
@@ -182,6 +188,7 @@
   "本賞金": 0,
   "來源": "netkeiba",
   "調教師": "上原佑紀",
-  "trainer_id": "01192"
+  "trainer_id": "01192",
+  "photo": ""
  }
 ]

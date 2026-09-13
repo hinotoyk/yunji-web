@@ -37,7 +37,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/1.json",
-   "pedigree_file": "data/pedigree/1.json"
+   "pedigree_file": "data/pedigree/1.json",
+   "受賞歴": []
   },
   {
    "id": 2,
@@ -71,7 +72,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/2.json",
-   "pedigree_file": "data/pedigree/2.json"
+   "pedigree_file": "data/pedigree/2.json",
+   "受賞歴": []
   },
   {
    "id": 3,
@@ -105,7 +107,8 @@
    "セリ取引価格": "1億2,650万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/3.json",
-   "pedigree_file": "data/pedigree/3.json"
+   "pedigree_file": "data/pedigree/3.json",
+   "受賞歴": []
   },
   {
    "id": 4,
@@ -139,7 +142,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/4.json",
-   "pedigree_file": "data/pedigree/4.json"
+   "pedigree_file": "data/pedigree/4.json",
+   "受賞歴": []
   },
   {
    "id": 5,
@@ -173,7 +177,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/5.json",
-   "pedigree_file": "data/pedigree/5.json"
+   "pedigree_file": "data/pedigree/5.json",
+   "受賞歴": []
   },
   {
    "id": 6,
@@ -207,7 +212,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/6.json",
-   "pedigree_file": "data/pedigree/6.json"
+   "pedigree_file": "data/pedigree/6.json",
+   "受賞歴": []
   },
   {
    "id": 7,
@@ -241,7 +247,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/7.json",
-   "pedigree_file": "data/pedigree/7.json"
+   "pedigree_file": "data/pedigree/7.json",
+   "受賞歴": []
   },
   {
    "id": 8,
@@ -275,7 +282,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/8.json",
-   "pedigree_file": "data/pedigree/8.json"
+   "pedigree_file": "data/pedigree/8.json",
+   "受賞歴": []
   },
   {
    "id": 9,
@@ -309,7 +317,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/9.json",
-   "pedigree_file": "data/pedigree/9.json"
+   "pedigree_file": "data/pedigree/9.json",
+   "受賞歴": []
   },
   {
    "id": 10,
@@ -343,7 +352,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/10.json",
-   "pedigree_file": "data/pedigree/10.json"
+   "pedigree_file": "data/pedigree/10.json",
+   "受賞歴": []
   },
   {
    "id": 11,
@@ -377,7 +387,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/11.json",
-   "pedigree_file": "data/pedigree/11.json"
+   "pedigree_file": "data/pedigree/11.json",
+   "受賞歴": []
   },
   {
    "id": 12,
@@ -411,7 +422,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/12.json",
-   "pedigree_file": "data/pedigree/12.json"
+   "pedigree_file": "data/pedigree/12.json",
+   "受賞歴": []
   },
   {
    "id": 13,
@@ -445,7 +457,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/13.json",
-   "pedigree_file": "data/pedigree/13.json"
+   "pedigree_file": "data/pedigree/13.json",
+   "受賞歴": []
   },
   {
    "id": 14,
@@ -479,7 +492,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/14.json",
-   "pedigree_file": "data/pedigree/14.json"
+   "pedigree_file": "data/pedigree/14.json",
+   "受賞歴": []
   },
   {
    "id": 15,
@@ -513,7 +527,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/15.json",
-   "pedigree_file": "data/pedigree/15.json"
+   "pedigree_file": "data/pedigree/15.json",
+   "受賞歴": []
   },
   {
    "id": 16,
@@ -547,7 +562,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/16.json",
-   "pedigree_file": "data/pedigree/16.json"
+   "pedigree_file": "data/pedigree/16.json",
+   "受賞歴": []
   },
   {
    "id": 17,
@@ -581,7 +597,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/17.json",
-   "pedigree_file": "data/pedigree/17.json"
+   "pedigree_file": "data/pedigree/17.json",
+   "受賞歴": []
   },
   {
    "id": 18,
@@ -615,7 +632,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/18.json",
-   "pedigree_file": "data/pedigree/18.json"
+   "pedigree_file": "data/pedigree/18.json",
+   "受賞歴": []
   },
   {
    "id": 19,
@@ -649,7 +667,8 @@
    "セリ取引価格": "3,410万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/19.json",
-   "pedigree_file": "data/pedigree/19.json"
+   "pedigree_file": "data/pedigree/19.json",
+   "受賞歴": []
   },
   {
    "id": 20,
@@ -683,7 +702,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/20.json",
-   "pedigree_file": "data/pedigree/20.json"
+   "pedigree_file": "data/pedigree/20.json",
+   "受賞歴": []
   },
   {
    "id": 21,
@@ -717,7 +737,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/21.json",
-   "pedigree_file": "data/pedigree/21.json"
+   "pedigree_file": "data/pedigree/21.json",
+   "受賞歴": []
   },
   {
    "id": 22,
@@ -751,7 +772,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/22.json",
-   "pedigree_file": "data/pedigree/22.json"
+   "pedigree_file": "data/pedigree/22.json",
+   "受賞歴": []
   },
   {
    "id": 23,
@@ -785,7 +807,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/23.json",
-   "pedigree_file": "data/pedigree/23.json"
+   "pedigree_file": "data/pedigree/23.json",
+   "受賞歴": []
   },
   {
    "id": 24,
@@ -819,7 +842,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/24.json",
-   "pedigree_file": "data/pedigree/24.json"
+   "pedigree_file": "data/pedigree/24.json",
+   "受賞歴": []
   },
   {
    "id": 25,
@@ -853,7 +877,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/25.json",
-   "pedigree_file": "data/pedigree/25.json"
+   "pedigree_file": "data/pedigree/25.json",
+   "受賞歴": []
   },
   {
    "id": 26,
@@ -887,7 +912,8 @@
    "セリ取引価格": "5,500万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/26.json",
-   "pedigree_file": "data/pedigree/26.json"
+   "pedigree_file": "data/pedigree/26.json",
+   "受賞歴": []
   },
   {
    "id": 27,
@@ -921,7 +947,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/27.json",
-   "pedigree_file": "data/pedigree/27.json"
+   "pedigree_file": "data/pedigree/27.json",
+   "受賞歴": []
   },
   {
    "id": 28,
@@ -955,7 +982,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/28.json",
-   "pedigree_file": "data/pedigree/28.json"
+   "pedigree_file": "data/pedigree/28.json",
+   "受賞歴": []
   },
   {
    "id": 29,
@@ -989,7 +1017,8 @@
    "セリ取引価格": "1億3,750万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/29.json",
-   "pedigree_file": "data/pedigree/29.json"
+   "pedigree_file": "data/pedigree/29.json",
+   "受賞歴": []
   },
   {
    "id": 30,
@@ -1023,7 +1052,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/30.json",
-   "pedigree_file": "data/pedigree/30.json"
+   "pedigree_file": "data/pedigree/30.json",
+   "受賞歴": []
   },
   {
    "id": 31,
@@ -1057,7 +1087,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/31.json",
-   "pedigree_file": "data/pedigree/31.json"
+   "pedigree_file": "data/pedigree/31.json",
+   "受賞歴": []
   },
   {
    "id": 32,
@@ -1091,7 +1122,8 @@
    "セリ取引価格": "2,090万円 (2024年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/32.json",
-   "pedigree_file": "data/pedigree/32.json"
+   "pedigree_file": "data/pedigree/32.json",
+   "受賞歴": []
   },
   {
    "id": 33,
@@ -1125,7 +1157,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/33.json",
-   "pedigree_file": "data/pedigree/33.json"
+   "pedigree_file": "data/pedigree/33.json",
+   "受賞歴": []
   },
   {
    "id": 34,
@@ -1159,7 +1192,8 @@
    "セリ取引価格": "1億1,550万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/34.json",
-   "pedigree_file": "data/pedigree/34.json"
+   "pedigree_file": "data/pedigree/34.json",
+   "受賞歴": []
   },
   {
    "id": 35,
@@ -1193,7 +1227,8 @@
    "セリ取引価格": "3,410万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/35.json",
-   "pedigree_file": "data/pedigree/35.json"
+   "pedigree_file": "data/pedigree/35.json",
+   "受賞歴": []
   },
   {
    "id": 36,
@@ -1227,7 +1262,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/36.json",
-   "pedigree_file": "data/pedigree/36.json"
+   "pedigree_file": "data/pedigree/36.json",
+   "受賞歴": []
   },
   {
    "id": 37,
@@ -1261,7 +1297,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/37.json",
-   "pedigree_file": "data/pedigree/37.json"
+   "pedigree_file": "data/pedigree/37.json",
+   "受賞歴": []
   },
   {
    "id": 38,
@@ -1295,7 +1332,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/38.json",
-   "pedigree_file": "data/pedigree/38.json"
+   "pedigree_file": "data/pedigree/38.json",
+   "受賞歴": []
   },
   {
    "id": 39,
@@ -1329,7 +1367,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/39.json",
-   "pedigree_file": "data/pedigree/39.json"
+   "pedigree_file": "data/pedigree/39.json",
+   "受賞歴": []
   },
   {
    "id": 40,
@@ -1365,7 +1404,8 @@
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
    ],
    "races_file": "data/races/40.json",
-   "pedigree_file": "data/pedigree/40.json"
+   "pedigree_file": "data/pedigree/40.json",
+   "受賞歴": []
   },
   {
    "id": 41,
@@ -1399,7 +1439,8 @@
    "セリ取引価格": "5億7,200万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/41.json",
-   "pedigree_file": "data/pedigree/41.json"
+   "pedigree_file": "data/pedigree/41.json",
+   "受賞歴": []
   },
   {
    "id": 42,
@@ -1433,7 +1474,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/42.json",
-   "pedigree_file": "data/pedigree/42.json"
+   "pedigree_file": "data/pedigree/42.json",
+   "受賞歴": []
   },
   {
    "id": 43,
@@ -1467,7 +1509,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/43.json",
-   "pedigree_file": "data/pedigree/43.json"
+   "pedigree_file": "data/pedigree/43.json",
+   "受賞歴": []
   },
   {
    "id": 44,
@@ -1501,7 +1544,8 @@
    "セリ取引価格": "6,820万円 (2025年 北海道トレーニングセール)",
    "photo": "",
    "races_file": "data/races/44.json",
-   "pedigree_file": "data/pedigree/44.json"
+   "pedigree_file": "data/pedigree/44.json",
+   "受賞歴": []
   },
   {
    "id": 45,
@@ -1535,7 +1579,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/45.json",
-   "pedigree_file": "data/pedigree/45.json"
+   "pedigree_file": "data/pedigree/45.json",
+   "受賞歴": []
   },
   {
    "id": 46,
@@ -1569,7 +1614,8 @@
    "セリ取引価格": "7,920万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/46.json",
-   "pedigree_file": "data/pedigree/46.json"
+   "pedigree_file": "data/pedigree/46.json",
+   "受賞歴": []
   },
   {
    "id": 47,
@@ -1603,7 +1649,8 @@
    "セリ取引価格": "9,020万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/47.json",
-   "pedigree_file": "data/pedigree/47.json"
+   "pedigree_file": "data/pedigree/47.json",
+   "受賞歴": []
   },
   {
    "id": 48,
@@ -1637,7 +1684,8 @@
    "セリ取引価格": "1億1,000万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/48.json",
-   "pedigree_file": "data/pedigree/48.json"
+   "pedigree_file": "data/pedigree/48.json",
+   "受賞歴": []
   },
   {
    "id": 49,
@@ -1671,7 +1719,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/49.json",
-   "pedigree_file": "data/pedigree/49.json"
+   "pedigree_file": "data/pedigree/49.json",
+   "受賞歴": []
   },
   {
    "id": 50,
@@ -1705,7 +1754,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/50.json",
-   "pedigree_file": "data/pedigree/50.json"
+   "pedigree_file": "data/pedigree/50.json",
+   "受賞歴": []
   },
   {
    "id": 51,
@@ -1739,7 +1789,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/51.json",
-   "pedigree_file": "data/pedigree/51.json"
+   "pedigree_file": "data/pedigree/51.json",
+   "受賞歴": []
   },
   {
    "id": 52,
@@ -1773,7 +1824,8 @@
    "セリ取引価格": "6,380万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/52.json",
-   "pedigree_file": "data/pedigree/52.json"
+   "pedigree_file": "data/pedigree/52.json",
+   "受賞歴": []
   },
   {
    "id": 53,
@@ -1807,7 +1859,8 @@
    "セリ取引価格": "1億120万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/53.json",
-   "pedigree_file": "data/pedigree/53.json"
+   "pedigree_file": "data/pedigree/53.json",
+   "受賞歴": []
   },
   {
    "id": 54,
@@ -1841,7 +1894,8 @@
    "セリ取引価格": "7,920万円 (2024年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/54.json",
-   "pedigree_file": "data/pedigree/54.json"
+   "pedigree_file": "data/pedigree/54.json",
+   "受賞歴": []
   },
   {
    "id": 55,
@@ -1875,7 +1929,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/55.json",
-   "pedigree_file": "data/pedigree/55.json"
+   "pedigree_file": "data/pedigree/55.json",
+   "受賞歴": []
   },
   {
    "id": 56,
@@ -1909,7 +1964,8 @@
    "セリ取引価格": "1億8,700万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/56.json",
-   "pedigree_file": "data/pedigree/56.json"
+   "pedigree_file": "data/pedigree/56.json",
+   "受賞歴": []
   },
   {
    "id": 57,
@@ -1943,7 +1999,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/57.json",
-   "pedigree_file": "data/pedigree/57.json"
+   "pedigree_file": "data/pedigree/57.json",
+   "受賞歴": []
   },
   {
    "id": 58,
@@ -1977,7 +2034,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/58.json",
-   "pedigree_file": "data/pedigree/58.json"
+   "pedigree_file": "data/pedigree/58.json",
+   "受賞歴": []
   },
   {
    "id": 59,
@@ -2011,7 +2069,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/59.json",
-   "pedigree_file": "data/pedigree/59.json"
+   "pedigree_file": "data/pedigree/59.json",
+   "受賞歴": []
   },
   {
    "id": 60,
@@ -2045,7 +2104,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/60.json",
-   "pedigree_file": "data/pedigree/60.json"
+   "pedigree_file": "data/pedigree/60.json",
+   "受賞歴": []
   },
   {
    "id": 61,
@@ -2079,7 +2139,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/61.json",
-   "pedigree_file": "data/pedigree/61.json"
+   "pedigree_file": "data/pedigree/61.json",
+   "受賞歴": []
   },
   {
    "id": 62,
@@ -2113,7 +2174,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/62.json",
-   "pedigree_file": "data/pedigree/62.json"
+   "pedigree_file": "data/pedigree/62.json",
+   "受賞歴": []
   },
   {
    "id": 63,
@@ -2147,7 +2209,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/63.json",
-   "pedigree_file": "data/pedigree/63.json"
+   "pedigree_file": "data/pedigree/63.json",
+   "受賞歴": []
   },
   {
    "id": 64,
@@ -2181,7 +2244,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/64.json",
-   "pedigree_file": "data/pedigree/64.json"
+   "pedigree_file": "data/pedigree/64.json",
+   "受賞歴": []
   },
   {
    "id": 65,
@@ -2215,7 +2279,8 @@
    "セリ取引価格": "1億8,700万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/65.json",
-   "pedigree_file": "data/pedigree/65.json"
+   "pedigree_file": "data/pedigree/65.json",
+   "受賞歴": []
   },
   {
    "id": 66,
@@ -2249,7 +2314,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/66.json",
-   "pedigree_file": "data/pedigree/66.json"
+   "pedigree_file": "data/pedigree/66.json",
+   "受賞歴": []
   },
   {
    "id": 67,
@@ -2283,7 +2349,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/67.json",
-   "pedigree_file": "data/pedigree/67.json"
+   "pedigree_file": "data/pedigree/67.json",
+   "受賞歴": []
   },
   {
    "id": 68,
@@ -2317,7 +2384,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/68.json",
-   "pedigree_file": "data/pedigree/68.json"
+   "pedigree_file": "data/pedigree/68.json",
+   "受賞歴": []
   },
   {
    "id": 69,
@@ -2351,7 +2419,8 @@
    "セリ取引価格": "3億800万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/69.json",
-   "pedigree_file": "data/pedigree/69.json"
+   "pedigree_file": "data/pedigree/69.json",
+   "受賞歴": []
   },
   {
    "id": 70,
@@ -2385,7 +2454,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/70.json",
-   "pedigree_file": "data/pedigree/70.json"
+   "pedigree_file": "data/pedigree/70.json",
+   "受賞歴": []
   },
   {
    "id": 71,
@@ -2419,7 +2489,8 @@
    "セリ取引価格": "7,700万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/71.json",
-   "pedigree_file": "data/pedigree/71.json"
+   "pedigree_file": "data/pedigree/71.json",
+   "受賞歴": []
   },
   {
    "id": 72,
@@ -2453,7 +2524,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/72.json",
-   "pedigree_file": "data/pedigree/72.json"
+   "pedigree_file": "data/pedigree/72.json",
+   "受賞歴": []
   },
   {
    "id": 73,
@@ -2487,7 +2559,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/73.json",
-   "pedigree_file": "data/pedigree/73.json"
+   "pedigree_file": "data/pedigree/73.json",
+   "受賞歴": []
   },
   {
    "id": 74,
@@ -2521,7 +2594,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/74.json",
-   "pedigree_file": "data/pedigree/74.json"
+   "pedigree_file": "data/pedigree/74.json",
+   "受賞歴": []
   },
   {
    "id": 75,
@@ -2555,7 +2629,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/75.json",
-   "pedigree_file": "data/pedigree/75.json"
+   "pedigree_file": "data/pedigree/75.json",
+   "受賞歴": []
   },
   {
    "id": 76,
@@ -2589,7 +2664,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/76.json",
-   "pedigree_file": "data/pedigree/76.json"
+   "pedigree_file": "data/pedigree/76.json",
+   "受賞歴": []
   },
   {
    "id": 77,
@@ -2623,7 +2699,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/77.json",
-   "pedigree_file": "data/pedigree/77.json"
+   "pedigree_file": "data/pedigree/77.json",
+   "受賞歴": []
   },
   {
    "id": 78,
@@ -2657,7 +2734,8 @@
    "セリ取引価格": "9,680万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/78.json",
-   "pedigree_file": "data/pedigree/78.json"
+   "pedigree_file": "data/pedigree/78.json",
+   "受賞歴": []
   },
   {
    "id": 79,
@@ -2691,7 +2769,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/79.json",
-   "pedigree_file": "data/pedigree/79.json"
+   "pedigree_file": "data/pedigree/79.json",
+   "受賞歴": []
   },
   {
    "id": 80,
@@ -2725,7 +2804,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/80.json",
-   "pedigree_file": "data/pedigree/80.json"
+   "pedigree_file": "data/pedigree/80.json",
+   "受賞歴": []
   },
   {
    "id": 81,
@@ -2759,7 +2839,8 @@
    "セリ取引価格": "5,280万円 (2024年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/81.json",
-   "pedigree_file": "data/pedigree/81.json"
+   "pedigree_file": "data/pedigree/81.json",
+   "受賞歴": []
   },
   {
    "id": 82,
@@ -2793,7 +2874,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/82.json",
-   "pedigree_file": "data/pedigree/82.json"
+   "pedigree_file": "data/pedigree/82.json",
+   "受賞歴": []
   },
   {
    "id": 83,
@@ -2827,7 +2909,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/83.json",
-   "pedigree_file": "data/pedigree/83.json"
+   "pedigree_file": "data/pedigree/83.json",
+   "受賞歴": []
   },
   {
    "id": 84,
@@ -2861,7 +2944,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/84.json",
-   "pedigree_file": "data/pedigree/84.json"
+   "pedigree_file": "data/pedigree/84.json",
+   "受賞歴": []
   },
   {
    "id": 85,
@@ -2895,7 +2979,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/85.json",
-   "pedigree_file": "data/pedigree/85.json"
+   "pedigree_file": "data/pedigree/85.json",
+   "受賞歴": []
   },
   {
    "id": 86,
@@ -2929,7 +3014,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/86.json",
-   "pedigree_file": "data/pedigree/86.json"
+   "pedigree_file": "data/pedigree/86.json",
+   "受賞歴": []
   },
   {
    "id": 87,
@@ -2963,7 +3049,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/87.json",
-   "pedigree_file": "data/pedigree/87.json"
+   "pedigree_file": "data/pedigree/87.json",
+   "受賞歴": []
   },
   {
    "id": 88,
@@ -2997,7 +3084,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/88.json",
-   "pedigree_file": "data/pedigree/88.json"
+   "pedigree_file": "data/pedigree/88.json",
+   "受賞歴": []
   },
   {
    "id": 89,
@@ -3031,7 +3119,8 @@
    "セリ取引価格": "5,500万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/89.json",
-   "pedigree_file": "data/pedigree/89.json"
+   "pedigree_file": "data/pedigree/89.json",
+   "受賞歴": []
   },
   {
    "id": 90,
@@ -3065,7 +3154,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/90.json",
-   "pedigree_file": "data/pedigree/90.json"
+   "pedigree_file": "data/pedigree/90.json",
+   "受賞歴": []
   },
   {
    "id": 91,
@@ -3099,7 +3189,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/91.json",
-   "pedigree_file": "data/pedigree/91.json"
+   "pedigree_file": "data/pedigree/91.json",
+   "受賞歴": []
   },
   {
    "id": 92,
@@ -3133,7 +3224,8 @@
    "セリ取引価格": "3億6,300万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/92.json",
-   "pedigree_file": "data/pedigree/92.json"
+   "pedigree_file": "data/pedigree/92.json",
+   "受賞歴": []
   },
   {
    "id": 93,
@@ -3167,7 +3259,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/93.json",
-   "pedigree_file": "data/pedigree/93.json"
+   "pedigree_file": "data/pedigree/93.json",
+   "受賞歴": []
   },
   {
    "id": 94,
@@ -3201,7 +3294,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/94.json",
-   "pedigree_file": "data/pedigree/94.json"
+   "pedigree_file": "data/pedigree/94.json",
+   "受賞歴": []
   },
   {
    "id": 95,
@@ -3235,7 +3329,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/95.json",
-   "pedigree_file": "data/pedigree/95.json"
+   "pedigree_file": "data/pedigree/95.json",
+   "受賞歴": []
   },
   {
    "id": 96,
@@ -3269,7 +3364,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/96.json",
-   "pedigree_file": "data/pedigree/96.json"
+   "pedigree_file": "data/pedigree/96.json",
+   "受賞歴": []
   },
   {
    "id": 97,
@@ -3303,7 +3399,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/97.json",
-   "pedigree_file": "data/pedigree/97.json"
+   "pedigree_file": "data/pedigree/97.json",
+   "受賞歴": []
   },
   {
    "id": 98,
@@ -3337,7 +3434,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/98.json",
-   "pedigree_file": "data/pedigree/98.json"
+   "pedigree_file": "data/pedigree/98.json",
+   "受賞歴": []
   },
   {
    "id": 99,
@@ -3371,7 +3469,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/99.json",
-   "pedigree_file": "data/pedigree/99.json"
+   "pedigree_file": "data/pedigree/99.json",
+   "受賞歴": []
   },
   {
    "id": 100,
@@ -3405,7 +3504,8 @@
    "セリ取引価格": "8,800万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/100.json",
-   "pedigree_file": "data/pedigree/100.json"
+   "pedigree_file": "data/pedigree/100.json",
+   "受賞歴": []
   },
   {
    "id": 101,
@@ -3439,7 +3539,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/101.json",
-   "pedigree_file": "data/pedigree/101.json"
+   "pedigree_file": "data/pedigree/101.json",
+   "受賞歴": []
   },
   {
    "id": 102,
@@ -3473,7 +3574,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/102.json",
-   "pedigree_file": "data/pedigree/102.json"
+   "pedigree_file": "data/pedigree/102.json",
+   "受賞歴": []
   },
   {
    "id": 103,
@@ -3507,7 +3609,8 @@
    "セリ取引価格": "2億7,500万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/103.json",
-   "pedigree_file": "data/pedigree/103.json"
+   "pedigree_file": "data/pedigree/103.json",
+   "受賞歴": []
   },
   {
    "id": 104,
@@ -3541,7 +3644,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/104.json",
-   "pedigree_file": "data/pedigree/104.json"
+   "pedigree_file": "data/pedigree/104.json",
+   "受賞歴": []
   },
   {
    "id": 105,
@@ -3575,7 +3679,8 @@
    "セリ取引価格": "2億7,500万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/105.json",
-   "pedigree_file": "data/pedigree/105.json"
+   "pedigree_file": "data/pedigree/105.json",
+   "受賞歴": []
   },
   {
    "id": 106,
@@ -3609,7 +3714,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/106.json",
-   "pedigree_file": "data/pedigree/106.json"
+   "pedigree_file": "data/pedigree/106.json",
+   "受賞歴": []
   },
   {
    "id": 107,
@@ -3643,7 +3749,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/107.json",
-   "pedigree_file": "data/pedigree/107.json"
+   "pedigree_file": "data/pedigree/107.json",
+   "受賞歴": []
   },
   {
    "id": 108,
@@ -3677,7 +3784,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/108.json",
-   "pedigree_file": "data/pedigree/108.json"
+   "pedigree_file": "data/pedigree/108.json",
+   "受賞歴": []
   },
   {
    "id": 109,
@@ -3711,7 +3819,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/109.json",
-   "pedigree_file": "data/pedigree/109.json"
+   "pedigree_file": "data/pedigree/109.json",
+   "受賞歴": []
   },
   {
    "id": 110,
@@ -3745,7 +3854,8 @@
    "セリ取引価格": "1億8,700万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/110.json",
-   "pedigree_file": "data/pedigree/110.json"
+   "pedigree_file": "data/pedigree/110.json",
+   "受賞歴": []
   },
   {
    "id": 111,
@@ -3779,7 +3889,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/111.json",
-   "pedigree_file": "data/pedigree/111.json"
+   "pedigree_file": "data/pedigree/111.json",
+   "受賞歴": []
   },
   {
    "id": 112,
@@ -3813,7 +3924,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/112.json",
-   "pedigree_file": "data/pedigree/112.json"
+   "pedigree_file": "data/pedigree/112.json",
+   "受賞歴": []
   },
   {
    "id": 113,
@@ -3847,7 +3959,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/113.json",
-   "pedigree_file": "data/pedigree/113.json"
+   "pedigree_file": "data/pedigree/113.json",
+   "受賞歴": []
   },
   {
    "id": 114,
@@ -3881,7 +3994,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/114.json",
-   "pedigree_file": "data/pedigree/114.json"
+   "pedigree_file": "data/pedigree/114.json",
+   "受賞歴": []
   },
   {
    "id": 115,
@@ -3915,7 +4029,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/115.json",
-   "pedigree_file": "data/pedigree/115.json"
+   "pedigree_file": "data/pedigree/115.json",
+   "受賞歴": []
   },
   {
    "id": 116,
@@ -3949,7 +4064,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/116.json",
-   "pedigree_file": "data/pedigree/116.json"
+   "pedigree_file": "data/pedigree/116.json",
+   "受賞歴": []
   },
   {
    "id": 117,
@@ -3983,7 +4099,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/117.json",
-   "pedigree_file": "data/pedigree/117.json"
+   "pedigree_file": "data/pedigree/117.json",
+   "受賞歴": []
   },
   {
    "id": 118,
@@ -4017,7 +4134,8 @@
    "セリ取引価格": "5,060万円 (2023年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/118.json",
-   "pedigree_file": "data/pedigree/118.json"
+   "pedigree_file": "data/pedigree/118.json",
+   "受賞歴": []
   },
   {
    "id": 119,
@@ -4051,7 +4169,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/119.json",
-   "pedigree_file": "data/pedigree/119.json"
+   "pedigree_file": "data/pedigree/119.json",
+   "受賞歴": []
   },
   {
    "id": 120,
@@ -4085,7 +4204,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/120.json",
-   "pedigree_file": "data/pedigree/120.json"
+   "pedigree_file": "data/pedigree/120.json",
+   "受賞歴": []
   },
   {
    "id": 121,
@@ -4119,7 +4239,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/121.json",
-   "pedigree_file": "data/pedigree/121.json"
+   "pedigree_file": "data/pedigree/121.json",
+   "受賞歴": []
   },
   {
    "id": 122,
@@ -4153,7 +4274,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/122.json",
-   "pedigree_file": "data/pedigree/122.json"
+   "pedigree_file": "data/pedigree/122.json",
+   "受賞歴": []
   },
   {
    "id": 123,
@@ -4187,7 +4309,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/123.json",
-   "pedigree_file": "data/pedigree/123.json"
+   "pedigree_file": "data/pedigree/123.json",
+   "受賞歴": []
   },
   {
    "id": 124,
@@ -4221,7 +4344,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/124.json",
-   "pedigree_file": "data/pedigree/124.json"
+   "pedigree_file": "data/pedigree/124.json",
+   "受賞歴": []
   },
   {
    "id": 125,
@@ -4255,7 +4379,8 @@
    "セリ取引価格": "5,940万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/125.json",
-   "pedigree_file": "data/pedigree/125.json"
+   "pedigree_file": "data/pedigree/125.json",
+   "受賞歴": []
   },
   {
    "id": 126,
@@ -4289,7 +4414,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/126.json",
-   "pedigree_file": "data/pedigree/126.json"
+   "pedigree_file": "data/pedigree/126.json",
+   "受賞歴": []
   },
   {
    "id": 127,
@@ -4323,7 +4449,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/127.json",
-   "pedigree_file": "data/pedigree/127.json"
+   "pedigree_file": "data/pedigree/127.json",
+   "受賞歴": []
   },
   {
    "id": 128,
@@ -4357,7 +4484,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/128.json",
-   "pedigree_file": "data/pedigree/128.json"
+   "pedigree_file": "data/pedigree/128.json",
+   "受賞歴": []
   },
   {
    "id": 129,
@@ -4387,7 +4515,8 @@
    "セリ取引価格": "",
    "photo": "",
    "races_file": "",
-   "pedigree_file": "data/pedigree/129.json"
+   "pedigree_file": "data/pedigree/129.json",
+   "受賞歴": []
   },
   {
    "id": 130,
@@ -4421,7 +4550,8 @@
    "セリ取引価格": "5,500万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/130.json",
-   "pedigree_file": "data/pedigree/130.json"
+   "pedigree_file": "data/pedigree/130.json",
+   "受賞歴": []
   },
   {
    "id": 131,
@@ -4455,7 +4585,8 @@
    "セリ取引価格": "1億780万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/131.json",
-   "pedigree_file": "data/pedigree/131.json"
+   "pedigree_file": "data/pedigree/131.json",
+   "受賞歴": []
   },
   {
    "id": 132,
@@ -4489,7 +4620,8 @@
    "セリ取引価格": "1億5,400万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/132.json",
-   "pedigree_file": "data/pedigree/132.json"
+   "pedigree_file": "data/pedigree/132.json",
+   "受賞歴": []
   },
   {
    "id": 133,
@@ -4523,7 +4655,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/133.json",
-   "pedigree_file": "data/pedigree/133.json"
+   "pedigree_file": "data/pedigree/133.json",
+   "受賞歴": []
   },
   {
    "id": 134,
@@ -4557,7 +4690,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/134.json",
-   "pedigree_file": "data/pedigree/134.json"
+   "pedigree_file": "data/pedigree/134.json",
+   "受賞歴": []
   },
   {
    "id": 135,
@@ -4591,7 +4725,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/135.json",
-   "pedigree_file": "data/pedigree/135.json"
+   "pedigree_file": "data/pedigree/135.json",
+   "受賞歴": []
   },
   {
    "id": 136,
@@ -4625,7 +4760,8 @@
    "セリ取引価格": "3億800万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/136.json",
-   "pedigree_file": "data/pedigree/136.json"
+   "pedigree_file": "data/pedigree/136.json",
+   "受賞歴": []
   },
   {
    "id": 137,
@@ -4659,7 +4795,8 @@
    "セリ取引価格": "6,160万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/137.json",
-   "pedigree_file": "data/pedigree/137.json"
+   "pedigree_file": "data/pedigree/137.json",
+   "受賞歴": []
   },
   {
    "id": 138,
@@ -4693,7 +4830,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/138.json",
-   "pedigree_file": "data/pedigree/138.json"
+   "pedigree_file": "data/pedigree/138.json",
+   "受賞歴": []
   },
   {
    "id": 139,
@@ -4727,7 +4865,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/139.json",
-   "pedigree_file": "data/pedigree/139.json"
+   "pedigree_file": "data/pedigree/139.json",
+   "受賞歴": []
   },
   {
    "id": 140,
@@ -4761,7 +4900,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/140.json",
-   "pedigree_file": "data/pedigree/140.json"
+   "pedigree_file": "data/pedigree/140.json",
+   "受賞歴": []
   },
   {
    "id": 141,
@@ -4795,7 +4935,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/141.json",
-   "pedigree_file": "data/pedigree/141.json"
+   "pedigree_file": "data/pedigree/141.json",
+   "受賞歴": []
   },
   {
    "id": 142,
@@ -4832,7 +4973,8 @@
     "data/photos/142-2.jpg"
    ],
    "races_file": "data/races/142.json",
-   "pedigree_file": "data/pedigree/142.json"
+   "pedigree_file": "data/pedigree/142.json",
+   "受賞歴": []
   },
   {
    "id": 143,
@@ -4866,7 +5008,8 @@
    "セリ取引価格": "6,160万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/143.json",
-   "pedigree_file": "data/pedigree/143.json"
+   "pedigree_file": "data/pedigree/143.json",
+   "受賞歴": []
   },
   {
    "id": 144,
@@ -4900,7 +5043,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/144.json",
-   "pedigree_file": "data/pedigree/144.json"
+   "pedigree_file": "data/pedigree/144.json",
+   "受賞歴": []
   },
   {
    "id": 145,
@@ -4934,7 +5078,8 @@
    "セリ取引価格": "9,240万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/145.json",
-   "pedigree_file": "data/pedigree/145.json"
+   "pedigree_file": "data/pedigree/145.json",
+   "受賞歴": []
   },
   {
    "id": 146,
@@ -4968,7 +5113,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/146.json",
-   "pedigree_file": "data/pedigree/146.json"
+   "pedigree_file": "data/pedigree/146.json",
+   "受賞歴": []
   },
   {
    "id": 147,
@@ -5002,7 +5148,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/147.json",
-   "pedigree_file": "data/pedigree/147.json"
+   "pedigree_file": "data/pedigree/147.json",
+   "受賞歴": []
   },
   {
    "id": 148,
@@ -5036,7 +5183,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/148.json",
-   "pedigree_file": "data/pedigree/148.json"
+   "pedigree_file": "data/pedigree/148.json",
+   "受賞歴": []
   },
   {
    "id": 149,
@@ -5070,7 +5218,8 @@
    "セリ取引価格": "3,850万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/149.json",
-   "pedigree_file": "data/pedigree/149.json"
+   "pedigree_file": "data/pedigree/149.json",
+   "受賞歴": []
   },
   {
    "id": 150,
@@ -5104,7 +5253,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/150.json",
-   "pedigree_file": "data/pedigree/150.json"
+   "pedigree_file": "data/pedigree/150.json",
+   "受賞歴": []
   },
   {
    "id": 151,
@@ -5138,7 +5288,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/151.json",
-   "pedigree_file": "data/pedigree/151.json"
+   "pedigree_file": "data/pedigree/151.json",
+   "受賞歴": []
   },
   {
    "id": 152,
@@ -5172,7 +5323,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/152.json",
-   "pedigree_file": "data/pedigree/152.json"
+   "pedigree_file": "data/pedigree/152.json",
+   "受賞歴": []
   },
   {
    "id": 153,
@@ -5206,7 +5358,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/153.json",
-   "pedigree_file": "data/pedigree/153.json"
+   "pedigree_file": "data/pedigree/153.json",
+   "受賞歴": []
   },
   {
    "id": 154,
@@ -5240,7 +5393,8 @@
    "セリ取引価格": "5,940万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/154.json",
-   "pedigree_file": "data/pedigree/154.json"
+   "pedigree_file": "data/pedigree/154.json",
+   "受賞歴": []
   },
   {
    "id": 155,
@@ -5274,7 +5428,8 @@
    "セリ取引価格": "1,760万円 (2025年 北海道サマーセール)",
    "photo": "",
    "races_file": "data/races/155.json",
-   "pedigree_file": "data/pedigree/155.json"
+   "pedigree_file": "data/pedigree/155.json",
+   "受賞歴": []
   },
   {
    "id": 156,
@@ -5308,7 +5463,8 @@
    "セリ取引価格": "4,510万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/156.json",
-   "pedigree_file": "data/pedigree/156.json"
+   "pedigree_file": "data/pedigree/156.json",
+   "受賞歴": []
   },
   {
    "id": 157,
@@ -5342,7 +5498,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/157.json",
-   "pedigree_file": "data/pedigree/157.json"
+   "pedigree_file": "data/pedigree/157.json",
+   "受賞歴": []
   },
   {
    "id": 158,
@@ -5376,7 +5533,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/158.json",
-   "pedigree_file": "data/pedigree/158.json"
+   "pedigree_file": "data/pedigree/158.json",
+   "受賞歴": []
   },
   {
    "id": 159,
@@ -5410,7 +5568,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/159.json",
-   "pedigree_file": "data/pedigree/159.json"
+   "pedigree_file": "data/pedigree/159.json",
+   "受賞歴": []
   },
   {
    "id": 160,
@@ -5444,7 +5603,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/160.json",
-   "pedigree_file": "data/pedigree/160.json"
+   "pedigree_file": "data/pedigree/160.json",
+   "受賞歴": []
   },
   {
    "id": 161,
@@ -5478,7 +5638,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/161.json",
-   "pedigree_file": "data/pedigree/161.json"
+   "pedigree_file": "data/pedigree/161.json",
+   "受賞歴": []
   },
   {
    "id": 162,
@@ -5512,7 +5673,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/162.json",
-   "pedigree_file": "data/pedigree/162.json"
+   "pedigree_file": "data/pedigree/162.json",
+   "受賞歴": []
   },
   {
    "id": 163,
@@ -5546,7 +5708,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/163.json",
-   "pedigree_file": "data/pedigree/163.json"
+   "pedigree_file": "data/pedigree/163.json",
+   "受賞歴": []
   },
   {
    "id": 164,
@@ -5580,7 +5743,8 @@
    "セリ取引価格": "2,750万円 (2025年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/164.json",
-   "pedigree_file": "data/pedigree/164.json"
+   "pedigree_file": "data/pedigree/164.json",
+   "受賞歴": []
   },
   {
    "id": 165,
@@ -5614,7 +5778,8 @@
    "セリ取引価格": "2億900万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/165.json",
-   "pedigree_file": "data/pedigree/165.json"
+   "pedigree_file": "data/pedigree/165.json",
+   "受賞歴": []
   },
   {
    "id": 166,
@@ -5648,7 +5813,8 @@
    "セリ取引価格": "1,760万円 (2025年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/166.json",
-   "pedigree_file": "data/pedigree/166.json"
+   "pedigree_file": "data/pedigree/166.json",
+   "受賞歴": []
   },
   {
    "id": 167,
@@ -5682,7 +5848,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/167.json",
-   "pedigree_file": "data/pedigree/167.json"
+   "pedigree_file": "data/pedigree/167.json",
+   "受賞歴": []
   },
   {
    "id": 168,
@@ -5716,7 +5883,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/168.json",
-   "pedigree_file": "data/pedigree/168.json"
+   "pedigree_file": "data/pedigree/168.json",
+   "受賞歴": []
   },
   {
    "id": 169,
@@ -5750,7 +5918,8 @@
    "セリ取引価格": "1億120万円 (2024年 ノーザンファームミックスセール)",
    "photo": "",
    "races_file": "data/races/169.json",
-   "pedigree_file": "data/pedigree/169.json"
+   "pedigree_file": "data/pedigree/169.json",
+   "受賞歴": []
   },
   {
    "id": 170,
@@ -5784,7 +5953,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/170.json",
-   "pedigree_file": "data/pedigree/170.json"
+   "pedigree_file": "data/pedigree/170.json",
+   "受賞歴": []
   },
   {
    "id": 171,
@@ -5818,7 +5988,8 @@
    "セリ取引価格": "1億8,150万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/171.json",
-   "pedigree_file": "data/pedigree/171.json"
+   "pedigree_file": "data/pedigree/171.json",
+   "受賞歴": []
   },
   {
    "id": 172,
@@ -5852,7 +6023,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/172.json",
-   "pedigree_file": "data/pedigree/172.json"
+   "pedigree_file": "data/pedigree/172.json",
+   "受賞歴": []
   },
   {
    "id": 173,
@@ -5886,7 +6058,8 @@
    "セリ取引価格": "1億3,750万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/173.json",
-   "pedigree_file": "data/pedigree/173.json"
+   "pedigree_file": "data/pedigree/173.json",
+   "受賞歴": []
   },
   {
    "id": 174,
@@ -5920,7 +6093,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/174.json",
-   "pedigree_file": "data/pedigree/174.json"
+   "pedigree_file": "data/pedigree/174.json",
+   "受賞歴": []
   },
   {
    "id": 175,
@@ -5954,7 +6128,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/175.json",
-   "pedigree_file": "data/pedigree/175.json"
+   "pedigree_file": "data/pedigree/175.json",
+   "受賞歴": []
   },
   {
    "id": 176,
@@ -5988,7 +6163,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/176.json",
-   "pedigree_file": "data/pedigree/176.json"
+   "pedigree_file": "data/pedigree/176.json",
+   "受賞歴": []
   },
   {
    "id": 177,
@@ -6022,7 +6198,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/177.json",
-   "pedigree_file": "data/pedigree/177.json"
+   "pedigree_file": "data/pedigree/177.json",
+   "受賞歴": []
   },
   {
    "id": 178,
@@ -6056,7 +6233,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/178.json",
-   "pedigree_file": "data/pedigree/178.json"
+   "pedigree_file": "data/pedigree/178.json",
+   "受賞歴": []
   },
   {
    "id": 179,
@@ -6090,7 +6268,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/179.json",
-   "pedigree_file": "data/pedigree/179.json"
+   "pedigree_file": "data/pedigree/179.json",
+   "受賞歴": []
   },
   {
    "id": 180,
@@ -6124,7 +6303,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/180.json",
-   "pedigree_file": "data/pedigree/180.json"
+   "pedigree_file": "data/pedigree/180.json",
+   "受賞歴": []
   },
   {
    "id": 181,
@@ -6158,7 +6338,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/181.json",
-   "pedigree_file": "data/pedigree/181.json"
+   "pedigree_file": "data/pedigree/181.json",
+   "受賞歴": []
   },
   {
    "id": 182,
@@ -6192,7 +6373,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/182.json",
-   "pedigree_file": "data/pedigree/182.json"
+   "pedigree_file": "data/pedigree/182.json",
+   "受賞歴": []
   },
   {
    "id": 183,
@@ -6226,7 +6408,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/183.json",
-   "pedigree_file": "data/pedigree/183.json"
+   "pedigree_file": "data/pedigree/183.json",
+   "受賞歴": []
   },
   {
    "id": 184,
@@ -6260,7 +6443,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/184.json",
-   "pedigree_file": "data/pedigree/184.json"
+   "pedigree_file": "data/pedigree/184.json",
+   "受賞歴": []
   },
   {
    "id": 185,
@@ -6294,7 +6478,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/185.json",
-   "pedigree_file": "data/pedigree/185.json"
+   "pedigree_file": "data/pedigree/185.json",
+   "受賞歴": []
   },
   {
    "id": 186,
@@ -6328,7 +6513,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/186.json",
-   "pedigree_file": "data/pedigree/186.json"
+   "pedigree_file": "data/pedigree/186.json",
+   "受賞歴": []
   },
   {
    "id": 187,
@@ -6362,7 +6548,8 @@
    "セリ取引価格": "2億7,500万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/187.json",
-   "pedigree_file": "data/pedigree/187.json"
+   "pedigree_file": "data/pedigree/187.json",
+   "受賞歴": []
   },
   {
    "id": 188,
@@ -6396,7 +6583,8 @@
    "セリ取引価格": "6,820万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/188.json",
-   "pedigree_file": "data/pedigree/188.json"
+   "pedigree_file": "data/pedigree/188.json",
+   "受賞歴": []
   },
   {
    "id": 189,
@@ -6430,7 +6618,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/189.json",
-   "pedigree_file": "data/pedigree/189.json"
+   "pedigree_file": "data/pedigree/189.json",
+   "受賞歴": []
   },
   {
    "id": 190,
@@ -6464,7 +6653,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/190.json",
-   "pedigree_file": "data/pedigree/190.json"
+   "pedigree_file": "data/pedigree/190.json",
+   "受賞歴": []
   },
   {
    "id": 191,
@@ -6498,7 +6688,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/191.json",
-   "pedigree_file": "data/pedigree/191.json"
+   "pedigree_file": "data/pedigree/191.json",
+   "受賞歴": []
   },
   {
    "id": 192,
@@ -6532,7 +6723,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/192.json",
-   "pedigree_file": "data/pedigree/192.json"
+   "pedigree_file": "data/pedigree/192.json",
+   "受賞歴": []
   },
   {
    "id": 193,
@@ -6566,7 +6758,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/193.json",
-   "pedigree_file": "data/pedigree/193.json"
+   "pedigree_file": "data/pedigree/193.json",
+   "受賞歴": []
   },
   {
    "id": 194,
@@ -6600,7 +6793,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/194.json",
-   "pedigree_file": "data/pedigree/194.json"
+   "pedigree_file": "data/pedigree/194.json",
+   "受賞歴": []
   },
   {
    "id": 195,
@@ -6634,7 +6828,8 @@
    "セリ取引価格": "7,260万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/195.json",
-   "pedigree_file": "data/pedigree/195.json"
+   "pedigree_file": "data/pedigree/195.json",
+   "受賞歴": []
   },
   {
    "id": 196,
@@ -6668,7 +6863,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/196.json",
-   "pedigree_file": "data/pedigree/196.json"
+   "pedigree_file": "data/pedigree/196.json",
+   "受賞歴": []
   },
   {
    "id": 197,
@@ -6702,7 +6898,8 @@
    "セリ取引価格": "4,400万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/197.json",
-   "pedigree_file": "data/pedigree/197.json"
+   "pedigree_file": "data/pedigree/197.json",
+   "受賞歴": []
   },
   {
    "id": 198,
@@ -6736,7 +6933,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/198.json",
-   "pedigree_file": "data/pedigree/198.json"
+   "pedigree_file": "data/pedigree/198.json",
+   "受賞歴": []
   },
   {
    "id": 199,
@@ -6770,7 +6968,8 @@
    "セリ取引価格": "1億5,950万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/199.json",
-   "pedigree_file": "data/pedigree/199.json"
+   "pedigree_file": "data/pedigree/199.json",
+   "受賞歴": []
   },
   {
    "id": 200,
@@ -6804,7 +7003,8 @@
    "セリ取引価格": "3億3,000万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/200.json",
-   "pedigree_file": "data/pedigree/200.json"
+   "pedigree_file": "data/pedigree/200.json",
+   "受賞歴": []
   },
   {
    "id": 201,
@@ -6838,7 +7038,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/201.json",
-   "pedigree_file": "data/pedigree/201.json"
+   "pedigree_file": "data/pedigree/201.json",
+   "受賞歴": []
   },
   {
    "id": 202,
@@ -6872,7 +7073,8 @@
    "セリ取引価格": "6,600万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/202.json",
-   "pedigree_file": "data/pedigree/202.json"
+   "pedigree_file": "data/pedigree/202.json",
+   "受賞歴": []
   },
   {
    "id": 203,
@@ -6906,7 +7108,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/203.json",
-   "pedigree_file": "data/pedigree/203.json"
+   "pedigree_file": "data/pedigree/203.json",
+   "受賞歴": []
   },
   {
    "id": 204,
@@ -6940,7 +7143,8 @@
    "セリ取引価格": "1億1,000万円 (2024年 ノーザンファームミックスセール)",
    "photo": "",
    "races_file": "data/races/204.json",
-   "pedigree_file": "data/pedigree/204.json"
+   "pedigree_file": "data/pedigree/204.json",
+   "受賞歴": []
   },
   {
    "id": 205,
@@ -6974,7 +7178,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/205.json",
-   "pedigree_file": "data/pedigree/205.json"
+   "pedigree_file": "data/pedigree/205.json",
+   "受賞歴": []
   },
   {
    "id": 206,
@@ -7008,7 +7213,8 @@
    "セリ取引価格": "2,750万円 (2025年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/206.json",
-   "pedigree_file": "data/pedigree/206.json"
+   "pedigree_file": "data/pedigree/206.json",
+   "受賞歴": []
   },
   {
    "id": 207,
@@ -7042,7 +7248,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/207.json",
-   "pedigree_file": "data/pedigree/207.json"
+   "pedigree_file": "data/pedigree/207.json",
+   "受賞歴": []
   },
   {
    "id": 208,
@@ -7076,7 +7283,8 @@
    "セリ取引価格": "1億4,850万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/208.json",
-   "pedigree_file": "data/pedigree/208.json"
+   "pedigree_file": "data/pedigree/208.json",
+   "受賞歴": []
   },
   {
    "id": 209,
@@ -7110,7 +7318,8 @@
    "セリ取引価格": "2億8,600万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/209.json",
-   "pedigree_file": "data/pedigree/209.json"
+   "pedigree_file": "data/pedigree/209.json",
+   "受賞歴": []
   },
   {
    "id": 210,
@@ -7144,7 +7353,8 @@
    "セリ取引価格": "7,040万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/210.json",
-   "pedigree_file": "data/pedigree/210.json"
+   "pedigree_file": "data/pedigree/210.json",
+   "受賞歴": []
   },
   {
    "id": 211,
@@ -7178,7 +7388,8 @@
    "セリ取引価格": "3,960万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/211.json",
-   "pedigree_file": "data/pedigree/211.json"
+   "pedigree_file": "data/pedigree/211.json",
+   "受賞歴": []
   },
   {
    "id": 212,
@@ -7212,7 +7423,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/212.json",
-   "pedigree_file": "data/pedigree/212.json"
+   "pedigree_file": "data/pedigree/212.json",
+   "受賞歴": []
   },
   {
    "id": 213,
@@ -7246,7 +7458,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/213.json",
-   "pedigree_file": "data/pedigree/213.json"
+   "pedigree_file": "data/pedigree/213.json",
+   "受賞歴": []
   },
   {
    "id": 214,
@@ -7280,7 +7493,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/214.json",
-   "pedigree_file": "data/pedigree/214.json"
+   "pedigree_file": "data/pedigree/214.json",
+   "受賞歴": []
   },
   {
    "id": 215,
@@ -7314,7 +7528,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/215.json",
-   "pedigree_file": "data/pedigree/215.json"
+   "pedigree_file": "data/pedigree/215.json",
+   "受賞歴": []
   },
   {
    "id": 216,
@@ -7348,7 +7563,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/216.json",
-   "pedigree_file": "data/pedigree/216.json"
+   "pedigree_file": "data/pedigree/216.json",
+   "受賞歴": []
   },
   {
    "id": 217,
@@ -7382,7 +7598,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/217.json",
-   "pedigree_file": "data/pedigree/217.json"
+   "pedigree_file": "data/pedigree/217.json",
+   "受賞歴": []
   },
   {
    "id": 218,
@@ -7416,7 +7633,8 @@
    "セリ取引価格": "5,280万円 (2025年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/218.json",
-   "pedigree_file": "data/pedigree/218.json"
+   "pedigree_file": "data/pedigree/218.json",
+   "受賞歴": []
   },
   {
    "id": 219,
@@ -7450,7 +7668,8 @@
    "セリ取引価格": "2億7,500万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/219.json",
-   "pedigree_file": "data/pedigree/219.json"
+   "pedigree_file": "data/pedigree/219.json",
+   "受賞歴": []
   },
   {
    "id": 220,
@@ -7484,7 +7703,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/220.json",
-   "pedigree_file": "data/pedigree/220.json"
+   "pedigree_file": "data/pedigree/220.json",
+   "受賞歴": []
   },
   {
    "id": 221,
@@ -7518,7 +7738,8 @@
    "セリ取引価格": "3,410万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/221.json",
-   "pedigree_file": "data/pedigree/221.json"
+   "pedigree_file": "data/pedigree/221.json",
+   "受賞歴": []
   },
   {
    "id": 222,
@@ -7552,7 +7773,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/222.json",
-   "pedigree_file": "data/pedigree/222.json"
+   "pedigree_file": "data/pedigree/222.json",
+   "受賞歴": []
   },
   {
    "id": 223,
@@ -7586,7 +7808,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/223.json",
-   "pedigree_file": "data/pedigree/223.json"
+   "pedigree_file": "data/pedigree/223.json",
+   "受賞歴": []
   },
   {
    "id": 224,
@@ -7620,7 +7843,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/224.json",
-   "pedigree_file": "data/pedigree/224.json"
+   "pedigree_file": "data/pedigree/224.json",
+   "受賞歴": []
   },
   {
    "id": 225,
@@ -7654,7 +7878,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/225.json",
-   "pedigree_file": "data/pedigree/225.json"
+   "pedigree_file": "data/pedigree/225.json",
+   "受賞歴": []
   },
   {
    "id": 226,
@@ -7688,7 +7913,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/226.json",
-   "pedigree_file": "data/pedigree/226.json"
+   "pedigree_file": "data/pedigree/226.json",
+   "受賞歴": []
   },
   {
    "id": 227,
@@ -7722,7 +7948,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/227.json",
-   "pedigree_file": "data/pedigree/227.json"
+   "pedigree_file": "data/pedigree/227.json",
+   "受賞歴": []
   },
   {
    "id": 228,
@@ -7756,7 +7983,8 @@
    "セリ取引価格": "2,750万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/228.json",
-   "pedigree_file": "data/pedigree/228.json"
+   "pedigree_file": "data/pedigree/228.json",
+   "受賞歴": []
   },
   {
    "id": 229,
@@ -7790,7 +8018,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/229.json",
-   "pedigree_file": "data/pedigree/229.json"
+   "pedigree_file": "data/pedigree/229.json",
+   "受賞歴": []
   },
   {
    "id": 230,
@@ -7824,7 +8053,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/230.json",
-   "pedigree_file": "data/pedigree/230.json"
+   "pedigree_file": "data/pedigree/230.json",
+   "受賞歴": []
   },
   {
    "id": 231,
@@ -7858,7 +8088,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/231.json",
-   "pedigree_file": "data/pedigree/231.json"
+   "pedigree_file": "data/pedigree/231.json",
+   "受賞歴": []
   },
   {
    "id": 232,
@@ -7892,7 +8123,8 @@
    "セリ取引価格": "4,180万円 (2025年 北海道セレクションセール)",
    "photo": "",
    "races_file": "data/races/232.json",
-   "pedigree_file": "data/pedigree/232.json"
+   "pedigree_file": "data/pedigree/232.json",
+   "受賞歴": []
   },
   {
    "id": 233,
@@ -7926,7 +8158,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/233.json",
-   "pedigree_file": "data/pedigree/233.json"
+   "pedigree_file": "data/pedigree/233.json",
+   "受賞歴": []
   },
   {
    "id": 234,
@@ -7960,7 +8193,8 @@
    "セリ取引価格": "2億4,200万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/234.json",
-   "pedigree_file": "data/pedigree/234.json"
+   "pedigree_file": "data/pedigree/234.json",
+   "受賞歴": []
   },
   {
    "id": 235,
@@ -7994,7 +8228,8 @@
    "セリ取引価格": "4,180万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/235.json",
-   "pedigree_file": "data/pedigree/235.json"
+   "pedigree_file": "data/pedigree/235.json",
+   "受賞歴": []
   },
   {
    "id": 236,
@@ -8028,7 +8263,8 @@
    "セリ取引価格": "2億8,600万円 (2024年 ノーザンファームミックスセール)",
    "photo": "",
    "races_file": "data/races/236.json",
-   "pedigree_file": "data/pedigree/236.json"
+   "pedigree_file": "data/pedigree/236.json",
+   "受賞歴": []
   },
   {
    "id": 237,
@@ -8062,7 +8298,8 @@
    "セリ取引価格": "9,900万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/237.json",
-   "pedigree_file": "data/pedigree/237.json"
+   "pedigree_file": "data/pedigree/237.json",
+   "受賞歴": []
   },
   {
    "id": 238,
@@ -8096,7 +8333,8 @@
    "セリ取引価格": "1億6,500万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/238.json",
-   "pedigree_file": "data/pedigree/238.json"
+   "pedigree_file": "data/pedigree/238.json",
+   "受賞歴": []
   },
   {
    "id": 239,
@@ -8130,7 +8368,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/239.json",
-   "pedigree_file": "data/pedigree/239.json"
+   "pedigree_file": "data/pedigree/239.json",
+   "受賞歴": []
   },
   {
    "id": 240,
@@ -8164,7 +8403,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/240.json",
-   "pedigree_file": "data/pedigree/240.json"
+   "pedigree_file": "data/pedigree/240.json",
+   "受賞歴": []
   },
   {
    "id": 241,
@@ -8198,7 +8438,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/241.json",
-   "pedigree_file": "data/pedigree/241.json"
+   "pedigree_file": "data/pedigree/241.json",
+   "受賞歴": []
   },
   {
    "id": 242,
@@ -8232,7 +8473,8 @@
    "セリ取引価格": "7,920万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/242.json",
-   "pedigree_file": "data/pedigree/242.json"
+   "pedigree_file": "data/pedigree/242.json",
+   "受賞歴": []
   },
   {
    "id": 243,
@@ -8266,7 +8508,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/243.json",
-   "pedigree_file": "data/pedigree/243.json"
+   "pedigree_file": "data/pedigree/243.json",
+   "受賞歴": []
   },
   {
    "id": 244,
@@ -8300,7 +8543,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/244.json",
-   "pedigree_file": "data/pedigree/244.json"
+   "pedigree_file": "data/pedigree/244.json",
+   "受賞歴": []
   },
   {
    "id": 245,
@@ -8334,7 +8578,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/245.json",
-   "pedigree_file": "data/pedigree/245.json"
+   "pedigree_file": "data/pedigree/245.json",
+   "受賞歴": []
   },
   {
    "id": 246,
@@ -8368,7 +8613,8 @@
    "セリ取引価格": "1億4,300万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/246.json",
-   "pedigree_file": "data/pedigree/246.json"
+   "pedigree_file": "data/pedigree/246.json",
+   "受賞歴": []
   },
   {
    "id": 247,
@@ -8402,7 +8648,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/247.json",
-   "pedigree_file": "data/pedigree/247.json"
+   "pedigree_file": "data/pedigree/247.json",
+   "受賞歴": []
   },
   {
    "id": 248,
@@ -8436,7 +8683,8 @@
    "セリ取引価格": "1億120万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/248.json",
-   "pedigree_file": "data/pedigree/248.json"
+   "pedigree_file": "data/pedigree/248.json",
+   "受賞歴": []
   },
   {
    "id": 249,
@@ -8470,7 +8718,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/249.json",
-   "pedigree_file": "data/pedigree/249.json"
+   "pedigree_file": "data/pedigree/249.json",
+   "受賞歴": []
   },
   {
    "id": 250,
@@ -8504,7 +8753,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/250.json",
-   "pedigree_file": "data/pedigree/250.json"
+   "pedigree_file": "data/pedigree/250.json",
+   "受賞歴": []
   },
   {
    "id": 251,
@@ -8538,7 +8788,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/251.json",
-   "pedigree_file": "data/pedigree/251.json"
+   "pedigree_file": "data/pedigree/251.json",
+   "受賞歴": []
   },
   {
    "id": 252,
@@ -8572,7 +8823,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/252.json",
-   "pedigree_file": "data/pedigree/252.json"
+   "pedigree_file": "data/pedigree/252.json",
+   "受賞歴": []
   },
   {
    "id": 253,
@@ -8606,7 +8858,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/253.json",
-   "pedigree_file": "data/pedigree/253.json"
+   "pedigree_file": "data/pedigree/253.json",
+   "受賞歴": []
   },
   {
    "id": 254,
@@ -8640,7 +8893,8 @@
    "セリ取引価格": "2,750万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/254.json",
-   "pedigree_file": "data/pedigree/254.json"
+   "pedigree_file": "data/pedigree/254.json",
+   "受賞歴": []
   },
   {
    "id": 255,
@@ -8674,7 +8928,8 @@
    "セリ取引価格": "1億4,300万円 (2025年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/255.json",
-   "pedigree_file": "data/pedigree/255.json"
+   "pedigree_file": "data/pedigree/255.json",
+   "受賞歴": []
   },
   {
    "id": 256,
@@ -8708,7 +8963,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/256.json",
-   "pedigree_file": "data/pedigree/256.json"
+   "pedigree_file": "data/pedigree/256.json",
+   "受賞歴": []
   },
   {
    "id": 257,
@@ -8742,7 +8998,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/257.json",
-   "pedigree_file": "data/pedigree/257.json"
+   "pedigree_file": "data/pedigree/257.json",
+   "受賞歴": []
   },
   {
    "id": 258,
@@ -8776,7 +9033,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/258.json",
-   "pedigree_file": "data/pedigree/258.json"
+   "pedigree_file": "data/pedigree/258.json",
+   "受賞歴": []
   },
   {
    "id": 259,
@@ -8810,7 +9068,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/259.json",
-   "pedigree_file": "data/pedigree/259.json"
+   "pedigree_file": "data/pedigree/259.json",
+   "受賞歴": []
   },
   {
    "id": 260,
@@ -8844,7 +9103,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/260.json",
-   "pedigree_file": "data/pedigree/260.json"
+   "pedigree_file": "data/pedigree/260.json",
+   "受賞歴": []
   },
   {
    "id": 261,
@@ -8878,7 +9138,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/261.json",
-   "pedigree_file": "data/pedigree/261.json"
+   "pedigree_file": "data/pedigree/261.json",
+   "受賞歴": []
   },
   {
    "id": 262,
@@ -8912,7 +9173,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/262.json",
-   "pedigree_file": "data/pedigree/262.json"
+   "pedigree_file": "data/pedigree/262.json",
+   "受賞歴": []
   },
   {
    "id": 263,
@@ -8946,7 +9208,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/263.json",
-   "pedigree_file": "data/pedigree/263.json"
+   "pedigree_file": "data/pedigree/263.json",
+   "受賞歴": []
   },
   {
    "id": 264,
@@ -8980,7 +9243,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/264.json",
-   "pedigree_file": "data/pedigree/264.json"
+   "pedigree_file": "data/pedigree/264.json",
+   "受賞歴": []
   },
   {
    "id": 265,
@@ -9014,7 +9278,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/265.json",
-   "pedigree_file": "data/pedigree/265.json"
+   "pedigree_file": "data/pedigree/265.json",
+   "受賞歴": []
   },
   {
    "id": 266,
@@ -9048,7 +9313,8 @@
    "セリ取引価格": "3,410万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/266.json",
-   "pedigree_file": "data/pedigree/266.json"
+   "pedigree_file": "data/pedigree/266.json",
+   "受賞歴": []
   },
   {
    "id": 267,
@@ -9082,7 +9348,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/267.json",
-   "pedigree_file": "data/pedigree/267.json"
+   "pedigree_file": "data/pedigree/267.json",
+   "受賞歴": []
   },
   {
    "id": 268,
@@ -9116,7 +9383,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/268.json",
-   "pedigree_file": "data/pedigree/268.json"
+   "pedigree_file": "data/pedigree/268.json",
+   "受賞歴": []
   },
   {
    "id": 269,
@@ -9150,7 +9418,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/269.json",
-   "pedigree_file": "data/pedigree/269.json"
+   "pedigree_file": "data/pedigree/269.json",
+   "受賞歴": []
   },
   {
    "id": 270,
@@ -9184,7 +9453,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/270.json",
-   "pedigree_file": "data/pedigree/270.json"
+   "pedigree_file": "data/pedigree/270.json",
+   "受賞歴": []
   },
   {
    "id": 271,
@@ -9218,7 +9488,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/271.json",
-   "pedigree_file": "data/pedigree/271.json"
+   "pedigree_file": "data/pedigree/271.json",
+   "受賞歴": []
   },
   {
    "id": 272,
@@ -9252,7 +9523,8 @@
    "セリ取引価格": "1億4,300万円 (2024年 セレクトセール)",
    "photo": "",
    "races_file": "data/races/272.json",
-   "pedigree_file": "data/pedigree/272.json"
+   "pedigree_file": "data/pedigree/272.json",
+   "受賞歴": []
   },
   {
    "id": 273,
@@ -9286,7 +9558,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/273.json",
-   "pedigree_file": "data/pedigree/273.json"
+   "pedigree_file": "data/pedigree/273.json",
+   "受賞歴": []
   },
   {
    "id": 274,
@@ -9320,7 +9593,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/274.json",
-   "pedigree_file": "data/pedigree/274.json"
+   "pedigree_file": "data/pedigree/274.json",
+   "受賞歴": []
   },
   {
    "id": 275,
@@ -9354,7 +9628,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/275.json",
-   "pedigree_file": "data/pedigree/275.json"
+   "pedigree_file": "data/pedigree/275.json",
+   "受賞歴": []
   },
   {
    "id": 276,
@@ -9388,7 +9663,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/276.json",
-   "pedigree_file": "data/pedigree/276.json"
+   "pedigree_file": "data/pedigree/276.json",
+   "受賞歴": []
   },
   {
    "id": 277,
@@ -9422,7 +9698,8 @@
    "セリ取引価格": "-",
    "photo": "",
    "races_file": "data/races/277.json",
-   "pedigree_file": "data/pedigree/277.json"
+   "pedigree_file": "data/pedigree/277.json",
+   "受賞歴": []
   }
  ]
 }

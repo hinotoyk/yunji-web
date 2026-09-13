@@ -5,16 +5,202 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>时间线 · 云迹</title>
 <link rel="stylesheet" href="theme.css">
+<style>
+/* ===== 等级徽章（同 races.html：实心胶囊 + 白字；类名全小写） ===== */
+.yj-grade{display:inline-block;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
+.yj-g1{background-color:#d5302a}
+.yj-g2{background-color:#0a3b7e}
+.yj-g3{background-color:#087220}
+.yj-gl{background-color:#dca026}
+.yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
+
+/* ===== 1着 徽章（数据语义色：胜=primary 语境，此处用 races.html 同款金色底） ===== */
+.yj-no{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:4px;border:1px solid transparent;font-size:12px}
+.yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
+
+/* ===== 马名跳转（同 races.html） ===== */
+.hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
+.hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
+
+/* ===== 中央时间轴：轴线居中，卡片 16:9 左右交替，日期在卡片对侧 ===== */
+.tl{position:relative}
+.tl::before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:2px;transform:translateX(-50%);background:#ececec}
+.tl-item{position:relative;display:grid;grid-template-columns:1fr 56px 1fr;grid-template-rows:auto;align-items:center;padding-bottom:26px}
+.tl-item.right{grid-template-areas:"date node card"}
+.tl-item.left{grid-template-areas:"card node date"}
+.tl-date{grid-area:date;font-size:13px;font-weight:600;color:#8a9096;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tl-item.right .tl-date{text-align:right;padding-right:20px}
+.tl-item.left .tl-date{text-align:left;padding-left:20px}
+.tl-node{grid-area:node;justify-self:center;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px #fff;position:relative;z-index:1}
+.tl-cardwrap{grid-area:card;min-width:0;width:min(480px,100%)}
+.tl-item.right .tl-cardwrap{justify-self:start}
+.tl-item.left .tl-cardwrap{justify-self:end}
+.tl-card{display:flex;overflow:hidden;min-width:0;transition:box-shadow .15s}
+.tl-card:hover{box-shadow:0 2px 10px rgba(16,24,40,.07)}
+/* 图位：横放 A4 比例（宽:高=297:210≈√2:1），贴时间轴一侧、垂直居中，四周留 10px 白边（不顶死卡缘）；无图=浅灰占位 */
+.tl-photo{flex:none;align-self:center;width:50%;margin:10px;aspect-ratio:297/210;background:#f5f5f5;overflow:hidden;border-radius:4px}
+.tl-photo img{display:block;width:100%;height:100%;object-fit:cover}
+.tl-photo.empty{display:flex;align-items:center;justify-content:center}
+.tl-photo.empty span{font-size:34px;opacity:.3;line-height:1}
+.tl-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 16px}
+.tl-item.left .tl-photo{order:2}
+.tl-item.left .tl-body{order:1}
+/* 年份：骑在轴线上的居中胶囊 */
+.tl-yearrow{position:relative;display:flex;justify-content:center;padding:4px 0 20px;z-index:1}
+.tl-year{background:#fff;border:1px solid #ececec;border-radius:100px;padding:3px 18px;font-size:13px;font-weight:700;color:#171717}
+@media (max-width:768px){
+  .tl::before{left:7px;transform:none}
+  .tl-item.right,.tl-item.left{grid-template-columns:16px minmax(0,1fr);grid-template-areas:"node date" "node card";align-items:start;padding-bottom:14px}
+  .tl-date{align-self:end;text-align:left !important;padding:0 0 4px !important}
+  .tl-node{margin-top:20px;align-self:start}
+  .tl-cardwrap{width:100%}
+  .tl-card{aspect-ratio:auto}
+  .tl-photo{width:44%}
+  .tl-body{padding:10px 12px}
+  .tl-yearrow{justify-content:flex-start;padding:2px 0 14px 28px}
+}
+/* 节点颜色 = 该事件最高优先级标签的类别色 */
+.tl-node.first{background-color:#0aa7a0}
+.tl-node.graded{background-color:#0a3b7e}
+.tl-node.gen{background-color:#e8742a}
+.tl-node.sire{background-color:#d5302a}
+.tl-node.award{background-color:#dca026}
+.tl-node.manual{background-color:#8a9096}   /* 人工节点：中性灰 */
+
+/* ===== 事件标签（一场比赛可叠加多枚，类别色区分） ===== */
+.tl-tag{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:2px 9px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
+.tl-tag.first{background-color:rgba(10,167,160,.12);color:#0b6b64}
+.tl-tag.graded{background-color:rgba(10,59,126,.09);color:#0a3b7e}
+.tl-tag.gen{background-color:rgba(232,116,42,.13);color:#b4530c}
+.tl-tag.sire{background-color:rgba(213,48,42,.1);color:#b02a25}
+.tl-tag.award{background-color:rgba(220,160,38,.16);color:#8f6408}
+.tl-tag.manual{background-color:rgba(138,144,150,.14);color:#5c636a}   /* 人工节点标签：中性灰 */
+
+/* ===== 迷你数据条：label 上 / 值 下，细竖线分隔 ===== */
+.tl-kpis{display:flex;flex-wrap:wrap}
+.tl-kpi{padding:0 16px;border-left:1px solid #ececec}
+.tl-kpi:first-child{padding-left:2px;border-left:0}
+.tl-kpi .k{font-size:10.5px;font-weight:600;letter-spacing:.5px;color:#9aa0a6}
+.tl-kpi .v{margin-top:1px;font-size:13.5px;font-variant-numeric:tabular-nums;color:#171717}
+.tl-kpi .v.hi{color:#0aa7a0;font-weight:700}
+@media (max-width:768px){.tl-kpi{padding:0 12px}}
+</style>
 </head>
 <body class="bg-background text-foreground antialiased">
-<div class="mx-auto max-w-[1180px] px-6 pt-[26px] pb-[60px]">
-  <div class="my-7 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-    <span class="block h-4 w-1 rounded-[2px] bg-primary"></span>时间线 · TIMELINE
+<div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-4 max-md:pb-12 md:w-[90%]" id="page">
+  <div class="page-title my-7 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
+    <span class="h-4 w-1 flex-none rounded bg-primary"></span>时间线 · TIMELINE
   </div>
-  <div class="rounded-[10px] border border-dashed border-border bg-muted/15 px-5 py-12 text-center text-muted-foreground">
-    <h2 class="mb-2 text-[18px] font-semibold text-foreground">时间线页 · 占位</h2>
-    <p class="text-[13px]">全部 691 场比赛按比赛时间从小到大排列（日付/马名/场名/赛事/着顺…）。<br>当前为布局占位，全量时间线随后接入。</p>
-  </div>
+  <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
+  <div id="body"><div class="hint-empty">正在加载全库比赛数据…</div></div>
 </div>
+
+<script src="../data-config.js"></script>
+<script>
+/* ================= 时间线 · 里程碑事件页 =================
+ * 数据：data/timeline.json —— 后端预计算（scripts/timeline/build_timeline.py 生成，
+ *       run_update.py 各策略在数据更新后自动重算），前端只做渲染，不再实时计算。
+ * 一场比赛 = 一条事件（绝不按标签拆行），该场触发的所有里程碑以标签徽章并列展示；纯展示无筛选。
+ * 事件规则（详见 build_timeline.py）：
+ *   1. 全局级别初胜（每级别全站仅一次）  1b. 世代首个新马胜  2. 全局重赏序数（首个重赏/重赏第N胜/G2第N胜，跨马累计）  3. 世代首个重赏（中央）
+ *   4. 父子制覇（飞机云同胜）  5. 受赏 —— 同一场比赛可同时触发多枚徽章。
+ * 渲染：时间自下而上（最新在顶），年份分组降序；中央轴卡片左右交替，图位（横A4比例）恒贴时间轴一侧。 */
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,">");}
+function tagHTML(t){
+  return '<span class="tl-tag '+t.cat+'"'+(t.tip?' title="'+esc(t.tip)+'"':'')+'>'+esc(t.label)+'</span>';
+}
+/* 迷你数据条单元：label 上 / 值 下（hi=青绿加粗，胜果核心数据） */
+function kpi(label, value, hi){
+  return '<div class="tl-kpi"><div class="k">'+esc(label)+'</div>'+
+         '<div class="v'+(hi?' hi':'')+'">'+esc(value)+'</div></div>';
+}
+/* 图源：timeline.json 已解析（race photo 优先→马照片），空=浅灰占位 */
+function photoHTML(ev){
+  var src = ev.photo || "";
+  return src
+    ? '<div class="tl-photo"><img src="'+esc(src)+'" alt="" loading="lazy"></div>'
+    : '<div class="tl-photo empty"><span>🐎</span></div>';
+}
+function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在左），"left"=卡片在轴左侧；图位恒贴时间轴一侧 */
+  var card = '<div class="tl-card card">'+photoHTML(ev)+'<div class="tl-body">';
+  if (ev.type === "manual"){   /* 人工节点：来自 timeline_manual.json（manual:true），无 horse；标题/副题/说明/可选跳转 */
+    var ttl = ev.link
+      ? '<a class="hjump text-[15px] font-semibold" href="'+esc(ev.link)+'">📌 '+esc(ev.title||"")+'</a>'
+      : '<span class="text-[15px] font-semibold">📌 '+esc(ev.title||"")+'</span>';
+    card += '<div class="flex flex-wrap items-baseline gap-x-2">'+ttl+
+              (ev.cn ? '<span class="text-[12px] text-muted-foreground">〈'+esc(ev.cn)+'〉</span>' : '')+
+            '</div>'+
+            (ev.note ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.note)+'</div>' : '')+
+            (ev.tags && ev.tags.length ? '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>' : '');
+  } else {
+  var hero = '<a class="hjump text-[16px] font-semibold" href="profile.html?horse='+encodeURIComponent(ev.horse.id)+'">'+esc(ev.horse.name)+'</a>'+
+             (ev.horse.cn ? '<span class="text-[12.5px] text-muted-foreground">〈'+esc(ev.horse.cn)+'〉</span>' : "");
+  if (ev.type === "award"){
+    var a = ev.award || {};
+    card += '<div class="flex flex-wrap items-baseline gap-x-2">'+
+              '<span class="text-[15px] font-semibold">✦ '+esc(a.賞名||"")+'</span>'+
+              (a.cn ? '<span class="text-[12px] text-muted-foreground">〈'+esc(a.cn)+'〉</span>' : '')+
+            '</div>'+
+            '<div class="flex flex-wrap items-center gap-x-2">'+hero+'</div>'+
+            (a.備考 ? '<div class="text-[12px] text-muted-foreground">'+esc(a.備考)+'</div>' : '')+
+            '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>';
+  } else {
+    var r = ev.race || {};
+    card +=
+      '<div class="flex flex-wrap items-center gap-x-2">'+
+        (r.gbadge ? '<span class="yj-grade yj-'+r.gbadge+'">'+esc(r.glabel||"")+'</span>' : '')+
+        '<span class="text-[15px] font-semibold">'+esc(r.name||"")+'</span>'+
+      '</div>'+
+      (r.meta ? '<div class="text-[12px] text-muted-foreground">'+esc(r.meta)+'</div>' : '')+
+      '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">'+
+        '<span class="yj-no yj-no1">1</span>'+ hero +
+      '</div>'+
+      '<div class="tl-kpis">'+
+        kpi("タイム", r.time||"—", true) + kpi("上り", r.agari||"—") + kpi("人気", r.pop||"—")+
+      '</div>'+
+      (r.team ? '<div class="text-[12px] text-muted-foreground">'+esc(r.team)+'</div>' : '')+
+      '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>';
+  }
+  }
+  card += '</div></div>';
+  return '<div class="tl-item '+side+'">'+
+           '<div class="tl-date">'+esc(ev.date||"—")+'</div>'+
+           '<div class="tl-node '+esc(ev.node||"award")+'"></div>'+
+           '<div class="tl-cardwrap">'+card+'</div>'+
+         '</div>';
+}
+function render(events){
+  /* 时间自下而上：最新在顶部（渲染前倒序），年份分组同步降序；卡片按序左右交替骑在中央轴上 */
+  var year = "";
+  var items = events.slice().reverse().map(function(ev, i){
+    var s = "";
+    var y = ev.date ? ev.date.slice(0,4) : "";
+    if (y && y !== year){ year = y; s += '<div class="tl-yearrow"><span class="tl-year">'+y+'</span></div>'; }
+    return s + eventHTML(ev, i%2===0 ? "right" : "left");
+  }).join("");
+  document.getElementById("body").innerHTML = items.length
+    ? '<div class="tl">'+items+'</div>'
+    : '<div class="hint-empty">暂无里程碑事件</div>';
+}
+function renderStats(st){
+  st = st || {};
+  document.getElementById("stats").innerHTML =
+    '共 <b class="text-foreground">'+(st.events||0)+'</b> 条里程碑 · 覆盖 <b class="text-foreground">'+(st.horses||0)+'</b> 匹产驹'+
+    ' · 重赏胜利 <b class="text-foreground">'+(st.graded_wins||0)+'</b> 场 · 父子制覇 <b class="text-foreground">'+(st.sire_wins||0)+'</b> 次';
+}
+function init(){
+  fetch(YJ_DATA.url('timeline.json')).then(function(r){
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    return r.json();
+  }).then(function(data){
+    renderStats(data.meta && data.meta.stats);
+    render(data.events || []);
+  }).catch(function(e){
+    document.getElementById("body").innerHTML =
+      '<div class="hint-empty">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
+  });
+}
+init();
+</script>
 </body>
 </html>

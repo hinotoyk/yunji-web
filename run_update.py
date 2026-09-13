@@ -46,6 +46,7 @@ DATA = ROOT / "data"
 BASIC = ROOT / "scripts" / "basic"
 RACES = ROOT / "scripts" / "races"
 CHECK = ROOT / "scripts" / "check_data.py"
+TIMELINE = ROOT / "scripts" / "timeline" / "build_timeline.py"   # 时间线事件预计算 → data/timeline.json
 FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
@@ -143,12 +144,14 @@ def main():
         y = ["--year", args.year] if args.year else []
         run_step("建档·新马对账", BASIC / "build_registry.py", *y)
         run_step("基础·补缺+合并", BASIC / "run_all.py")
+        run_step("时间线·事件预计算", TIMELINE)
     elif args.races:
         if args.since:
             run_step("比赛·轻量时段增量", RACES / "fetch_races.py", "--since", str(args.since), *lim())
             run_step("比赛·合并", RACES / "merge_races.py")
         else:
             run_step("比赛·增量流水线", RACES / "run_all.py", *lim())
+        run_step("时间线·事件预计算", TIMELINE)
     elif args.horse:
         ids = [x.strip() for x in args.horse.split(",") if x.strip()]
         if not ids:
@@ -156,18 +159,22 @@ def main():
         run_step("比赛·详情更新(定向)", RACES / "fetch_detail.py", "--id", ",".join(ids))
         run_step("比赛·成绩增量(定向)", RACES / "fetch_races.py", "--id", ",".join(ids))
         run_step("比赛·合并", RACES / "merge_races.py")
+        run_step("时间线·事件预计算", TIMELINE)
     elif args.races_force:
         run_step("比赛·全量刷新", RACES / "run_all.py", "--force")
+        run_step("时间线·事件预计算", TIMELINE)
     elif args.check:
         run_step("数据校验", CHECK, *(["--fix"] if args.fix else []))
     elif args.ledger:
         run_step("台账·海外拉取", RACES / "fetch_ledger.py")
         run_step("比赛·合并", RACES / "merge_races.py")
+        run_step("时间线·事件预计算", TIMELINE)
     elif args.ci:
         y = ["--year", args.year] if args.year else []
         run_step("CI·建档新马对账", BASIC / "build_registry.py", *y)
         run_step("CI·基础补缺+合并", BASIC / "run_all.py")
         run_step("CI·比赛增量流水线", RACES / "run_all.py", *lim())
+        run_step("CI·时间线事件预计算", TIMELINE)
         run_step("CI·数据校验", CHECK)
         git_commit_if_changed()
 
