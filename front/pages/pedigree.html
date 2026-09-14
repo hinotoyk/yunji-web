@@ -11,7 +11,7 @@
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
-<div class="mx-auto max-w-[880px] px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-4 max-md:pb-12" id="page">
+<div class="mx-auto max-w-[880px] px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12" id="page">
   <div id="selector" class="embed-hide"></div>
   <div id="body"><div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">↑ 请在上方选择一匹马，查看其血统</div></div>
 </div>
@@ -36,7 +36,7 @@ function renderPedigree(h){
 
   /* 独立模式才有页面头 + 马名头；内嵌模式只渲染血统卡片本身 */
   var head = EMBED ? '' :
-    '<div class="my-7 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+
+    '<div class="mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+
       '<span class="h-4 w-1 flex-none rounded bg-primary"></span>血统图 · PEDIGREE</div>';
   var hname = EMBED ? '' :
     '<div class="mb-1.5 flex flex-wrap items-baseline gap-3"><h2 class="text-[17px] font-bold">'+esc(title)+'</h2>'+

@@ -42,10 +42,6 @@
     <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">云迹 · 数据仅供分享交流</div>
   </aside>
 
-  <!-- 手机端浮动 ☰ 汉堡（抽屉按钮；桌面隐藏，抽屉打开时被侧边栏/遮罩盖住） -->
-  <button id="menuBtn" type="button" aria-label="打开菜单"
-    class="fixed top-3 left-3 z-20 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg border border-border bg-background text-[18px] leading-none text-foreground shadow-[0_2px_8px_rgba(0,0,0,.08)] md:hidden">☰</button>
-
   <!-- 抽屉遮罩（仅手机） -->
   <div id="backdrop" data-show="false"
     class="fixed inset-0 z-30 bg-black/35 opacity-0 invisible transition-opacity duration-200
@@ -53,6 +49,12 @@
 
   <!-- 内容区 -->
   <div class="flex min-w-0 flex-1 flex-col">
+    <!-- 手机端顶栏：☰ 常驻左上，页面内容从其下方开始（固定不随滚动，不遮任何页面 UI）；
+         透明窄条（无底色无边框），视觉上就是页面顶部留白里的一个菜单钮 -->
+    <div class="flex h-7 shrink-0 items-center px-2 md:hidden">
+      <button id="menuBtn" type="button" aria-label="打开菜单"
+        class="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-border bg-background text-[15px] leading-none text-foreground shadow-[0_2px_8px_rgba(0,0,0,.08)]">☰</button>
+    </div>
     <div class="min-h-0 flex-1">
       <iframe id="frame" class="block h-full w-full border-none bg-background" src="pages/profile.html" title="内容"></iframe>
     </div>

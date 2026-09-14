@@ -15,10 +15,15 @@
 .yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
 
 /* ===== 着顺徽章（同 races.html：仅 1/2/3 有颜色+边框） ===== */
-.yj-no{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:4px;border:1px solid transparent;font-size:12px}
+.yj-no{display:inline-flex;align-items:center;justify-content:center;flex:none;width:26px;height:26px;border-radius:4px;border:1px solid transparent;font-size:13px}
 .yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
 .yj-no2{background-color:#cbdeff;border-color:#87aee6;color:#000}
 .yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
+
+/* ===== 人气徽章（同 races.html：着顺同款颜色文字，无底无框） ===== */
+.yj-nk1{color:#e2cc38}
+.yj-nk2{color:#87aee6}
+.yj-nk3{color:#dca167}
 
 /* ===== 马名跳转（同 races.html） ===== */
 .hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
@@ -36,7 +41,35 @@
 .dc-nav:hover:not(:disabled){border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
 .dc-nav:disabled{opacity:.35;cursor:not-allowed}
 
-/* ===== KPI 带：出走 / 胜 / 进板数 / 总赏金 / 重赏胜 ===== */
+/* ===== 快速定位日期选择器（Element date-picker 风格：统一挂在窗口标签上，随口径出 日/周/月/年 面板） ===== */
+.dc-dp-label{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:0;border-radius:7px;background:transparent;color:#171717;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;transition:all .15s;white-space:nowrap}
+.dc-dp-label:hover{background:#f0faf9;color:#0b6b64}
+.dc-dp-caret{font-size:9px;color:#8a8a8a;transition:transform .15s}
+.dc-dp[data-on=true] .dc-dp-label{color:#0b6b64;background:#f0faf9}
+.dc-dp[data-on=true] .dc-dp-caret{transform:rotate(180deg);color:#0aa7a0}
+.dc-dp-panel{position:absolute;left:0;top:calc(100% + 8px);z-index:30;width:312px;padding:10px;border:1px solid #e5e5e5;border-radius:10px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.dc-dp-hd{display:flex;align-items:center;gap:2px;margin-bottom:8px}
+.dc-dp-nav{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:#52525b;font-size:12px;line-height:1;cursor:pointer}
+.dc-dp-nav:hover:not(:disabled){background:#f0f0f0;color:#0b6b64}
+.dc-dp-nav:disabled{opacity:.3;cursor:not-allowed}
+.dc-dp-lab{flex:1;text-align:center;font-size:13px;font-weight:600;color:#171717;white-space:nowrap}
+.dc-dp-grid{display:grid;gap:2px}
+.dc-dp-cell{display:inline-flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:6px;background:transparent;font-size:12px;color:#3a3a3e;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .12s}
+.dc-dp-cell:hover{background:#f0f0f0}
+.dc-dp-cell.out{color:#c0c0c4}                       /* 邻月补位 */
+.dc-dp-cell.dis{color:#d4d4d8;cursor:default;pointer-events:none}  /* 范围外禁用 */
+.dc-dp-cell.today{box-shadow:inset 0 0 0 1px #0aa7a0}
+.dc-dp-cell.cur,.dc-dp-cell.cur:hover{background:#0aa7a0;color:#fff;font-weight:600}
+.dc-dp-wrow{display:grid;grid-template-columns:38px repeat(7,1fr);gap:2px;border-radius:7px}
+.dc-dp-wrow .dc-dp-cell{width:100%}
+.dc-dp-wnum{display:inline-flex;align-items:center;justify-content:center;height:30px;border-radius:6px;background:transparent;border:0;font-size:10.5px;color:#8a8a8a;cursor:pointer;font-variant-numeric:tabular-nums}
+.dc-dp-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:1px}
+.dc-dp-wrow.hl .dc-dp-wnum{color:#0b6b64;font-weight:700}
+.dc-dp-ft{display:flex;justify-content:flex-end;margin-top:8px;padding-top:8px;border-top:1px solid #ececec}
+.dc-dp-ft button{border:0;background:transparent;color:#0b6b64;font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:6px}
+.dc-dp-ft button:hover{background:rgba(10,167,160,.1)}
+
+/* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 ===== */
 .dc-kpis{display:flex;flex-wrap:wrap}
 .dc-kpi{padding:2px 18px;border-left:1px solid #ececec}
 .dc-kpi:first-child{padding-left:2px;border-left:0}
@@ -79,23 +112,20 @@
 .dc-ym-prz{font-size:12px;color:#52525b;font-variant-numeric:tabular-nums}
 .dc-ym-n{font-size:10.5px;color:#8a8a8a}
 
-/* ===== 明细行：重赏胜整行浅青底；未完走整行降灰 ===== */
-tr.dc-grow{background:#f2f9f8}
-tr.dc-dnf{color:#8a8a8a}
-
-/* ===== mb 明细卡片（≤768px） ===== */
-.dc-mblist .dc-mb{padding:9px 12px 10px}
-.dc-mblist .dc-mb+.dc-mb{border-top:1px solid #ececec}
-.dc-mblist .dc-grow{background:#f2f9f8}
-.dc-mblist .dc-dnf{opacity:.55}
-.dc-mb-top{display:flex;align-items:center;gap:8px}
-.dc-mb-date{flex:none;font-size:11.5px;color:#8a9096;font-weight:600;white-space:nowrap}
-.dc-mb-race{flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dc-mb-place{flex:none}
-.dc-mb-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 14px;padding-top:2px;font-size:12px}
-.dc-mb-item{white-space:nowrap}
-.dc-mb-item b{font-weight:500}
-.dc-mb-item .tm{color:#0aa7a0;font-weight:700}
+/* ===== 明细（照搬 races.html 内嵌比赛表：mb 软分行卡片 yj-mb*，未完走整卡降灰） ===== */
+.yj-mb.dnf{opacity:.5}
+.yj-mb-top{display:flex;align-items:center;gap:8px;padding:10px 12px 3px}
+.yj-mb-date{font-size:11.5px;color:#8a9096;font-weight:600;white-space:nowrap}
+.yj-mb-race{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yj-mb-place{flex:none}
+.yj-mb-line{display:block;padding:1px 12px;font-size:12px;color:#3a4149;line-height:1.8}
+.yj-mb-line:last-child{padding-bottom:11px}
+.yj-mb-item{display:inline-block;vertical-align:baseline;white-space:nowrap;margin-right:12px}
+.yj-mb-item:last-child{margin-right:0}
+.yj-mb-item i{font-style:normal;font-size:10.5px;color:#9aa0a6}
+.yj-mb-item b{font-weight:500}
+.yj-mb-item .tm{color:#0aa7a0;font-weight:700;font-size:12.5px}
+.yj-mb-dist b{font-weight:600}
 
 /* ===== 手机（≤768px）：日历格只留 日期+🏆，进板数/赏金收进 KPI 带与明细 ===== */
 @media (max-width:768px){
@@ -107,22 +137,18 @@ tr.dc-dnf{color:#8a8a8a}
   .dc-kpi .v{font-size:16px}
   .dc-brk-lg{font-size:14px}
   .dc-kpi .trophy{font-size:13px}
+  .yj-mb-item{margin-right:10px}
 }
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
-<div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-4 max-md:pb-12 md:w-[90%]" id="page">
+<div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
 
-  <div class="my-7 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
+  <div class="mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
     <span class="h-4 w-1 flex-none rounded bg-primary"></span>日期图 · DATE CHART
   </div>
 
-  <!-- 说明（占位文案）：示例数据仅布局预览，日期聚合随后接入 -->
-  <div class="mb-4 rounded-[10px] border border-dashed border-border bg-muted/20 px-4 py-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
-    按 <b class="font-semibold text-foreground">天 / 周 / 月 / 年</b> 快速查看进板数 <b class="font-semibold text-foreground">[第1-第2-第3-第4-第5-5名之外]</b> 与总赏金，日历逐日展示，重赏以 <span class="font-semibold text-foreground">🏆 图标+数字</span> 突出标记。当前为布局占位（示例数据），日期聚合随后接入。
-  </div>
-
-  <!-- 工具条：聚合口径分段切换 -->
+  <!-- 工具条：聚合口径分段切换 + 场地范围（多选，默认 JRA） -->
   <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
     <div class="seg" id="seg">
       <button type="button" data-u="day">天</button>
@@ -130,17 +156,27 @@ tr.dc-dnf{color:#8a8a8a}
       <button type="button" data-u="month" data-on="true">月</button>
       <button type="button" data-u="year">年</button>
     </div>
+    <div class="seg" id="vseg">
+      <button type="button" data-v="中央" data-on="true" title="中央（JRA）">JRA</button>
+      <button type="button" data-v="地方" data-on="false" title="地方（NAR）">NAR</button>
+      <button type="button" data-v="海外" data-on="false" title="海外">海外</button>
+    </div>
   </div>
 
-  <!-- 日历卡：窗口切换 + KPI 带 + 日历网格 -->
+  <!-- 日历卡：窗口切换（标签即日期选择器）+ KPI 带 + 日历网格 -->
   <div class="card p-4 pt-3.5 max-md:p-3">
     <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <div class="flex items-center gap-1.5">
         <button id="navPrev" class="dc-nav" type="button" aria-label="上一窗口">‹</button>
-        <span id="winLabel" class="min-w-[128px] whitespace-nowrap text-center text-[14px] font-semibold"></span>
+        <div class="dc-dp relative" id="dp">
+          <button type="button" id="dpTrigger" class="dc-dp-label" aria-haspopup="true" aria-expanded="false" title="点击选择日期（随口径出 日/周/月/年 面板）">
+            <span id="winLabel" class="whitespace-nowrap text-center text-[14px] font-semibold"></span>
+            <span class="dc-dp-caret">▾</span>
+          </button>
+          <div id="dpPanel" class="dc-dp-panel" hidden></div>
+        </div>
         <button id="navNext" class="dc-nav" type="button" aria-label="下一窗口">›</button>
       </div>
-      <span class="ml-auto text-[11px] text-muted-foreground">🏆 = 重赏胜</span>
     </div>
     <div id="kpis" class="dc-kpis mb-3"></div>
     <div id="cal"></div>
@@ -154,234 +190,59 @@ tr.dc-dnf{color:#8a8a8a}
 <script src="../data-config.js"></script>
 <script src="../i18n.js"></script>
 <script>
-/* ================= 日期图 · 日历布局稿（v2） =================
+/* ================= 日期图 · 日历（真实数据版） =================
  * 需求（用户定）：日历形式；按 天/周/月/年 快速读出
- *   ① 进板数 [第1-第2-第3-第4-第5-5名之外]（=着顺分布，6 段）
+ *   ① 通算战绩 [第1-第2-第3-第3名开外]（=着顺分布，4 段：1/2/3着 + 其余含未完走）
  *   ② 总赏金；③ 重赏以「图标+数字」（🏆 n）突出标记。
- * 当前为布局占位：RUNS 为示例样本（取自库内真实出走记录：2026-08~09 全量 +
- * 2025~2026 各代表日），日期聚合随后接入 —— 换掉 RUNS 数据源即可，渲染层不变。
- * 交互：seg 切换聚合口径（日历骨架不变，口径=高亮+KPI 范围）；点日历格下钻（月/周 → 天，年 → 月）；
- *       ‹ › 按口径步进（天±1日 / 周±7日 / 月±1月 / 年±1年），边界自动禁用。 */
+ * 数据：data/datechart.json —— 后端预计算（scripts/datechart/build_datechart.py 生成，
+ *       run_update.py 各数据策略自动重算），runs[] 字段与本页渲染层完全同构，
+ *       本页只做 天/周/月/年 聚合与渲染，不改数据。
+ * 交互：seg 切换聚合口径（日历骨架不变，口径=高亮+KPI 范围）；vseg 切换场地范围 JRA/NAR/海外
+ *       （多选，默认只统计 JRA）；选择器随口径出 日/周/月/年 面板（Element date-picker 风格），任意窗口一击直达；
+ *       点日历格下钻（月/周 → 天，年 → 月）；‹ › 按口径步进（天±1日 / 周±7日 / 月±1月 / 年±1年），
+ *       边界自动禁用。明细 = races.html 内嵌比赛表同款（PC 14 列表 + mb 软分行卡片）。 */
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,">");}
 function pad2(n){return n<10?"0"+n:""+n;}
 
-/* ---- 示例数据（真实出走记录子集）：d 日期 / id·h 马 / r 赛事 / g 级别 / v 场所 / R / dist / s 跑道 / p 着顺(数字或未完走) / pr 赏金(円) ---- */
-var RUNS=[
- {d:"2025-07-13",id:115,h:"ルージュボヤージュ",r:"2歳新馬",g:"新馬",v:"福島",R:5,dist:1800,s:"芝",p:1,pr:7500000},
- {d:"2025-08-17",id:113,h:"ルージュアリスタ",r:"2歳新馬",g:"新馬",v:"新潟",R:4,dist:1800,s:"芝",p:6,pr:0},
- {d:"2025-08-17",id:53,h:"ジーティーメティオ",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:2,pr:3000000},
- {d:"2025-08-17",id:56,h:"スウィッチインラヴ",r:"2歳新馬",g:"新馬",v:"中京",R:3,dist:1600,s:"芝",p:1,pr:7500000},
- {d:"2025-08-17",id:80,h:"ヒメヒオウギ",r:"2歳未勝利",g:"未勝利",v:"新潟",R:3,dist:1600,s:"芝",p:11,pr:0},
- {d:"2025-09-06",id:54,h:"ジーネキング",r:"札幌2歳S(GIII)",g:"GIII",v:"札幌",R:11,dist:1800,s:"芝",p:2,pr:12122000},
- {d:"2025-09-06",id:75,h:"バドリナート",r:"2歳未勝利",g:"未勝利",v:"阪神",R:2,dist:2000,s:"芝",p:1,pr:5600000},
- {d:"2025-10-26",id:29,h:"グラシアムヘール",r:"2歳新馬",g:"新馬",v:"京都",R:5,dist:1800,s:"芝",p:7,pr:0},
- {d:"2025-10-26",id:32,h:"ゲンパチミスティ",r:"2歳新馬",g:"新馬",v:"東京",R:5,dist:1800,s:"芝",p:16,pr:0},
- {d:"2025-10-26",id:57,h:"スウィーティーベル",r:"2歳新馬",g:"新馬",v:"京都",R:5,dist:1800,s:"芝",p:5,pr:750000},
- {d:"2025-10-26",id:67,h:"テルヒコウ",r:"2歳新馬",g:"新馬",v:"京都",R:5,dist:1800,s:"芝",p:1,pr:7500000},
- {d:"2025-10-26",id:75,h:"バドリナート",r:"萩S(L)",g:"L",v:"京都",R:9,dist:1800,s:"芝",p:1,pr:17168000},
- {d:"2025-11-16",id:109,h:"ランズダウンロード",r:"2歳未勝利",g:"未勝利",v:"東京",R:2,dist:1800,s:"芝",p:1,pr:5600000},
- {d:"2025-11-16",id:79,h:"ビッグヒーロー",r:"2歳未勝利",g:"未勝利",v:"東京",R:2,dist:1800,s:"芝",p:2,pr:2200000},
- {d:"2025-11-16",id:81,h:"フィオーレクラウド",r:"2歳新馬",g:"新馬",v:"京都",R:5,dist:2000,s:"芝",p:7,pr:0},
- {d:"2025-11-16",id:99,h:"ムスクレスト",r:"2歳未勝利",g:"未勝利",v:"京都",R:3,dist:1600,s:"芝",p:3,pr:1400000},
- {d:"2025-12-13",id:104,h:"ライトフライヤー",r:"2歳未勝利",g:"未勝利",v:"中京",R:4,dist:1600,s:"芝",p:6,pr:0},
- {d:"2025-12-13",id:41,h:"サガルマータ",r:"2歳新馬",g:"新馬",v:"阪神",R:5,dist:1800,s:"芝",p:3,pr:1900000},
- {d:"2025-12-13",id:58,h:"スカイストライプス",r:"2歳未勝利",g:"未勝利",v:"阪神",R:2,dist:1800,s:"ダ",p:1,pr:5600000},
- {d:"2025-12-13",id:73,h:"ノートルダム",r:"2歳新馬",g:"新馬",v:"阪神",R:5,dist:1800,s:"芝",p:6,pr:0},
- {d:"2025-12-13",id:82,h:"フウセン",r:"2歳新馬",g:"新馬",v:"中京",R:5,dist:2000,s:"芝",p:3,pr:1900000},
- {d:"2025-12-13",id:87,h:"フリーガー",r:"エリカ賞(1勝クラス)",g:"1勝クラス",v:"阪神",R:9,dist:2000,s:"芝",p:8,pr:0},
- {d:"2025-12-13",id:99,h:"ムスクレスト",r:"2歳未勝利",g:"未勝利",v:"中京",R:4,dist:1600,s:"芝",p:4,pr:840000},
- {d:"2026-04-25",id:14,h:"ヴィーラー",r:"3歳未勝利",g:"未勝利",v:"京都",R:3,dist:1800,s:"芝",p:12,pr:0},
- {d:"2026-04-25",id:26,h:"カットソロ",r:"テレビ東京杯青葉賞(GII)",g:"GII",v:"東京",R:11,dist:2400,s:"芝",p:9,pr:0},
- {d:"2026-04-25",id:34,h:"コスモフィレンツェ",r:"3歳未勝利",g:"未勝利",v:"京都",R:5,dist:2200,s:"芝",p:2,pr:2400000},
- {d:"2026-04-25",id:40,h:"ゴーイントゥスカイ",r:"テレビ東京杯青葉賞(GII)",g:"GII",v:"東京",R:11,dist:2400,s:"芝",p:1,pr:55302000},
- {d:"2026-04-25",id:41,h:"サガルマータ",r:"テレビ東京杯青葉賞(GII)",g:"GII",v:"東京",R:11,dist:2400,s:"芝",p:6,pr:0},
- {d:"2026-04-25",id:44,h:"サンライズレマ",r:"3歳未勝利",g:"未勝利",v:"京都",R:6,dist:1600,s:"芝",p:11,pr:0},
- {d:"2026-04-25",id:45,h:"シティプロスパー",r:"3歳未勝利",g:"未勝利",v:"京都",R:2,dist:1400,s:"ダ",p:11,pr:0},
- {d:"2026-04-25",id:57,h:"スウィーティーベル",r:"3歳未勝利",g:"未勝利",v:"京都",R:5,dist:2200,s:"芝",p:4,pr:890000},
- {d:"2026-04-25",id:6,h:"アリアス",r:"3歳未勝利",g:"未勝利",v:"東京",R:5,dist:1400,s:"芝",p:5,pr:590000},
- {d:"2026-04-25",id:60,h:"スターリットフレア",r:"3歳未勝利",g:"未勝利",v:"東京",R:5,dist:1400,s:"芝",p:18,pr:0},
- {d:"2026-04-25",id:67,h:"テルヒコウ",r:"テレビ東京杯青葉賞(GII)",g:"GII",v:"東京",R:11,dist:2400,s:"芝",p:14,pr:0},
- {d:"2026-04-25",id:82,h:"フウセン",r:"3歳未勝利",g:"未勝利",v:"京都",R:5,dist:2200,s:"芝",p:1,pr:5900000},
- {d:"2026-05-09",id:19,h:"エアリアルグレース",r:"3歳未勝利",g:"未勝利",v:"京都",R:4,dist:2000,s:"芝",p:13,pr:0},
- {d:"2026-05-09",id:33,h:"ココロヅヨサ",r:"3歳未勝利",g:"未勝利",v:"京都",R:2,dist:1800,s:"ダ",p:1,pr:5900000},
- {d:"2026-05-09",id:39,h:"コンジェスタス",r:"京都新聞杯(GII)",g:"GII",v:"京都",R:11,dist:2200,s:"芝",p:1,pr:55134000},
- {d:"2026-05-09",id:75,h:"バドリナート",r:"京都新聞杯(GII)",g:"GII",v:"京都",R:11,dist:2200,s:"芝",p:11,pr:0},
- {d:"2026-05-09",id:80,h:"ヒメヒオウギ",r:"3歳未勝利",g:"未勝利",v:"京都",R:4,dist:2000,s:"芝",p:6,pr:0},
- {d:"2026-05-09",id:92,h:"ボンボンベイビー",r:"3歳未勝利",g:"未勝利",v:"東京",R:4,dist:2400,s:"芝",p:2,pr:2400000},
- {d:"2026-06-07",id:120,h:"レッドピアレス",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:1400,s:"ダ",p:5,pr:580000},
- {d:"2026-06-07",id:130,h:"Grand Warrior",r:"Maiden Claiming",g:"",v:"ウッドバイン",R:2,dist:1408,s:"AW",p:1,pr:0},
- {d:"2026-06-07",id:174,h:"シアルナーレ",r:"2歳新馬",g:"新馬",v:"東京",R:5,dist:1800,s:"芝",p:9,pr:0},
- {d:"2026-06-07",id:21,h:"エースフライト",r:"3歳未勝利",g:"未勝利",v:"阪神",R:6,dist:2000,s:"芝",p:1,pr:5800000},
- {d:"2026-06-07",id:3,h:"アスクウルトラモア",r:"3歳未勝利",g:"未勝利",v:"阪神",R:6,dist:2000,s:"芝",p:14,pr:0},
- {d:"2026-06-07",id:33,h:"ココロヅヨサ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"阪神",R:12,dist:1800,s:"ダ",p:3,pr:2100000},
- {d:"2026-06-07",id:45,h:"シティプロスパー",r:"3歳ー6",g:"",v:"高知",R:4,dist:1400,s:"ダ",p:2,pr:240000},
- {d:"2026-06-07",id:50,h:"ショウナンアンバー",r:"3歳未勝利",g:"未勝利",v:"阪神",R:6,dist:2000,s:"芝",p:16,pr:0},
- {d:"2026-06-07",id:53,h:"ジーティーメティオ",r:"3歳未勝利",g:"未勝利",v:"阪神",R:2,dist:1800,s:"芝",p:2,pr:2300000},
- {d:"2026-06-07",id:66,h:"チェリヴェント",r:"3歳以上1勝クラス",g:"1勝クラス",v:"阪神",R:12,dist:1800,s:"ダ",p:1,pr:8200000},
- {d:"2026-06-07",id:79,h:"ビッグヒーロー",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:1400,s:"ダ",p:3,pr:1500000},
- {d:"2026-06-07",id:8,h:"アンソニー",r:"3歳以上1勝クラス",g:"1勝クラス",v:"東京",R:8,dist:1600,s:"芝",p:17,pr:0},
- {d:"2026-08-01",id:119,h:"レッドバベル",r:"3歳未勝利",g:"未勝利",v:"中京",R:5,dist:1800,s:"ダ",p:11,pr:0},
- {d:"2026-08-01",id:14,h:"ヴィーラー",r:"3歳未勝利",g:"未勝利",v:"中京",R:3,dist:2000,s:"芝",p:6,pr:0},
- {d:"2026-08-01",id:15,h:"ヴェニゼロス",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:2000,s:"芝",p:4,pr:870000},
- {d:"2026-08-01",id:19,h:"エアリアルグレース",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:1800,s:"ダ",p:13,pr:0},
- {d:"2026-08-01",id:190,h:"セイウンサイフィー",r:"2歳新馬",g:"新馬",v:"新潟",R:2,dist:1800,s:"芝",p:6,pr:0},
- {d:"2026-08-01",id:45,h:"シティプロスパー",r:"3歳ー3",g:"",v:"高知",R:3,dist:1300,s:"ダ",p:3,pr:180000},
- {d:"2026-08-01",id:50,h:"ショウナンアンバー",r:"3歳ー3",g:"",v:"高知",R:3,dist:1300,s:"ダ",p:8,pr:0},
- {d:"2026-08-01",id:67,h:"テルヒコウ",r:"釧路湿原特別(2勝クラス)",g:"2勝クラス",v:"札幌",R:9,dist:1800,s:"芝",p:6,pr:0},
- {d:"2026-08-01",id:80,h:"ヒメヒオウギ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:7,dist:1800,s:"芝",p:4,pr:870000},
- {d:"2026-08-01",id:88,h:"フロンテアムーン",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:2000,s:"芝",p:7,pr:0},
- {d:"2026-08-01",id:93,h:"ボーントゥラブユー",r:"3歳未勝利",g:"未勝利",v:"札幌",R:7,dist:1800,s:"芝",p:11,pr:0},
- {d:"2026-08-02",id:102,h:"ヤマメホープ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:2200,s:"芝",p:2,pr:2300000},
- {d:"2026-08-02",id:110,h:"リアライズガイザー",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:1200,s:"ダ",p:9,pr:0},
- {d:"2026-08-02",id:116,h:"ルーチェブリラーレ",r:"3歳未勝利",g:"未勝利",v:"中京",R:1,dist:2000,s:"芝",p:3,pr:1500000},
- {d:"2026-08-02",id:152,h:"オンザボー",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:3,pr:2000000},
- {d:"2026-08-02",id:187,h:"スワッグウォーク",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:4,pr:1200000},
- {d:"2026-08-02",id:250,h:"ムーンパッセ",r:"2歳新馬",g:"新馬",v:"中京",R:3,dist:1600,s:"芝",p:7,pr:0},
- {d:"2026-08-02",id:28,h:"クオンタムスター",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:4,dist:2600,s:"芝",p:2,pr:3300000},
- {d:"2026-08-02",id:30,h:"クルサール",r:"3歳未勝利",g:"未勝利",v:"札幌",R:1,dist:1700,s:"ダ",p:11,pr:0},
- {d:"2026-08-02",id:36,h:"ゴッドレイ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:12,dist:1400,s:"芝",p:4,pr:870000},
- {d:"2026-08-03",id:81,h:"フィオーレクラウド",r:"3歳B　2",g:"",v:"金沢",R:3,dist:1400,s:"ダ",p:7,pr:0},
- {d:"2026-08-08",id:13,h:"ウイングサンライズ",r:"3歳未勝利",g:"未勝利",v:"中京",R:12,dist:1400,s:"芝",p:6,pr:0},
- {d:"2026-08-08",id:136,h:"アトミックリーチ",r:"2歳新馬",g:"新馬",v:"新潟",R:3,dist:1800,s:"芝",p:4,pr:1200000},
- {d:"2026-08-08",id:177,h:"シネファイル",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:2,pr:3100000},
- {d:"2026-08-08",id:25,h:"オーロラボレアリス",r:"3歳未勝利",g:"未勝利",v:"新潟",R:5,dist:1800,s:"ダ",p:5,pr:580000},
- {d:"2026-08-08",id:267,h:"ロマノヴェリテ",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:3,pr:2000000},
- {d:"2026-08-08",id:35,h:"ゴッドアイ",r:"3歳未勝利",g:"未勝利",v:"中京",R:12,dist:1400,s:"芝",p:1,pr:5800000},
- {d:"2026-08-08",id:51,h:"ジングアップ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:3,dist:1700,s:"ダ",p:9,pr:0},
- {d:"2026-08-08",id:52,h:"ジーティーアリア",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:9,dist:1700,s:"ダ",p:4,pr:1200000},
- {d:"2026-08-08",id:54,h:"ジーネキング",r:"摩周湖特別(2勝クラス)",g:"2勝クラス",v:"札幌",R:12,dist:1500,s:"芝",p:2,pr:6380000},
- {d:"2026-08-08",id:57,h:"スウィーティーベル",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:2000,s:"芝",p:8,pr:0},
- {d:"2026-08-08",id:68,h:"トゥレネヴェリテ",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:1900,s:"ダ",p:7,pr:0},
- {d:"2026-08-08",id:72,h:"ネッタイヤライ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:4,dist:1500,s:"芝",p:4,pr:1200000},
- {d:"2026-08-09",id:106,h:"ラピス",r:"3歳未勝利",g:"未勝利",v:"中京",R:1,dist:2000,s:"芝",p:4,pr:870000},
- {d:"2026-08-09",id:112,h:"ルシアージュ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:1600,s:"芝",p:8,pr:0},
- {d:"2026-08-09",id:174,h:"シアルナーレ",r:"2歳未勝利",g:"未勝利",v:"新潟",R:1,dist:2000,s:"芝",p:2,pr:2400000},
- {d:"2026-08-09",id:20,h:"エコロセレナ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:3,dist:1200,s:"ダ",p:10,pr:0},
- {d:"2026-08-09",id:209,h:"ドラゴンバルド",r:"2歳新馬",g:"新馬",v:"中京",R:3,dist:2000,s:"芝",p:1,pr:7800000},
- {d:"2026-08-09",id:23,h:"オートカリテ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:7,dist:2000,s:"芝",p:14,pr:0},
- {d:"2026-08-09",id:243,h:"マハロハ",r:"2歳未勝利",g:"未勝利",v:"新潟",R:1,dist:2000,s:"芝",p:3,pr:1500000},
- {d:"2026-08-09",id:264,h:"レニュアージュ",r:"2歳新馬",g:"新馬",v:"中京",R:2,dist:1600,s:"芝",p:1,pr:7800000},
- {d:"2026-08-09",id:59,h:"スカイドリーマー",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:1600,s:"芝",p:11,pr:0},
- {d:"2026-08-09",id:66,h:"チェリヴェント",r:"レパードS(GIII)",g:"GIII",v:"新潟",R:7,dist:1800,s:"ダ",p:1,pr:37427000},
- {d:"2026-08-09",id:70,h:"ドンテスタマスター",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:2600,s:"芝",p:1,pr:5800000},
- {d:"2026-08-09",id:79,h:"ビッグヒーロー",r:"3歳未勝利",g:"未勝利",v:"中京",R:12,dist:1600,s:"芝",p:2,pr:2300000},
- {d:"2026-08-12",id:104,h:"ライトフライヤー",r:"3歳以上C4ー2",g:"",v:"門別",R:8,dist:1200,s:"ダ",p:2,pr:112000},
- {d:"2026-08-12",id:5,h:"アスピラシオン",r:"C2",g:"",v:"園田",R:12,dist:1870,s:"ダ",p:1,pr:800000},
- {d:"2026-08-15",id:14,h:"ヴィーラー",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:1400,s:"芝",p:13,pr:0},
- {d:"2026-08-15",id:152,h:"オンザボー",r:"2歳未勝利",g:"未勝利",v:"札幌",R:2,dist:1800,s:"芝",p:2,pr:2400000},
- {d:"2026-08-15",id:18,h:"エアヴァイブス",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:1500,s:"芝",p:1,pr:5800000},
- {d:"2026-08-15",id:9,h:"イノーマル",r:"3歳未勝利",g:"未勝利",v:"新潟",R:12,dist:2000,s:"芝",p:11,pr:0},
- {d:"2026-08-16",id:103,h:"ユマハム",r:"3歳C2二組",g:"",v:"盛岡",R:6,dist:1400,s:"ダ",p:8,pr:0},
- {d:"2026-08-16",id:114,h:"ルージュバロン",r:"3歳以上1勝クラス",g:"1勝クラス",v:"中京",R:11,dist:1400,s:"芝",p:8,pr:0},
- {d:"2026-08-16",id:12,h:"ウイルソン",r:"3歳未勝利",g:"未勝利",v:"札幌",R:7,dist:2000,s:"芝",p:1,pr:5800000},
- {d:"2026-08-16",id:137,h:"アルティシモ",r:"2歳新馬",g:"新馬",v:"新潟",R:4,dist:1600,s:"芝",p:8,pr:0},
- {d:"2026-08-16",id:176,h:"シティオブドリーム",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:1800,s:"芝",p:1,pr:7800000},
- {d:"2026-08-16",id:34,h:"コスモフィレンツェ",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:2000,s:"芝",p:10,pr:0},
- {d:"2026-08-16",id:38,h:"コンゴウフジ",r:"3歳未勝利",g:"未勝利",v:"中京",R:12,dist:1800,s:"ダ",p:4,pr:870000},
- {d:"2026-08-16",id:56,h:"スウィッチインラヴ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"中京",R:11,dist:1400,s:"芝",p:7,pr:0},
- {d:"2026-08-16",id:80,h:"ヒメヒオウギ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:7,dist:2000,s:"芝",p:4,pr:870000},
- {d:"2026-08-16",id:83,h:"ブライトエンジェル",r:"3歳未勝利",g:"未勝利",v:"札幌",R:4,dist:1700,s:"ダ",p:2,pr:2300000},
- {d:"2026-08-17",id:107,h:"ラルクアンレーヴ",r:"だいちくんゆりなさん(3歳)",g:"",v:"金沢",R:4,dist:1400,s:"ダ",p:3,pr:77000},
- {d:"2026-08-18",id:44,h:"サンライズレマ",r:"加賀山代賞(未勝利)(3歳)",g:"未勝利",v:"金沢",R:2,dist:1500,s:"ダ",p:1,pr:1000000},
- {d:"2026-08-22",id:112,h:"ルシアージュ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:4,dist:1800,s:"ダ",p:5,pr:580000},
- {d:"2026-08-22",id:16,h:"ヴェルサイユシエル",r:"3歳未勝利",g:"未勝利",v:"中京",R:11,dist:1600,s:"芝",p:12,pr:0},
- {d:"2026-08-22",id:30,h:"クルサール",r:"3歳未勝利",g:"未勝利",v:"札幌",R:4,dist:2000,s:"芝",p:14,pr:0},
- {d:"2026-08-22",id:4,h:"アスクブームキセキ",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:2000,s:"芝",p:1,pr:5800000},
- {d:"2026-08-22",id:49,h:"ジュラトリー",r:"3歳未勝利",g:"未勝利",v:"札幌",R:3,dist:1700,s:"ダ",p:10,pr:0},
- {d:"2026-08-22",id:52,h:"ジーティーアリア",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:8,dist:1700,s:"ダ",p:4,pr:1200000},
- {d:"2026-08-22",id:55,h:"シーラス",r:"3歳未勝利",g:"未勝利",v:"札幌",R:4,dist:2000,s:"芝",p:5,pr:580000},
- {d:"2026-08-22",id:62,h:"スピーチバルーン",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:2000,s:"芝",p:13,pr:0},
- {d:"2026-08-22",id:76,h:"ハニージョー",r:"3歳未勝利",g:"未勝利",v:"新潟",R:5,dist:1600,s:"芝",p:16,pr:0},
- {d:"2026-08-23",id:142,h:"ヴァンドレスト",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:2000,s:"芝",p:1,pr:7800000},
- {d:"2026-08-23",id:151,h:"オプティミスタ",r:"2歳新馬",g:"新馬",v:"新潟",R:2,dist:2000,s:"芝",p:7,pr:0},
- {d:"2026-08-23",id:153,h:"オーロラトレイル",r:"2歳新馬",g:"新馬",v:"新潟",R:2,dist:2000,s:"芝",p:6,pr:0},
- {d:"2026-08-23",id:194,h:"ソフィーサンライズ",r:"2歳新馬",g:"新馬",v:"札幌",R:5,dist:2000,s:"芝",p:5,pr:780000},
- {d:"2026-08-23",id:2,h:"アグレイビューティ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"中京",R:5,dist:2000,s:"芝",p:2,pr:3300000},
- {d:"2026-08-23",id:208,h:"ドミナント",r:"2歳新馬",g:"新馬",v:"新潟",R:3,dist:1600,s:"芝",p:5,pr:780000},
- {d:"2026-08-23",id:67,h:"テルヒコウ",r:"オールスターJ第4戦(2勝クラス)",g:"2勝クラス",v:"札幌",R:12,dist:1800,s:"芝",p:14,pr:0},
- {d:"2026-08-25",id:118,h:"レヴァンターセ",r:"グランシャリオドリー(C4)",g:"",v:"門別",R:10,dist:1700,s:"ダ",p:11,pr:0},
- {d:"2026-08-26",id:104,h:"ライトフライヤー",r:"日高建設協会賞(C4)",g:"",v:"門別",R:9,dist:1200,s:"ダ",p:3,pr:84000},
- {d:"2026-08-29",id:102,h:"ヤマメホープ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:5,dist:2200,s:"芝",p:1,pr:5800000},
- {d:"2026-08-29",id:106,h:"ラピス",r:"3歳未勝利",g:"未勝利",v:"中京",R:5,dist:2000,s:"芝",p:11,pr:0},
- {d:"2026-08-29",id:149,h:"エンルートフライト",r:"2歳未勝利",g:"未勝利",v:"中京",R:1,dist:2000,s:"芝",p:2,pr:2400000},
- {d:"2026-08-29",id:191,h:"セレスティナ",r:"2歳新馬",g:"新馬",v:"新潟",R:4,dist:1400,s:"芝",p:5,pr:780000},
- {d:"2026-08-29",id:267,h:"ロマノヴェリテ",r:"2歳未勝利",g:"未勝利",v:"札幌",R:3,dist:1800,s:"芝",p:1,pr:5900000},
- {d:"2026-08-29",id:34,h:"コスモフィレンツェ",r:"3歳未勝利",g:"未勝利",v:"中京",R:5,dist:2000,s:"芝",p:2,pr:2300000},
- {d:"2026-08-29",id:80,h:"ヒメヒオウギ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:1500,s:"芝",p:4,pr:870000},
- {d:"2026-08-29",id:86,h:"プリティウーマン",r:"3歳未勝利",g:"未勝利",v:"中京",R:5,dist:2000,s:"芝",p:10,pr:0},
- {d:"2026-08-29",id:9,h:"イノーマル",r:"3歳未勝利",g:"未勝利",v:"新潟",R:11,dist:2000,s:"芝",p:15,pr:0},
- {d:"2026-08-30",id:1,h:"アオイハルカ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"新潟",R:11,dist:1800,s:"芝",p:"除外",pr:0},
- {d:"2026-08-30",id:101,h:"メメボス",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:8,dist:1500,s:"芝",p:5,pr:820000},
- {d:"2026-08-30",id:126,h:"ロードスタニング",r:"3歳以上1勝クラス",g:"1勝クラス",v:"中京",R:10,dist:2000,s:"芝",p:5,pr:820000},
- {d:"2026-08-30",id:150,h:"エーテルワーム",r:"2歳新馬",g:"新馬",v:"中京",R:3,dist:2000,s:"芝",p:7,pr:0},
- {d:"2026-08-30",id:197,h:"タイセイソアリング",r:"2歳未勝利",g:"未勝利",v:"新潟",R:3,dist:2000,s:"芝",p:5,pr:590000},
- {d:"2026-08-30",id:25,h:"オーロラボレアリス",r:"3歳未勝利",g:"未勝利",v:"中京",R:4,dist:1400,s:"ダ",p:15,pr:0},
- {d:"2026-08-30",id:28,h:"クオンタムスター",r:"北辰特別(1勝クラス)",g:"1勝クラス",v:"札幌",R:12,dist:2600,s:"芝",p:9,pr:0},
- {d:"2026-08-30",id:36,h:"ゴッドレイ",r:"3歳未勝利",g:"未勝利",v:"新潟",R:5,dist:1400,s:"芝",p:6,pr:0},
- {d:"2026-08-30",id:41,h:"サガルマータ",r:"熊野特別(2勝クラス)",g:"2勝クラス",v:"中京",R:8,dist:2200,s:"芝",p:10,pr:0},
- {d:"2026-08-30",id:43,h:"サンセリテ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:1,dist:1700,s:"ダ",p:4,pr:870000},
- {d:"2026-08-30",id:6,h:"アリアス",r:"3歳未勝利",g:"未勝利",v:"新潟",R:5,dist:1400,s:"芝",p:2,pr:2300000},
- {d:"2026-08-30",id:70,h:"ドンテスタマスター",r:"北辰特別(1勝クラス)",g:"1勝クラス",v:"札幌",R:12,dist:2600,s:"芝",p:8,pr:0},
- {d:"2026-08-30",id:72,h:"ネッタイヤライ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:8,dist:1500,s:"芝",p:1,pr:8200000},
- {d:"2026-08-30",id:83,h:"ブライトエンジェル",r:"3歳未勝利",g:"未勝利",v:"札幌",R:1,dist:1700,s:"ダ",p:7,pr:0},
- {d:"2026-08-31",id:130,h:"Grand Warrior",r:"Allowance",g:"",v:"フォートエリー",R:2,dist:1710,s:"ダ",p:2,pr:0},
- {d:"2026-08-31",id:81,h:"フィオーレクラウド",r:"祝新太郎&千紘結婚し(3歳)",g:"",v:"金沢",R:10,dist:1400,s:"ダ",p:8,pr:0},
- {d:"2026-09-02",id:85,h:"ブラッククラウズ",r:"フォーチュネイトむく(C13歳)",g:"",v:"大井",R:9,dist:1800,s:"ダ",p:13,pr:0},
- {d:"2026-09-03",id:19,h:"エアリアルグレース",r:"JRA交流妙見山特別",g:"",v:"園田",R:10,dist:1870,s:"ダ",p:3,pr:375000},
- {d:"2026-09-05",id:13,h:"ウイングサンライズ",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:1600,s:"芝",p:4,pr:870000},
- {d:"2026-09-05",id:144,h:"ヴェトロテンペスタ",r:"2歳新馬",g:"新馬",v:"中山",R:5,dist:2000,s:"芝",p:1,pr:7800000},
- {d:"2026-09-05",id:2,h:"アグレイビューティ",r:"3歳以上1勝クラス",g:"1勝クラス",v:"阪神",R:8,dist:2000,s:"芝",p:3,pr:2100000},
- {d:"2026-09-05",id:208,h:"ドミナント",r:"2歳未勝利",g:"未勝利",v:"阪神",R:2,dist:1800,s:"芝",p:4,pr:890000},
- {d:"2026-09-05",id:47,h:"シャロン",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:1600,s:"芝",p:"除外",pr:0},
- {d:"2026-09-05",id:52,h:"ジーティーアリア",r:"3歳以上1勝クラス",g:"1勝クラス",v:"札幌",R:12,dist:1700,s:"ダ",p:3,pr:2100000},
- {d:"2026-09-05",id:55,h:"シーラス",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:2000,s:"芝",p:16,pr:0},
- {d:"2026-09-05",id:79,h:"ビッグヒーロー",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:1600,s:"芝",p:3,pr:1500000},
- {d:"2026-09-05",id:80,h:"ヒメヒオウギ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:6,dist:2000,s:"芝",p:10,pr:0},
- {d:"2026-09-05",id:87,h:"フリーガー",r:"Fビレッジ特別(1勝クラス)",g:"1勝クラス",v:"札幌",R:9,dist:2000,s:"芝",p:7,pr:0},
- {d:"2026-09-05",id:97,h:"マーガレット",r:"3歳未勝利",g:"未勝利",v:"中山",R:2,dist:1600,s:"芝",p:13,pr:0},
- {d:"2026-09-06",id:101,h:"メメボス",r:"3歳未勝利",g:"未勝利",v:"札幌",R:4,dist:1200,s:"芝",p:14,pr:0},
- {d:"2026-09-06",id:112,h:"ルシアージュ",r:"3歳未勝利",g:"未勝利",v:"中山",R:3,dist:1800,s:"ダ",p:2,pr:2300000},
- {d:"2026-09-06",id:122,h:"レッドレグルス",r:"3歳未勝利",g:"未勝利",v:"札幌",R:5,dist:2000,s:"芝",p:1,pr:5800000},
- {d:"2026-09-06",id:135,h:"アストラルライト",r:"2歳新馬",g:"新馬",v:"阪神",R:5,dist:1800,s:"芝",p:4,pr:1200000},
- {d:"2026-09-06",id:16,h:"ヴェルサイユシエル",r:"3歳未勝利",g:"未勝利",v:"阪神",R:4,dist:2000,s:"芝",p:13,pr:0},
- {d:"2026-09-06",id:194,h:"ソフィーサンライズ",r:"2歳未勝利",g:"未勝利",v:"札幌",R:2,dist:2000,s:"芝",p:10,pr:0},
- {d:"2026-09-06",id:23,h:"オートカリテ",r:"3歳未勝利",g:"未勝利",v:"中山",R:3,dist:1800,s:"ダ",p:5,pr:580000},
- {d:"2026-09-06",id:43,h:"サンセリテ",r:"3歳未勝利",g:"未勝利",v:"札幌",R:1,dist:1700,s:"ダ",p:6,pr:0},
- {d:"2026-09-06",id:63,h:"ゼランテ",r:"3歳未勝利",g:"未勝利",v:"阪神",R:3,dist:1800,s:"ダ",p:7,pr:0},
- {d:"2026-09-06",id:77,h:"バースデイフライト",r:"3歳以上1勝クラス",g:"1勝クラス",v:"阪神",R:7,dist:1600,s:"芝",p:6,pr:0},
- {d:"2026-09-08",id:104,h:"ライトフライヤー",r:"3歳以上C4ー2",g:"",v:"門別",R:7,dist:1000,s:"ダ",p:2,pr:112000},
- {d:"2026-09-08",id:7,h:"アルタティール",r:"伊藤忠エネクスホーム(C4)",g:"",v:"門別",R:9,dist:1800,s:"ダ",p:5,pr:28000},
- {d:"2026-09-09",id:118,h:"レヴァンターセ",r:"グランシャリオドリー(C4)",g:"",v:"門別",R:10,dist:1200,s:"ダ",p:2,pr:154000},
- {d:"2026-09-10",id:5,h:"アスピラシオン",r:"C2",g:"",v:"園田",R:7,dist:1870,s:"ダ",p:4,pr:120000},
- {d:"2026-09-10",id:68,h:"トゥレネヴェリテ",r:"C2一",g:"",v:"園田",R:3,dist:1400,s:"ダ",p:3,pr:175000},
- {d:"2026-09-12",id:50,h:"ショウナンアンバー",r:"ファイナルレース(3歳)",g:"",v:"高知",R:12,dist:1400,s:"ダ",p:6,pr:0}
- ];
+/* ---- 渲染就绪出走记录：fetch data/datechart.json（scripts/datechart/build_datechart.py 预计算，
+ * run_update.py 各数据策略自动重算）。字段与布局稿 RUNS 同构：
+ * d 日期 / id·h 马 / r 赛事 / g 级别 / v 场所 / R / dist / s 跑道 / p 着顺(数字或未完走) / pr 赏金(円)
+ * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
+var RUNS = [];
 
 /* ---- 级别徽章（同 races.html：G/Jpn/L/OP 有徽章） ---- */
 var G = { "GI":"g1","GII":"g2","GIII":"g3","L":"gl","OP":"gop","JpnI":"g1","JpnII":"g2","JpnIII":"g3" };
 var GLABEL = { "GI":"G1","GII":"G2","GIII":"G3","L":"L","OP":"OP","JpnI":"Jpn1","JpnII":"Jpn2","JpnIII":"Jpn3" };
 function isBadge(g){ return !!(g && G[g]); }
+/* 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 */
+var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
 function raceNameText(r){   /* 赛事名去冗余等级尾缀（同 races.html） */
   var s = String((r && r.r) || "");
   var m = s.match(/[（(]([^()（）]*)[)）]\s*$/);
   if (m && G[m[1]] && r.g === m[1]) return s.slice(0, m.index).replace(/\s+$/, "");
   return s;
 }
-var SURF_SHORT = { 芝:"草地", ダ:"泥地", 障害:"障碍", AW:"全天候" };
-
-/* ---- 着顺归类：1-5 各一段，6 名及以后 + 未完走(字符串) → 第 6 段 ---- */
+/* ---- 着顺归类（4 段）：1/2/3 各一段，4 名及以后 + 未完走(字符串) → 第 3 名开外 ---- */
 function placeSlot(p){
-  if (typeof p === "number") return (p >= 1 && p <= 5) ? p - 1 : 5;
-  return 5;                                  /* 中止/取消/除外/失格 计入 5 名之外 */
+  if (typeof p === "number") return (p >= 1 && p <= 3) ? p - 1 : 3;
+  return 3;                                  /* 中止/取消/除外/失格 计入第 3 名开外 */
 }
-/* 进板数配色（数据语义色：1着=primary、2着=chart-2、3着=chart-3） */
-var BR_COLORS = ["#0aa7a0", "#0f8fd6", "#e8742a", "#3f3f46", "#3f3f46", "#a1a1aa"];
+/* 进板数配色（前三段同 races.html 着顺色 yj-nk1/2/3，开外=浅灰） */
+var BR_COLORS = ["#e2cc38", "#87aee6", "#dca167", "#a1a1aa"];
 function bracketHTML(br, cls){
-  var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="进板数：第1:第2:第3:第4:第5:5名之外">[';
-  for (var i = 0; i < 6; i++) s += '<b style="color:' + BR_COLORS[i] + '">' + br[i] + '</b>' + (i < 5 ? "-" : "");
+  var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="进板数：第1:第2:第3:第3名开外">[';
+  for (var i = 0; i < 4; i++) s += '<b style="color:' + BR_COLORS[i] + '">' + br[i] + '</b>' + (i < 3 ? "-" : "");
   return s + ']</span>';
 }
-function manYen(pr){ return pr ? Math.round(pr / 10000).toLocaleString() + "万" : ""; }
+/* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿） */
+function manYen(pr){
+  if (!pr) return "";
+  if (pr >= 1e8){
+    var oku = Math.floor(pr / 1e8), man = Math.floor((pr % 1e8) / 10000);
+    return oku + "亿" + (man ? man.toLocaleString() + "万" : "");
+  }
+  return Math.round(pr / 10000).toLocaleString() + "万";
+}
 
 /* ---- ISO 周工具 ---- */
 function isoWeekInfo(dstr){
@@ -413,22 +274,24 @@ function dayTitle(ds){
   return ds.replace(/-/g, "/") + "（" + WEEKDAY[dt.getDay()] + "）";
 }
 
-/* ---- 数据范围（窗口边界从数据推导） ---- */
-var RANGE = (function(){
+/* ---- 数据范围（窗口边界从数据推导；数据加载后调用 computeRange()） ---- */
+var RANGE = { min:"", max:"", yLo:0, yHi:0, mLo:0, mHi:0, msLo:0, msHi:0 };
+function computeRange(){
   var min = "", max = "";
   RUNS.forEach(function(r){
     if (!min || r.d < min) min = r.d;
     if (!max || r.d > max) max = r.d;
   });
-  return { min:min, max:max,
-           yLo:+min.slice(0,4), yHi:+max.slice(0,4),
-           mLo:+min.slice(0,4)*12 + (+min.slice(5,7)-1),
-           mHi:+max.slice(0,4)*12 + (+max.slice(5,7)-1),
-           msLo:Date.parse(min+"T00:00:00"), msHi:Date.parse(max+"T00:00:00") };
-})();
+  RANGE = { min:min, max:max,
+            yLo:+min.slice(0,4), yHi:+max.slice(0,4),
+            mLo:+min.slice(0,4)*12 + (+min.slice(5,7)-1),
+            mHi:+max.slice(0,4)*12 + (+max.slice(5,7)-1),
+            msLo:Date.parse(min+"T00:00:00"), msHi:Date.parse(max+"T00:00:00") };
+}
 
-/* ---- 状态：mode 聚合口径 + 锚点日期（天=该日；周=所在周；月=年月；年=年份） ---- */
-var st = { mode: "month", y: 0, m: 0, d: 1 };
+/* ---- 状态：mode 聚合口径 + 锚点日期（天=该日；周=所在周；月=年月；年=年份）
+ *      vts 场地范围（中央/地方/海外，多选，默认只统计 JRA=中央） ---- */
+var st = { mode: "month", y: 0, m: 0, d: 1, vts: ["中央"] };
 
 /* 锚点 → 口径键 */
 function scopeKey(mode){
@@ -447,20 +310,22 @@ function keyLabel(mode, key){
   var mon = mondayOfISOWeek(y, wk), end = new Date(mon); end.setUTCDate(end.getUTCDate() + 6);
   return y + "年 第" + wk + "週（" + fmtMD(mon) + "–" + fmtMD(end) + "）";
 }
-/* 口径内的出走记录 */
+/* 场地范围内过滤（st.vts 任一命中；vt 来自产物 venue_type） */
+function inVenue(r){ return st.vts.indexOf(r.vt) !== -1; }
+/* 口径内的出走记录（先按场地范围，再按口径窗口） */
 function scopeRuns(mode, key){
-  if (mode === "day")   return RUNS.filter(function(r){ return r.d === key; });
-  if (mode === "month") return RUNS.filter(function(r){ return r.d.slice(0,7) === key; });
-  if (mode === "year")  return RUNS.filter(function(r){ return r.d.slice(0,4) === key; });
+  if (mode === "day")   return RUNS.filter(function(r){ return inVenue(r) && r.d === key; });
+  if (mode === "month") return RUNS.filter(function(r){ return inVenue(r) && r.d.slice(0,7) === key; });
+  if (mode === "year")  return RUNS.filter(function(r){ return inVenue(r) && r.d.slice(0,4) === key; });
   var y = +key.slice(0,4), w = +key.slice(6);
-  return RUNS.filter(function(r){ var iw = isoWeekInfo(r.d); return iw.y === y && iw.w === w; });
+  return RUNS.filter(function(r){ return inVenue(r) && (function(){ var iw = isoWeekInfo(r.d); return iw.y === y && iw.w === w; })(); });
 }
-/* 一组记录的聚合：n 出走 / w 胜 / br 进板数 / pr 总赏金 / gr 重赏胜 */
+/* 一组记录的聚合：n 出走 / w 胜 / br 进板数(4 段) / pr 总赏金 / gr 重赏胜 */
 function statsOf(runs){
-  var s = { n: runs.length, w: 0, br: [0,0,0,0,0,0], pr: 0, gr: 0 };
+  var s = { n: runs.length, w: 0, br: [0,0,0,0], pr: 0, gr: 0 };
   runs.forEach(function(r){
     s.br[placeSlot(r.p)]++;
-    if (r.p === 1){ s.w++; if (isBadge(r.g)) s.gr++; }
+    if (r.p === 1){ s.w++; if (GRADED[r.g]) s.gr++; }
     s.pr += r.pr || 0;
   });
   return s;
@@ -517,10 +382,9 @@ function renderKpis(mode, key){
   var prize = s.pr ? manYen(s.pr) : (s.n ? "0万" : "—");
   document.getElementById("kpis").innerHTML =
     kpi("出走", s.n, s.n ? "" : "dim") +
-    kpi("胜", s.w, s.w ? "hi" : "dim") +
-    kpi("进板数", bracketHTML(s.br, "dc-brk-lg")) +
+    kpi("通算战绩", bracketHTML(s.br, "dc-brk-lg")) +
     kpi("总赏金", prize, s.pr ? "" : "dim") +
-    kpi("重赏胜", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
+    kpi("重赏胜利", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
 }
 
 /* 月网格（天/周/月共用，差异只是高亮）：lead/trail 补空格 */
@@ -605,6 +469,20 @@ function placeBadge(p){
   return esc(p);
 }
 
+/* ---- 明细 = races.html 内嵌比赛表同款（模块 11 定稿样式）+ 出走马列（本页跨马场景需要）：
+ * PC 15 列：日期 出走马 场地(京都5R) 赛事 距离 跑道 马场 负磅 人气 着顺 时间 赏金(万円) 马体重 骑手 调教师
+ * mb 软分行卡片：①出走马 草地2000m 马场：x 时间：x 赏金：x ②负磅：x 人气：x 马体重：x ③骑手：x 调教师：x */
+function ninkiBadge(n){    /* 人气徽章（同 races.html：1/2/3 着顺同款颜色文字，其余纯数字） */
+  if (n === 1) return '<span class="yj-nk1">1</span>';
+  if (n === 2) return '<span class="yj-nk2">2</span>';
+  if (n === 3) return '<span class="yj-nk3">3</span>';
+  return esc(n);
+}
+function weightHTML(r){    /* 马体重含增减（同 races.html 两段式半角括号）：500(+20) */
+  var w = (r.bw==null||r.bw==="") ? "" : String(r.bw);
+  var d = (r.dz==null||r.dz==="") ? "" : "("+String(r.dz)+")";
+  return w + d;
+}
 function renderDetail(mode, key){
   var t = YJ.i18n.t;
   var runs = scopeRuns(mode, key).slice().sort(function(a, b){
@@ -618,45 +496,73 @@ function renderDetail(mode, key){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;
   }
+  var num = function(v){ return (v==null||v==="") ? "" : esc(String(v)); };
   var badge = function(r){ return isBadge(r.g) ? '<span class="yj-grade yj-' + G[r.g] + '">' + esc(GLABEL[r.g]) + '</span>' : ""; };
-  var trophy = function(r){ return (isBadge(r.g) && r.p === 1) ? '🏆' : ""; };
-  var venueTxt = function(r){ return (r.v || "") + (r.R ? r.R + "R" : ""); };
-  var distTxt = function(r){ return (SURF_SHORT[r.s] || r.s || "") + r.dist + "m"; };
-  /* PC 表：日期 马名 赛事 场所 距离·跑道 着顺 赏金 */
+  var venueTxt = function(r){ return (r.v || "") + ((r.R !== "" && r.R != null) ? r.R + "R" : ""); };
+  var distTxt = function(r){ return (r.s ? esc(YJ.i18n.e("芝ダ", r.s)) : "") + ((r.dist !== "" && r.dist != null) ? num(r.dist) + "m" : ""); };
+  var horse = function(r){ return '<a class="hjump" href="profile.html?horse=' + encodeURIComponent(r.id) + '">' + esc(r.h) + '</a>'; };
+  var dnfOf = function(r){ return typeof r.p === "string"; };
+  var prizeWan = function(r){ return r.pr ? Math.round(r.pr / 10000).toLocaleString() : ""; };
+  /* PC 15 列表（内嵌表样式：全列居中、未完走整行降灰） */
+  var tc = function(v){ return '<td class="px-1 py-1.5 text-center tabular-nums whitespace-nowrap">'+v+'</td>'; };
   var trs = runs.map(function(r){
-    var dnf = typeof r.p === "string";
-    var grow = isBadge(r.g) && r.p === 1;
-    return '<tr' + (grow ? ' class="dc-grow"' : dnf ? ' class="dc-dnf"' : '') + '>' +
-      '<td class="text-center tabular-nums">' + esc(r.d) + '</td>' +
-      '<td class="text-center"><a class="hjump" href="profile.html?horse=' + encodeURIComponent(r.id) + '">' + esc(r.h) + '</a></td>' +
-      '<td class="text-center min-w-[80px] whitespace-normal">' + trophy(r) + esc(raceNameText(r)) + badge(r) + '</td>' +
-      '<td class="text-center">' + esc(venueTxt(r)) + '</td>' +
-      '<td class="text-center">' + esc(distTxt(r)) + '</td>' +
-      '<td class="text-center">' + placeBadge(r.p) + '</td>' +
-      '<td class="text-center tabular-nums">' + (r.pr ? Math.round(r.pr / 10000).toLocaleString() : "") + '</td>' +
+    var dnf = dnfOf(r);
+    var rowClass = 'border-b border-border last:border-b-0' + (dnf ? ' text-muted-foreground' : '');
+    return '<tr class="'+rowClass+'">'+
+      tc(esc(r.d))+
+      '<td class="px-1 py-1.5 text-center whitespace-nowrap">'+horse(r)+'</td>'+
+      tc(esc(venueTxt(r)))+
+      '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(raceNameText(r))+badge(r)+'</td>'+
+      tc(num(r.dist))+
+      tc(esc(YJ.i18n.e("芝ダ", r.s)))+
+      tc(esc(r.bk||""))+
+      tc(num(r.ki))+
+      tc(ninkiBadge(r.nk))+
+      tc(placeBadge(r.p))+
+      tc(dnf?'—':num(r.tm))+
+      tc(prizeWan(r))+
+      tc(esc(weightHTML(r)))+
+      tc(esc(r.jk||""))+
+      tc(esc(r.tr||""))+
     '</tr>';
   }).join("");
-  var pc = '<div class="tblwrap hidden md:block"><table><thead><tr>' +
-    '<th>' + t("日付") + '</th><th>' + t("馬名") + '</th><th>' + t("レース名") + '</th><th>' + t("場名") + '</th>' +
-    '<th>' + t("距離") + '·' + t("芝ダ") + '</th><th>' + t("着順") + '</th><th>' + t("賞金") + '(万円)</th>' +
-    '</tr></thead><tbody>' + trs + '</tbody></table></div>';
-  /* mb 卡片 */
+  var th = function(label){
+    return '<th class="px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]">'+label+'</th>';
+  };
+  var pc = '<div class="overflow-x-auto rounded-[10px] border border-border bg-card hidden md:block">'+
+    '<table class="w-full border-collapse text-[12.5px]">'+
+    '<thead><tr class="border-b border-border bg-muted/40">'+
+      th(t("日付"))+th(t("馬名"))+th(t("場名"))+th(t("レース名"))+th(t("距離"))+th(t("芝ダ"))+th(t("馬場"))+
+      th(t("斤量"))+th(t("人気"))+th(t("着順"))+th(t("タイム"))+th(t("賞金")+'(万円)')+
+      th(t("馬体重"))+th(t("騎手"))+th(t("調教師"))+
+    '</tr></thead><tbody>'+trs+'</tbody></table></div>';
+  /* mb 软分行卡片（内嵌 mb 同款三行 + 出走马链接居首） */
   var mbs = runs.map(function(r){
-    var dnf = typeof r.p === "string";
-    return '<div class="dc-mb' + ((isBadge(r.g) && r.p === 1) ? ' dc-grow' : '') + (dnf ? ' dc-dnf' : '') + '">' +
-      '<div class="dc-mb-top">' +
-        '<span class="dc-mb-date">' + esc(r.d) + ' ' + esc(venueTxt(r)) + '</span>' +
-        '<span class="dc-mb-race">' + (isBadge(r.g) && r.p === 1 ? '🏆' : '') + esc(raceNameText(r)) + badge(r) + '</span>' +
-        '<span class="dc-mb-place">' + placeBadge(r.p) + '</span>' +
-      '</div>' +
-      '<div class="dc-mb-line">' +
-        '<span class="dc-mb-item"><a class="hjump" href="profile.html?horse=' + encodeURIComponent(r.id) + '">' + esc(r.h) + '</a></span>' +
-        '<span class="dc-mb-item"><b>' + esc(distTxt(r)) + '</b></span>' +
-        '<span class="dc-mb-item"><b>' + (r.pr ? Math.round(r.pr / 10000).toLocaleString() + '万' : '—') + '</b></span>' +
-      '</div>' +
+    var dnf = dnfOf(r);
+    var top = '<div class="yj-mb-top">'+
+      '<span class="yj-mb-date">'+esc(r.d)+' '+esc(venueTxt(r))+'</span>'+
+      '<span class="yj-mb-race">'+esc(raceNameText(r))+badge(r)+'</span>'+
+      '<span class="yj-mb-place">'+placeBadge(r.p)+'</span>'+
     '</div>';
+    var item = function(label, v, vcls){
+      if (v==null || v==="") return null;
+      return '<span class="yj-mb-item">'+(label?'<i>'+esc(label)+'：</i>':'')+'<b'+(vcls?' class="'+vcls+'"':'')+'>'+v+'</b></span>';
+    };
+    var line = function(items){
+      items = items.filter(Boolean);
+      return items.length ? '<div class="yj-mb-line">'+items.join("")+'</div>' : '';
+    };
+    var dist = distTxt(r);
+    var l1 = line(['<span class="yj-mb-item">'+horse(r)+'</span>',
+      dist ? '<span class="yj-mb-item yj-mb-dist"><b>'+dist+'</b></span>' : null,
+      item(t("馬場"), esc(r.bk||"")),
+      item(t("タイム"), dnf ? '—' : num(r.tm), "tm"),
+      item(t("賞金"), r.pr ? Math.round(r.pr/10000).toLocaleString()+'万' : '—')]);
+    var l2 = line([item(t("斤量"), num(r.ki)), item(t("人気"), ninkiBadge(r.nk)), item(t("馬体重"), esc(weightHTML(r)))]);
+    var l3 = line([item(t("騎手"), esc(r.jk||"")), item(t("調教師"), esc(r.tr||""))]);
+    return '<div class="yj-mb'+(dnf?' dnf':'')+'">'+top+l1+l2+l3+'</div>';
   }).join("");
-  var mb = '<div class="dc-mblist rounded-[10px] border border-border bg-card md:hidden">' + mbs + '</div>';
+  var mb = '<div class="rounded-[10px] border border-border bg-card md:hidden">'+mbs+'</div>';
   document.getElementById("dBody").innerHTML = pc + mb;
 }
 
@@ -675,6 +581,216 @@ function setMode(mode){
 }
 document.getElementById("navPrev").addEventListener("click", function(){ shiftAnchor(-1); });
 document.getElementById("navNext").addEventListener("click", function(){ shiftAnchor(1); });
+/* 场地范围 vseg：中央(JRA)/地方(NAR)/海外 多选开关，至少保留一个（默认只选 JRA） */
+document.getElementById("vseg").addEventListener("click", function(e){
+  var btn = e.target.closest("button[data-v]"); if (!btn) return;
+  var v = btn.getAttribute("data-v");
+  var i = st.vts.indexOf(v);
+  if (i >= 0){
+    if (st.vts.length === 1) return;            /* 最后一个不关：统计范围不能为空 */
+    st.vts.splice(i, 1);
+    btn.setAttribute("data-on", "false");
+  } else {
+    st.vts.push(v);
+    btn.setAttribute("data-on", "true");
+  }
+  render();
+});
+/* ---- 快速定位日期选择器（Element date-picker 风格）：
+ * 面板随口径切换——天=日历面板 / 周=带周号日历面板 / 月=12 月格 / 年=十年格；
+ * DP.y/DP.m 为面板浏览态（独立于锚点），选中才落锚点；范围外日期禁用。 ---- */
+var DP = { open: false, y: 0, m: 0, d: "" };           /* d=浏览日（周面板 ±7 天翻页光标） */
+var MIN_M = 0, MAX_M = 0;                              /* 数据范围月序（加载后算） */
+function dpMIdx(y, m){ return y * 12 + (m - 1); }
+function dpRange(){
+  MIN_M = RANGE.min ? dpMIdx(+RANGE.min.slice(0,4), +RANGE.min.slice(5,7)) : 0;
+  MAX_M = RANGE.max ? dpMIdx(+RANGE.max.slice(0,4), +RANGE.max.slice(5,7)) : 0;
+}
+function dpOpen(){
+  DP.open = true; DP.y = st.y; DP.m = st.m; DP.d = dstr(st.y, st.m, st.d);
+  document.getElementById("dp").setAttribute("data-on", "true");
+  document.getElementById("dpTrigger").setAttribute("aria-expanded", "true");
+  renderDpPanel();
+  var panel = document.getElementById("dpPanel");
+  panel.hidden = false;
+  /* 视口钳制：面板超出左/右边缘时拉回（mb 窄屏下面板过宽时防溢出） */
+  panel.style.marginRight = "";
+  var r = panel.getBoundingClientRect(), shift = 0;
+  if (r.left < 8) shift = 8 - r.left;
+  if (r.right > window.innerWidth - 8) shift = (window.innerWidth - 8) - r.right;
+  if (shift) panel.style.marginRight = Math.round(-shift) + "px";
+}
+function dpClose(){
+  DP.open = false;
+  document.getElementById("dp").setAttribute("data-on", "false");
+  document.getElementById("dpTrigger").setAttribute("aria-expanded", "false");
+  document.getElementById("dpPanel").hidden = true;
+}
+function dpCell(label, attrs, cls, dis){
+  return '<button type="button" class="dc-dp-cell' + (cls ? " " + cls : "") + (dis ? " dis" : "") + '" ' + attrs + '>' + label + '</button>';
+}
+function dpDayGrid(weekMode){
+  var y = DP.y, m = DP.m, i, d, cells = [];
+  var lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;   /* 周一开头，同主日历 */
+  var nDays = daysInMonth(y, m);
+  var today = dstr(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate());
+  var cur = scopeKey(st.mode === "week" ? "day" : st.mode);            /* 天=选中日；周=整行高亮 */
+  var head = "";
+  if (weekMode) head = '<span class="dc-dp-cell" style="cursor:default;background:none">周</span>';
+  for (var w = 0; w < 7; w++) head += '<span class="dc-dp-cell" style="cursor:default;background:none;font-weight:600">' + "一二三四五六日"[w] + '</span>';
+  for (i = 0; i < lead; i++) cells.push({ d: null });
+  for (d = 1; d <= nDays; d++) cells.push({ d: d });
+  for (i = lead + nDays; i % 7 !== 0; i++) cells.push({ d: null });
+  var rows = "";
+  for (i = 0; i < cells.length; i += 7){
+    var firstDs = null, rowHtml = "";
+    if (weekMode){
+      var probe = cells[i + 3] && cells[i + 3].d ? dstr(y, m, cells[i + 3].d) : null;   /* 行内周四推 ISO 周 */
+      if (!probe && cells[i].d) probe = dstr(y, m, cells[i].d);
+      var iw = probe ? isoWeekInfo(probe) : null;
+      rowHtml += '<button type="button" class="dc-dp-wnum" data-w="' + (probe || "") + '" title="选择第 ' + (iw ? iw.w : "?") + ' 周">' + (iw ? iw.w : "") + '</button>';
+    }
+    for (var j = i; j < i + 7; j++){
+      var c = cells[j];
+      if (!c.d){ rowHtml += '<span class="dc-dp-cell" style="visibility:hidden">·</span>'; continue; }
+      var ds = dstr(y, m, c.d);
+      if (!firstDs) firstDs = ds;
+      var ms = Date.parse(ds + "T00:00:00");
+      var dis = ms < RANGE.msLo || ms > RANGE.msHi;
+      var cls = [];
+      if (ds === cur) cls.push("cur");
+      else if (ds === today) cls.push("today");
+      if (c.d === 1 && lead > 0) {}     /* 本月 1 日照常显示 */
+      rowHtml += dpCell(c.d, 'data-d="' + ds + '"', cls.join(" "), dis);
+    }
+    if (weekMode){
+      var hl = firstDs && isoWeekInfo(firstDs).y + "-W" + pad2(isoWeekInfo(firstDs).w) === scopeKey("week") ? " hl" : "";
+      rows += '<div class="dc-dp-wrow' + hl + '">' + rowHtml + '</div>';
+    } else {
+      rows += '<div class="dc-dp-wrow">' + rowHtml + '</div>';
+    }
+  }
+  return '<div class="dc-dp-grid" style="grid-template-columns:' + (weekMode ? "38px repeat(7,1fr)" : "repeat(7,1fr)") + '">' +
+    '<div style="display:contents">' + head + '</div>' +
+    '</div><div>' + rows + '</div>';
+}
+function dpMonthGrid(){
+  var out = "", y = DP.y;
+  for (var mi = 1; mi <= 12; mi++){
+    var idx = dpMIdx(y, mi);
+    var dis = idx < MIN_M || idx > MAX_M;
+    out += dpCell(mi + "月", 'data-mi="' + mi + '"', (y === st.y && mi === st.m && st.mode === "month") ? "cur" : "", dis);
+  }
+  return '<div class="dc-dp-grid" style="grid-template-columns:repeat(3,1fr)">' + out + '</div>';
+}
+function dpYearGrid(){
+  var start = Math.floor(DP.y / 10) * 10, out = "";
+  for (var i = 0; i < 12; i++){
+    var y = start + i;
+    if (i < 10){
+      var dis = y < RANGE.yLo || y > RANGE.yHi;
+      out += dpCell(y, 'data-y="' + y + '"', (y === st.y && st.mode === "year") ? "cur" : "", dis);
+    } else {
+      out += '<span class="dc-dp-cell" style="visibility:hidden">·</span>';
+    }
+  }
+  return '<div class="dc-dp-grid" style="grid-template-columns:repeat(3,1fr)">' + out + '</div>';
+}
+function renderDpPanel(){
+  var mode = st.mode, lab = "", navL = "", navR = "", body = "";
+  if (mode === "day" || mode === "week"){
+    var mi = dpMIdx(DP.y, DP.m);
+    lab = DP.y + "年 " + DP.m + "月";
+    if (mode === "week"){
+      /* 周面板：‹ › 直接翻周（±7 天），« » 翻月 */
+      var wMs = Date.parse(DP.d + "T00:00:00");
+      var pwDis = wMs - 604800000 < RANGE.msLo || wMs - 604800000 > RANGE.msHi;
+      var nwDis = wMs + 604800000 < RANGE.msLo || wMs + 604800000 > RANGE.msHi;
+      navL = '<button type="button" class="dc-dp-nav" data-nav="pm" title="上一月"' + (mi <= MIN_M ? " disabled" : "") + '>«</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="pw" title="上一週"' + (pwDis ? " disabled" : "") + '>‹</button>';
+      navR = '<button type="button" class="dc-dp-nav" data-nav="nw" title="下一週"' + (nwDis ? " disabled" : "") + '>›</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="nm" title="下一月"' + (mi >= MAX_M ? " disabled" : "") + '>»</button>';
+    } else {
+      navL = '<button type="button" class="dc-dp-nav" data-nav="py" title="上一年">«</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="pm" title="上一月"' + (mi <= MIN_M ? " disabled" : "") + '>‹</button>';
+      navR = '<button type="button" class="dc-dp-nav" data-nav="nm" title="下一月"' + (mi >= MAX_M ? " disabled" : "") + '>›</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="ny" title="下一年">»</button>';
+    }
+    body = dpDayGrid(mode === "week");
+  } else if (mode === "month"){
+    lab = DP.y + "年";
+    navL = '<button type="button" class="dc-dp-nav" data-nav="pm" title="上一年"' + (DP.y <= +RANGE.min.slice(0,4) ? " disabled" : "") + '>‹</button>';
+    navR = '<button type="button" class="dc-dp-nav" data-nav="nm" title="下一年"' + (DP.y >= +RANGE.max.slice(0,4) ? " disabled" : "") + '>›</button>';
+    body = dpMonthGrid();
+  } else {
+    var dec = Math.floor(DP.y / 10) * 10;
+    lab = dec + " – " + (dec + 9);
+    navL = '<button type="button" class="dc-dp-nav" data-nav="pm" title="上个十年"' + (dec - 1 > RANGE.yHi || dec + 9 < RANGE.yLo ? "" : (dec <= RANGE.yLo - 10 ? " disabled" : "")) + '>‹</button>';
+    navR = '<button type="button" class="dc-dp-nav" data-nav="nm" title="下个十年"' + (dec + 10 > RANGE.yHi ? " disabled" : "") + '>›</button>';
+    body = dpYearGrid();
+  }
+  document.getElementById("dpPanel").innerHTML =
+    '<div class="dc-dp-hd">' + navL + '<span class="dc-dp-lab">' + lab + '</span>' + navR + '</div>' +
+    body +
+    '<div class="dc-dp-ft"><button type="button" data-latest="1" title="跳到数据最新日期">回最新</button></div>';
+}
+function dpPickDay(ds){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return;
+  var ms = Date.parse(ds + "T00:00:00");
+  if (ms < RANGE.msLo || ms > RANGE.msHi) return;      /* 范围外禁用 */
+  st.y = +ds.slice(0, 4); st.m = +ds.slice(5, 7); st.d = +ds.slice(8, 10);
+  dpClose(); render();
+}
+document.getElementById("dpTrigger").addEventListener("click", function(){
+  if (DP.open) dpClose(); else dpOpen();
+});
+document.addEventListener("click", function(e){
+  var t = e && e.target;
+  if (t && t.closest && !t.closest("#dp") && DP.open) dpClose();
+});
+document.getElementById("dpPanel").addEventListener("click", function(e){
+  /* 面板内点击不外抛：重渲染 innerHTML 会 detachment 原目标，
+   * document 的外点关闭监听拿到已脱离 DOM 的节点 closest("#dp") 落空 → 面板误关闭（周面板翻页闪退的根因） */
+  if (e && e.stopPropagation) e.stopPropagation();
+  var b;
+  if ((b = e.target.closest("[data-latest]"))){
+    var mx = RANGE.max;
+    st.y = +mx.slice(0, 4); st.m = +mx.slice(5, 7); st.d = +mx.slice(8, 10);
+    dpClose(); render(); return;
+  }
+  if ((b = e.target.closest("[data-d]"))){ dpPickDay(b.getAttribute("data-d")); return; }
+  if ((b = e.target.closest("[data-w]"))){ dpPickDay(b.getAttribute("data-w")); return; }
+  if ((b = e.target.closest("[data-mi]"))){
+    var mi = +b.getAttribute("data-mi");
+    if (dpMIdx(DP.y, mi) < MIN_M || dpMIdx(DP.y, mi) > MAX_M) return;
+    st.y = DP.y; st.m = mi; st.d = 1;
+    dpClose(); render(); return;
+  }
+  if ((b = e.target.closest("[data-y]"))){
+    var y = +b.getAttribute("data-y");
+    if (y < RANGE.yLo || y > RANGE.yHi) return;
+    st.y = y; st.m = 1; st.d = 1;
+    dpClose(); render(); return;
+  }
+  if ((b = e.target.closest("[data-nav]"))){
+    var nav = b.getAttribute("data-nav");
+    if (nav === "pw" || nav === "nw"){                        /* 周面板 ±7 天翻周 */
+      var ms = Date.parse(DP.d + "T00:00:00") + (nav === "pw" ? -7 : 7) * 86400000;
+      if (ms < RANGE.msLo || ms > RANGE.msHi) return;
+      var nd = new Date(ms);
+      DP.d = dstr(nd.getFullYear(), nd.getMonth() + 1, nd.getDate());
+      DP.y = nd.getFullYear(); DP.m = nd.getMonth() + 1;
+    } else {
+      if (nav === "pm"){ DP.m--; if (DP.m < 1){ DP.m = 12; DP.y--; } }
+      if (nav === "nm"){ DP.m++; if (DP.m > 12){ DP.m = 1; DP.y++; } }
+      if (nav === "py"){ DP.y--; }
+      if (nav === "ny"){ DP.y++; }
+      var dmax = daysInMonth(DP.y, DP.m), dcur = +DP.d.slice(8, 10);   /* 浏览日跟随到新月份（钳制溢出） */
+      if (dcur > dmax) DP.d = dstr(DP.y, DP.m, dmax); else DP.d = dstr(DP.y, DP.m, dcur);
+    }
+    renderDpPanel();
+  }
+});
 /* 日历点击：日格 → 下钻/切换到该日（天口径）；年视图月卡 → 下钻到该月（月口径）
  * 同口径内点击也要重渲染（setMode 同值会提前返回） */
 document.getElementById("cal").addEventListener("click", function(e){
@@ -693,13 +809,32 @@ document.getElementById("cal").addEventListener("click", function(e){
   }
 });
 
-/* ---- 初始化：锚点 = 最新有胜场的日期（月口径 2026-09） ---- */
+/* ---- 初始化：fetch 预计算产物 → 锚点 = 最新有胜场的日期；失败/空数据显示对应状态 ---- */
 (function init(){
-  var lastWin = null;
-  RUNS.forEach(function(r){ if (r.p === 1 && (!lastWin || r.d > lastWin.d)) lastWin = r; });
-  var base = lastWin || RUNS[RUNS.length - 1];
-  st.y = +base.d.slice(0, 4); st.m = +base.d.slice(5, 7); st.d = +base.d.slice(8, 10);
-  render();
+  fetch(YJ_DATA.url("datechart.json")).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(data){
+    RUNS = (data && data.runs) || [];
+    if (!RUNS.length){
+      document.getElementById("cal").innerHTML = "";
+      document.getElementById("kpis").innerHTML = "";
+      document.getElementById("dBody").innerHTML = '<div class="hint-empty">暂无出走记录</div>';
+      return;
+    }
+    computeRange();
+    dpRange();
+    var lastWin = null;
+    RUNS.forEach(function(r){ if (r.p === 1 && (!lastWin || r.d > lastWin.d)) lastWin = r; });
+    var base = lastWin || RUNS[RUNS.length - 1];
+    st.y = +base.d.slice(0, 4); st.m = +base.d.slice(5, 7); st.d = +base.d.slice(8, 10);
+    render();
+  }).catch(function(e){
+    document.getElementById("cal").innerHTML = "";
+    document.getElementById("kpis").innerHTML = "";
+    document.getElementById("dBody").innerHTML =
+      '<div class="hint-empty">数据加载失败（' + esc(e.message) + '），请通过 http 服务器访问</div>';
+  });
 })();
 </script>
 </body>

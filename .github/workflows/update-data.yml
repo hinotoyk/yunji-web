@@ -53,6 +53,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      # 日期图断言校验（tests/_verify-datechart.cjs，--ci 末尾跑）需要 node；仅 stdlib，无需 npm install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: 安装依赖
         run: pip install requests beautifulsoup4 lxml
 

@@ -8,10 +8,10 @@
   --races       比赛数据增量：详情更新+判变 → 成绩增量(SP页含格/条件/調教師/本賞金) → 台账海外 → 合并
   --horse id    定向更新：只处理指定 id 的马（详情更新 + 成绩增量 + 合并）
   --races-force 比赛全量刷新：全部马重抓成绩页（覆盖式重建，历史数据修正用；已有记录缺失字段一并回填）
-  --check       数据校验：引用完整性 + 通算战数 vs 文件出赛数（--fix 自动补跑）
+  --check       数据校验：引用完整性 + 通算战数 vs 文件出赛数（--fix 自动补跑）+ 日期图断言(node)
   --since N     轻量时段增量：只抓最近 N 天内出赛的马的成绩（不跑详情/判变，需配合 --races）
   --ledger      仅台账：只拉台账海外场并入（不跑 netkeiba）
-  --ci          CI 全自动：基本增量 + 比赛增量 + 校验 + git 提交（有变化才提交）
+  --ci          CI 全自动：基本增量 + 比赛增量 + 校验 + 日期图断言(node) + git 提交（全部通过才提交）
 
 输出约定：详细输出进 test-logs/update-<时间戳>.log，stdout 每步一行状态（便于远程监督）。
 
@@ -47,6 +47,8 @@ BASIC = ROOT / "scripts" / "basic"
 RACES = ROOT / "scripts" / "races"
 CHECK = ROOT / "scripts" / "check_data.py"
 TIMELINE = ROOT / "scripts" / "timeline" / "build_timeline.py"   # 时间线事件预计算 → data/timeline.json
+DATECHART = ROOT / "scripts" / "datechart" / "build_datechart.py"  # 日期图数据预计算 → data/datechart.json
+VERIFY_DATECHART = ROOT / "tests" / "_verify-datechart.cjs"        # 日期图断言校验（node：产物契约/源对账/页面冒烟）
 FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
@@ -65,14 +67,19 @@ def log(msg="", echo=True):
         print(line, flush=True)
 
 
-def run_step(name, script, *args):
+def run_step(name, script, *args, exe=None):
+    """跑一步子进程（默认 python，exe="node" 跑断言脚本），失败不中断后续步骤（返回码交给调用方决策）。"""
     log(f"\n───── [{name}] {Path(script).name} {' '.join(args)} ─────", echo=False)
     t0 = time.time()
     try:
-        r = subprocess.run([PY, str(script), *args], capture_output=True, text=True,
+        r = subprocess.run([exe or PY, str(script), *args], capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=10800)
     except subprocess.TimeoutExpired:
         log(f"✗ [{name}] 超时(10800s)")
+        results.append((name, -1, time.time() - t0))
+        return -1, time.time() - t0
+    except OSError as e:
+        log(f"✗ [{name}] 启动失败: {e}")
         results.append((name, -1, time.time() - t0))
         return -1, time.time() - t0
     dt = time.time() - t0
@@ -126,7 +133,7 @@ def main():
     g.add_argument("--races-force", action="store_true", help="比赛全量刷新")
     g.add_argument("--check", action="store_true", help="数据校验")
     g.add_argument("--ledger", action="store_true", help="仅台账海外并入")
-    g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+git 提交")
+    g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+日期图断言+git 提交")
     ap.add_argument("--year", default="", help="建档年份（--basic/--ci 用，如 2025,2026；默认现有年份）")
     ap.add_argument("--since", type=int, default=0, help="时段增量天数（配 --races，轻量模式）")
     ap.add_argument("--fix", action="store_true", help="配 --check：校验后自动补跑修复")
@@ -145,6 +152,7 @@ def main():
         run_step("建档·新马对账", BASIC / "build_registry.py", *y)
         run_step("基础·补缺+合并", BASIC / "run_all.py")
         run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
     elif args.races:
         if args.since:
             run_step("比赛·轻量时段增量", RACES / "fetch_races.py", "--since", str(args.since), *lim())
@@ -152,6 +160,7 @@ def main():
         else:
             run_step("比赛·增量流水线", RACES / "run_all.py", *lim())
         run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
     elif args.horse:
         ids = [x.strip() for x in args.horse.split(",") if x.strip()]
         if not ids:
@@ -160,23 +169,32 @@ def main():
         run_step("比赛·成绩增量(定向)", RACES / "fetch_races.py", "--id", ",".join(ids))
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
     elif args.races_force:
         run_step("比赛·全量刷新", RACES / "run_all.py", "--force")
         run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
     elif args.check:
         run_step("数据校验", CHECK, *(["--fix"] if args.fix else []))
+        run_step("日期图·断言校验", VERIFY_DATECHART, exe="node")
     elif args.ledger:
         run_step("台账·海外拉取", RACES / "fetch_ledger.py")
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
     elif args.ci:
         y = ["--year", args.year] if args.year else []
         run_step("CI·建档新马对账", BASIC / "build_registry.py", *y)
         run_step("CI·基础补缺+合并", BASIC / "run_all.py")
         run_step("CI·比赛增量流水线", RACES / "run_all.py", *lim())
         run_step("CI·时间线事件预计算", TIMELINE)
+        run_step("CI·日期图数据预计算", DATECHART)
         run_step("CI·数据校验", CHECK)
-        git_commit_if_changed()
+        rc_verify = run_step("CI·日期图断言校验", VERIFY_DATECHART, exe="node")[0]
+        if rc_verify != 0:
+            log("✗ 日期图断言校验失败 → 跳过数据提交（先修复，再重跑 --ci）")
+        else:
+            git_commit_if_changed()
 
     log("\n══ 更新结束 ══")
     total = sum(dt for _, _, dt in results)

@@ -12,13 +12,13 @@
 | 策略 | 命令 | 是否联网 | 是否动数据 | 实测耗时 | 成功判据 |
 |---|---|---|---|---|---|
 | 初始化 | `--init` | ✅ | **删空重建** | ~128 分钟 | 建档 277 + 基础 277 + 竞赛全部 OK |
-| 数据校验 | `--check` | ❌ | 只读 | <1 秒 | 问题合计 0 |
+| 数据校验 | `--check` | ❌ | 只读 | ~5 秒 | 问题合计 0 + 日期图断言 ALL PASS |
 | 定向更新 | `--horse 1,2,3` | ✅ | 增量 | <1 分钟/匹 | 4 步 OK，单匹数据更新 |
 | 仅台账 | `--ledger` | ✅ | 增量 | <1 分钟 | 台账拉取 + 合并 OK |
 | 轻量时段 | `--races --since N` | ✅ | 增量 | ~3 分钟 | 抓最近 N 天出赛马 + 合并 |
 | 基本增量 | `--basic` | ✅ | 增量 | <1 分钟(已全) | 建档 0 新增、补缺跳过 |
 | 比赛全量刷新 | `--races-force` | ✅ | **覆盖成绩** | ~59 分钟 | 全量重抓 + 判变 + 幂等 |
-| CI 全自动 | `--ci` | ✅ | 增量 + git | 视数据而定 | 5 步编排按序 OK |
+| CI 全自动 | `--ci` | ✅ | 增量 + git | 视数据而定 | 7 步编排按序 OK（断言失败拦提交） |
 | （底层流程） | `run_full_test.py` | ✅ | **删空重建** | ~128 分钟 | 3 段全部 OK + 汇总 |
 
 > ⚠ 耗时基线在**数据已全、网络正常**时测得；首次全量 / 数据缺失多时会更久。
@@ -43,8 +43,8 @@
 - 风控：`fetch_log.csv` 各 host 非 200 = 0
 
 ### 1.2 `--check` 数据校验
-校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计。
-**成功判据**：`data/check_report.md` 中「问题合计: 0」，且可修复项均为 0（`nk_id` 可修复 1 是已知未命名仔，非缺陷）。
+校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑**日期图断言**（`node tests/_verify-datechart.cjs`，84 断言：产物 20 键契约 / 与 data/races 1:1 对账 / 页面 stub 冒烟）。
+**成功判据**：`data/check_report.md` 中「问题合计: 0」，且可修复项均为 0（`nk_id` 可修复 1 是已知未命名仔，非缺陷）；日期图断言输出 `ALL PASS`。
 **`--fix` 模式**：对可修复项自动补跑对应脚本（pedigree / nk_id / races）。
 
 ### 1.3 `--horse <id>` 定向更新
@@ -77,10 +77,12 @@ run_all --force：详情(全) → 成绩(force 全量重抓，SP页含格/条件
 
 ### 1.8 `--ci` CI 全自动
 ```
-build_registry → basic run_all → races run_all → check_data → git_commit_if_changed()
+build_registry → basic run_all → races run_all → 时间线预计算 → 日期图预计算
+→ check_data → 日期图断言(node) → git_commit_if_changed()
 ```
-**成功判据**：5 步按序执行且各 OK；`--limit N` 可缩短 races 环节做快速验证；git 提交在 data/ 无变化时安全跳过。
-> ⚠ git 提交会真实 commit+push，**测试时必须隔离**（见 §4.3）。
+**成功判据**：7 步按序执行且各 OK；`--limit N` 可缩短 races 环节做快速验证；git 提交在 data/ 无变化时安全跳过。
+> ⚠ **日期图断言非 0 → 跳过 git 提交**（数据坏了不推上线，修复后重跑 `--ci`）。
+> ⚠ 断言步骤需要 node（CI runner 由 update-data.yml 的 setup-node 提供）；git 提交会真实 commit+push，**测试时必须隔离**（见 §4.3）。
 
 ### 1.9 `run_full_test.py` 完整自测
 同 `--init`，是 `--init` 的实际载体；`--dry-run` 只打印计划不执行。
@@ -105,7 +107,7 @@ python run_update.py --horse 1
 # 轻量时段增量（真实联网，验证 fetch_races --since + 合并）
 python run_update.py --races --since 7
 ```
-**通过标准**：全部 exit 0；`--check` 问题 0；`fetch_log` 无新增 403。
+**通过标准**：全部 exit 0；`--check` 问题 0 且日期图断言 ALL PASS；`fetch_log` 无新增 403。
 
 ### 2.2 中等（真实联网，不删数据）
 ```bash
@@ -118,7 +120,7 @@ python run_update.py --ledger
 # CI 链路（--limit 3 缩短比赛环节；记得先按 §4.3 隔离 git 提交）
 python run_update.py --ci --limit 3
 ```
-**通过标准**：各步 OK；`--basic` 建档新增 0；`--ci` 5 步按序。
+**通过标准**：各步 OK；`--basic` 建档新增 0；`--ci` 7 步按序（含日期图断言）。
 
 ### 2.3 完整（覆盖式/耗时，仅确需时）
 ```bash
