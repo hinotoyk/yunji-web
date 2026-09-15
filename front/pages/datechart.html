@@ -485,10 +485,10 @@ function weightHTML(r){    /* 马体重含增减（同 races.html 两段式半�
 }
 function renderDetail(mode, key){
   var t = YJ.i18n.t;
-  /* 同日排序对齐 races.html 模块 33：発走降序（大→小），缺失视为最大（排同日最前）；
-   * 同场（発走相同）保持旧口径：按着顺升序（未完走 99 殿后）、同着顺按レース名 */
+  /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
+   * 缺失视为最大（排同日最前）；同场（発走相同）按着顺升序（未完走 99 殿后）、同着顺按レース名 */
   var runs = scopeRuns(mode, key).slice().sort(function(a, b){
-    if (a.d !== b.d) return a.d < b.d ? -1 : 1;
+    if (a.d !== b.d) return a.d < b.d ? 1 : -1;
     var fa = String(a.hs || "").trim(), fb = String(b.hs || "").trim();
     if (fa !== fb){
       if (!fa) return -1;
