@@ -227,6 +227,23 @@ function weightHTML(r){
   return w + d;
 }
 
+/* ---- 排序比较器：日期降序（新→旧）；同日按発走降序（大→小），无発走视为最大（同日排最前）----
+ * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
+ * 内嵌单马表（renderHorse 加载后）与独立跨马表（renderResults）共用；
+ * PC 表与 mb 卡片渲染同一份有序列表，一份排序四处（内嵌/独立 × pc/mb）同时生效。
+ * 完全同键（跨马表里同一场比赛的多匹马）返回 0，走稳定排序保持加载顺序。 */
+function raceCmp(a, b){
+  var da=String(a.日付||""), db=String(b.日付||"");
+  if(da!==db) return da<db?1:-1;              /* 日期降序 */
+  var ta=String(a.発走||"").trim(), tb=String(b.発走||"").trim();
+  if(ta!==tb){
+    if(!ta) return -1;                         /* 无発走=最大，発走降序下排同日最前 */
+    if(!tb) return 1;
+    return ta<tb?1:-1;                         /* 発走降序（大→小） */
+  }
+  return 0;
+}
+
 function rowHTML(r){
   var dnf = typeof r.結果 === "string";            // 未完走（中止/取消/除外/失格）
   var gk = r.格 && G[r.格];
@@ -483,6 +500,7 @@ function renderHorse(id){
       return r.json();
     }).then(function(races){
       var hs = Array.isArray(races) ? races : (races && races.races ? races.races : []);
+      hs.sort(raceCmp);   /* 日期降序 + 同日発走降序（无発走视为最大排最前），内嵌 PC/mb 共用 */
       lastR = { hh: hh || {id:id}, races: hs };
       renderRaces(lastR.hh, lastR.races);
     }).catch(function(e){
@@ -902,7 +920,7 @@ function renderResults(){
   var body=document.getElementById("body");
   if(!LIB){ return; }
   var all=LIB.entries.filter(function(en){ return matchEntry(en); });
-  all.sort(function(a,b){ return String(b.r.日付||"").localeCompare(String(a.r.日付||"")); });
+  all.sort(function(a,b){ return raceCmp(a.r, b.r); });   /* 日期降序 + 同日発走降序（无発走视为最大排最前），PC/mb 共用 */
   var horseSet={};
   all.forEach(function(en){ horseSet[en.h.id]=1; });
   var nH=Object.keys(horseSet).length;

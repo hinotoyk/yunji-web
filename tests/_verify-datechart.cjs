@@ -1,6 +1,6 @@
 /* 日期图 · 正式数据版 冒烟断言（Node stub DOM，不动浏览器；挂 run_update --ci/--check 与 CI 门禁）
  * 三段验证：
- *   [A] data/datechart.json 产物断言：字段同构性（20 键契约）、着顺段位合法、排序稳定
+ *   [A] data/datechart.json 产物断言：字段同构性（21 键契约）、着顺段位合法、排序稳定
  *   [B] 产物 ↔ data/races 源数据 1:1 对账（独立第二实现，防 build 脚本单点 bug）
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
  *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮 /
@@ -23,7 +23,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "r", "g", "v", "R", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障害", "AW"]);
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -55,7 +55,7 @@ for (let i = 0; i < RUNS.length; i++) {
   if (!(Number.isInteger(r.p) ? (r.p >= 1 && r.p <= 18) : (typeof r.p === "string" && DNF_SET.has(r.p)))) badField++;
   if (!(Number.isInteger(r.pr) && r.pr >= 0)) badField++;
   if (!VT_SET.has(r.vt)) badField++;
-  if (!(typeof r.bk === "string" && typeof r.tm === "string" && typeof r.dz === "string")) badField++;
+  if (!(typeof r.bk === "string" && typeof r.tm === "string" && typeof r.dz === "string" && typeof r.hs === "string")) badField++;
   if (!(typeof r.jk === "string" && typeof r.tr === "string")) badField++;
   if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw))) badField++;
   if (i && (RUNS[i - 1].d > r.d || (RUNS[i - 1].d === r.d && String(RUNS[i - 1].id) > String(r.id)))) badSort++;
@@ -91,6 +91,7 @@ for (const h of basic.horses) {
       g: String(r["格"] || ""),
       v: String(r["場名"] || ""),
       R: r["R"] == null || r["R"] === "" ? "" : r["R"],
+      hs: String(r["発走"] || ""),
       dist: typeof r["距離"] === "number" ? r["距離"] : "",
       s: String(r["芝ダ"] || ""),
       p,
@@ -270,7 +271,9 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpTrigger();
   ok((String(els["dpPanel"]._html).match(/data-d=/g) || []).length === 31, "日面板出 2026-08 网格（31 天）");
   dpClick({ name: "data-nav", v: "nm" });
-  ok(String(els["dpPanel"]._html).includes('dc-dp-cell dis" data-d="2026-09-13"'), "数据末日（9/12）之后禁用");
+  const lastD = RUNS[RUNS.length - 1].d;   // 数据末日从产物推导（此前硬编码 9/12，数据更新到 9/13 即过期）
+  const nextD = new Date(Date.parse(lastD) + 86400000).toISOString().slice(0, 10);
+  ok(String(els["dpPanel"]._html).includes('dc-dp-cell dis" data-d="' + nextD + '"'), "数据末日（" + lastD.slice(5) + "）之后禁用");
   dpClick({ name: "data-nav", v: "pm" });
   dpClick({ name: "data-d", v: "2026-08-09" });
   ok(els["winLabel"].textContent === "2026/08/09（" + weekdayCn("2026-08-09") + "）", "点 8/9 → " + els["winLabel"].textContent);
