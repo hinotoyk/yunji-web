@@ -49,6 +49,9 @@ CHECK = ROOT / "scripts" / "check_data.py"
 TIMELINE = ROOT / "scripts" / "timeline" / "build_timeline.py"   # 时间线事件预计算 → data/timeline.json
 DATECHART = ROOT / "scripts" / "datechart" / "build_datechart.py"  # 日期图数据预计算 → data/datechart.json
 VERIFY_DATECHART = ROOT / "tests" / "_verify-datechart.cjs"        # 日期图断言校验（node：产物契约/源对账/页面冒烟）
+STATS = ROOT / "scripts" / "stats" / "build_stats.py"             # 统计总览数据预计算 → data/stats.json
+VERIFY_STATS = ROOT / "tests" / "_verify-stats.cjs"               # 统计总览断言校验（node：产物契约/源对账/页面冒烟）
+VERIFY_RACES_DRILL = ROOT / "tests" / "_verify-races-drill.cjs"   # 比赛记录页下钻冒烟（统计矩阵行 → races.html?f= 全链路）
 FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
@@ -133,7 +136,7 @@ def main():
     g.add_argument("--races-force", action="store_true", help="比赛全量刷新")
     g.add_argument("--check", action="store_true", help="数据校验")
     g.add_argument("--ledger", action="store_true", help="仅台账海外并入")
-    g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+日期图断言+git 提交")
+    g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+日期图/统计/下钻断言+git 提交")
     ap.add_argument("--year", default="", help="建档年份（--basic/--ci 用，如 2025,2026；默认现有年份）")
     ap.add_argument("--since", type=int, default=0, help="时段增量天数（配 --races，轻量模式）")
     ap.add_argument("--fix", action="store_true", help="配 --check：校验后自动补跑修复")
@@ -153,6 +156,7 @@ def main():
         run_step("基础·补缺+合并", BASIC / "run_all.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
     elif args.races:
         if args.since:
             run_step("比赛·轻量时段增量", RACES / "fetch_races.py", "--since", str(args.since), *lim())
@@ -161,6 +165,7 @@ def main():
             run_step("比赛·增量流水线", RACES / "run_all.py", *lim())
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
     elif args.horse:
         ids = [x.strip() for x in args.horse.split(",") if x.strip()]
         if not ids:
@@ -170,18 +175,23 @@ def main():
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
     elif args.races_force:
         run_step("比赛·全量刷新", RACES / "run_all.py", "--force")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
     elif args.check:
         run_step("数据校验", CHECK, *(["--fix"] if args.fix else []))
         run_step("日期图·断言校验", VERIFY_DATECHART, exe="node")
+        run_step("统计·断言校验", VERIFY_STATS, exe="node")
+        run_step("比赛记录·下钻冒烟", VERIFY_RACES_DRILL, exe="node")
     elif args.ledger:
         run_step("台账·海外拉取", RACES / "fetch_ledger.py")
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
     elif args.ci:
         y = ["--year", args.year] if args.year else []
         run_step("CI·建档新马对账", BASIC / "build_registry.py", *y)
@@ -189,10 +199,13 @@ def main():
         run_step("CI·比赛增量流水线", RACES / "run_all.py", *lim())
         run_step("CI·时间线事件预计算", TIMELINE)
         run_step("CI·日期图数据预计算", DATECHART)
+        run_step("CI·统计数据预计算", STATS)
         run_step("CI·数据校验", CHECK)
         rc_verify = run_step("CI·日期图断言校验", VERIFY_DATECHART, exe="node")[0]
-        if rc_verify != 0:
-            log("✗ 日期图断言校验失败 → 跳过数据提交（先修复，再重跑 --ci）")
+        rc_stats = run_step("CI·统计断言校验", VERIFY_STATS, exe="node")[0]
+        rc_drill = run_step("CI·比赛记录下钻冒烟", VERIFY_RACES_DRILL, exe="node")[0]
+        if rc_verify != 0 or rc_stats != 0 or rc_drill != 0:
+            log("✗ 断言校验失败 → 跳过数据提交（先修复，再重跑 --ci）")
         else:
             git_commit_if_changed()
 

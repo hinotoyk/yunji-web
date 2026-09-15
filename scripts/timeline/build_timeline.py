@@ -202,10 +202,10 @@ def build_events(horses, races_by_id):
                     tags.append({"cat": "graded", "label": "海外重赏初胜" if ovs_seq == 1 else "海外重赏第" + str(ovs_seq) + "胜"})
                 if r.get("venue_type") == "中央" and h.get("生年") \
                         and h["生年"] in gen_best and gen_best[h["生年"]]["key"] == race_key(r):
-                    tags.append({"cat": "gen", "label": str(h["生年"]) + "届首个重赏"})   # 3. 世代首个重赏（中央）
+                    tags.append({"cat": "gen", "label": str(h["生年"]) + "年产首个重赏"})   # 3. 世代首个重赏（中央）
             if g == "新馬" and h.get("生年") \
                     and h["生年"] in gen_shinba and gen_shinba[h["生年"]]["key"] == race_key(r):
-                tags.append({"cat": "gen", "label": str(h["生年"]) + "届首个新马胜"})     # 1b. 世代首个新马胜
+                tags.append({"cat": "gen", "label": str(h["生年"]) + "年产首个新马胜"})     # 1b. 世代首个新马胜
             sw = sire_set.get(norm_race(r.get("レース名")))
             if sw:
                 tags.append({"cat": "sire", "label": "父子制覇",

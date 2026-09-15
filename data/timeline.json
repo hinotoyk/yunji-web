@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-13T17:26:18",
+  "generated_at": "2026-09-15T18:28:49",
   "source": "basic.json + races/*.json",
   "stats": {
    "events": 6,
@@ -23,7 +23,7 @@
    "tags": [
     {
      "cat": "gen",
-     "label": "2023届首个新马胜"
+     "label": "2023年产首个新马胜"
     }
    ],
    "race": {
@@ -91,7 +91,7 @@
     },
     {
      "cat": "gen",
-     "label": "2023届首个重赏"
+     "label": "2023年产首个重赏"
     }
    ],
    "race": {
@@ -187,7 +187,7 @@
    "tags": [
     {
      "cat": "gen",
-     "label": "2024届首个新马胜"
+     "label": "2024年产首个新马胜"
     }
    ],
    "race": {
