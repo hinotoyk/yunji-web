@@ -79,8 +79,9 @@ def load_races_file(id_s):
 def save_races_file(id_s, recs):
     common.RACES_DATA_DIR.mkdir(parents=True, exist_ok=True)
     # 结果字段统一归一（历史单字 DNF 中/取/除/失 → 全称 中止/取消/除外/失格）
-    for r in recs:
+    for i, r in enumerate(recs):
         r["結果"] = racelib.normalize_result(r.get("結果", ""))
+        recs[i] = common.order_record(r)      # 固定字段模板顺序（模板外未知键兜底追加，不丢数据）
     recs.sort(key=lambda r: r.get("日付", ""), reverse=True)
     (common.RACES_DATA_DIR / f"{id_s}.json").write_text(
         json.dumps(recs, ensure_ascii=False, indent=1), encoding="utf-8")

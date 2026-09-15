@@ -16,13 +16,14 @@
                           运行时先读该缓存作初始映射，可跳过已抓过的骑手页）
 
 每条**新增记录**再抓一次 SP 比赛结果页（race/nar.netkeiba.com，同场多马共享页缓存），
-一次性回填：格/条件（Icon + RaceData02）、厩舎→調教師（+ trainer_id）、本賞金（重赏 1/2着）。
+一次性回填：格/条件（Icon + RaceData02）、厩舎→調教師（+ trainer_id）、本賞金（重赏 1/2着）、
+発走（RaceData01 的 `12:40発走`）+ コース表记（`(右 A)`/`(左 外 A)` 归一为 右A/左外A）。
 骑手名 = 成绩页「骑手」列 + 按 jockey_id 抓骑手页 <title> 归一正式全名（成绩页列是简名）。
 本賞金不再单独 fetch_prize 环节（同一 URL 已在成绩增量时抓到）。
 
 说明：
   - 已有记录一律不动（增量只增不覆盖）；--force 时对已有记录回填缺失字段
-    （調教師/trainer_id/馬番/骑手名，SP 页/骑手页补拉）；比赛键 = race_id，无 race_id 用 (日付,場名,R)。
+    （調教師/trainer_id/馬番/骑手名/発走/コース，SP 页/骑手页补拉）；比赛键 = race_id，无 race_id 用 (日付,場名,R)。
   - 「数据缺失」判变是核心兜底：即使通算成績 字符串没变化，只要文件出赛数对不上
     通算战数（如上次抓取失败落了空文件、或只并入了台账海外记录），也会自动补拉，
     不会出现「永远拉不到成绩」。
@@ -190,26 +191,29 @@ def to_contract_b(rec, horse_name):
         except (ValueError, TypeError):
             prize_yen = ""
     return {
-        "日付": rec.get("日付", ""), "開催": rec.get("開催", ""), "場名": rec.get("場名", ""),
-        "R": rec.get("R", ""), "レース名": rec.get("レース名", ""), "格": grade, "条件": cond,
+        "日付": rec.get("日付", ""), "発走": "", "出走馬名": horse_name,
+        "開催": rec.get("開催", ""), "場名": rec.get("場名", ""),
+        "R": rec.get("R", ""), "コース": "", "レース名": rec.get("レース名", ""),
+        "格": grade, "条件": cond,
         "距離": rec.get("距離", ""), "芝ダ": racelib._normalize_surface(rec.get("馬場", "")),
-        "馬場": state, "天候": rec.get("天気", ""), "出走馬名": horse_name,
-        "騎手": rec.get("騎手", ""), "斤量": rec.get("斤量", ""), "枠番": rec.get("枠番", ""),
-        "馬番": rec.get("馬番", ""),
+        "馬場": state, "天候": rec.get("天気", ""),
+        "斤量": rec.get("斤量", ""), "枠番": rec.get("枠番", ""), "馬番": rec.get("馬番", ""),
         "頭数": rec.get("頭数", ""),
         "人気": rec.get("人気", ""), "単勝": rec.get("オッズ", ""), "結果": result,
         "タイム": rec.get("タイム", ""), "上り": rec.get("上り", ""), "着差": rec.get("着差", ""),
         "通過": rec.get("通過", ""), "ペース": rec.get("ペース", ""),
         "馬体重": rec.get("馬体重", ""), "増減": rec.get("増減", ""), "賞金": prize_yen,
+        "本賞金": 0,
+        "騎手": rec.get("騎手", ""), "調教師": "",
+        "jockey_id": rec.get("jockey_id", ""), "trainer_id": "",
         "venue_type": racelib.venue_type(rec.get("場名", "")),
-        "race_id": rec.get("race_id", ""), "jockey_id": rec.get("jockey_id", ""),
-        "調教師": "", "trainer_id": "",
-        "本賞金": 0, "來源": "netkeiba",
+        "race_id": rec.get("race_id", ""), "photo": "", "來源": "netkeiba",
     }
 
 
 def enrich_from_sp(cb, sp_html):
-    """从 SP 比赛结果页补全一条新增记录：格/条件 + 厩舎→(調教師,trainer_id) + 本賞金（重赏 1/2着）。
+    """从 SP 比赛结果页补全一条新增记录：格/条件 + 厩舎→(調教師,trainer_id) + 本賞金（重赏 1/2着）
+    + 発走 + コース表记（RaceData01：`12:40発走 / 芝2000m (右 A)` → 発走=12:40、コース=右A）。
     sp_html 由调用方提供（同场多马共享页缓存）；无页面/抓取失败 → 名字解析兜底，不阻塞入库。"""
     name = cb.get("レース名", "")
     venue = cb.get("venue_type", "")
@@ -217,6 +221,8 @@ def enrich_from_sp(cb, sp_html):
     def fallback_meta():
         cb["格"] = racelib.race_grade_resolve(None, name, venue)
         cb["条件"] = racelib.race_meta_from_name(name)[1]
+        cb["発走"] = ""
+        cb["コース"] = ""
 
     if not sp_html:
         fallback_meta()
@@ -228,6 +234,17 @@ def enrich_from_sp(cb, sp_html):
     d02_text = d02.get_text(" ", strip=True) if d02 else ""
     cb["格"] = racelib.race_grade_resolve(icon, name, venue)
     cb["条件"] = racelib.cond_from_racedata02(d02_text) or racelib.race_meta_from_name(name)[1]
+
+    d01 = soup.find("div", class_="RaceData01")
+    d01_text = d01.get_text(" ", strip=True) if d01 else ""
+    hak = re.search(r"(\d{1,2}:\d{2})\s*発走", d01_text)
+    if hak:
+        cb["発走"] = hak.group(1)
+    cm = re.search(r"\(([^()]*)\)", d01_text)
+    if cm:
+        tok = re.sub(r"\s+", "", cm.group(1))      # "右 A"/"左 外 A"（含 \xa0）→ "右A"/"左外A"
+        if re.fullmatch(r"(?:右|左)(?:外|内)?(?:[A-D])?", tok):
+            cb["コース"] = tok
 
     tname, tid = find_stable_cell(soup, cb)
     if tname:
@@ -355,7 +372,9 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
     骑手名 → 按 jockey_id 归一正式名（仅对 netkeiba 源记录，台账记录保持台账值）。
     无 SP 页时由 resolve_trainer 兜底到 basic.json 马级调教师。返回回填字段数。"""
     changed = 0
-    if not (ex.get("調教師") or "").strip() or not (ex.get("trainer_id") or "").strip():
+    need_sp = (not (ex.get("調教師") or "").strip() or not (ex.get("trainer_id") or "").strip()
+               or not (ex.get("発走") or "").strip() or not (ex.get("コース") or "").strip())
+    if need_sp:
         rid = str(cb.get("race_id") or "").strip()
         is_local = (cb.get("venue_type") or "").strip() == "地方"
         key = (is_local, rid)
@@ -366,9 +385,9 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
             except Exception:
                 sp_cache[key] = None     # 名字解析兜底
             time.sleep(common.sleep_for(sp_url))
-        enrich_from_sp(cb, sp_cache.get(key))   # 格/条件 + 厩舎→調教師 + 本賞金
+        enrich_from_sp(cb, sp_cache.get(key))   # 格/条件 + 発走/コース + 厩舎→調教師 + 本賞金
         resolve_trainer(cb, h, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
-        for f in ("調教師", "trainer_id"):
+        for f in ("調教師", "trainer_id", "発走", "コース"):
             if not (ex.get(f) or "").strip() and cb.get(f):
                 ex[f] = cb[f]
                 changed += 1

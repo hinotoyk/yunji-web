@@ -224,3 +224,22 @@ def record_keys(r):
     if name and date:
         keys.add("horse:{}|{}".format(name, date))
     return keys
+
+
+# ---- 比赛记录字段模板（键顺序 = 落库列序；写 races 文件时统一按此重排，保证新老记录一致） ----
+RACE_RECORD_ORDER = [
+    "日付", "発走", "出走馬名", "開催", "場名", "R", "コース", "レース名",
+    "格", "条件", "距離", "芝ダ", "馬場", "天候", "斤量", "枠番", "馬番",
+    "頭数", "人気", "単勝", "結果", "タイム", "上り", "着差", "通過", "ペース",
+    "馬体重", "増減", "賞金", "本賞金", "騎手", "調教師", "jockey_id", "trainer_id",
+    "venue_type", "race_id", "photo", "來源",
+]
+
+
+def order_record(rec):
+    """按 RACE_RECORD_ORDER 重排记录字段（模板外的未知键追加在末尾，不丢数据）。"""
+    ordered = {k: rec[k] for k in RACE_RECORD_ORDER if k in rec}
+    for k, v in rec.items():
+        if k not in ordered:
+            ordered[k] = v
+    return ordered
