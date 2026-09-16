@@ -163,7 +163,7 @@ svg#graph{display:block}
   <span class="b">run_full_test.py</span>
   <span class="b">scripts/basic/run_all.py</span>
   <span class="b">scripts/races/run_all.py</span>
-  <span class="b">node tests/_verify-datechart.cjs</span>
+  <span class="b">node scripts/datechart/verify_datechart.cjs</span>
 </div>
 
 </div>
@@ -281,8 +281,8 @@ const NODES={
       url:'读 basic.json + data/pedigree/* + data/races/*',
       fn:'引用完整性 + 通算战数 vs 文件出赛数 + 重复检测 + 填充统计',tag:'CHECK',
       out:'check_report.md（--fix 自动补跑对应环节 + 清理跨来源重复）',
-      cond:'仅 --check / --ci 触发（--init 完整测试流程不含校验）；日常 --races/--basic 不跑；--check/--ci 另跑日期图断言（node），--ci 断言不过不提交',
-      role:'校验引用文件存在、比赛数据是否缺（通算战数>文件出赛）、重复比赛记录，并统计字段填充。--fix 可自动补跑血統/nk_id/成绩并清理重复；日期图断言（tests/_verify-datechart.cjs）另校验产物契约/源对账/页面冒烟。'},
+      cond:'仅 --check / --ci 触发（--init 完整测试流程不含校验）；日常 --races/--basic 不跑；--check/--ci 另跑四段断言（node），--ci 断言不过不提交',
+      role:'校验引用文件存在、比赛数据是否缺（通算战数>文件出赛）、重复比赛记录，并统计字段填充。--fix 可自动补跑血統/nk_id/成绩并清理重复；四段断言（scripts/*/verify_*.cjs）另校验产物契约/源对账/页面冒烟。'},
   // 6 产物（全宽）
   e1:{x:70,y:976,w:1060,c:'mg',scen:[1,2,3],nm:'前端数据产物',
       url:'data/basic.json · data/races/{id}.json · data/pedigree/{id}.json · data/timeline.json · data/datechart.json · data/photos/ · data/fetch_log.csv',

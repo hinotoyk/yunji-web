@@ -3,12 +3,13 @@
  * stub DOM + fetch + YJ.*（selector/bus/device/i18n），让 initLibrary 真跑完：
  *   [A] URL_F 解析 + validFilterValue 应用（无效值丢弃）
  *   [B] FLT 预置后 matchEntry 命中数 == 源数据独立重算（口径互证，覆盖新维度）
- *   [C] renderFilters 新筛选行（回り/人气/性别/调教师/骑手 select）渲染 + 页面不崩
- * 用法: node tests/_verify-races-drill.cjs */
+ *   [C] renderFilters 新筛选行（赛道方向/人气/性别/调教师/骑手 select）渲染 + 页面不崩
+ *   [D] 人气 select 交互（添加 + tag 删除，同调教师/骑手）
+ * 用法: node scripts/races/verify_drill.cjs */
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const ROOT = path.join(__dirname, "..");
+const ROOT = path.join(__dirname, "..", "..");
 
 let fails = 0, passes = 0;
 function ok(cond, msg) {
@@ -82,7 +83,7 @@ global.YJ = {
 /* 间接 eval → 页面 var/function 落到 global（后续可读 LIB/FLT/entryVal/matchEntry） */
 (0, eval)(code);
 
-/* ---- 期望：从源数据独立重算（口径镜像 _verify-stats.cjs [B]，证明两页一致） ---- */
+/* ---- 期望：从源数据独立重算（口径镜像 scripts/stats/verify_stats.cjs [B]，证明两页一致） ---- */
 const DNF_SET = new Set(["中止", "失格"]), EXC_SET = new Set(["取消", "除外"]);
 const distOf = d => { d = Number(d); if (!isFinite(d) || !d) return ""; return d <= 1400 ? "短距离" : d <= 1800 ? "英里" : d <= 2400 ? "中距离" : "长距离"; };
 const ninkiOf = n => { if (n === "" || n == null) return ""; n = Number(n); if (!isFinite(n) || n < 1 || n > 18) return ""; return String(n); };

@@ -43,7 +43,7 @@
 - 风控：`fetch_log.csv` 各 host 非 200 = 0
 
 ### 1.2 `--check` 数据校验
-校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑**日期图断言**（`node tests/_verify-datechart.cjs`，84 断言：产物 20 键契约 / 与 data/races 1:1 对账 / 页面 stub 冒烟）。
+校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑四段断言（`node scripts/…`，见 §2）：**日期图**（`scripts/datechart/verify_datechart.cjs`，84 断言）/ **统计总览**（`scripts/stats/verify_stats.cjs`，168 断言）/ **比赛记录下钻冒烟**（`scripts/races/verify_drill.cjs`，31 断言）/ **比赛记录结果对账**（`scripts/races/verify_result.cjs`，全库三态闭合）。
 **成功判据**：`data/check_report.md` 中「问题合计: 0」，且可修复项均为 0（`nk_id` 可修复 1 是已知未命名仔，非缺陷）；日期图断言输出 `ALL PASS`。
 **`--fix` 模式**：对可修复项自动补跑对应脚本（pedigree / nk_id / races）。
 

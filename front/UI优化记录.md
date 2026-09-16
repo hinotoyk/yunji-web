@@ -45,7 +45,7 @@
 | 27 | 比赛记录·筛选加「出走马」（tag 型多选） | ✅ 已完成 | `pages/races.html` + `public/selector.js` | `FLT` 新增 `horse` 维度（id 字符串数组）；筛选条第一行「出走马」= 已选马胶囊（可 × 删）+ 搜索添加；**搜索下拉复用 PROFILE 的 selector 组件**（新增 multi/excluded/compact/placeholder 选项，向后兼容）；同维多选 OR、跨维 AND；只更新 tag 区保留输入焦点；PC/mb 共用（见 §27） |
 | 31 | 时间线页（里程碑事件流） | ✅ 已完成 | `pages/timeline.html` + `scripts/timeline/build_timeline.py` | 占位页替换为里程碑时间线：一场比赛=一条事件+多枚标签徽章（级别初胜/重赏序数/世代首个新马胜·首个重赏/父子制覇/受赏）；纯展示无筛选，中央时间轴+卡片左右交替（图位横A4比例贴轴侧）、最新在顶；**后端预计算 data/timeline.json，前端只渲染**（见 §31） |
 | 32 | 日期图页（日历布局稿 v2 → 真实数据版 v3） | ✅ 已完成 | `pages/datechart.html` + `scripts/datechart/build_datechart.py` | 占位页升级为日历稿：天/周/月/年 口径切换 + KPI 带（出走/胜/进板数[第1-第2-第3-第3名开外]/总赏金/重赏🏆n）+ 日历逐日进板数·赏金·🏆 标识 + 内嵌比赛表同款明细（15 列 + mb 卡片）；**后端预计算 data/datechart.json 已接入**（20 字段，run_update 六策略自动重算）；真实数据版打磨四项：进板数 4 段、日期选择器（统一进窗口标签，Element date-picker 风格，日/周/月/年 面板、周面板可翻週）、场地范围 JRA/NAR/海外（默认 JRA）、明细照搬内嵌表；v3.3 三修：着顺色括号 / 重赏口径对齐（仅 G1-3/Jpn1-3）/ 赏金亿转换；v3.4 文案简化：删说明块、KPI 带 4 项（出走/通算战绩/总赏金/重赏胜利）（见 §32.6/§32.7） |
-| 35 | 统计总览页（STATS）· 全库倾向矩阵 + 成熟曲线 + 重赏之路 | ✅ 已完成 | `pages/stats.html` + `scripts/stats/build_stats.py` + `pages/races.html` + `tests/_verify-stats.cjs` + `tests/_verify-races-drill.cjs` + `run_update.py` | 对标 ittai 産駒傾向页；库内基准 10 维矩阵（▲▼差/样本少/行下钻 `races.html?f=`）、SVG 双线成熟曲线（世代切换）、重赏之路、JRA/NAR/海外组合（唯一项不可关）；**去博彩指标**；回り维度恢复进筛选条；调教师/骑手分列 + 方案甲 select 行；后端预计算 data/stats.json，run_update 六策略 + --check/--ci 三段断言（见 §35） |
+| 35 | 统计总览页（STATS）· 全库倾向矩阵 + 成熟曲线 + 重赏之路 | ✅ 已完成 | `pages/stats.html` + `scripts/stats/build_stats.py` + `pages/races.html` + `scripts/stats/verify_stats.cjs` + `scripts/races/verify_drill.cjs` + `run_update.py` | 对标 ittai 産駒傾向页；库内基准 10 维矩阵（▲▼差/样本少/行下钻 `races.html?f=`）、SVG 双线成熟曲线（世代切换）、重赏之路、JRA/NAR/海外组合（唯一项不可关）；**去博彩指标**；赛道方向维度恢复进筛选条；调教师/骑手分列 + 方案甲 select 行；后端预计算 data/stats.json，run_update 六策略 + --check/--ci 四段断言（见 §35、§37.7） |
 | 36 | 着顺语义「纯彩字」失真修正：人气徽章 / 通算战绩 / 进板数 改浅底胶囊 | ✅ 已完成 | `pages/races.html` + `pages/stats.html` + `pages/datechart.html` | 白底纯彩字（黄 #e2cc38 等）对比 ~1.9:1 小字发虚；统一改「着顺同款浅底 + 同系边框 + 深一档字色」小胶囊（黄底 #ffef7f/字 #6b5900、蓝底 #cbdeff/字 #1d4f8f、橙底 #efc79f/字 #7a4310、着外灰底 #f1f2f4/字 #52525b，对比≥6:1）；三页人气 `.yj-nk1/2/3`、stats 通算战绩 4 段、datechart bracketHTML（BR_COLORS→BR_STYLE）+ zero 月透明兜底（见 §36） |
 
 ---
@@ -1418,3 +1418,16 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 ### 37.6 状态
 
 ✅ 已完成：stats 168 + drill 31 + datechart 84 断言全过、`--check` 全绿、dist/pages/races.html 已含 base-select 规则与 v10 行序；截图目检通过（新行序/人气 tag/hover 增强编译）。未 commit（等用户确认后随下批提交）。
+
+### 37.7 断言脚本转正（用户指令：有用的脚本不叫 test，进正式目录与 CI 流程）
+
+`tests/_verify-*.cjs` → `scripts/<模块>/verify_*.cjs`（git mv 保留历史；ROOT 上溯改 `../..`）：
+
+| 旧 | 新 | 挂载 |
+|---|---|---|
+| `tests/_verify-datechart.cjs` | `scripts/datechart/verify_datechart.cjs` | --check/--ci（原有） |
+| `tests/_verify-stats.cjs` | `scripts/stats/verify_stats.cjs` | --check/--ci（原有） |
+| `tests/_verify-races-drill.cjs` | `scripts/races/verify_drill.cjs` | --check/--ci（原有） |
+| `tests/_verify-races-result.cjs` | `scripts/races/verify_result.cjs` | **新挂** --check/--ci（比赛记录·结果对账） |
+
+`run_update.py` 常量同步；`--ci` 失败判定纳入 result 对账 rc；文档引用同步（TESTING.md §1.2 / request-path.html / HANDOFF.md / 本表）。`tests/` 只留临时产物（`_shots/` 截图、`ref_father_index.html` 参考抓页、`_trash/`）。

@@ -5,11 +5,11 @@
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：KPI 带 / 成熟曲线 / 倾向矩阵 /
  *       场地范围组合（JRA·NAR·海外 多选，默认 JRA）/ 自然年·生产年切面切换 / 下钻 URL 生成
  * 口径：比率分母=出走（完赛+未完赛；取消/除外不计），同 races.html 模块 34。
- * 用法: node tests/_verify-stats.cjs */
+ * 用法: node scripts/stats/verify_stats.cjs */
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const ROOT = path.join(__dirname, "..");
+const ROOT = path.join(__dirname, "..", "..");
 
 let fails = 0, passes = 0;
 function ok(cond, msg) {

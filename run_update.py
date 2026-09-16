@@ -48,10 +48,11 @@ RACES = ROOT / "scripts" / "races"
 CHECK = ROOT / "scripts" / "check_data.py"
 TIMELINE = ROOT / "scripts" / "timeline" / "build_timeline.py"   # 时间线事件预计算 → data/timeline.json
 DATECHART = ROOT / "scripts" / "datechart" / "build_datechart.py"  # 日期图数据预计算 → data/datechart.json
-VERIFY_DATECHART = ROOT / "tests" / "_verify-datechart.cjs"        # 日期图断言校验（node：产物契约/源对账/页面冒烟）
-STATS = ROOT / "scripts" / "stats" / "build_stats.py"             # 统计总览数据预计算 → data/stats.json
-VERIFY_STATS = ROOT / "tests" / "_verify-stats.cjs"               # 统计总览断言校验（node：产物契约/源对账/页面冒烟）
-VERIFY_RACES_DRILL = ROOT / "tests" / "_verify-races-drill.cjs"   # 比赛记录页下钻冒烟（统计矩阵行 → races.html?f= 全链路）
+VERIFY_DATECHART = ROOT / "scripts" / "datechart" / "verify_datechart.cjs"  # 日期图断言校验（node：产物契约/源对账/页面冒烟）
+STATS = ROOT / "scripts" / "stats" / "build_stats.py"               # 统计总览数据预计算 → data/stats.json
+VERIFY_STATS = ROOT / "scripts" / "stats" / "verify_stats.cjs"      # 统计总览断言校验（node：产物契约/源对账/页面冒烟）
+VERIFY_RACES_DRILL = ROOT / "scripts" / "races" / "verify_drill.cjs"      # 比赛记录页下钻冒烟（统计矩阵行 → races.html?f= 全链路）
+VERIFY_RACES_RESULT = ROOT / "scripts" / "races" / "verify_result.cjs"    # 比赛记录页着顺三态口径对账（读 data/races 全量）
 FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
@@ -186,6 +187,7 @@ def main():
         run_step("日期图·断言校验", VERIFY_DATECHART, exe="node")
         run_step("统计·断言校验", VERIFY_STATS, exe="node")
         run_step("比赛记录·下钻冒烟", VERIFY_RACES_DRILL, exe="node")
+        run_step("比赛记录·结果对账", VERIFY_RACES_RESULT, exe="node")
     elif args.ledger:
         run_step("台账·海外拉取", RACES / "fetch_ledger.py")
         run_step("比赛·合并", RACES / "merge_races.py")
@@ -204,7 +206,8 @@ def main():
         rc_verify = run_step("CI·日期图断言校验", VERIFY_DATECHART, exe="node")[0]
         rc_stats = run_step("CI·统计断言校验", VERIFY_STATS, exe="node")[0]
         rc_drill = run_step("CI·比赛记录下钻冒烟", VERIFY_RACES_DRILL, exe="node")[0]
-        if rc_verify != 0 or rc_stats != 0 or rc_drill != 0:
+        rc_result = run_step("CI·比赛记录结果对账", VERIFY_RACES_RESULT, exe="node")[0]
+        if rc_verify != 0 or rc_stats != 0 or rc_drill != 0 or rc_result != 0:
             log("✗ 断言校验失败 → 跳过数据提交（先修复，再重跑 --ci）")
         else:
             git_commit_if_changed()

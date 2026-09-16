@@ -5,11 +5,11 @@
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
  *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮 /
  *       年月卡 / 内嵌比赛表同款明细（PC 15 列 + mb 软分行卡片），期望值全部从源数据独立重算
- * 用法: node tests/_verify-datechart.cjs */
+ * 用法: node scripts/datechart/verify_datechart.cjs */
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const ROOT = path.join(__dirname, "..");
+const ROOT = path.join(__dirname, "..", "..");
 const html = fs.readFileSync(path.join(ROOT, "front", "pages", "datechart.html"), "utf8");
 const code = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
 
