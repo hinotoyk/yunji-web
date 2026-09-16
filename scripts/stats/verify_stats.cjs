@@ -2,7 +2,7 @@
  * 三段验证：
  *   [A] data/stats.json 产物断言：meta 一致性 / by_venue×scopes（all+自然年y+生产年g）/ 十维分桶 / 月龄桶 / 重赏明细
  *   [B] 产物 ↔ data/basic.json + data/races 源数据 1:1 对账（独立第二实现，逐切面对账）
- *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：KPI 带 / 成熟曲线 / 倾向矩阵 /
+ *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：KPI 带 / 年龄成绩曲线 / 倾向矩阵 /
  *       场地范围组合（JRA·NAR·海外 多选，默认 JRA）/ 自然年·生产年切面切换 / 下钻 URL 生成
  * 口径：比率分母=出走（完赛+未完赛；取消/除外不计），同 races.html 模块 34。
  * 用法: node scripts/stats/verify_stats.cjs */
@@ -366,7 +366,7 @@ const manYenOf = pr => {
 const click = (id, attr) => {
   const h = els[id].handlers.click;
   if (!h || !h.length) return;
-  h[h.length - 1].call(els[id], { target: { closest: sel => /button\[data-(v|g|tab|m|y)\]/.test(sel)
+  h[h.length - 1].call(els[id], { target: { closest: sel => /(button\[data-(v|g|tab|m|y|r)\]|th\[data-sk\])/.test(sel)
     ? { getAttribute: () => attr, setAttribute: (k, v) => {} } : null } });
 };
 const kpiV = label => {
@@ -388,47 +388,77 @@ setTimeout(function () {
   const rb = String(els["rateBand"]._html);
   ok(rb.includes(pctOf(r0.win)) && rb.includes(pctOf(r0.ren)) && rb.includes(pctOf(r0.fuku)),
     "比率带（分母=出走）胜率/连对/复胜 = " + pctOf(r0.win) + " / " + pctOf(r0.ren) + " / " + pctOf(r0.fuku));
-  ok(els["periodLabel"].text.includes(product.meta.stats.first_date), "periodLabel 集計期間");
+  ok(String(els["aboutNote"]._html).includes(product.meta.stats.first_date) && String(els["aboutNote"]._html).includes(product.meta.stats.runs + " 条记录 / " + product.meta.stats.horses + " 匹"),
+    "说明区 集計期間（工具条 periodLabel 已移入 NOTES）");
   /* 顶部切面控件 */
   const modeHtml = String(els["ymodeSeg"]._html);
   ok(modeHtml.includes("生产年") && modeHtml.includes("自然年"), "切面模式：生产年/自然年");
   const yHtml = String(els["yseg"]._html);
   ok(yHtml.includes("全部") && yHtml.includes("2023年产") && yHtml.includes("2024年产"), "默认生产年值：全部/2023年产/2024年产");
 
-  console.log("[C2] 成熟曲线（SVG 双线 + 世代切换 + 明细表）");
+  console.log("[C2] 年龄成绩曲线（颜色=产年 + 线型=指标多选 + 明细表）");
   const segHtml = String(els["genSeg"]._html);
   ok(segHtml.includes("全部") && segHtml.includes("2023年产") && segHtml.includes("2024年产"), "世代切换：全部/2023年产/2024年产（届 已弃用）");
+  const rateHtml = String(els["rateSeg"]._html);
+  ok(rateHtml.includes("胜率") && rateHtml.includes("连对率") && rateHtml.includes("复胜率"), "指标 seg：胜率/连对率/复胜率（可组合多选）");
+  ok(rateHtml.includes('data-r="win" data-on="true"') && rateHtml.includes('data-r="ren" data-on="false"') && rateHtml.includes('data-r="fuku" data-on="false"'),
+    "默认仅 胜率 选中");
   const curveHtml = String(els["curve"]._html);
-  ok(curveHtml.includes("<svg") && (curveHtml.match(/<path/g) || []).length === 4, "SVG 4 条折线（2023+2024 × 连对/胜率）");
+  ok(curveHtml.includes("<svg") && (curveHtml.match(/<path/g) || []).length === 2, "默认 2 条折线（2023+2024 × 胜率，颜色=产年）");
   const cys = [...curveHtml.matchAll(/cy="([\d.]+)"/g)].map(m => +m[1]);
   ok(cys.length >= 4 && Math.max(...cys) - Math.min(...cys) > 40,
     "曲线点位随比率起伏（最高-最低 cy 差 " + (Math.max(...cys) - Math.min(...cys)).toFixed(0) + "px，防贴底回归）");
   ok((curveHtml.match(/<circle/g) || []).length >= 4, "曲线点标记（含 <title> tooltip）");
-  ok(String(els["curveLegend"]._html).includes("2023年产·连对") && String(els["curveLegend"]._html).includes("样本少"), "图例（年产措辞）+ 样本少说明");
+  ok(String(els["curveLegend"]._html).includes("2023年产·胜率") && String(els["curveLegend"]._html).includes("2024年产·胜率") && String(els["curveLegend"]._html).includes("样本少"),
+    "图例（颜色=产年 · 选中指标）+ 样本少说明");
   ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("生产年"), "月龄明细表（生产年列）");
   click("genSeg", "2024");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 2, "切换 2024年产 → 2 条折线");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 1, "切换 2024年产 → 1 条折线");
   click("genSeg", "全部");
+  click("rateSeg", "ren");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 4 && String(els["curveLegend"]._html).includes("连对率"),
+    "组合 胜率+连对率 → 4 条折线（实线+虚线）+ 图例跟随");
+  click("rateSeg", "fuku");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 6 && String(els["curveNote"].text).includes("复胜率") && String(els["curveNote"].text).includes("分母=出走"),
+    "三指标全开 → 6 条折线 + 注解跟随（分母=出走）");
+  click("rateSeg", "win");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 4 && String(els["rateSeg"]._html).includes('data-r="win" data-on="false"'),
+    "再点已选指标可取消 → 剩 连对+复胜 4 条");
+  click("rateSeg", "ren");
+  click("rateSeg", "fuku");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 2 && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="true"'),
+    "唯一项不可关（关掉连对率后 复胜率 不可再关，仍 2 条）");
+  click("rateSeg", "win");
+  click("rateSeg", "fuku");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 2 && String(els["rateSeg"]._html).includes('data-r="win" data-on="true"') && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="false"'),
+    "回默认：仅 胜率 2 条折线");
 
   console.log("[C3] 倾向矩阵（10 页签 + 库内基准 + 下钻 URL）");
   ok((String(els["matTabs"]._html).match(/data-tab=/g) || []).length === 10, "矩阵 10 页签");
   const mt = String(els["matTable"]._html);
   ok(mt.includes("总体平均") && mt.includes(pctOf(r0.win)), "基准顶行 = 总体平均胜率 " + pctOf(r0.win) + "（分母=出走）");
+  ok(mt.includes("2着") && mt.includes("3着") && mt.includes("着外"), "着别列：1/2/3着 + 着外");
+  ok(mt.includes('<b style="color:#6b7280">' + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + '</b>'),
+    "基准行着外 = " + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "（完赛口径）");
   const daRow = byv["中央"].scopes.all.dims.surf.find(x => x.k === "ダ");
   ok(mt.includes(">ダ<") && mt.includes(String(startsOf(daRow))), "跑道页签：泥地行 出走 " + startsOf(daRow));
   ok(mt.includes('data-href="races.html?f=' + encodeURIComponent("surface:ダ,venue:中央") + '"'), "泥地行下钻 = surface:ダ,venue:中央");
   const daR = ratesOf(daRow), daDiff = (daR.win - r0.win) * 100;
-  ok(Math.abs(daDiff) < 1.0 ? true : mt.includes((daDiff > 0 ? "▲" : "▼") + Math.abs(daDiff).toFixed(1)),
-    "泥地胜率相对基准差" + (Math.abs(daDiff) < 1.0 ? " <1.0pt 不标（符合规则）" : " 标注 ▲▼"));
+  const cellCls = (cur, base) => (Math.round(cur * 1000) > Math.round(base * 1000) ? "yj-up" : Math.round(cur * 1000) < Math.round(base * 1000) ? "yj-down" : "");
+  const rowHtml = key => (String(els["matTable"]._html).split("<tr").find(s => s.includes(">" + key + "<")) || "");
+  const dCls = cellCls(daR.win, r0.win);
+  ok(dCls === "" ? true : rowHtml("ダ").includes(dCls),
+    "泥地胜率 vs 总体平均 → " + (dCls === "" ? "显示相同不着色" : dCls === "yj-up" ? "高于=绿" : "低于=红"));
   click("matTabs", "sex");
   const mtSex = String(els["matTable"]._html);
   const osuRow = byv["中央"].scopes.all.dims.sex.find(x => x.k === "牡");
   ok(mtSex.includes(">牡<") && mtSex.includes(String(startsOf(osuRow))), "性别页签：牡 出走 " + startsOf(osuRow));
   const oR = ratesOf(osuRow), oDiff = (oR.win - r0.win) * 100;
-  ok(oDiff >= 1.0 && mtSex.includes("▲" + Math.abs(oDiff).toFixed(1)), "牡胜率相对基准 ▲" + Math.abs(oDiff).toFixed(1) + "pt");
+  const oCls = cellCls(oR.win, r0.win);
+  ok(oCls === "yj-up" && rowHtml("牡").includes("yj-up"), "牡胜率高于总体平均 → 绿（" + pctOf(oR.win) + " vs " + pctOf(r0.win) + "）");
   click("matTabs", "grade");
   const mtGr = String(els["matTable"]._html);
-  ok(mtGr.includes(">重赏<") && mtGr.includes(">3<"), "级别页签：重赏 3 胜");
+  ok(mtGr.includes(">重赏<") && mtGr.includes('>3</b>'), "级别页签：重赏 3 胜（1着彩色）");
   ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央") + '"'), "重赏行下钻 = grade:重赏");
   click("matTabs", "trainer");
   const trRows = byv["中央"].scopes.all.dims.trainer;
@@ -440,6 +470,21 @@ setTimeout(function () {
   ok((String(els["matTable"]._html).match(/<tr/g) || []).length === 2 + nkRows.length && nkRows.every(x => /^\d+$/.test(x.k)),
     "人气逐一展示（" + nkRows.length + " 个桶，键=1-18 数字）");
   click("matTabs", "grade");
+
+  click("matTable", "win");
+  const grRows = byv["中央"].scopes.all.dims.grade;
+  const gRate = b => b.w / (b.n - b.exc);
+  const gMax = Math.max(...grRows.map(gRate)), gMin = Math.min(...grRows.map(gRate));
+  const firstRow = () => {
+    const seg = String(els["matTable"]._html).split("data-href")[1] || "";
+    return seg.slice(0, seg.indexOf("</tr>"));
+  };
+  ok((String(els["matTable"]._html).match(/data-sk=/g) || []).length === 8 && (String(els["matTable"]._html).match(/class="st-sa/g) || []).length === 8,
+    "8 个数值列表头均可点击排序（常驻 ⇅ 提示图标）");
+  ok(firstRow().includes(pctOf(gMax)), "表头排序：胜率降序 → 首行 " + pctOf(gMax));
+  click("matTable", "win");
+  ok(firstRow().includes(pctOf(gMin)), "再点表头切换升序 → 首行 " + pctOf(gMin));
+  click("matTable", "starts");
 
   console.log("[C4] 切面切换（生产年 2023年产 → 自然年 2026年）");
   click("yseg", "2023");
@@ -481,10 +526,14 @@ setTimeout(function () {
   console.log("[C6] 重赏之路 + 补充");
   ok(String(els["gradedProg"]._html).includes("重赏") && String(els["gradedProg"]._html).includes("新马"), "级别胜利进度条");
   const gl = String(els["gradedList"]._html);
-  ok((gl.match(/yj-gd/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
+  ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
+  ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");
+  const tdesc = [...byv["中央"].scopes.all.trophies].sort((a, b) => (a.d > b.d ? -1 : a.d < b.d ? 1 : 0));
+  ok(gl.indexOf("profile.html?horse=" + tdesc[0].id) < gl.indexOf("profile.html?horse=" + tdesc[tdesc.length - 1].id),
+    "明细按日期降序（最新 " + tdesc[0].d + " 在最上）");
   ok(gl.includes("profile.html?horse=" + byv["中央"].scopes.all.trophies[0].id), "重赏明细跳档案链接");
   const ab = String(els["aboutNote"]._html);
-  ok(ab.includes("三态口径") && ab.includes("样本少") && ab.includes("分母 = 出走"), "口径说明（分母=出走）");
+  ok(ab.includes("集計期間") && ab.includes("口径：") && ab.includes("样本少") && ab.includes("比率分母=出走"), "口径说明（工具条口径文案并入 + 分母=出走）");
   ok(ab.includes("自然年") && ab.includes("生产年"), "口径说明含切面解释");
   ok(!ab.includes("场地类型") && !ab.includes("build_stats.py"), "说明区已去掉 场地类型对比 与数据来源句");
 }, 0);

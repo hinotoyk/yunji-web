@@ -36,10 +36,15 @@
 .st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
 /* 矩阵表 */
 .st-mat{width:100%;border-collapse:collapse;font-size:13px}
-.st-mat th{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:right;white-space:nowrap}
+.st-mat th{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:center;white-space:nowrap}
 .st-mat th.left{text-align:left}
-.st-mat td{padding:6px 10px;border-bottom:1px solid #f2f2f2;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-mat td{padding:6px 10px;border-bottom:1px solid #f2f2f2;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 .st-mat td.left{text-align:left;white-space:normal}
+.st-mat th[data-sk]{cursor:pointer;user-select:none}
+.st-mat th[data-sk]:hover{color:#0aa7a0}
+/* 排序图标悬出表头文字右侧：负右外边距抵消自身宽度，不占表头长度、不影响文字居中 */
+.st-mat .st-sa{display:inline-block;width:12px;margin:0 -14px 0 2px;color:#c4c8cb;font-size:10px}
+.st-mat th[data-sk]:hover .st-sa,.st-mat .st-sa.on{color:#0aa7a0}
 .st-mat tr.base td{background:#f7fdfd;font-weight:600;color:#0b6b64}
 .st-mat tr.yj-drill{cursor:pointer}
 .st-mat tr.yj-drill:hover td{background:#f4fbfa}
@@ -50,14 +55,14 @@
 /* 样本少 */
 .yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
 td.dim .num{color:#c6c6ca}
-/* 等级徽章（同 races.html .yj-g*） */
-.yj-gd{display:inline-block;min-width:26px;padding:1px 6px;border-radius:4px;color:#fff;font-size:11px;font-weight:700;text-align:center}
+/* 等级徽章 = 比赛记录页同款（JBIS 胶囊 .yj-grade + .yj-g*，文字 G1/G2/G3/Jpn1…） */
+.yj-grade{display:inline-block;margin-left:6px;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
 .yj-g1{background-color:#d5302a}
 .yj-g2{background-color:#0a3b7e}
 .yj-g3{background-color:#087220}
 .yj-gl{background-color:#dca026}
 .yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
-.yj-gjpn{background-color:#6b21a8}
+.st-gline .yj-grade{margin-left:0}
 /* 图例 */
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
 .st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -65,8 +70,7 @@ td.dim .num{color:#c6c6ca}
 /* 空态 */
 .hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
 /* 重赏之路行 */
-.st-gline{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;padding:6px 0;border-bottom:1px solid #f2f2f2}
-.st-gline:last-child{border-bottom:0}
+.st-gline{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;padding:5px 0}
 .st-gstep{font-weight:600;font-variant-numeric:tabular-nums}
 .st-garrow{color:#c6c6ca}
 @media (max-width:768px){
@@ -84,7 +88,7 @@ td.dim .num{color:#c6c6ca}
     <span class="block h-4 w-1 flex-none rounded bg-primary"></span>统计总览 · STATS
   </div>
 
-  <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年）+ 集计期间 + 口径说明 -->
+  <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年）；集計期間与口径说明在页尾「说明 · NOTES」 -->
   <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
     <div class="seg" id="vseg">
       <button type="button" data-v="中央" data-on="true" title="中央（JRA）">JRA</button>
@@ -93,8 +97,6 @@ td.dim .num{color:#c6c6ca}
     </div>
     <div class="seg" id="ymodeSeg"></div>
     <div class="seg" id="yseg"></div>
-    <div id="periodLabel" class="text-[12px] text-muted-foreground"></div>
-    <div class="text-[12px] text-muted-foreground">口径：完赛=数字着顺 · 未完赛(中止/失格)计出走 · 未出走(取消/除外)不计 · 比率分母=出走</div>
   </div>
 
   <!-- ① 数据概览 -->
@@ -109,13 +111,14 @@ td.dim .num{color:#c6c6ca}
     </div>
   </section>
 
-  <!-- ② 成熟曲线 -->
+  <!-- ② 年龄成绩曲线 -->
   <section class="mb-8">
     <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>成熟曲线 · MATURITY
+      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>年龄成绩曲线 · AGE PERFORMANCE
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
       <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="seg" id="rateSeg"></div>
         <div class="seg" id="genSeg"></div>
         <div class="st-legend" id="curveLegend"></div>
       </div>
@@ -172,11 +175,11 @@ td.dim .num{color:#c6c6ca}
  * 场地范围：JRA/NAR/海外 组合多选，默认 JRA；统计切面：生产年/自然年 + 年份值。
  *           勾选场地在同一切面下的计数相加、比率重算。
  * 倾向矩阵：10 维（跑道/距离/马场/左右/级别/人气/性别/竞马场/调教师/骑手），
- *           顶行=库内基准，每桶 ▲▼ 相对基准差；行可下钻比赛记录页查询（附带切面 byear/year）。
+ *           顶行=库内基准；率列 红=低于/绿=高于基准（0.1pt 精度，同显示值）；表头点击排序；行可下钻比赛记录页查询（附带切面 byear/year）。
  * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一；
  *       比率分母=出走（完赛+未完赛，取消/除外不计），同 races.html 模块 34。 */
 var STATS = null;
-var st = { vts: ["中央"], yMode: "gen", yVal: "all", gen: "全部", tab: "surf" };
+var st = { vts: ["中央"], yMode: "gen", yVal: "all", gen: "全部", rates: ["win"], sort: { k: "", dir: "desc" }, tab: "surf" };
 
 var TAB_DIMS = [
   { k: "surf",    l: "跑道",   tip: "草地/泥地/全天候" },
@@ -193,6 +196,12 @@ var TAB_DIMS = [
 var SM_F = 20;            /* 出走 < 20 → 样本少 */
 var DIM_F = 10;           /* 出走 < 10 → 数字弱化 */
 var GEN_COLORS = ["#0aa7a0", "#0f8fd6", "#e8742a"];
+/* 年龄成绩曲线指标（seg 可组合多选）：颜色=产年 · 线型=指标（实线/虚线/点线）；分母=出走 */
+var RATE_METRICS = [
+  { k: "win",  l: "胜率",   dash: "" },
+  { k: "ren",  l: "连对率", dash: "6,3" },
+  { k: "fuku", l: "复胜率", dash: "2,3" }
+];
 
 var esc = function (s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -248,7 +257,7 @@ function curveMerged() {
 function trophyMerged() {
   var arr = [];
   st.vts.forEach(function (vt) { var blk = blkOf(vt); if (blk) arr = arr.concat(blk.trophies); });
-  arr.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+  arr.sort(function (a, b) { return a.d > b.d ? -1 : a.d < b.d ? 1 : 0; });   /* 明细最新在上（降序） */
   return arr;
 }
 /* ---- 派生口径 ---- */
@@ -319,8 +328,7 @@ function renderRateBand() {
     return '<span class="st-rate"><span class="lbl">' + lbl + '</span> <b>' + pct(val) + '</b></span>';
   };
   document.getElementById("rateBand").innerHTML =
-    cell("胜率", r.win) + cell("连对", r.ren) + cell("复胜", r.fuku) +
-    '<span class="text-[12px]">分母=出走 · 基准=当前范围（勾选场地×切面合计）</span>';
+    cell("胜率", r.win) + cell("连对", r.ren) + cell("复胜", r.fuku);
 }
 /* ---- 工具条切面控件（生产年/自然年 + 年份值） ---- */
 function renderYseg() {
@@ -347,11 +355,16 @@ function renderYseg() {
   document.getElementById("yseg").innerHTML = seg.join("");
 }
 
-/* ---- ② 成熟曲线（SVG 双线：连对实线 / 胜率虚线，按世代） ---- */
+/* ---- ② 年龄成绩曲线（SVG：颜色=产年 · 线型=指标，指标 seg 可组合多选，分母=出走） ---- */
 function renderCurve() {
   var pts = curveMerged();
   var wrap = document.getElementById("curve");
   var segWrap = document.getElementById("genSeg");
+  document.getElementById("rateSeg").innerHTML = RATE_METRICS.map(function (m) {
+    return '<button type="button" data-r="' + m.k + '" data-on="' + (st.rates.indexOf(m.k) >= 0 ? "true" : "false") +
+      '" title="按月龄查看' + m.l + '（分母=出走，可组合多选）">' + m.l + '</button>';
+  }).join("");
+  var mts = RATE_METRICS.filter(function (m) { return st.rates.indexOf(m.k) >= 0; });
   var gens = [];
   pts.forEach(function (p) { if (gens.indexOf(p.gen) < 0) gens.push(p.gen); });
   gens.sort();
@@ -375,17 +388,15 @@ function renderCurve() {
   var colorOf = function (g) { var i = gens.indexOf(g); return GEN_COLORS[i % GEN_COLORS.length]; };
   var series = [];
   sel.forEach(function (g) {
-    ["ren", "win"].forEach(function (mt) {
+    mts.forEach(function (m) {
       var arr = [];
       bins.forEach(function (a) {
         var hit = null;
         for (var i = 0; i < pts.length; i++) if (pts[i].gen === g && pts[i].a === a) { hit = pts[i]; break; }
         if (!hit) return;
-        var f = starts(hit);                       /* 出走 = 比率分母 */
-        var rate = f ? (mt === "ren" ? (hit.w + hit.p2) / f : hit.w / f) : 0;
-        arr.push({ a: a, rate: rate, f: f, w: hit.w });
+        arr.push({ a: a, rate: rates(hit)[m.k], f: starts(hit), w: hit.w });   /* 比率分母=出走 */
       });
-      series.push({ gen: g, mt: mt, color: colorOf(g), arr: arr });
+      series.push({ gen: g, mt: m, color: colorOf(g), arr: arr });
     });
   });
   var ymax = 20;
@@ -414,14 +425,14 @@ function renderCurve() {
       path += (i ? " L" : "M") + x(bins.indexOf(p.a)).toFixed(1) + " " + y(p.rate * 100).toFixed(1);
     });
     if (s.arr.length > 1) {
-      svg.push('<path d="' + path + '" fill="none" stroke="' + s.color + '" stroke-width="2" ' +
-        (s.mt === "win" ? 'stroke-dasharray="5,3" ' : "") + 'opacity="' + (s.mt === "win" ? "0.85" : "1") + '"/>');
+      svg.push('<path d="' + path + '" fill="none" stroke="' + s.color + '" stroke-width="2"' +
+        (s.mt.dash ? ' stroke-dasharray="' + s.mt.dash + '"' : "") + '/>');
     }
     s.arr.forEach(function (p) {
       var cx = x(bins.indexOf(p.a)), cy = y(p.rate * 100);
       var solid = p.f >= DIM_F;
       var tt = s.gen + "年产 · " + ageLabel(p.a) + " · 出走" + p.f + " · 1着" + p.w + " · " +
-        (s.mt === "ren" ? "连对" : "胜率") + " " + pct(p.rate) + (p.f < SM_F ? "（样本少）" : "");
+        s.mt.l + " " + pct(p.rate) + (p.f < SM_F ? "（样本少）" : "");
       svg.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.4" fill="' +
         (solid ? s.color : "#fff") + '" stroke="' + s.color + '" stroke-width="1.5" opacity="' + (solid ? "1" : "0.75") + '">' +
         '<title>' + esc(tt) + '</title></circle>');
@@ -434,24 +445,34 @@ function renderCurve() {
   });
   wrap.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;height:auto">' + svg.join("") + '</svg>';
   /* 图例 */
+  /* 图例（线型=指标：实线/虚线/点线小样，同 SVG dash） */
+  var legendBg = function (m, color) {
+    if (!m.dash) return color;
+    var on = m.dash === "2,3" ? 2 : 4;
+    return "repeating-linear-gradient(90deg," + color + " 0 " + on + "px,transparent " + on + "px " + (on + 3) + "px)";
+  };
   var legend = [];
   sel.forEach(function (g) {
-    legend.push('<span><i class="dot" style="background:' + colorOf(g) + '"></i>' + g + '年产·连对</span>');
-    legend.push('<span><i style="background:' + colorOf(g) + '"></i>' + g + '年产·胜率</span>');
+    mts.forEach(function (m) {
+      legend.push('<span><i style="background:' + legendBg(m, colorOf(g)) + '"></i>' + g + '年产·' + m.l + '</span>');
+    });
   });
   legend.push('<span style="color:#a1a1aa">○ 样本少（出走&lt;10）</span>');
   document.getElementById("curveLegend").innerHTML = legend.join("");
   /* 峰值注解 */
+  /* 峰值注解（按 产年 × 选中指标） */
   var notes = [];
   sel.forEach(function (g) {
-    var peak = null;
-    series.forEach(function (s) {
-      if (s.gen !== g || s.mt !== "ren") return;
-      s.arr.forEach(function (p) { if (p.f >= SM_F && (!peak || p.rate > peak.rate)) peak = p; });
+    mts.forEach(function (m) {
+      var peak = null;
+      series.forEach(function (s) {
+        if (s.gen !== g || s.mt !== m) return;
+        s.arr.forEach(function (p) { if (p.f >= SM_F && (!peak || p.rate > peak.rate)) peak = p; });
+      });
+      if (peak) notes.push(g + "年产 " + m.l + "峰值 " + ageLabel(peak.a) + " " + pct(peak.rate));
     });
-    if (peak) notes.push(g + "年产 连对峰值 " + ageLabel(peak.a) + " " + pct(peak.rate));
   });
-  document.getElementById("curveNote").textContent = "实线=连对率 · 虚线=胜率 · " + (notes.length ? "峰值： " + notes.join("； ") + "（样本≥" + SM_F + "）" : "样本均小于" + SM_F + "，仅供参考");
+  document.getElementById("curveNote").textContent = "颜色=产年 · 线型=指标（分母=出走） · " + (notes.length ? "峰值： " + notes.join("； ") + "（样本≥" + SM_F + "）" : "样本均小于" + SM_F + "，仅供参考");
   /* 月龄明细表 */
   var rows = [];
   pts.forEach(function (p) { if (sel.indexOf(p.gen) >= 0) rows.push(p); });
@@ -474,11 +495,12 @@ function renderTabs() {
   }).join("");
 }
 function surfLabel(k) { return i18n.e("芝ダ", k) || k; }
-function diffTag(cur, base, f) {
-  if (!f) return "";
-  var d = (cur - base) * 100;
-  if (Math.abs(d) < 1.0) return "";
-  return '<span class="' + (d > 0 ? "yj-up" : "yj-down") + '">' + (d > 0 ? "▲" : "▼") + Math.abs(d).toFixed(1) + "</span>";
+/* 比率着色：高于总体平均=绿（yj-up），低于=红（yj-down）；按 0.1pt 精度比较（同显示值，显示相同则不着色） */
+function rateCell(cur, base) {
+  var a = Math.round(cur * 1000), b = Math.round(base * 1000);
+  if (a > b) return '<span class="yj-up">' + pct(cur) + '</span>';
+  if (a < b) return '<span class="yj-down">' + pct(cur) + '</span>';
+  return pct(cur);
 }
 function drillPairs(tab, k) {
   var pairs = [];
@@ -521,26 +543,66 @@ function renderTable() {
   var base = baseMerged(), br = rates(base);
   var rows = dimMerged(tab);
   var isLong = tab === "trainer" || tab === "jockey";
-  var html = '<thead><tr><th class="left">类别</th><th>出走</th><th>1着</th><th>胜率</th><th>连对</th><th>复胜</th></tr></thead><tbody>';
-  html += '<tr class="base" title="当前勾选范围（场地×切面）的整体平均"><td class="left">总体平均</td><td>' + starts(base) + '</td><td>' + base.w + '</td><td>' +
-    pct(br.win) + '</td><td>' + pct(br.ren) + '</td><td>' + pct(br.fuku) + '</td></tr>';
+  /* 着别列语义色（同通算战绩/着顺分布：1着暗金/2着钢蓝/3着赭橙/着外中灰）；8 个数值列表头可点击排序 */
+  var PLACE_C = { w: "#9c7c00", p2: "#2e69ad", p3: "#b3541a", out: "#6b7280" };
+  var COLS = [
+    { k: "starts", l: "出走" },
+    { k: "w",      l: "1着" },
+    { k: "p2",     l: "2着" },
+    { k: "p3",     l: "3着" },
+    { k: "out",    l: "着外" },
+    { k: "win",    l: "胜率" },
+    { k: "ren",    l: "连对" },
+    { k: "fuku",   l: "复胜" }
+  ];
+  var valOf = function (k, b, r) {
+    if (k === "starts") return starts(b);
+    if (k === "out") return Math.max(0, fin(b) - b.w - b.p2 - b.p3);
+    if (k === "win" || k === "ren" || k === "fuku") return r[k];
+    return b[k];                                       /* w / p2 / p3 */
+  };
+  if (st.sort.k) {
+    var dir = st.sort.dir === "asc" ? 1 : -1;          /* 稳定排序，同值保持 出赛数降序 */
+    rows = rows.slice().sort(function (a, c) {
+      var va = valOf(st.sort.k, a, rates(a)), vc = valOf(st.sort.k, c, rates(c));
+      return va === vc ? 0 : (va < vc ? -dir : dir);
+    });
+  }
+  var ths = COLS.map(function (c) {
+    var on = st.sort.k === c.k;
+    return '<th data-sk="' + c.k + '" title="点击按' + c.l + '排序（再点切换升/降序）">' + c.l +
+      '<span class="st-sa' + (on ? " on" : "") + '">' + (on ? (st.sort.dir === "asc" ? "↑" : "↓") : "⇅") + '</span></th>';
+  }).join("");
+  var html = '<thead><tr><th class="left">类别</th>' + ths + '</tr></thead><tbody>';
+  var baseOut = Math.max(0, fin(base) - base.w - base.p2 - base.p3);
+  html += '<tr class="base" title="当前勾选范围（场地×切面）的整体平均"><td class="left">总体平均</td><td>' + starts(base) + '</td>' +
+    '<td><b style="color:' + PLACE_C.w + '">' + base.w + '</b></td>' +
+    '<td><b style="color:' + PLACE_C.p2 + '">' + base.p2 + '</b></td>' +
+    '<td><b style="color:' + PLACE_C.p3 + '">' + base.p3 + '</b></td>' +
+    '<td><b style="color:' + PLACE_C.out + '">' + baseOut + '</b></td>' +
+    '<td>' + pct(br.win) + '</td><td>' + pct(br.ren) + '</td><td>' + pct(br.fuku) + '</td></tr>';
   rows.forEach(function (b) {
     var r = rates(b);
     var url = drillURL(tab, b.k);
     var sm = r.f < SM_F ? '<span class="yj-sm">样本少</span>' : "";
     var dimCls = r.f < DIM_F ? ' class="dim"' : "";
+    var rowOut = Math.max(0, fin(b) - b.w - b.p2 - b.p3);
     var td = function (v) { return '<td' + dimCls + '>' + v + '</td>'; };
     html += '<tr' + (url ? ' class="yj-drill" data-href="' + esc(url) + '" title="点击查看该条件下的比赛记录"' : "") + '>' +
       '<td class="left">' + esc(bucketLabel(tab, b.k)) + sm + '</td>' +
-      td(starts(b)) + td(b.w) +
-      td(pct(r.win) + ' ' + diffTag(r.win, br.win, r.f)) +
-      td(pct(r.ren) + ' ' + diffTag(r.ren, br.ren, r.f)) +
-      td(pct(r.fuku) + ' ' + diffTag(r.fuku, br.fuku, r.f)) +
+      td(starts(b)) +
+      td('<b style="color:' + PLACE_C.w + '">' + b.w + '</b>') +
+      td('<b style="color:' + PLACE_C.p2 + '">' + b.p2 + '</b>') +
+      td('<b style="color:' + PLACE_C.p3 + '">' + b.p3 + '</b>') +
+      td('<b style="color:' + PLACE_C.out + '">' + rowOut + '</b>') +
+      td(rateCell(r.win, br.win)) +
+      td(rateCell(r.ren, br.ren)) +
+      td(rateCell(r.fuku, br.fuku)) +
       '</tr>';
   });
   html += '</tbody>';
   document.getElementById("matTable").innerHTML = html;
-  var note = "▲/▼ = 与总体平均的差（百分点） · 样本少 = 出走&lt;" + SM_F + " · 点击行可查看该条件下的全部比赛";
+  var note = "红=低于总体平均 · 绿=高于总体平均（分母=出走） · 样本少 = 出走&lt;" + SM_F + " · 点击行可查看该条件下的全部比赛 · 点击表头按该列排序";
   if (isLong) {
     note = "调教师/骑手全部列出，按出赛数从多到少。胜率受马匹实力与配对影响，仅供参考。";
   }
@@ -568,10 +630,11 @@ function renderGraded() {
     html = '<div class="text-[13px] text-muted-foreground">暂无重赏胜利</div>';
   }
   list.forEach(function (t) {
-    var gd = t.g === "GI" || t.g === "JpnI" ? "yj-g1" : t.g === "GII" || t.g === "JpnII" ? "yj-g2" : t.g === "GIII" || t.g === "JpnIII" ? "yj-g3" : "yj-gjpn";
-    var lbl = t.g.replace("JpnI", "Jpn1").replace("JpnII", "Jpn2").replace("JpnIII", "Jpn3").replace("I", "1").replace("II", "2").replace("III", "3");
+    /* 等级徽章 = 比赛记录页同款（yj-grade 胶囊 + G 映射；禁用链式 replace——GIII 会被写成 G12） */
+    var gk = { "GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop", "JpnI": "g1", "JpnII": "g2", "JpnIII": "g3" }[t.g] || "g3";
+    var lbl = { "GI": "G1", "GII": "G2", "GIII": "G3", "L": "L", "OP": "OP", "JpnI": "Jpn1", "JpnII": "Jpn2", "JpnIII": "Jpn3" }[t.g] || t.g;
     html += '<div class="st-gline">' +
-      '<span class="yj-gd ' + gd + '">' + lbl + '</span>' +
+      '<span class="yj-grade yj-' + gk + '">' + esc(lbl) + '</span>' +
       '<span class="text-muted-foreground">' + esc(t.d) + ' · ' + esc(t.v) + (t.R ? esc(t.R + "R") : "") + '</span>' +
       '<a href="profile.html?horse=' + t.id + '" class="font-semibold text-foreground hover:text-primary">' + esc(t.h) + '</a>' +
       '<span>' + esc(t.r) + '</span>' +
@@ -581,15 +644,15 @@ function renderGraded() {
   document.getElementById("gradedList").innerHTML = html;
 }
 
-/* ---- ⑤ 补充 ---- */
+/* ---- ⑤ 说明 · NOTES（工具条原「集計期間 / 口径」文案已并入此处，同 races.html 三态口径） ---- */
 function renderAbout() {
   var m = STATS.meta.stats;
   document.getElementById("aboutNote").innerHTML =
     "集計期間：<b>" + m.first_date + "</b> ~ <b>" + m.last_date + "</b> · " + m.runs + " 条记录 / " + m.horses + " 匹出赛产驹。" +
     "<br>统计切面：<b>生产年</b> = 产驹出生年份（可选 2023年产/2024年产…）；<b>自然年</b> = 比赛日历年份（1月1日–12月31日）。" +
     "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，下钻链接会附带 byear/year 条件。" +
-    "<br>三态口径：完赛=数字着顺；未完赛=中止/失格（计出走）；未出走=取消/除外（不计出走）。胜率/连对/复胜分母 = 出走（含中止/失格），同比赛记录页。" +
-    "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；▲/▼ 为与总体平均的差。" +
+    "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 比率分母=出走，同比赛记录页。" +
+    "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +
     "<br>样本少 = 出走 &lt; " + SM_F + "（数字弱化 = 出走 &lt; " + DIM_F + "），小样本仅供参考。";
 }
 
@@ -640,6 +703,19 @@ document.getElementById("genSeg").addEventListener("click", function (e) {
   st.gen = btn.getAttribute("data-g");
   renderCurve();
 });
+document.getElementById("rateSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-r]") : null;
+  if (!btn) return;
+  var k = btn.getAttribute("data-r");
+  var i = st.rates.indexOf(k);
+  if (i >= 0) {
+    if (st.rates.length === 1) return;              /* 指标至少保留一项（同场地 vseg 唯一项不可关） */
+    st.rates.splice(i, 1);
+  } else {
+    st.rates.push(k);
+  }
+  renderCurve();
+});
 document.getElementById("matTabs").addEventListener("click", function (e) {
   var btn = e.target.closest ? e.target.closest("button[data-tab]") : null;
   if (!btn) return;
@@ -648,6 +724,14 @@ document.getElementById("matTabs").addEventListener("click", function (e) {
   renderTable();
 });
 document.getElementById("matTable").addEventListener("click", function (e) {
+  var th = e.target.closest ? e.target.closest("th[data-sk]") : null;
+  if (th) {                                            /* 表头排序：同列再点切换升/降序 */
+    var k = th.getAttribute("data-sk");
+    if (st.sort.k === k) st.sort.dir = st.sort.dir === "desc" ? "asc" : "desc";
+    else { st.sort.k = k; st.sort.dir = "desc"; }
+    renderTable();
+    return;
+  }
   var tr = e.target.closest ? e.target.closest("tr[data-href]") : null;
   if (tr) location.href = tr.getAttribute("data-href");
 });
@@ -664,9 +748,6 @@ window.addEventListener("resize", function () {
     return r.json();
   }).then(function (data) {
     STATS = data;
-    var m = (data.meta && data.meta.stats) || {};
-    document.getElementById("periodLabel").textContent = "集計期間 " + m.first_date + " ~ " + m.last_date +
-      " · " + m.runs + " 条记录 / " + m.horses + " 匹";
     renderAll();
   }).catch(function (e) {
     document.getElementById("kpis").innerHTML =
