@@ -273,7 +273,9 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-nav", v: "nm" });
   const lastD = RUNS[RUNS.length - 1].d;   // 数据末日从产物推导（此前硬编码 9/12，数据更新到 9/13 即过期）
   const nextD = new Date(Date.parse(lastD) + 86400000).toISOString().slice(0, 10);
-  ok(String(els["dpPanel"]._html).includes('dc-dp-cell dis" data-d="' + nextD + '"'), "数据末日（" + lastD.slice(5) + "）之后禁用");
+  // 类顺序无关匹配：末日次日若恰为「今天」会是 class="dc-dp-cell today dis"（2026-09-16 实测踩坑），不能硬编码子串
+  const disRe = new RegExp('class="dc-dp-cell[^"]*\\bdis\\b[^"]*"[^>]*data-d="' + nextD + '"');
+  ok(disRe.test(String(els["dpPanel"]._html)), "数据末日（" + lastD.slice(5) + "）之后禁用");
   dpClick({ name: "data-nav", v: "pm" });
   dpClick({ name: "data-d", v: "2026-08-09" });
   ok(els["winLabel"].textContent === "2026/08/09（" + weekdayCn("2026-08-09") + "）", "点 8/9 → " + els["winLabel"].textContent);
