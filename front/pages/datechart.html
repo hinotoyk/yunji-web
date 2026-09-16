@@ -21,9 +21,11 @@
 .yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
 
 /* ===== 人气徽章（同 races.html：着顺同款颜色文字，无底无框） ===== */
-.yj-nk1{color:#e2cc38}
-.yj-nk2{color:#87aee6}
-.yj-nk3{color:#dca167}
+/* 人气徽章：着顺同色相的深阶文字（白底可读版，同 races.html；无底无框） */
+.yj-nk1{color:#9c7c00}
+.yj-nk2{color:#2e69ad}
+.yj-nk3{color:#b3541a}
+.yj-nk1,.yj-nk2,.yj-nk3{font-weight:600}
 
 /* ===== 马名跳转（同 races.html） ===== */
 .hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
@@ -227,8 +229,8 @@ function placeSlot(p){
   if (typeof p === "number") return (p >= 1 && p <= 3) ? p - 1 : 3;
   return 3;                                  /* 中止/取消/除外/失格 计入第 3 名开外 */
 }
-/* 进板数配色（前三段同 races.html 着顺色 yj-nk1/2/3，开外=浅灰） */
-var BR_COLORS = ["#e2cc38", "#87aee6", "#dca167", "#a1a1aa"];
+/* 进板数配色：着顺同色相深阶（白底可读版：暗金/钢蓝/赭橙，开外=中灰） */
+var BR_COLORS = ["#9c7c00", "#2e69ad", "#b3541a", "#6b7280"];
 function bracketHTML(br, cls){
   var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="进板数：第1:第2:第3:第3名开外">[';
   for (var i = 0; i < 4; i++) s += '<b style="color:' + BR_COLORS[i] + '">' + br[i] + '</b>' + (i < 3 ? "-" : "");

@@ -46,6 +46,7 @@
 | 31 | 时间线页（里程碑事件流） | ✅ 已完成 | `pages/timeline.html` + `scripts/timeline/build_timeline.py` | 占位页替换为里程碑时间线：一场比赛=一条事件+多枚标签徽章（级别初胜/重赏序数/世代首个新马胜·首个重赏/父子制覇/受赏）；纯展示无筛选，中央时间轴+卡片左右交替（图位横A4比例贴轴侧）、最新在顶；**后端预计算 data/timeline.json，前端只渲染**（见 §31） |
 | 32 | 日期图页（日历布局稿 v2 → 真实数据版 v3） | ✅ 已完成 | `pages/datechart.html` + `scripts/datechart/build_datechart.py` | 占位页升级为日历稿：天/周/月/年 口径切换 + KPI 带（出走/胜/进板数[第1-第2-第3-第3名开外]/总赏金/重赏🏆n）+ 日历逐日进板数·赏金·🏆 标识 + 内嵌比赛表同款明细（15 列 + mb 卡片）；**后端预计算 data/datechart.json 已接入**（20 字段，run_update 六策略自动重算）；真实数据版打磨四项：进板数 4 段、日期选择器（统一进窗口标签，Element date-picker 风格，日/周/月/年 面板、周面板可翻週）、场地范围 JRA/NAR/海外（默认 JRA）、明细照搬内嵌表；v3.3 三修：着顺色括号 / 重赏口径对齐（仅 G1-3/Jpn1-3）/ 赏金亿转换；v3.4 文案简化：删说明块、KPI 带 4 项（出走/通算战绩/总赏金/重赏胜利）（见 §32.6/§32.7） |
 | 35 | 统计总览页（STATS）· 全库倾向矩阵 + 成熟曲线 + 重赏之路 | ✅ 已完成 | `pages/stats.html` + `scripts/stats/build_stats.py` + `pages/races.html` + `tests/_verify-stats.cjs` + `tests/_verify-races-drill.cjs` + `run_update.py` | 对标 ittai 産駒傾向页；库内基准 10 维矩阵（▲▼差/样本少/行下钻 `races.html?f=`）、SVG 双线成熟曲线（世代切换）、重赏之路、JRA/NAR/海外组合（唯一项不可关）；**去博彩指标**；回り维度恢复进筛选条；调教师/骑手分列 + 方案甲 select 行；后端预计算 data/stats.json，run_update 六策略 + --check/--ci 三段断言（见 §35） |
+| 36 | 着顺语义「纯彩字」失真修正：人气徽章 / 通算战绩 / 进板数 改浅底胶囊 | ✅ 已完成 | `pages/races.html` + `pages/stats.html` + `pages/datechart.html` | 白底纯彩字（黄 #e2cc38 等）对比 ~1.9:1 小字发虚；统一改「着顺同款浅底 + 同系边框 + 深一档字色」小胶囊（黄底 #ffef7f/字 #6b5900、蓝底 #cbdeff/字 #1d4f8f、橙底 #efc79f/字 #7a4310、着外灰底 #f1f2f4/字 #52525b，对比≥6:1）；三页人气 `.yj-nk1/2/3`、stats 通算战绩 4 段、datechart bracketHTML（BR_COLORS→BR_STYLE）+ zero 月透明兜底（见 §36） |
 
 ---
 
@@ -1339,3 +1340,81 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 5. **人气逐一 1-18**：统计页 dims.ninki 桶 = "1".."18"（ninki_key 重写）；**races.html 同步** ninkiBucket 逐一 + NINKI_OPTS 1-18 chips（下钻 ninki:N 两端口径一致）；人档聚合废除。
 6. **重赏之路 L/OP 拆开**：GRADE_ORDER = 新马→未胜利→班赛→OP→L→重赏；grade 桶 L·OP → L、OP 各自独立（同 races.html grade:L/grade:OP），drillPairs 相应简化。
    - 验证：stats 168 项（含 人气逐一/L·OP 拆分/无展开按钮/说明区无场地类型 断言）+ races-drill 25 项（ninki:1 / 18 chips / FLT[0]==="1"）全过；`--check` 全绿；dist 核对无 TOP_N/vtCompare 残留；PC/mb 截图目检通过（逐月曲线/标签抽稀/新文案）。
+
+---
+
+## 36. 着顺语义「纯彩字」失真修正：人气徽章 / 通算战绩 / 进板数 → 同色相深阶文字
+
+### 36.1 背景与问题
+
+用户反馈：比赛记录页人气列、统计总览通算战绩 `[73-70-69-465]` 的**纯颜色文字看着失真、模糊**。根因：黄 `#e2cc38`/浅蓝 `#87aee6`/浅橙 `#dca167` 是竞马牌报着顺的**深底亮色**，直接当白底 13px 文字用对比度只有 ~1.9~3:1（WCAG 要求 4.5:1），小字号抗锯齿后边缘发虚。着顺徽章 `.yj-no1/2/3` 本身是「浅底+边框+黑字」不受影响——失真的都是**只取了它的文字色、没带底**的衍生元素。
+
+### 36.2 方案迭代
+
+- **v1（否决）：着顺同款浅底小胶囊**（浅底+同系边框+深字，对比≥6:1）——可读性达标，但用户嫌「太丑」：满屏色块太重、与素雅气质冲突。
+- **v2（定稿）：无底无框纯文字，字色换「同色相深阶」+ 600 字重**——只加深、不加块：
+
+| 段 | 旧色（对比） | 新色（对比） |
+|---|---|---|
+| 1着/1人気 | `#e2cc38`（≈1.9:1） | 暗金 `#9c7c00`（≈5.4:1） |
+| 2着/2人気 | `#87aee6`（≈2.4:1） | 钢蓝 `#2e69ad`（≈5.2:1） |
+| 3着/3人気 | `#dca167`（≈2.8:1） | 赭橙 `#b3541a`（≈5.2:1） |
+| 着外/开外 | `#a1a1aa` | 中灰 `#6b7280`（≈4.8:1） |
+
+黄色系要在白底可读必然压暗成「暗金」——这是色彩物理，无底方案下的极限；用户确认此版可接受。
+
+### 36.3 落地
+
+- `pages/races.html`：`.yj-nk1/2/3` 换深阶色 + 600 字重（ninkiBadge 输出不变，纯 CSS）。
+- `pages/stats.html`：`renderKpis()` 通算战绩 4 段用新色板；着顺分布条下方说明色同步（#8a7340/#5c7295/#9a7a45 → 新色板）。
+- `pages/datechart.html`：`.yj-nk1/2/3` 同款；`BR_COLORS` 换深阶四色（KPI 通算战绩 + 月卡 + 日历格进板数同源生效）。
+
+### 36.4 状态
+
+✅ 已完成：168+25 断言全过、`--check` 全绿、`npm run build` dist 核对；三页截图目检（通算战绩/人气列均清晰、无底块素雅）。未 commit（等用户确认后随下批提交）。
+
+---
+
+## 37. 赛道方向统一译名 + 人气筛选改多选下拉
+
+### 37.1 赛道方向译名（用户指令）
+
+「コース」统一译「**赛道方向**」，右回り/左回り →「**右转/左转**」：
+
+- `pages/races.html`：筛选行「回り」→「赛道方向」，chips 右转/左转（tip：右转·顺时针/左转·逆时针，コース名前缀判断不变）。
+- `pages/stats.html`：页签「右左」→「赛道方向」；矩阵桶值 右/左 → 右转/左转（`bucketLabel` 加 turn 分支）。**内部值 `turn:右/左` 不变**——下钻 URL、`validFilterValue` 枚举、build_stats 桶键全都不动，纯显示层译名。
+
+### 37.2 人气筛选 → select 添加 + f-tag 删除（用户指令，同调教师/骑手逻辑）
+
+18 个 chips（1-18人気）太占行。**v1 多选下拉面板（否决）**：自定义弹层遮挡下方行、且与全站筛选范式不一致——用户拍板「按调教师、骑手那种逻辑做」。**v2（定稿）**：直接复用方案甲 `selRow()`，加 `fix` 参数区分：
+
+- 选项：**1→18 固定升序**（调教师/骑手是按出赛数降序），文本「1人気（113场）」带出赛数；已选项从 select 排除。
+- 已选显示：f-tag 胶囊「1人気 ×」（tag 文本带人気，值仍是内部键 "1"）——`data-fk/data-fv` 删除机制、select change 添加机制**全部复用现成委托，零新逻辑**。
+- 组件：`selRow("ninki","人气",true)`；下拉弹层/NK_OPEN/外点监听全部移除。
+
+### 37.3 测试同步
+
+- `_verify-races-drill.cjs`：筛选行断言改 赛道方向/右转/左转；[C] 人气断言改 select+tag 结构（data-sel/f-tag/选项升序/排除已选）；**[D] 交互 4 项**（select 添加 → FLT=[1,2] / tag「2人気」渲染 / 点 tag × 删除 → FLT=[2]）——drill 套件 31 项。
+- `_verify-datechart.cjs`：通算战绩三段色断言随 §36 v2 深阶色板更新。
+
+### 37.4 下拉选项 hover 高亮青绿化（appearance: base-select 渐进增强）
+
+用户反馈：人气/调教师/骑手 select 展开后，选项 hover 高亮是**系统灰**而非主题青绿。根因：原生 `<select>` 的展开列表由浏览器绘制，`option:hover` 的系统高亮色 CSS 覆盖不了（老 Chromium 限制）。修复走 **`appearance: base-select`（Chrome 135 稳定的可定制 select）** 渐进增强：
+
+- `@supports (appearance:base-select)` 内：select/picker 切 base-select，`::picker(select)` 自绘边框/圆角/阴影，`option:hover/checked` = 浅青底 `#e5f7f6` + 深青字 `#0b8a84` + 600 字重，`::picker-icon` 灰→青绿。
+- 兜底：旧浏览器（Firefox/Safari/老 Chrome）不支持时自动回退原生——仅加了一条 `option:checked{background:#e5f7f6}` 尽力而为规则，hover 灰无法覆盖是平台限制。
+- 坑：页内 `<style>` 不进 `dist/assets/*.css`（Tailwind content 只扫类名），核对编译产物要查 **dist/pages/races.html 本身**。
+
+### 37.5 筛选行序重排（用户 v10 定稿）
+
+用户重新指定两列布局（「A-B」= 一行两列；无 - = 独占一行 wide）：
+
+出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 / 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气 / 调教师-骑手
+
+（v9 曾把人气放年份之后，v10 挪到竞马场·海外之后、调教师-骑手之前。）
+
+落地：`renderFilters` 行序按此重排；`horseRow` 去 wide（半列）；`selRow()` 加 `wide` 参数（默认 true），调教师/骑手传 false 并排半列。竞马场联动隐藏某行时由 grid 流自然补位。mb 单列布局不受影响。
+
+### 37.6 状态
+
+✅ 已完成：stats 168 + drill 31 + datechart 84 断言全过、`--check` 全绿、dist/pages/races.html 已含 base-select 规则与 v10 行序；截图目检通过（新行序/人气 tag/hover 增强编译）。未 commit（等用户确认后随下批提交）。

@@ -173,7 +173,7 @@ td.dim .num{color:#c6c6ca}
  *           勾选场地在同一切面下的计数相加、比率重算。
  * 倾向矩阵：10 维（跑道/距离/马场/左右/级别/人气/性别/竞马场/调教师/骑手），
  *           顶行=库内基准，每桶 ▲▼ 相对基准差；行可下钻比赛记录页查询（附带切面 byear/year）。
- * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气档位 / 右左 / 性别归一；
+ * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一；
  *       比率分母=出走（完赛+未完赛，取消/除外不计），同 races.html 模块 34。 */
 var STATS = null;
 var st = { vts: ["中央"], yMode: "gen", yVal: "all", gen: "全部", tab: "surf" };
@@ -182,7 +182,7 @@ var TAB_DIMS = [
   { k: "surf",    l: "跑道",   tip: "草地/泥地/全天候" },
   { k: "dist",    l: "距离",   tip: "短距离≤1400m / 英里1401-1800m / 中距离1801-2400m / 长距离>2400m" },
   { k: "cond",    l: "马场",   tip: "良/稍重/重/不良" },
-  { k: "turn",    l: "右左",   tip: "右回り（顺时针）/ 左回り（逆时针）" },
+  { k: "turn",    l: "赛道方向", tip: "右转（顺时针）/ 左转（逆时针）" },
   { k: "grade",   l: "级别",   tip: "新马/未胜利/班赛(1-3胜)/OP/L/重赏(G1-3+Jpn1-3)" },
   { k: "ninki",   l: "人气",   tip: "1人気～18人気 逐一" },
   { k: "sex",     l: "性别",   tip: "牡/牝/セン" },
@@ -274,8 +274,14 @@ var ageLabel = function (a) { return Math.floor(a / 12) + "岁" + (a % 12) + "�
 function renderKpis() {
   var b = baseMerged(), r = rates(b);
   var fvn = fin(b);
-  var brk = '<span class="st-brk st-brk-lg">[<b style="color:#e2cc38">' + b.w + '</b>-<b style="color:#87aee6">' + b.p2 +
-    '</b>-<b style="color:#dca167">' + b.p3 + '</b>-' + (fvn - b.w - b.p2 - b.p3) + ']</span>';
+  /* 通算战绩 4 段：着顺同色相深阶文字（白底可读版：暗金/钢蓝/赭橙/中灰） */
+  var BR = ["#9c7c00", "#2e69ad", "#b3541a", "#6b7280"];
+  var vals = [b.w, b.p2, b.p3, Math.max(0, fvn - b.w - b.p2 - b.p3)];
+  var brk = '<span class="st-brk st-brk-lg">[';
+  vals.forEach(function (v, i) {
+    brk += '<b style="color:' + BR[i] + '">' + v + '</b>' + (i < 3 ? "-" : "");
+  });
+  brk += ']</span>';
   var kpi = function (k, v, cls) {
     return '<div class="st-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
   };
@@ -304,7 +310,7 @@ function renderDistBar() {
   document.getElementById("distBar").innerHTML =
     bar +
     '<div class="mt-1.5 text-[12px] text-muted-foreground">' +
-    '1着<b style="color:#8a7340"> ' + b.w + '</b> · 2着<b style="color:#5c7295"> ' + b.p2 + '</b> · 3着<b style="color:#9a7a45"> ' + b.p3 +
+    '1着<b style="color:#9c7c00"> ' + b.w + '</b> · 2着<b style="color:#2e69ad"> ' + b.p2 + '</b> · 3着<b style="color:#b3541a"> ' + b.p3 +
     '</b> · 着外<b> ' + other + '</b>　（完赛 ' + fvn + ' 场）</div>';
 }
 function renderRateBand() {
@@ -507,6 +513,7 @@ function bucketLabel(tab, k) {
     if (k === "未勝利") return "未胜利";
     return k;
   }
+  if (tab === "turn") return k === "右" ? "右转" : k === "左" ? "左转" : k;
   return surfLabel(k);
 }
 function renderTable() {

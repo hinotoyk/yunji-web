@@ -25,11 +25,12 @@
 .yj-no2{background-color:#cbdeff;border-color:#87aee6;color:#000}
 .yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
 
-/* ===== 人气徽章：数字文字用着顺同款配色（1黄/2蓝/3橙文字色，无底无框）
- * 只染字色、不加重不加底，突出又不抢着顺彩色方块的风头；4+ 纯数字不变 */
-.yj-nk1{color:#e2cc38}
-.yj-nk2{color:#87aee6}
-.yj-nk3{color:#dca167}
+/* ===== 人气徽章：着顺同色相的深阶文字（白底可读版，对比≥5:1）
+ * 不加底不加框保素雅；黄/蓝/橙的「白底可读深阶」+ 600 字重；4+ 纯数字不变 */
+.yj-nk1{color:#9c7c00}
+.yj-nk2{color:#2e69ad}
+.yj-nk3{color:#b3541a}
+.yj-nk1,.yj-nk2,.yj-nk3{font-weight:600}
 
 /* ===== mb 卡片（≤768px，JS 渲染时用；PC 不渲染该容器）=====
  * 软分行：标题一行 + 固定分组行（行内项超宽时在项边界自然折行），无横线分隔 */
@@ -73,6 +74,18 @@
 .f-tag-x:hover{background:rgba(10,167,160,.16);color:#ef4444}
 /* 调教师/骑手原生 select（方案甲）：与 .filter-chip 同高同圆角 */
 .f-sel{height:26px;padding:0 8px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;cursor:pointer;max-width:230px}
+/* 下拉选项高亮：原生 option 的 hover 用系统灰、CSS 够不着（Chromium 限制）；
+ * Chrome 135+ 起可用 appearance:base-select 完全定制——@supports 渐进增强，不支持的回退原生不受影响 */
+.f-sel option:checked{background:#e5f7f6;color:#0b8a84}
+@supports (appearance:base-select){
+  .f-sel,.f-sel::picker(select){appearance:base-select}
+  .f-sel::picker(select){margin-top:4px;border:1px solid #e3e3e3;border-radius:9px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.12);padding:4px}
+  .f-sel::picker-icon{color:#8a8a8e;margin-left:6px;transition:color .15s}
+  .f-sel:hover,.f-sel:focus{border-color:rgba(10,167,160,.55)}
+  .f-sel:hover::picker-icon,.f-sel:focus::picker-icon{color:#0b8a84}
+  .f-sel option{padding:5px 10px;border-radius:6px;cursor:pointer}
+  .f-sel option:hover,.f-sel option:checked{background:#e5f7f6;color:#0b8a84;font-weight:600}
+}
 .f-sel:hover{border-color:rgba(10,167,160,.55);color:#0b6b64}
 /* 出走马搜索框（compact selector）：圆角 7px / 边框 #e3e3e3 / 去下边距 —— 与 .filter-chip 完全统一 */
 .f-horse-sel .box{border-radius:7px;border-color:#e3e3e3}
@@ -612,10 +625,10 @@ var NINKI_OPTS = Array.apply(null,Array(18)).map(function(_,i){
   var n=i+1;
   return {v:String(n), l:n+"人気", tip:n===1?"单胜人气第1":null};
 });
-/* 回り方向（按コース名前缀 右/左；模块 12.2 曾删，统计总览下钻恢复） */
+/* 赛道方向（コース名前缀 右/左 → 右转/左转；模块 12.2 曾删，统计总览下钻恢复） */
 var TURN_OPTS = [
-  {v:"右", l:"右回り", tip:"コース名 右"},
-  {v:"左", l:"左回り", tip:"コース名 左"}
+  {v:"右", l:"右转", tip:"右转·顺时针（コース名以「右」开头）"},
+  {v:"左", l:"左转", tip:"左转·逆时针（コース名以「左」开头）"}
 ];
 var SEX_OPTS = [
   {v:"牡", l:"牡"}, {v:"牝", l:"牝"}, {v:"セン", l:"セン"}
@@ -767,27 +780,29 @@ function renderFilters(){
     var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip); }).join("");
     return '<div class="filter-row wide"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips">'+chips+'</div></div>';
   };
-  /* 调教师/骑手（方案甲）：原生 select 添加 + f-tag 删除（值按出赛数降序，同 selector 列表排序） */
+  /* 调教师/骑手/人气（方案甲）：原生 select 添加 + f-tag 删除（调教师/骑手按出赛数降序；
+   * fix=true 时为人气：选项固定 1→18 升序、文本带「人気」，tag 同；wide=false 并排半列） */
   var selCounts=function(key){
     var cnt={};
     LIB.entries.forEach(function(en){ var v=entryVal(en,key); if(v) cnt[v]=(cnt[v]||0)+1; });
     return Object.keys(cnt).sort(function(a,b){ return cnt[b]-cnt[a]; }).map(function(v){ return {v:v,n:cnt[v]}; });
   };
-  var selRow=function(key,label){
+  var selRow=function(key,label,fix,wide){
     var tags=FLT[key].map(function(v){
-      return '<span class="f-tag">'+esc(v)+'<button type="button" class="f-tag-x" data-fk="'+key+'" data-fv="'+esc(v)+'" title="移除该'+esc(label)+'">×</button></span>';
+      return '<span class="f-tag">'+esc(fix ? v+"人気" : v)+'<button type="button" class="f-tag-x" data-fk="'+key+'" data-fv="'+esc(v)+'" title="移除该'+esc(label)+'">×</button></span>';
     }).join("");
-    var opts=selCounts(key).filter(function(o){ return FLT[key].indexOf(o.v)<0; }).map(function(o){
-      return '<option value="'+esc(o.v)+'">'+esc(o.v)+'（'+o.n+'场）</option>';
+    var opts=selCounts(key);
+    if(fix) opts.sort(function(a,b){ return (+a.v)-(+b.v); });   /* 人气 1→18 固定升序 */
+    opts=opts.filter(function(o){ return FLT[key].indexOf(o.v)<0; }).map(function(o){
+      return '<option value="'+esc(o.v)+'">'+esc(fix ? o.v+"人気" : o.v)+'（'+o.n+'场）</option>';
     }).join("");
-    return '<div class="filter-row wide"><span class="filter-label">'+esc(label)+'</span>'+
+    return '<div class="filter-row'+(wide===false ? '' : ' wide')+'"><span class="filter-label">'+esc(label)+'</span>'+
       '<div class="filter-chips">'+tags+'<select class="f-sel" data-sel="'+key+'">'+
       '<option value="">选择'+esc(label)+'…</option>'+opts+'</select></div></div>';
   };
 
   /* 马场状态：固定 良/稍重/重/不良 */
   var condOpts=[{v:"良",l:"良"},{v:"稍重",l:"稍重"},{v:"重",l:"重"},{v:"不良",l:"不良"}];
-
   var yearSeen={}, byearSeen={};
   LIB.entries.forEach(function(en){
     var y=entryVal(en,"year"); if(y) yearSeen[y]=1;   /* 比赛年份 */
@@ -813,33 +828,36 @@ function renderFilters(){
     var nm=h?horseText({h:h}):("#"+id);
     return '<span class="f-tag">'+esc(nm)+'<button type="button" class="f-tag-x" data-hid="'+esc(id)+'" title="移除该马">×</button></span>';
   }).join("");
-  var horseRow='<div class="filter-row wide"><span class="filter-label">出走马</span>'+
+  var horseRow='<div class="filter-row"><span class="filter-label">出走马</span>'+
     '<div class="filter-chips" id="fHorseChips">'+selTags+
       '<div class="f-horse-sel" id="fHorseSel"></div>'+
     '</div></div>';
 
+  /* 行序（用户 v10 定稿）：「A-B」= 一行两列；无 - = 独占一行（wide）
+   * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
+   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气 / 调教师-骑手 */
   el.innerHTML=
     '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
     (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
     '</div>'+
     '<div class="filter-card"><div class="filter-grid">'+
       horseRow+
-      row("venue","场地",VENUE_OPTS)+
       row("surface","跑道",SURFACE_OPTS)+
-      row("dist","距离",DIST_OPTS)+
+      row("venue","场地",VENUE_OPTS)+
       row("cond","马场",condOpts)+
-      row("turn","回り",TURN_OPTS)+
-      (years.length?'<div class="filter-row"><span class="filter-label">比赛年份</span><div class="filter-chips">'+years.map(function(y){ return chip("year",y,y); }).join("")+'</div></div>':"")+
+      row("dist","距离",DIST_OPTS)+
+      row("turn","赛道方向",TURN_OPTS)+
       (byears.length?'<div class="filter-row"><span class="filter-label">出生年份</span><div class="filter-chips">'+byears.map(function(b){ return chip("byear",b,b); }).join("")+'</div></div>':"")+
-      row("ninki","人气",NINKI_OPTS)+
+      (years.length?'<div class="filter-row"><span class="filter-label">比赛年份</span><div class="filter-chips">'+years.map(function(y){ return chip("year",y,y); }).join("")+'</div></div>':"")+
       row("sex","性别",SEX_OPTS)+
       row("result","着顺",RESULT_OPTS)+
       rowWide("grade","级别",GRADE_OPTS)+
       (showCentral?rowWide("track","竞马场·中央",TRACK_CENTRAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showLocal?rowWide("track","竞马场·地方",TRACK_LOCAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showOversea?rowWide("track","竞马场·海外",[{v:"海外",l:"海外"}]):"")+
-      selRow("trainer","调教师")+
-      selRow("jockey","骑手")+
+      selRow("ninki","人气",true)+
+      selRow("trainer","调教师",null,false)+
+      selRow("jockey","骑手",null,false)+
     '</div></div>';
   /* 筛选条重建后重新挂载出走马搜索（selector 组件，compact+multi 模式；loadHorses 走缓存） */
   initHorseSel();
