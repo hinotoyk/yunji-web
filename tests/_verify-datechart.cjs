@@ -219,8 +219,8 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sm).join("-") + "]",
     "KPI 通算战绩 4 段 [" + br4(sm).join("-") + "]（标签剥离后逐段比对）");
   const brkHtml = String(kpiOf("通算战绩", els["kpis"]._html) || "");
-  ok(brkHtml.includes("#e2cc38") && brkHtml.includes("#87aee6") && brkHtml.includes("#dca167") && !brkHtml.includes("#0aa7a0"),
-    "通算战绩前三段色 = races.html 着顺色 yj-nk1/2/3（金/蓝/橙），开外浅灰");
+  ok(brkHtml.includes("#9c7c00") && brkHtml.includes("#2e69ad") && brkHtml.includes("#b3541a") && !brkHtml.includes("#0aa7a0"),
+    "通算战绩前三段色 = 着顺同色相深阶（暗金/钢蓝/赭橙），开外中灰");
   ok(man(1150345000) === "11亿5,034万" && man(1e8) === "1亿" && man(25140000) === "2,514万" && man(99990000) === "9,999万" && man(0) === "",
     "manYen 亿转换：11亿5,034万 / 1亿 / 2,514万 / 9,999万 / 空");
   const winDays = new Set(sm.filter(r => r.p === 1).map(r => r.d)).size;
