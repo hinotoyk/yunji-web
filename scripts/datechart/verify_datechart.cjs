@@ -156,6 +156,10 @@ global.YJ = { i18n: {
   e(k, v) { return ({ 芝:"草地", ダ:"泥地", 障害:"障碍", AW:"全天候" })[v] || v; },
 } };
 global.YJ_DATA = { url(p) { return "data/" + p; } };
+/* 页面已把「比赛行/徽章渲染」下沉到共享模块 front/public/race-rows.js（与比赛页同一份代码，
+ * 见 UI优化记录 §42）。浏览器里它先于页面脚本加载，stub 环境须保持同样顺序，
+ * 否则页面脚本取不到 YJ.raceRows。 */
+eval(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
 global.fetch = function (url) {
   const txt = fs.readFileSync(path.join(ROOT, String(url)), "utf8");
   return Promise.resolve({ ok: true, json() { return Promise.resolve(JSON.parse(txt)); } });
@@ -217,10 +221,11 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(String(kpiOf("总赏金", els["kpis"]._html)) === man(prizeOf(sm)), "KPI 总赏金 " + man(prizeOf(sm)));
   ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sm), "KPI 重赏胜利 🏆" + trophyOf(sm));
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sm).join("-") + "]",
-    "KPI 通算战绩 4 段 [" + br4(sm).join("-") + "]（标签剥离后逐段比对）");
+    "KPI 通算战绩 4 段 [" + br4(sm).join("-") + "]（标签剥离后逐段比对：格式保留 - 连字符）");
   const brkHtml = String(kpiOf("通算战绩", els["kpis"]._html) || "");
-  ok(brkHtml.includes("#9c7c00") && brkHtml.includes("#2e69ad") && brkHtml.includes("#b3541a") && !brkHtml.includes("#0aa7a0"),
-    "通算战绩前三段色 = 着顺同色相深阶（暗金/钢蓝/赭橙），开外中灰");
+  ok(brkHtml.includes("#FEED88") && brkHtml.includes("#CCDFFD") && brkHtml.includes("#ECC6A2") && brkHtml.includes("#ececec")
+    && /<i[^>]*>-<\/i>/.test(brkHtml) && brkHtml.includes("linear-gradient") && !brkHtml.includes("#0aa7a0"),
+    "通算战绩 = [1-1-1-1] 格式（含 - 连字符）+ 1/2/3 浅色做底（#FEED88/#CCDFFD/#ECC6A2）+ 着外浅灰，连字符带渐变接缝使底色连成一整条");
   ok(man(1150345000) === "11亿5,034万" && man(1e8) === "1亿" && man(25140000) === "2,514万" && man(99990000) === "9,999万" && man(0) === "",
     "manYen 亿转换：11亿5,034万 / 1亿 / 2,514万 / 9,999万 / 空");
   const winDays = new Set(sm.filter(r => r.p === 1).map(r => r.d)).size;
@@ -235,7 +240,12 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok((pcHtml.match(/<th[\s\S]*?<\/th>/g) || []).length === 15, "PC 表头 15 列（内嵌 14 列 + 出走马）");
   ok(pcHtml.includes(">日期<") && pcHtml.includes(">马名<") && pcHtml.includes(">调教师<") && pcHtml.includes("赏金(万元)") === false && pcHtml.includes("赏金(万円)"), "表头走 i18n（日期/马名/调教师/賞金(万円)）");
   ok(pcHtml.includes("hjump") && pcHtml.includes("profile.html?horse="), "出走马列跳档案链接");
-  ok(pcHtml.includes("yj-nk1") || pcHtml.includes("yj-nk2") || pcHtml.includes("yj-nk3") || true, "人气徽章渲染（1/2/3 彩色文字）");
+  /* 明细走共享模块 race-rows.js：人气 1/2/3 必须是「与着顺同款徽章」（yj-no yj-nk*），
+   * 与比赛页内嵌表同源；窗口内无 1/2/3 人气时不假通过，而是断言确实没有彩色徽章 */
+  const nkChipCnt = (pcHtml.match(/yj-no yj-nk[123]/g) || []).length;
+  const nk123InWin = sMonth(ym).filter(r => r.nk === 1 || r.nk === 2 || r.nk === 3).length;
+  ok(nk123InWin > 0 ? nkChipCnt > 0 : nkChipCnt === 0,
+    "人气 1/2/3 = 与着顺同款徽章（yj-no yj-nk*）：徽章 " + nkChipCnt + " 处 / 窗口内 1-3 人气 " + nk123InWin + " 匹次");
   ok(els["dBody"]._html.includes("yj-mb") && els["dBody"]._html.includes("yj-mb-line"), "mb 软分行卡片（yj-mb*）");
   ok(els["dBody"]._html.includes("騎手") === false && els["dBody"]._html.includes("骑手："), "mb 卡 label：value 中文标签（骑手：）");
   ok(/\d+\(\+\d+\)|\d+\(-\d+\)/.test(String(els["dBody"]._html)), "马体重合并 500(+2) 格式存在");
@@ -357,7 +367,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === ay + "年", "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/class="dc-ym( zero)?"/g) || []).length === 12, "12 个月卡");
   ok(+kpiRuns() === sy.length, "年 KPI 出走 " + sy.length);
-  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sy).join("-") + "]", "年通算战绩 4 段 [" + br4(sy).join("-") + "]");
+  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sy).join("-") + "]", "年通算战绩 4 段 [" + br4(sy).join("-") + "]（格式保留 - 连字符）");
   const dnfAll = src.filter(r => typeof r.p === "string");
   ok(dnfAll.length > 0, "源数据含未完走 " + dnfAll.length + " 条（中止/取消/除外）");
   const dnf = dnfAll.find(r => +r.d.slice(0, 4) === ay) || dnfAll[0];

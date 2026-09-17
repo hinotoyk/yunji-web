@@ -133,33 +133,56 @@ function avatarBind(){
 
 var detailCol=document.getElementById("detailCol");
 
-/* 未选马：目录总览（让右侧不空白，兼做引导；统计卡片分 基础/出生年/性别 三类） */
+/* 未选马：目录总览（让右侧不空白，兼做引导）。
+ * 概览卡 = 实时合计等式：收录产驹总数 = 各年出生数之和（由 basic.json 现场聚合，
+ * 数据新增年份自动扩展；非年份数值兜底排最后，保证「总和 = 各年之和」恒成立） */
 function renderOverview(hs){
   var total=hs.length;
   var byYear={}, bySex={};
-  var raced=0;
   hs.forEach(function(h){
     var y=h.生年||'未知'; byYear[y]=(byYear[y]||0)+1;
     var s=h.性別;
     if(s==='セ') s='セン'; /* セ/セン 两种写法都算骟马 */
     if(s) bySex[s]=(bySex[s]||0)+1;
-    if(h.通算成績) raced++;
   });
-  var years=Object.keys(byYear).sort().reverse();
+  var years=Object.keys(byYear).sort(function(a,b){
+    var na=parseInt(a,10), nb=parseInt(b,10);
+    var ka=isNaN(na), kb=isNaN(nb);
+    if(ka||kb) return ka===kb?0:(ka?1:-1); /* 非年份（未知）排最后 */
+    return nb-na; /* 年份降序，最新在前 */
+  });
   var stat=function(v,k,hi){ return '<div class="flex flex-col items-start justify-center rounded-md bg-muted/30 px-4 py-3.5"><div class="text-[22px] font-semibold leading-tight '+(hi?'text-primary':'')+'">'+esc(v)+'</div><div class="mt-0.5 text-[12px] text-secondary-foreground">'+esc(k)+'</div></div>'; };
-  var group=function(label, sub, cols, inner){
+  var group=function(label, sub, inner){
     return '<div class="flex min-h-0 flex-1 flex-col rounded-[10px] border border-border bg-card p-5">'+
       '<div class="mb-3 flex items-baseline gap-2"><span class="text-[12px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+label+'</span>'+(sub?'<span class="text-[10.5px] tracking-[.5px] text-muted-foreground">'+sub+'</span>':'')+'</div>'+
-      '<div class="grid min-h-0 flex-1 gap-3 '+cols+'">'+inner+'</div></div>';
+      inner+'</div>';
   };
   var sexName={'牡':'牡马','牝':'牝马','セン':'骟马'};
+  /* 概览 · PC：等式排版 总和（青绿大数）= 年份白卡 + 年份白卡 + …（flex-wrap 兜底，年份增多自动折行）；mb 隐藏 */
+  var op=function(s){ return '<span class="flex-none self-center text-[20px] font-semibold leading-none text-foreground/75">'+s+'</span>'; };
+  var yearTile=function(y){
+    return '<div class="flex flex-col rounded-[10px] bg-card px-5 py-3.5 shadow-[0_2px_12px_rgba(16,24,40,.08)]">'+
+      '<div class="text-[24px] font-bold leading-none tracking-[-.2px] text-foreground tabular-nums">'+esc(byYear[y])+'</div>'+
+      '<div class="mt-1.5 whitespace-nowrap text-[12px] text-muted-foreground">'+esc(y)+' 年生</div></div>';
+  };
   var statHTML=
-    group('基础','BASIC','grid-cols-2',
-      stat(total,'收录产驹总数',true)+stat(raced,'比赛记录',''))+
-    group('出生年','BY YEAR','grid-cols-2',
-      years.map(function(y){ return stat(byYear[y], y+' 年生',''); }).join(''))+
-    group('性别','BY SEX','grid-cols-3',
-      ['牡','牝','セン'].map(function(s){ return stat(bySex[s]||0, sexName[s], ''); }).join(''));
+    group('概览','OVERVIEW',
+      /* PC：等式（mb 端隐藏） */
+      '<div class="flex min-h-0 flex-1 flex-wrap content-center items-center gap-x-3.5 gap-y-3 max-md:hidden">'+
+        '<div class="mr-1 flex flex-col"><div class="text-[30px] font-bold leading-none tracking-[-.2px] text-primary tabular-nums">'+esc(total)+'</div>'+
+        '<div class="mt-1.5 whitespace-nowrap text-[12.5px] font-medium text-secondary-foreground">收录产驹总数</div></div>'+
+        op('=')+
+        years.map(function(y){ return yearTile(y); }).join(op('+'))+
+      '</div>'+
+      /* mb（≤768）：不做 =/+，直接展示 —— 总数通栏 + 年份 2 列网格统计卡 */
+      '<div class="hidden max-md:grid max-md:flex-1 max-md:grid-cols-2 max-md:gap-3">'+
+        '<div class="max-md:col-span-2">'+stat(total,'收录产驹总数',true)+'</div>'+
+        years.map(function(y){ return stat(byYear[y], y+' 年生',''); }).join('')+
+      '</div>')+
+    group('性别','BY SEX',
+      '<div class="grid min-h-0 flex-1 grid-cols-3 gap-3">'+
+        ['牡','牝','セン'].map(function(s){ return stat(bySex[s]||0, sexName[s], ''); }).join('')+
+      '</div>');
   document.getElementById("body").innerHTML =
     '<div class="flex min-h-full flex-col gap-4">'+
       '<div class="rounded-[10px] border border-border bg-card p-6">'+

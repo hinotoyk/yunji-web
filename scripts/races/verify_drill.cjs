@@ -80,6 +80,10 @@ global.YJ = {
   },
 };
 
+/* 比赛行/徽章渲染已下沉到共享模块 front/public/race-rows.js（与日期图明细同一份代码，
+ * 见 UI优化记录 §42）。浏览器里它先于页面脚本加载，stub 环境须保持同样顺序。 */
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
+
 /* 间接 eval → 页面 var/function 落到 global（后续可读 LIB/FLT/entryVal/matchEntry） */
 (0, eval)(code);
 

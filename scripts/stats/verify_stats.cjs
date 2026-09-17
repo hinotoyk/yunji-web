@@ -382,9 +382,13 @@ setTimeout(function () {
   ok(kpiV("总赏金") === manYenOf(b0.pr), "KPI 总赏金 " + manYenOf(b0.pr));
   ok(kpiV("重赏胜利") === '<span class="st-trophy">🏆</span>' + byv["中央"].scopes.all.trophies.length, "KPI 重赏 🏆" + byv["中央"].scopes.all.trophies.length);
   ok(String(kpiV("通算战绩") || "").replace(/<[^>]+>/g, "") === "[" + b0.w + "-" + b0.p2 + "-" + b0.p3 + "-" + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "]",
-    "KPI 通算战绩 4 段（着别=完赛口径）");
+    "KPI 通算战绩 4 段（着别=完赛口径；格式保留 - 连字符）");
+  const brkH = String(kpiV("通算战绩") || "");
+  ok(brkH.includes("#FEED88") && brkH.includes("#CCDFFD") && brkH.includes("#ECC6A2") && brkH.includes("#ececec")
+    && /<i[^>]*>-<\/i>/.test(brkH) && brkH.includes("linear-gradient") && !brkH.includes("#0aa7a0"),
+    "通算战绩 = [1-1-1-1] 格式 + 1/2/3 浅色做底 + 连字符带渐变接缝（底色连成一整条，柔过渡）");
   const bar = String(els["distBar"]._html);
-  ok(bar.includes("st-bar") && bar.includes("#e2cc38") && bar.includes("完赛 " + (b0.n - b0.dnf - b0.exc) + " 场"), "着顺分布条（着别=完赛口径）");
+  ok(bar.includes("st-bar") && bar.includes("#FEED88") && bar.includes("完赛 " + (b0.n - b0.dnf - b0.exc) + " 场"), "着顺分布条（着别=完赛口径；1/2/3 浅色三件套）");
   const rb = String(els["rateBand"]._html);
   ok(rb.includes(pctOf(r0.win)) && rb.includes(pctOf(r0.ren)) && rb.includes(pctOf(r0.fuku)),
     "比率带（分母=出走）胜率/连对/复胜 = " + pctOf(r0.win) + " / " + pctOf(r0.ren) + " / " + pctOf(r0.fuku));

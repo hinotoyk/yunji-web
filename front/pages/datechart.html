@@ -6,30 +6,9 @@
 <title>日期图 · 云迹</title>
 <link rel="stylesheet" href="theme.css">
 <style>
-/* ===== 等级徽章（同 races.html / timeline.html：JBIS 实心胶囊 + 白字；类名全小写） ===== */
-.yj-grade{display:inline-block;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
-.yj-g1{background-color:#d5302a}
-.yj-g2{background-color:#0a3b7e}
-.yj-g3{background-color:#087220}
-.yj-gl{background-color:#dca026}
-.yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
-
-/* ===== 着顺徽章（同 races.html：仅 1/2/3 有颜色+边框） ===== */
-.yj-no{display:inline-flex;align-items:center;justify-content:center;flex:none;width:26px;height:26px;border-radius:4px;border:1px solid transparent;font-size:13px}
-.yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
-.yj-no2{background-color:#cbdeff;border-color:#87aee6;color:#000}
-.yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
-
-/* ===== 人气徽章（同 races.html：着顺同款颜色文字，无底无框） ===== */
-/* 人气徽章：着顺同色相的深阶文字（白底可读版，同 races.html；无底无框） */
-.yj-nk1{color:#9c7c00}
-.yj-nk2{color:#2e69ad}
-.yj-nk3{color:#b3541a}
-.yj-nk1,.yj-nk2,.yj-nk3{font-weight:600}
-
-/* ===== 马名跳转（同 races.html） ===== */
-.hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
-.hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
+/* ===== 等级/着顺/人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
+ * 已收敛到 theme.css @layer components，并与 front/public/race-rows.js 配套：
+ * 明细与比赛页（内嵌）共用同一份样式与同一份行渲染代码，改一次两处同步 ===== */
 
 /* ===== 单位切换（天/周/月/年 分段控件） ===== */
 .seg{display:inline-flex;overflow:hidden;border:1px solid #e5e5e5;border-radius:8px;background:#fff}
@@ -81,10 +60,19 @@
 .dc-kpi .v.dim{color:#a1a1aa}
 .dc-kpi .trophy{font-size:16px;margin-right:2px}
 
-/* ===== 进板数 [第1-第2-第3-第4-第5-5名之外]（数字按着顺语义色） ===== */
-.dc-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap}
-.dc-brk b{font-weight:600}
+/* ===== 进板数 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
+ * 四段底色连成「一整条」：数字格各用名次底色，连字符格用「上一色→下一色」线性渐变接缝，
+ * 底色连续、过渡柔和无硬边；圆角只留在整条两端（KPI 大括号 5px / 日历小格 3px） ===== */
+.dc-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
+.dc-brk b{color:#171717;font-weight:600}
+.dc-brk i{font-style:normal;color:#171717;font-weight:600;padding:0 1px}
+.dc-brk b:first-of-type{margin-left:2px;border-radius:3px 0 0 3px}
+.dc-brk b:last-of-type{margin-right:2px;border-radius:0 3px 3px 0}
 .dc-brk-lg{font-size:19px}
+.dc-brk-lg b{padding:1px 6px}
+.dc-brk-lg i{padding:1px 5px}
+.dc-brk-lg b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
+.dc-brk-lg b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
 
 /* ===== 日历（月网格：周一行 + 日格） ===== */
 .dc-cal{display:flex;flex-direction:column;gap:3px}
@@ -114,20 +102,7 @@
 .dc-ym-prz{font-size:12px;color:#52525b;font-variant-numeric:tabular-nums}
 .dc-ym-n{font-size:10.5px;color:#8a8a8a}
 
-/* ===== 明细（照搬 races.html 内嵌比赛表：mb 软分行卡片 yj-mb*，未完走整卡降灰） ===== */
-.yj-mb.dnf{opacity:.5}
-.yj-mb-top{display:flex;align-items:center;gap:8px;padding:10px 12px 3px}
-.yj-mb-date{font-size:11.5px;color:#8a9096;font-weight:600;white-space:nowrap}
-.yj-mb-race{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.yj-mb-place{flex:none}
-.yj-mb-line{display:block;padding:1px 12px;font-size:12px;color:#3a4149;line-height:1.8}
-.yj-mb-line:last-child{padding-bottom:11px}
-.yj-mb-item{display:inline-block;vertical-align:baseline;white-space:nowrap;margin-right:12px}
-.yj-mb-item:last-child{margin-right:0}
-.yj-mb-item i{font-style:normal;font-size:10.5px;color:#9aa0a6}
-.yj-mb-item b{font-weight:500}
-.yj-mb-item .tm{color:#0aa7a0;font-weight:700;font-size:12.5px}
-.yj-mb-dist b{font-weight:600}
+/* ===== 明细：行/卡片渲染与样式统一走 race-rows.js + theme.css（与比赛页内嵌表同一份代码） ===== */
 
 /* ===== 手机（≤768px）：日历格只留 日期+🏆，进板数/赏金收进 KPI 带与明细 ===== */
 @media (max-width:768px){
@@ -191,6 +166,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../i18n.js"></script>
+<script src="../race-rows.js"></script>
 <script>
 /* ================= 日期图 · 日历（真实数据版） =================
  * 需求（用户定）：日历形式；按 天/周/月/年 快速读出
@@ -212,28 +188,25 @@ function pad2(n){return n<10?"0"+n:""+n;}
  * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
 var RUNS = [];
 
-/* ---- 级别徽章（同 races.html：G/Jpn/L/OP 有徽章） ---- */
-var G = { "GI":"g1","GII":"g2","GIII":"g3","L":"gl","OP":"gop","JpnI":"g1","JpnII":"g2","JpnIII":"g3" };
-var GLABEL = { "GI":"G1","GII":"G2","GIII":"G3","L":"L","OP":"OP","JpnI":"Jpn1","JpnII":"Jpn2","JpnIII":"Jpn3" };
-function isBadge(g){ return !!(g && G[g]); }
+/* ---- 级别/徽章表统一取自共享模块 front/public/race-rows.js（与比赛页同一份） ---- */
+var G = YJ.raceRows.G, GLABEL = YJ.raceRows.GLABEL;
 /* 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 */
 var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
-function raceNameText(r){   /* 赛事名去冗余等级尾缀（同 races.html） */
-  var s = String((r && r.r) || "");
-  var m = s.match(/[（(]([^()（）]*)[)）]\s*$/);
-  if (m && G[m[1]] && r.g === m[1]) return s.slice(0, m.index).replace(/\s+$/, "");
-  return s;
-}
 /* ---- 着顺归类（4 段）：1/2/3 各一段，4 名及以后 + 未完走(字符串) → 第 3 名开外 ---- */
 function placeSlot(p){
   if (typeof p === "number") return (p >= 1 && p <= 3) ? p - 1 : 3;
   return 3;                                  /* 中止/取消/除外/失格 计入第 3 名开外 */
 }
 /* 进板数配色：着顺同色相深阶（白底可读版：暗金/钢蓝/赭橙，开外=中灰） */
-var BR_COLORS = ["#9c7c00", "#2e69ad", "#b3541a", "#6b7280"];
+var BR_COLORS = ["#FEED88", "#CCDFFD", "#ECC6A2", "#ececec"];
+/* 进板数 [1-1-1-1]：格式保留连字符；四段底色连成一整条 —— 数字格用名次底色，
+ * 连字符格用「上一色→下一色」渐变接缝（柔过渡、无硬边） */
 function bracketHTML(br, cls){
   var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="进板数：第1:第2:第3:第3名开外">[';
-  for (var i = 0; i < 4; i++) s += '<b style="color:' + BR_COLORS[i] + '">' + br[i] + '</b>' + (i < 3 ? "-" : "");
+  for (var i = 0; i < 4; i++){
+    if (i) s += '<i style="background:linear-gradient(90deg,' + BR_COLORS[i - 1] + ',' + BR_COLORS[i] + ')">-</i>';
+    s += '<b style="background:' + BR_COLORS[i] + '">' + br[i] + '</b>';
+  }
   return s + ']</span>';
 }
 /* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿） */
@@ -462,31 +435,18 @@ function renderCal(mode, key){
   document.getElementById("cal").innerHTML = html;
 }
 
-/* 着顺徽章（同 races.html：1/2/3 色块，4+ 纯数字，未完走灰字） */
-function placeBadge(p){
-  if (p === 1) return '<span class="yj-no yj-no1">1</span>';
-  if (p === 2) return '<span class="yj-no yj-no2">2</span>';
-  if (p === 3) return '<span class="yj-no yj-no3">3</span>';
-  if (typeof p === "number") return esc(p);
-  return esc(p);
-}
-
-/* ---- 明细 = races.html 内嵌比赛表同款（模块 11 定稿样式）+ 出走马列（本页跨马场景需要）：
- * PC 15 列：日期 出走马 场地(京都5R) 赛事 距离 跑道 马场 负磅 人气 着顺 时间 赏金(万円) 马体重 骑手 调教师
- * mb 软分行卡片：①出走马 草地2000m 马场：x 时间：x 赏金：x ②负磅：x 人气：x 马体重：x ③骑手：x 调教师：x */
-function ninkiBadge(n){    /* 人气徽章（同 races.html：1/2/3 着顺同款颜色文字，其余纯数字） */
-  if (n === 1) return '<span class="yj-nk1">1</span>';
-  if (n === 2) return '<span class="yj-nk2">2</span>';
-  if (n === 3) return '<span class="yj-nk3">3</span>';
-  return esc(n);
-}
-function weightHTML(r){    /* 马体重含增减（同 races.html 两段式半角括号）：500(+20) */
-  var w = (r.bw==null||r.bw==="") ? "" : String(r.bw);
-  var d = (r.dz==null||r.dz==="") ? "" : "("+String(r.dz)+")";
-  return w + d;
+/* ---- 明细：行/徽章渲染全部走共享模块 front/public/race-rows.js（与比赛页内嵌表同一份代码）
+ * 本页预计算产物是短键字段（d/h/g/v/dist/nk/p…），共享模块用比赛数据原始日文键，
+ * 故这里只做一层「短键 → 原始键」适配，渲染与样式零复制 —— 比赛页改列/改徽章，明细自动同步。 */
+function toRow(r){
+  return {
+    日付: r.d, R: r.R, 場名: r.v, レース名: r.r, 格: r.g,
+    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 斤量: r.ki,
+    人気: r.nk, 結果: r.p, タイム: r.tm, 賞金: r.pr,
+    馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr
+  };
 }
 function renderDetail(mode, key){
-  var t = YJ.i18n.t;
   /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
    * 缺失视为最大（排同日最前）；同场（発走相同）按着顺升序（未完走 99 殿后）、同着顺按レース名 */
   var runs = scopeRuns(mode, key).slice().sort(function(a, b){
@@ -506,73 +466,16 @@ function renderDetail(mode, key){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;
   }
-  var num = function(v){ return (v==null||v==="") ? "" : esc(String(v)); };
-  var badge = function(r){ return isBadge(r.g) ? '<span class="yj-grade yj-' + G[r.g] + '">' + esc(GLABEL[r.g]) + '</span>' : ""; };
-  var venueTxt = function(r){ return (r.v || "") + ((r.R !== "" && r.R != null) ? r.R + "R" : ""); };
-  var distTxt = function(r){ return (r.s ? esc(YJ.i18n.e("芝ダ", r.s)) : "") + ((r.dist !== "" && r.dist != null) ? num(r.dist) + "m" : ""); };
-  var horse = function(r){ return '<a class="hjump" href="profile.html?horse=' + encodeURIComponent(r.id) + '">' + esc(r.h) + '</a>'; };
-  var dnfOf = function(r){ return typeof r.p === "string"; };
-  var prizeWan = function(r){ return r.pr ? Math.round(r.pr / 10000).toLocaleString() : ""; };
-  /* PC 15 列表（内嵌表样式：全列居中、未完走整行降灰） */
-  var tc = function(v){ return '<td class="px-1 py-1.5 text-center tabular-nums whitespace-nowrap">'+v+'</td>'; };
+  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义 */
+  var RR = YJ.raceRows;
   var trs = runs.map(function(r){
-    var dnf = dnfOf(r);
-    var rowClass = 'border-b border-border last:border-b-0' + (dnf ? ' text-muted-foreground' : '');
-    return '<tr class="'+rowClass+'">'+
-      tc(esc(r.d))+
-      '<td class="px-1 py-1.5 text-center whitespace-nowrap">'+horse(r)+'</td>'+
-      tc(esc(venueTxt(r)))+
-      '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(raceNameText(r))+badge(r)+'</td>'+
-      tc(num(r.dist))+
-      tc(esc(YJ.i18n.e("芝ダ", r.s)))+
-      tc(esc(r.bk||""))+
-      tc(num(r.ki))+
-      tc(ninkiBadge(r.nk))+
-      tc(placeBadge(r.p))+
-      tc(dnf?'—':num(r.tm))+
-      tc(prizeWan(r))+
-      tc(esc(weightHTML(r)))+
-      tc(esc(r.jk||""))+
-      tc(esc(r.tr||""))+
-    '</tr>';
+    return RR.rowEmbedHTML(toRow(r), { horse: { id: r.id, name: r.h } });
   }).join("");
-  var th = function(label){
-    return '<th class="px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]">'+label+'</th>';
-  };
-  var pc = '<div class="overflow-x-auto rounded-[10px] border border-border bg-card hidden md:block">'+
-    '<table class="w-full border-collapse text-[12.5px]">'+
-    '<thead><tr class="border-b border-border bg-muted/40">'+
-      th(t("日付"))+th(t("馬名"))+th(t("場名"))+th(t("レース名"))+th(t("距離"))+th(t("芝ダ"))+th(t("馬場"))+
-      th(t("斤量"))+th(t("人気"))+th(t("着順"))+th(t("タイム"))+th(t("賞金")+'(万円)')+
-      th(t("馬体重"))+th(t("騎手"))+th(t("調教師"))+
-    '</tr></thead><tbody>'+trs+'</tbody></table></div>';
-  /* mb 软分行卡片（内嵌 mb 同款三行 + 出走马链接居首） */
+  var pc = RR.embedTableHTML(trs, { horse: true, cls: "hidden md:block" });
   var mbs = runs.map(function(r){
-    var dnf = dnfOf(r);
-    var top = '<div class="yj-mb-top">'+
-      '<span class="yj-mb-date">'+esc(r.d)+' '+esc(venueTxt(r))+'</span>'+
-      '<span class="yj-mb-race">'+esc(raceNameText(r))+badge(r)+'</span>'+
-      '<span class="yj-mb-place">'+placeBadge(r.p)+'</span>'+
-    '</div>';
-    var item = function(label, v, vcls){
-      if (v==null || v==="") return null;
-      return '<span class="yj-mb-item">'+(label?'<i>'+esc(label)+'：</i>':'')+'<b'+(vcls?' class="'+vcls+'"':'')+'>'+v+'</b></span>';
-    };
-    var line = function(items){
-      items = items.filter(Boolean);
-      return items.length ? '<div class="yj-mb-line">'+items.join("")+'</div>' : '';
-    };
-    var dist = distTxt(r);
-    var l1 = line(['<span class="yj-mb-item">'+horse(r)+'</span>',
-      dist ? '<span class="yj-mb-item yj-mb-dist"><b>'+dist+'</b></span>' : null,
-      item(t("馬場"), esc(r.bk||"")),
-      item(t("タイム"), dnf ? '—' : num(r.tm), "tm"),
-      item(t("賞金"), r.pr ? Math.round(r.pr/10000).toLocaleString()+'万' : '—')]);
-    var l2 = line([item(t("斤量"), num(r.ki)), item(t("人気"), ninkiBadge(r.nk)), item(t("馬体重"), esc(weightHTML(r)))]);
-    var l3 = line([item(t("騎手"), esc(r.jk||"")), item(t("調教師"), esc(r.tr||""))]);
-    return '<div class="yj-mb'+(dnf?' dnf':'')+'">'+top+l1+l2+l3+'</div>';
+    return RR.rowEmbedMbHTML(toRow(r), { horse: { id: r.id, name: r.h } });
   }).join("");
-  var mb = '<div class="rounded-[10px] border border-border bg-card md:hidden">'+mbs+'</div>';
+  var mb = RR.mbListHTML(mbs, { cls: "md:hidden" });
   document.getElementById("dBody").innerHTML = pc + mb;
 }
 

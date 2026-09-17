@@ -1496,3 +1496,182 @@ pc / mb 判定此前散落多处且标准不一：CSS 层用 Tailwind `md:`（76
 | `tests/_verify-races-result.cjs` | `scripts/races/verify_result.cjs` | **新挂** --check/--ci（比赛记录·结果对账） |
 
 `run_update.py` 常量同步；`--ci` 失败判定纳入 result 对账 rc；文档引用同步（TESTING.md §1.2 / request-path.html / HANDOFF.md / 本表）。`tests/` 只留临时产物（`_shots/` 截图、`ref_father_index.html` 参考抓页、`_trash/`）。
+
+---
+
+## 38. 基本信息页 · 未选马总览改版（概览等式 · 实时合计）
+
+### 38.1 需求（用户指令 + 示意图）
+
+「云迹 · コントレイル产驹资料库」下方统计面板改版，做成**实时计算**：
+
+1. 分组文案「基础 BASIC」→「**概览 OVERVIEW**」。
+2. 去掉「比赛记录」统计卡。
+3. 「收录产驹总数」改为**等式展示**（用户示意图）：`277 收录产驹总数 = 146（2024 年生）+ 131（2023 年生）`——总和为青绿大数，各年出生数为白色投影卡片，`=`/`+` 连接；**数据后续新增年份必须自动出现在等式里**（实时聚合，不写死）。
+
+### 38.2 思路
+
+- **概览卡与出生年卡合并**：等式本身即年份分布，原「出生年 BY YEAR」分组被等式取代，避免同一组数字重复展示；「性别 BY SEX」保留不动。
+- **等式排版**：总和 = 30px primary 大数 + 「收录产驹总数」标签（无底块，直接落在卡面）；年份白卡 = 24px 数字 + 「20XX 年生」标签 + `shadow-[0_2px_12px_rgba(16,24,40,.08)]` 投影（无框，靠影子浮起）；`=`/`+` 为 20px 半粗连接符。整行 `flex-wrap` 兜底——年份增多时自动折行，移动端缩内边距。
+- **实时性**：全部数字由 `renderOverview(hs)` 现场聚合 `basic.json`（生年/性別），无任何写死；年份排序为数值降序（最新在前），非年份数值（未知）兜底排最后，保证「总和 = 各年之和」恒成立。
+
+### 38.3 落地
+
+- `pages/profile.html` `renderOverview()`：
+  - `group()` 去掉内建 grid 列参数，改传整段 inner（概览 = flex 等式行 / 性别 = grid-cols-3）。
+  - 删除 `raced` 统计与「比赛记录」「出生年 BY YEAR」两组。
+  - 新增 `op()`（`=`/`+` 连接符）与 `yearTile()`（年份白卡），等式行 = 总和 + `op('=')` + `years.map(yearTile).join(op('+'))`。
+
+### 38.4 状态
+
+✅ 已完成：`npm run build`，dist 核对新类编译 + http 截图目检（`277 = 146 + 131` 与示意图一致，年份折行/移动端正常）。未 commit（等用户确认）。
+
+### 38.5 追加调整（用户反馈）：mb 端不做等式，直接展示
+
+用户截图反馈：mb（≤768）下等式折行，「= / +」悬在行尾、年份卡孤行，观感差 → **mb 端去掉等式直接展示**：
+
+- **mb（≤768）**：总数通栏卡（`max-md:col-span-2`，primary 高亮）+ 各年出生数走 **2 列网格统计卡**（复用 `stat()`，与「性别 BY SEX」卡同语言）。
+- **PC（≥768）**：等式排版不变（`277 = 146 + 131`）。
+- 实现：概览卡内**两套标记并存**，等式行 `max-md:hidden`、网格 `hidden max-md:grid`，纯 CSS 断点切换，无 JS 判端；数字仍由同一份实时聚合输出，两端口径一致。`yearTile` 随之只服务 PC，去掉 `max-md` 内边距微调。
+
+✅ 已完成：重建 dist + 双端截图目检（PC 等式 / mb 网格）。
+
+---
+
+## 40. 全站 1/2/3 色统一为浅色三件套（#FEED88 / #CCDFFD / #ECC6A2）
+
+### 40.1 需求（用户指令）
+
+1. **mb 比赛记录**（内嵌 + 独立，即 races.html 三处 mb 卡片）：人气值改**纯数字**，1/2/3 颜色对应 `#FEED88 / #CCDFFD / #ECC6A2`。
+2. **统计总览 · STATS**：通算战绩括号 + 下方细长占比图（条段填充与图例），颜色与浅色三件套一致。
+3. **日期图 · DATECHART**：通算成绩括号颜色改浅色三件套。
+
+### 40.2 思路与落点
+
+- **用户拍板：浅色做底 + 数字深色**（初版按字面用浅色文字，vision 实测 1.2:1 对比几乎不可见 → 改为浅色做柔和底色、数字 `#171717` 深色、无边框圆角小片）。
+- races.html：新增 `ninkiMbCls()`（1/2/3 返回 `yj-nkm1/2/3` 浅底深字类，4+ 返回 null）+ CSS；三处 mb 卡片（独立单马 `rowMbHTML` / 内嵌 `rowEmbedMbHTML` / 独立跨马 `libRowMbHTML`）的人气项由 `ninkiBadge()`（PC 徽章）改为 `num(r.人気)` + `ninkiMbCls()` 纯数字浅底。**PC 徽章维持「与着顺同款」不动。**
+- stats.html：`BR`（通算战绩括号 4 段）与图例数字 → `<b class="st-chip" style="background:浅色">`（着外 `#ececec` 浅灰底）；`renderDistBar` 条段填充 → 浅色三件套 + 着外 `#ececec`。
+- datechart.html：`BR_COLORS` → 浅色三件套 + 着外 `#ececec`；`bracketHTML` 数字改浅色做底（KPI 大括号 `dc-brk-lg` 加圆角小片，日历小格只做底色不撑开）。
+
+### 40.3 未动（留待确认）
+
+- stats 着别列 `PLACE_C`、datechart 明细人气 `.yj-nk1/2/3`、PC 徽章/着顺徽章底色仍用旧 1/2/3 色（`#ffef7f/#cbdeff/#efc79f`）——本轮指令未覆盖，暂不牵连；若全站 1/2/3 色语言要统一到新三件套可再调。
+
+### 40.4 状态
+
+✅ 已完成：`npm run build`，三页截图目检（mb 纯数字浅底深字 / stats KPI+占比图 / datechart 通算成绩）。未 commit（等用户确认）。
+
+---
+
+## 41. 通算战绩/成绩色块改「连成一条分节条」（过渡用细分隔缝）
+
+### 41.1 需求（用户反馈 + 截图）
+
+stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 和间隙拆散，看着散。用户要求**色块连着**（连成一条更顺眼），并**注意过渡问题**。
+
+### 41.2 思路
+
+- 去掉 `-` 连字符，改**容器 flex gap 做白缝过渡**：块与块之间 2px（日历小格 1px）白缝——连着看是一条，但相邻浅色块不会互糊（同色/近色相接时仍能一眼分节，即「过渡」处可辨）。
+- **圆角只留在整条两端**（`:first-of-type` 5px 左圆 + `:last-of-type` 5px 右圆），中缝为直角 —— 视觉上是一条分段条而非一排骨牌。
+- 4 号块着外 = 浅灰 `#ececec`，与 1/2/3 浅色同列为一段，语义与占比图第 4 段一致。
+- datechart 日历格的小括号本来就贴着，这套规则同源生效（小格 1px 缝、不加内边距，不撑宽格子）；KPI 大括号 2px 缝 + `1px 6px` 内边距。
+
+### 41.3 落地
+
+- `pages/stats.html`：`.st-brk` 改 `inline-flex + gap:2px + vertical-align:middle`；新增首末块端圆角规则；`.st-chip`（图例小片，仍独立圆角）保留；`renderKpis` 括号拼接去掉 `-`。
+- `pages/datechart.html`：`.dc-brk` 同款（小格 1px / `-lg` 2px + padding + 端圆角）；`bracketHTML` 去掉 `-`。
+
+### 41.4 状态
+
+✅ 已完成：`npm run build`，dist 核对 + 截图目检（stats KPI 通算战绩、datechart KPI 与日历格）。未 commit（等用户确认）。
+
+---
+
+## 42. 比赛行/徽章渲染抽公共模块（日期图明细 ← 比赛页 单向同步）
+
+### 42.1 问题（用户反馈）
+
+「日期图的明细不是内嵌比赛页面的吗？它怎么没有同步修改我指定的东西」——查证：明细**不是内嵌**，而是把 races.html 的表格标记**复制**了一份（自带 `ninkiBadge`/`placeBadge`/`weightHTML` + 自己一套 `.yj-nk1/2/3` 深色文字样式），所以 §39/§40 对比赛页徽章的改动它完全不知道。
+
+### 42.2 方案取舍（用户拍板：抽公共渲染模块）
+
+曾评估「真 iframe 内嵌」，否决，原因记录在案：① 数据源不同——明细走 `data/datechart.json`（1 个预计算文件），races.html 跨马列表要现场拉全库 **277 匹**的 `races/<id>.json`，内嵌后 datechart 每次加载都变重；② 明细是**跨马 + 日期窗口**，内嵌模式（`?embed=1`）只渲染**单匹马**，需另造一套内嵌范围；③ 明细口径要与日历格/KPI 的预计算口径对齐，改由 iframe 重算会有「日历格 6 场、明细 5 场」的对不上风险。
+
+→ 采用**共享渲染模块**：渲染代码单一出处，样式单一出处，数据/性能/口径完全不变。
+
+### 42.3 落地
+
+- **新增 `front/public/race-rows.js`（`YJ.raceRows`，非 module，Vite 原样拷到 dist 根）**，单一出处：
+  - 徽章与格式化：`G/GLABEL` 等级表、`gradeBadge()`、`placeBadge()`、`ninkiBadge()`、`ninkiMbCls()`、`raceNameText()`（赛事名去等级尾缀）、`venueR()`、`weight()/weightOf()`、`horseLink()`。
+  - 行渲染：`embedTableHTML(rows, opts)`、`rowEmbedHTML(r, opts)`、`mbListHTML(rows, opts)`、`rowEmbedMbHTML(r, opts)`；`opts.horse={id,name}` 时插入「馬名」列/项（比赛页内嵌单马不传，日期图明细跨马传）→ **同一份代码、同一套列定义**。
+- **样式收敛到 `front/pages/theme.css` @layer components**：`.yj-grade/.yj-g*`、`.yj-no/.yj-no1-3`、`.yj-nk1-3`、`.yj-nkm1-3`、`.yj-mb*`、`.hjump` 只此一处（与 race-rows.js 配套）。timeline.html 另有 22px 小号徽章，其页内 `<style>` 在 theme.css 之后按级联覆盖，不受影响。
+- `pages/races.html`：删本地副本（等级表/徽章函数/赛事名/场地/体重/内嵌表+行+mb 卡），改为对共享模块取薄别名；四处内联等级徽章拼接改用 `gradeBadge()`；页内徽章与 mb 卡片 CSS 段删除。
+- `pages/datechart.html`：删本地 `G/GLABEL/isBadge/raceNameText/placeBadge/ninkiBadge/weightHTML` 与整段明细标记 + 徽章/mb 卡片 CSS；新增 `toRow()` 做「预计算短键 → 原始日文键」适配后调共享模块。明细人气随之自动变成「与着顺同款徽章」（PC）/「纯数字浅底」（mb）。
+
+### 42.4 验证
+
+- `python run_update.py --check` 全绿（数据校验 + 4 个断言套件）。
+- 断言同步修正（此前 §40/§41 改色与去连字符已让两条断言过期，一并修好）：`verify_datechart.cjs` 通算战绩色改浅色三件套 + 断言「无 `-` 连字符」、人气断言由 `|| true` 假通过改为**真断言**（窗口内 1-3 人气匹次 ↔ 徽章数）、并在 stub harness 里按浏览器顺序加载 `race-rows.js`；`verify_stats.cjs` 分布条色断言 `#e2cc38 → #FEED88`、通算战绩标签剥离比对去连字符；`verify_drill.cjs` 同样补载共享模块。
+- 实测：datechart 明细 39 行与日历口径一致、明细人气徽章 16 处与窗口内 1-3 人气 16 匹次相符；比赛页内嵌表 11 行正常；两端同源同貌（截图目检）。
+
+### 42.5 状态
+
+✅ 已完成：`npm run build` + `run_update.py --check` 全绿（datechart 84 / stats 182 / drill 31 / result 全过），dist 与截图核对。未 commit（等用户确认）。
+
+---
+
+## 43. 通算战绩/成绩改「连体底色 + 保留 - 连字符」（修正 §41 理解偏差）
+
+### 43.1 用户反馈（含示意图）
+
+§41 把 `-` 连字符去掉、改成留白缝分节条 —— **理解偏了**。用户要的是：
+
+1. **`[1-1-1-1]` 这种格式必须保留**（连字符要在；`[]` 也保留）。
+2. **底色是一个整体**：不同名次底色不同，但**底色与底色之间温柔过渡**（渐变柔化，不要硬边、不要白缝）。
+
+### 43.2 做法
+
+- **连字符格承担接缝渐变**：数字格用各自名次纯色底（`#FEED88/#CCDFFD/#ECC6A2/#ececec`），
+  中间的 `-` 用一个 `<i>` 承载 `linear-gradient(90deg, 上一色, 下一色)` ——
+  于是整条底色连续（无白缝）、过渡柔和（渐变区≈连字符宽 + 两侧内边距），
+  同时连字符字形本身仍是深色、格式一眼可读。
+- 去掉 §41 的容器 `gap`（改 `gap:0`）；圆角仍只留在整条两端（首段左圆/末段右圆，中缝直角）；
+  括号 `[` `]` 与色带之间留 3px（大括号）/2px（日历小格）呼吸位。
+- 落点：`pages/stats.html`（`.st-brk` + `renderKpis` 拼接）、`pages/datechart.html`（`.dc-brk` + `bracketHTML`，
+  KPI 大括号与日历小格同源）；`race-rows.js`/明细不受影响。
+
+### 43.3 验证
+
+- 像素级核对（sharp 扫描 KPI 色带一行）：`#feed88` 纯色 → `#faec92…#cddff9` 渐变 → `#ccdffd` 纯色 →
+  渐变 → `#ecc6a2` 纯色 → 渐变 → `#ececec` 纯色；**色带内部纯白像素 = 0**（连成一体）；连字符字形有深色像素（可见）。
+- 断言恢复并加强：`verify_datechart.cjs` 与 `verify_stats.cjs` 的标签剥离比对改回 `join("-")`（格式含连字符），
+  并新增 `/<i[^>]*>-<\/i>/` + `linear-gradient` + 四色 hex 断言（防再退化）。stats 加到 183 断言。
+- `python run_update.py --check` 全绿。
+
+### 43.4 状态
+
+✅ 已完成：构建 + 断言 + 截图目检（两页 `[1-1-1-1]` 连体渐变底色一致）。未 commit（等用户确认）。
+
+---
+
+## 39. 比赛页 · 人气徽章与着顺徽章统一（同款浅底彩边）
+
+### 39.1 需求（用户反馈）
+
+内嵌 / 独立比赛页中，人气值颜色与着顺不一致：1着是「金色」，1人気却是「土黄色」。要求处理成一致。
+
+### 39.2 根因与取舍
+
+- 着顺徽章 `.yj-no1/2/3` = **浅底 + 同色相边框 + 黑字**（1着：`#ffef7f` 底 + `#e2cc38` 金边），观感是亮金。
+- 人气徽章 `.yj-nk1/2/3` = §36 v2 的**白底深阶纯文字**（1人気 `#9c7c00` 暗金 + 600 字重）——当时为白底可读性（`#e2cc38` 文字对比仅 1.9:1）刻意压暗，但与着顺彩徽章同框即色相脱节。
+- **不能把人气文字改回亮金**（白底不可读，§36 已否决）→ 改为**人气 1/2/3 套用与着顺完全相同的浅底彩边徽章**：观感一致，可读性由浅底+黑字天然解决。
+- 作用域：仅 `pages/races.html`（内嵌/独立同文件）；stats / datechart 的通算战绩深阶文字是白底文本场景（无徽章同框问题），维持 §36 v2 不动。verify 脚本未断言 nk 类，无破坏面。
+
+### 39.3 落地
+
+- `pages/races.html` CSS：`.yj-nk1/2/3` 改为与 `.yj-no1/2/3` 相同的 `background/border-color/color` 三件套（去掉 600 字重，与着顺徽章完全同权重）。
+- `ninkiBadge()`：1/2/3 输出加 `yj-no` 底座类（与 `placeBadge` 同结构：`yj-no yj-nk1`），徽章形状/尺寸/字号与着顺一致；4+ 仍纯数字。
+
+### 39.4 状态
+
+✅ 已完成：`npm run build`，dist/pages/races.html 核对新徽章 CSS（页内 style 直查）；standalone + 内嵌截图目检（1/2/3着 与 1/2/3人气 同框同色）。未 commit（等用户确认）。

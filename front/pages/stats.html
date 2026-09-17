@@ -21,8 +21,15 @@
 .st-kpi .v.hi{color:#0aa7a0}
 .st-kpi .v.dim{color:#a1a1aa}
 .st-trophy{font-size:15px;margin-right:2px}
-.st-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap}
-.st-brk b{font-weight:600}
+/* 通算战绩 [6-3-3-27]：**格式保留连字符**，但 4 段底色连成「一整条」——
+ * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
+ * 因此底色连续、过渡柔和无硬边；圆角只留在整条两端（首段左圆 / 末段右圆），中缝直角。 */
+.st-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
+.st-brk b,.st-chip{color:#171717;font-weight:600;padding:1px 6px}
+.st-chip{border-radius:4px}
+.st-brk i{font-style:normal;color:#171717;font-weight:600;padding:1px 5px}
+.st-brk b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
+.st-brk b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
 .st-brk-lg{font-size:19px}
 /* 着顺分布条 */
 .st-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#f2f2f2}
@@ -283,12 +290,14 @@ var ageLabel = function (a) { return Math.floor(a / 12) + "岁" + (a % 12) + "�
 function renderKpis() {
   var b = baseMerged(), r = rates(b);
   var fvn = fin(b);
-  /* 通算战绩 4 段：着顺同色相深阶文字（白底可读版：暗金/钢蓝/赭橙/中灰） */
-  var BR = ["#9c7c00", "#2e69ad", "#b3541a", "#6b7280"];
+  /* 通算战绩 [6-3-3-27]：格式保留连字符；四段底色连成一整条 ——
+   * 数字格用各自名次底色，连字符格用「上一色→下一色」渐变把底色接起来（柔过渡、无硬边） */
+  var BR = ["#FEED88", "#CCDFFD", "#ECC6A2", "#ececec"];
   var vals = [b.w, b.p2, b.p3, Math.max(0, fvn - b.w - b.p2 - b.p3)];
   var brk = '<span class="st-brk st-brk-lg">[';
   vals.forEach(function (v, i) {
-    brk += '<b style="color:' + BR[i] + '">' + v + '</b>' + (i < 3 ? "-" : "");
+    if (i) brk += '<i style="background:linear-gradient(90deg,' + BR[i - 1] + ',' + BR[i] + ')">-</i>';
+    brk += '<b style="background:' + BR[i] + '">' + v + '</b>';
   });
   brk += ']</span>';
   var kpi = function (k, v, cls) {
@@ -308,7 +317,7 @@ function renderDistBar() {
   var bar;
   if (fvn > 0) {
     var segs = [
-      { v: b.w, c: "#e2cc38" }, { v: b.p2, c: "#87aee6" }, { v: b.p3, c: "#dca167" }, { v: other, c: "#ececec" }
+      { v: b.w, c: "#FEED88" }, { v: b.p2, c: "#CCDFFD" }, { v: b.p3, c: "#ECC6A2" }, { v: other, c: "#ececec" }
     ];
     bar = '<div class="st-bar">';
     segs.forEach(function (s) { if (s.v > 0) bar += '<i style="width:' + (s.v / fvn * 100) + '%;background:' + s.c + '"></i>'; });
@@ -319,8 +328,8 @@ function renderDistBar() {
   document.getElementById("distBar").innerHTML =
     bar +
     '<div class="mt-1.5 text-[12px] text-muted-foreground">' +
-    '1着<b style="color:#9c7c00"> ' + b.w + '</b> · 2着<b style="color:#2e69ad"> ' + b.p2 + '</b> · 3着<b style="color:#b3541a"> ' + b.p3 +
-    '</b> · 着外<b> ' + other + '</b>　（完赛 ' + fvn + ' 场）</div>';
+    '1着<b class="st-chip" style="background:#FEED88"> ' + b.w + '</b> · 2着<b class="st-chip" style="background:#CCDFFD"> ' + b.p2 + '</b> · 3着<b class="st-chip" style="background:#ECC6A2"> ' + b.p3 +
+    '</b> · 着外<b class="st-chip" style="background:#ececec"> ' + other + '</b>　（完赛 ' + fvn + ' 场）</div>';
 }
 function renderRateBand() {
   var b = baseMerged(), r = rates(b);

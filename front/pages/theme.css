@@ -65,6 +65,51 @@
   .field .v { @apply text-[14px] font-medium text-foreground; }
   .field .v.sub { @apply text-[12.5px] font-normal text-muted-foreground; }
   .hint-empty { @apply py-[60px] px-5 text-center text-[13.5px] text-muted-foreground; }
+
+  /* ---------- 比赛记录徽章与 mb 卡片（races.html / datechart.html 明细共用；单一出处） ----------
+   * 与 front/public/race-rows.js 配套：共享模块产出这些类名的标记，样式定义只此一处。
+   * 任何一页要改徽章/卡片观感，改这里即两页同步（timeline.html 另有 22px 小号徽章，
+   * 其页内 <style> 在 theme.css 之后，按级联覆盖，不受影响）。 */
+  /* 等级徽章：JBIS 实心胶囊 + 白字；★ 类名全小写，与 G 表取值一一对应 */
+  .yj-grade{display:inline-block;margin-left:6px;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
+  .yj-g1{background-color:#d5302a}
+  .yj-g2{background-color:#0a3b7e}
+  .yj-g3{background-color:#087220}
+  .yj-gl{background-color:#dca026}
+  .yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
+  /* 着顺徽章：仅 1/2/3 有颜色+边框（无字重/阴影/光晕） */
+  .yj-no{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;border:1px solid transparent;font-size:13px}
+  .yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
+  .yj-no2{background-color:#cbdeff;border-color:#87aee6;color:#000}
+  .yj-no3{background-color:#efc79f;border-color:#dca167;color:#000}
+  /* 人气徽章（PC）：与着顺徽章完全同款（yj-no 底座 + 同色浅底彩边黑字） */
+  .yj-nk1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
+  .yj-nk2{background-color:#cbdeff;border-color:#87aee6;color:#000}
+  .yj-nk3{background-color:#efc79f;border-color:#dca167;color:#000}
+  /* 人气（mb 纯数字版）：1/2/3 浅色做底 + 深色数字，4+ 纯数字 */
+  .yj-nkm1{background:#FEED88}
+  .yj-nkm2{background:#CCDFFD}
+  .yj-nkm3{background:#ECC6A2}
+  .yj-nkm1,.yj-nkm2,.yj-nkm3{color:#171717;font-weight:600;border-radius:4px;padding:1px 5px}
+  /* mb 软分行卡片（≤768px，JS 渲染时用）：标题一行 + 分组行，无横线分隔 */
+  .yj-mb.dnf{opacity:.5}
+  .yj-mb-top{display:flex;align-items:center;gap:8px;padding:10px 12px 3px}
+  .yj-mb-date{font-size:11.5px;color:#8a9096;font-weight:600;white-space:nowrap}
+  .yj-mb-race{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .yj-mb-place{flex:none}
+  .yj-mb-line{display:block;padding:1px 12px;font-size:12px;color:#3a4149;line-height:1.8}
+  .yj-mb-line:last-child{padding-bottom:11px}
+  .yj-mb-item{white-space:nowrap;margin-right:12px}
+  .yj-mb-item:last-child{margin-right:0}
+  .yj-mb-item i{font-style:normal;font-size:10.5px;color:#9aa0a6}
+  .yj-mb-item b{font-weight:500}
+  .yj-mb-item .yj-race{font-weight:600}
+  .yj-mb-item .tm{color:#0aa7a0;font-weight:700;font-size:12.5px}
+  .yj-mb-item .diff{color:#b0b5bb}
+  .yj-mb-dist b{font-weight:600}
+  /* 马名跳转（跨马列表 → 基本信息页） */
+  .hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
+  .hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
 }
 
 /* ---------- 手机（≤768px）：非桌面即手机 ---------- */
