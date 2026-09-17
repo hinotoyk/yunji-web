@@ -552,8 +552,7 @@ function renderTable() {
   var base = baseMerged(), br = rates(base);
   var rows = dimMerged(tab);
   var isLong = tab === "trainer" || tab === "jockey";
-  /* 着别列语义色（同通算战绩/着顺分布：1着暗金/2着钢蓝/3着赭橙/着外中灰）；8 个数值列表头可点击排序 */
-  var PLACE_C = { w: "#9c7c00", p2: "#2e69ad", p3: "#b3541a", out: "#6b7280" };
+  /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 UI优化记录 §44）；8 个数值列表头可点击排序 */
   var COLS = [
     { k: "starts", l: "出走" },
     { k: "w",      l: "1着" },
@@ -585,10 +584,10 @@ function renderTable() {
   var html = '<thead><tr><th class="left">类别</th>' + ths + '</tr></thead><tbody>';
   var baseOut = Math.max(0, fin(base) - base.w - base.p2 - base.p3);
   html += '<tr class="base" title="当前勾选范围（场地×切面）的整体平均"><td class="left">总体平均</td><td>' + starts(base) + '</td>' +
-    '<td><b style="color:' + PLACE_C.w + '">' + base.w + '</b></td>' +
-    '<td><b style="color:' + PLACE_C.p2 + '">' + base.p2 + '</b></td>' +
-    '<td><b style="color:' + PLACE_C.p3 + '">' + base.p3 + '</b></td>' +
-    '<td><b style="color:' + PLACE_C.out + '">' + baseOut + '</b></td>' +
+    '<td>' + base.w + '</td>' +
+    '<td>' + base.p2 + '</td>' +
+    '<td>' + base.p3 + '</td>' +
+    '<td>' + baseOut + '</td>' +
     '<td>' + pct(br.win) + '</td><td>' + pct(br.ren) + '</td><td>' + pct(br.fuku) + '</td></tr>';
   rows.forEach(function (b) {
     var r = rates(b);
@@ -600,10 +599,10 @@ function renderTable() {
     html += '<tr' + (url ? ' class="yj-drill" data-href="' + esc(url) + '" title="点击查看该条件下的比赛记录"' : "") + '>' +
       '<td class="left">' + esc(bucketLabel(tab, b.k)) + sm + '</td>' +
       td(starts(b)) +
-      td('<b style="color:' + PLACE_C.w + '">' + b.w + '</b>') +
-      td('<b style="color:' + PLACE_C.p2 + '">' + b.p2 + '</b>') +
-      td('<b style="color:' + PLACE_C.p3 + '">' + b.p3 + '</b>') +
-      td('<b style="color:' + PLACE_C.out + '">' + rowOut + '</b>') +
+      td(b.w) +
+      td(b.p2) +
+      td(b.p3) +
+      td(rowOut) +
       td(rateCell(r.win, br.win)) +
       td(rateCell(r.ren, br.ren)) +
       td(rateCell(r.fuku, br.fuku)) +

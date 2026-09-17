@@ -442,7 +442,7 @@ setTimeout(function () {
   const mt = String(els["matTable"]._html);
   ok(mt.includes("总体平均") && mt.includes(pctOf(r0.win)), "基准顶行 = 总体平均胜率 " + pctOf(r0.win) + "（分母=出走）");
   ok(mt.includes("2着") && mt.includes("3着") && mt.includes("着外"), "着别列：1/2/3着 + 着外");
-  ok(mt.includes('<b style="color:#6b7280">' + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + '</b>'),
+  ok(mt.includes("<td>" + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "</td>"),
     "基准行着外 = " + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "（完赛口径）");
   const daRow = byv["中央"].scopes.all.dims.surf.find(x => x.k === "ダ");
   ok(mt.includes(">ダ<") && mt.includes(String(startsOf(daRow))), "跑道页签：泥地行 出走 " + startsOf(daRow));
@@ -462,7 +462,7 @@ setTimeout(function () {
   ok(oCls === "yj-up" && rowHtml("牡").includes("yj-up"), "牡胜率高于总体平均 → 绿（" + pctOf(oR.win) + " vs " + pctOf(r0.win) + "）");
   click("matTabs", "grade");
   const mtGr = String(els["matTable"]._html);
-  ok(mtGr.includes(">重赏<") && mtGr.includes('>3</b>'), "级别页签：重赏 3 胜（1着彩色）");
+  ok(mtGr.includes(">重赏<") && rowHtml("重赏").includes("<td>3</td>"), "级别页签：重赏行 1着 = 3（纯数字无样式）");
   ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央") + '"'), "重赏行下钻 = grade:重赏");
   click("matTabs", "trainer");
   const trRows = byv["中央"].scopes.all.dims.trainer;
