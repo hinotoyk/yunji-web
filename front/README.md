@@ -2,8 +2,8 @@
 
 「云迹 · Contrail 产驹资料库」的正式前端工程。**Vite 多页构建 + Tailwind CSS**。
 
-> 数据不在此目录：运行时统一经 `public/data-config.js` 的 `YJ_DATA.url()` 解析（唯一数据源映射点，内部拼 `../../data/...`）引用项目根 `data/`（由 `scripts/` 抓取维护）。
-> 构建产物输出到项目根 `dist/`，与 `data/` 同级 —— 因此 `dist/pages/*.html` 里的 `../../data` 恰好指向项目根 `data/`。改数据目录/位置只改 `data-config.js` 的 `root` 一处。
+> 数据源在项目根 `data/`（由 `scripts/` 抓取维护）：构建时由 `vite.config.js` 的 `copy-data` 插件复制进 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`），dist 自包含。
+> 运行时统一经 `public/data-config.js` 的 `YJ_DATA.url()` 解析（唯一数据源映射点，内部拼 `../data/...`，相对 `dist/pages/` 指向 `dist/data/`）。改数据目录/位置只改 `data-config.js` 的 `prefix`/`root`。
 
 ---
 
@@ -17,9 +17,9 @@
 | **动态类必须能被扫描** | 在 JS 里拼接的 Tailwind 类（如 `text-[12.5px]`、`bg-[#E0F5F4]`、`max-md:px-1.5`）必须能被 `tailwind.config.js` 的 `content` 扫到。**JS 文件所在目录必须已在 content globs 里**（当前含 `./pages/**/*.js` 与 `./public/**/*.js`） |
 | **改完必须构建验证** | 每次改样式/类名后 `npm run build`，再到 `dist/assets/theme-*.css` 核对新类真的编译进去了。这是编译期框架最容易踩的坑：**改了类但没编译 → 页面无变化** |
 | **共享 JS 放 `public/`** | 普通 `<script>`（非 module）放 `front/public/`，由 Vite 原样拷贝到 `dist/` 根，页面用 `../xxx.js` 相对引用 |
-| **数据路径经映射层** | 页面/JS 一律用 `YJ_DATA.url('...')`（`public/data-config.js` 唯一映射点，内部拼 `../../data/...`）；构建后相对 `dist/pages/` 同指向项目根 `data/`。改数据目录/位置只改该文件 `root`；`scripts/` 更新数据**无需重新构建** |
+| **数据路径经映射层** | 页面/JS 一律用 `YJ_DATA.url('...')`（`public/data-config.js` 唯一映射点，内部拼 `../data/...`）；构建时数据复制为 `dist/data/`，构建后相对 `dist/pages/` 指向它。改数据目录/位置只改该文件 `prefix`/`root`；`scripts/` 更新数据后需重新构建（或临时 `COPY_DATA=skip` 复用上次数据） |
 | **主题 token 走 config** | 颜色/字体统一映射在 `tailwind.config.js`（primary 青绿 `#0aa7a0`、shadcn Neutral 灰阶、Noto Sans SC + Geist）；新增颜色进 config，不在 HTML 里写死 hex（指定色块除外） |
-| **构建命令** | `npm run build` → 输出到项目根 `dist/`（`vite.config.js` 的 `outDir:'../dist'`）；预览用服务项目根的静态服务器访问 `dist/index.html` |
+| **构建命令** | `npm run build` → 输出到项目根 `dist/`（`vite.config.js` 的 `outDir:'../dist'`），并把 `data/` 复制为 `dist/data/`；快速迭代可 `COPY_DATA=skip npm run build` 跳过复制 |
 
 > ⚠ **教训速记**：① JS 动态类必须确认被 `content` 扫描并验证编译产物；② 预览/探索页 ≠ 正式版，交互行为以正式版为准；③ 同一实体的「显示名」逻辑要单点维护，下拉与回填共用同一函数。
 
@@ -74,14 +74,15 @@ npm run preview
 
 ## 访问
 
-服务器**服务项目根**（如 `python -m http.server 8090`），然后：
+dist 已自包含（数据在 `dist/data/`），服务项目根或直接服务 `dist/` 均可：
 
-- 正式入口：`http://127.0.0.1:8090/dist/index.html`
-- 或开发模式：Vite dev server 默认 `http://localhost:5173/`
+- 服务项目根：`python -m http.server 8090` → `http://127.0.0.1:8090/dist/index.html`
+- 或直接服务 dist：`python -m http.server 8091 --directory dist` → `http://127.0.0.1:8091/`
+- 或开发模式：Vite dev server 默认 `http://localhost:5173/`（dev 模式取不到数据，预览请用上面两种）
 
 ## 说明
 
 - **Tailwind 编译**：`pages/theme.css` 是唯一 Tailwind 输入，所有页面 `<link>` 它共享编译产物（`dist/assets/theme-*.css`）。新增页面不需要建样式文件，直接在 HTML 里用 utility 类即可；要抽公共组件则在 `theme.css` 的 `@layer components` 里用 `@apply` 封装。
 - **共享 JS 在 public/**：因各子页是普通 `<script>`（非 module），放入 `front/public/` 由 Vite 原样拷贝到 `dist/` 根，页面用 `../i18n.js` 等相对路径引用。
-- **数据引用**：页面/JS 里保持 `../../data/...`（相对 `pages/`），构建后相对 `dist/pages/` 同样指向项目根 `data/`，`scripts/` 更新数据无需重新构建。
+- **数据引用**：页面/JS 一律经 `YJ_DATA.url()`，构建后解析为 `../data/...`（相对 `dist/pages/`）指向 `dist/data/`；`scripts/` 更新数据后重新 `npm run build` 才会进 dist。
 - **探索/废案**：未定稿版本与废案统一放项目根 `tests/`（`_trash/` 为淘汰归档）。

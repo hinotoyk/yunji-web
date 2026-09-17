@@ -14,7 +14,7 @@
 | **样式** | **Tailwind CSS v3（编译期）**：样式一律用 utility 类；共享组件类在 `front/pages/theme.css` 的 `@layer components` 用 `@apply` 封装 |
 | **JS 生成类** | JS 里拼接的 Tailwind 类必须被 `tailwind.config.js` 的 `content` 扫描到（含 `./pages/**/*.js` 与 `./public/**/*.js`） |
 | **共享 JS** | 放 `front/public/`，Vite 原样拷贝到 `dist/` 根，页面用 `../xxx.js` 相对引用 |
-| **数据路径** | 页面/JS 统一走 `YJ_DATA.url()`（`public/data-config.js` 唯一映射点，内部拼 `../../data/...`）；`dist/pages/../../data` 同指向项目根 `data/`，`scripts/` 更新数据无需重新构建 |
+| **数据路径** | 页面/JS 统一走 `YJ_DATA.url()`（`public/data-config.js` 唯一映射点，内部拼 `../data/...`）；构建时 `copy-data` 插件把项目根 `data/` 复制为 `dist/data/`（自包含），`scripts/` 更新数据后需重新构建 |
 | **正式入口** | 服务器服务项目根，访问 `http://127.0.0.1:8090/dist/index.html` |
 | **旧目录处置** | 旧 `page/` 已删除（不留档）；`testpage/` 归档于 `tests/_trash/testpage-snapshot`；探索版（redraw-*）在 `tests/` |
 
@@ -27,7 +27,7 @@
 前端**配色与布局已定稿**：定稿主题「方案 F 青绿 × shadcn Neutral（仅亮色）」+ **左侧导航外壳**（iframe 内嵌各功能页）+ **响应式（单断点 768px，非桌面即手机，侧边栏手机收成抽屉）**。实现已从 `testpage` 迁移到 **`front/`（Vite + Tailwind）**，`npm run build` 产物在项目根 `dist/`。
 **基本信息页 `pages/profile.html` 已完成**（三段式：头像+信息头 / KPI / 内嵌比赛表），已接入真实数据；**血统图页 `pages/pedigree.html` 已完成**（独立可单独打开 / 被 profile 内嵌两种模式，内嵌展示简约 2 代 + 点击弹窗完整 5 代，样式与原先行内版一致）；比赛记录页 `pages/races.html` 已做（独立可单独打开 / 被 profile 内嵌两种模式）。其余统计 3 页仍为占位。
 
-> ⚠ 数据路径约定已变：服务器**服务项目根**（非 `--directory testpage`），`pages/` 里 fetch 用 `../../data/...`（见 §6/§7）。
+> ⚠ 数据路径约定已再变：数据随构建复制为 `dist/data/`，页面 fetch 解析为 `../data/...`（相对 `dist/pages/`）；服务器服务项目根或 `dist/` 均可（见 §6/§7）。
 
 ---
 
@@ -57,7 +57,7 @@
 ```
 front/                        # ★ 正式源码（Vite 多页 + Tailwind）
 ├─ index.html              # ★ 外壳：左侧导航 + iframe 内容区（含手机抽屉）
-├─ vite.config.js          # ★ Vite 多页入口 + 产物输出 ../dist（与 data/ 同级）
+├─ vite.config.js          # ★ Vite 多页入口 + 产物输出 ../dist + copy-data 插件（data → dist/data）
 ├─ tailwind.config.js      # ★ 设计 token 映射（颜色/字体/圆角）
 ├─ postcss.config.js       # tailwindcss + autoprefixer
 ├─ package.json
@@ -80,9 +80,9 @@ front/                        # ★ 正式源码（Vite 多页 + Tailwind）
 └─ assets/fonts/           # 本地自托管字体（noto-sc + geist，Vite 打包进 dist/assets）
 ```
 
-> 构建产物在项目根 `dist/`：`dist/index.html` + `dist/pages/*.html` + `dist/` 根共享 JS + `dist/assets/theme-*.css`（含字体）。
-> 数据在项目根 `data/`（不进 front）：`data/basic.json`（277 匹马）、`data/pedigree/{id}.json`（血统）、`data/races/{id}.json`（逐场成绩，276 个文件）。
-> 因为 `pages/` 在项目根下两层，数据路径统一经 `YJ_DATA.url()` 解析（源码与构建后一致，指向项目根 `data/`）；服务器需**服务项目根**（见 §6/§7）。
+> 构建产物在项目根 `dist/`：`dist/index.html` + `dist/pages/*.html` + `dist/` 根共享 JS + `dist/assets/theme-*.css`（含字体）+ `dist/data/`（构建时从项目根 `data/` 复制，跳过 `_tmp/` 与 `*.md`/`*.csv`）。
+> 数据源仍在项目根 `data/`（不进 front）：`data/basic.json`（277 匹马）、`data/pedigree/{id}.json`（血统）、`data/races/{id}.json`（逐场成绩，276 个文件）。
+> 数据路径统一经 `YJ_DATA.url()` 解析为 `../data/...`（相对 `dist/pages/`，指向 `dist/data/`）；服务器服务项目根或 `dist/` 均可（见 §6/§7）。
 
 ---
 
@@ -93,7 +93,7 @@ front/                        # ★ 正式源码（Vite 多页 + Tailwind）
 每匹马字段：`id, nk_id, jbis_id, 馬名, 欧字馬名, 香港馬名, 自译馬名, 母名, 生年, 馬名意味, 登録状態, 性別, 毛色, 馬齢, 生年月日, 産地, 馬主, 調教師, 生産牧場, 通算成績, 獲得賞金, セリ取引価格, photo, races_file, pedigree_file, 収得賞金`
 
 - `races_file` = `"data/races/{id}.json"`（站点根相对），`pedigree_file` = `"data/pedigree/{id}.json"`
-- 前端用 `fetch("../data/...")` 或按需加载（参考旧 `page/data-util.js` 的 `ensureRaces/ensurePedigree` 按需拉取思路）
+- 前端用 `fetch(YJ_DATA.url(...))` 按需加载（参考旧 `page/data-util.js` 的 `ensureRaces/ensurePedigree` 按需拉取思路）
 
 ### 4.2 血统（`data/pedigree/{id}.json`）
 
@@ -151,14 +151,14 @@ front/                        # ★ 正式源码（Vite 多页 + Tailwind）
 - **共享 JS**（`public/`，页面用 `../xxx.js` 引用）：`i18n.js`（字典翻译 `YJ.i18n.t/e/g/prizeEntries`）、`selector.js`（选马器 `YJ.selector.init`，暴露 `getHorses()`）、`bus.js`（联动 `YJ.bus.broadcast/onChange`）、`pedigree.js`（血统 `YJ.pedigree.load/simpleHTML/fullHTML/openModal/bindSimple`）
 - **i18n 用法**：字段名用 `YJ.i18n.t("馬名")`、枚举用 `YJ.i18n.e("性別","牝")`、读值翻译用 `YJ.i18n.g(h,"馬名")`。新增字段/枚举翻译只需在 `i18n.js` 里加。
 - **响应式**：所有页面统一 `max-md:`（Tailwind 断点 = 768px）手机样式；不要写多个碎断点。
-- **本地预览**：服务器服务项目根，访问 `http://127.0.0.1:8090/dist/index.html`（构建产物）；开发热更新 `npm run dev`（默认 5173）。
+- **本地预览**：服务器服务项目根访问 `http://127.0.0.1:8090/dist/index.html`，或直接服务 `dist/`（`--directory dist`，dist 已自包含数据）；开发热更新 `npm run dev`（默认 5173，dev 模式取不到数据）。
 
 ---
 
 ## 7. 注意事项
 
-- 数据在项目根 `data/`，而 `pages/` 在项目根下两层（`front/pages/`），所以数据请求统一经 **`YJ_DATA.url('xxx')`**（`public/data-config.js`，内部拼 `../../data/basic.json` 等）。构建后 `dist/pages/` 同样相对项目根 `data/`，路径一致无需改写。
-- **服务器必须服务项目根**（`python -m http.server 8090 --directory 项目根`），而不是 `front/` 或 `dist/`——否则 `../../data/` 超出服务器根、fetch 会 404。务必通过 http 访问（file:// 下 fetch 会失败）。
+- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`）；数据请求统一经 **`YJ_DATA.url('xxx')`**（`public/data-config.js`，`prefix:'..'`，内部拼 `../data/basic.json` 等，相对 `dist/pages/` 指向 `dist/data/`）。`scripts/` 更新数据后需重新 `npm run build`。
+- 服务器服务**项目根**或直接服务 **`dist/`** 均可（dist 已自包含），不要只服务 `front/`——那里没有构建产物和数据。务必通过 http 访问（file:// 下 fetch 会失败）。
 - `basic.json` 是**后端合并产物**，勿手改；前端只读。
 - **修改流程**：改 `front/` 源码 → `npm run build` → 刷新 `dist/index.html` 验证。旧 `page/` 已删除；`testpage/` 归档 `tests/_trash/testpage-snapshot`（仅存档参考，勿直接改）。
 - 本项目约定「请求怎么发可参考、业务流程要自己重新设计」，迁移时同样适用。

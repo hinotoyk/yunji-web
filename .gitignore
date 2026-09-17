@@ -8,5 +8,8 @@ test-logs/
 # 前端依赖（npm install 安装）
 front/node_modules/
 
+# 探索/候选版与废案归档（AGENTS.md §1 约定，不入库）
+/tests/
+
 # 视觉测试临时产物（无头浏览器截图/OCR 路由缓存）
 /.dsh-vision-router/
