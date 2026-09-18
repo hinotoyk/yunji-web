@@ -491,10 +491,11 @@ function renderCurve() {
   var rows = [];
   pts.forEach(function (p) { if (sel.indexOf(p.gen) >= 0) rows.push(p); });
   rows.sort(function (a, b) { return a.gen === b.gen ? a.a - b.a : (a.gen < b.gen ? -1 : 1); });
-  var html = '<table class="st-mat"><thead><tr><th class="left">生产年</th><th class="left">月龄</th><th>出走</th><th>1着</th><th>胜率</th><th>连对</th><th>复胜</th></tr></thead><tbody>';
+  var html = '<table class="st-mat"><thead><tr><th class="left">生产年</th><th class="left">月龄</th><th>出走</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>胜率</th><th>连对率</th><th>复胜率</th></tr></thead><tbody>';
   rows.forEach(function (p) {
     var r = rates(p);
     html += '<tr><td class="left">' + p.gen + '年产</td><td class="left">' + ageLabel(p.a) + '</td><td>' + starts(p) + '</td><td>' + p.w +
+      '</td><td>' + p.p2 + '</td><td>' + p.p3 + '</td><td>' + (fin(p) - p.w - p.p2 - p.p3) +
       '</td><td>' + pct(r.win) + '</td><td>' + pct(r.ren) + '</td><td>' + pct(r.fuku) + '</td></tr>';
   });
   html += '</tbody></table>';
