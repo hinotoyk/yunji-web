@@ -47,7 +47,8 @@
 
       // ── type=race 专属 ──
       "race": {
-        "name":   "赛事名（含格级尾缀，如 テレビ東京杯青葉賞(GII)）",
+        "name":   "赛事名（已剥掉「徽章代劳」的格级括号尾缀：テレビ東京杯青葉賞(GII) → テレビ東京杯青葉賞，
+                   口径同 race-rows.js raceNameText —— 尾缀与 格 相等且该格有徽章才剥，否则 (1勝クラス) 等原样保留）",
         "grade":  "原始格（GII/JpnI/L/OP…，新马战为 新馬）",
         "glabel": "徽章显示字（G2/G3/L…，无徽章格为空）",
         "gbadge": "徽章 css 类（g1/g2/g3/gl/gop）",
@@ -119,6 +120,19 @@ def norm_race(s):
     if m:
         s = s[: m.start()]
     return s.replace(" ", "").replace("　", "").strip()
+
+
+def strip_grade_suffix(name, grade):
+    """赛事名去「徽章已代劳」的格级括号尾缀（京都新聞杯(GII) → 京都新聞杯）。
+
+    只在尾缀与 格 相等、且该格确实会渲染徽章（GBADGE 命中）时剥；否则
+    (1勝クラス)/(3歳)/(C4) 等无徽章尾缀必须原样保留，剥了会丢信息。
+    口径同前端 race-rows.js 的 raceNameText（那里按原始记录形状判 r.格）。"""
+    s = "" if name is None else str(name)
+    m = re.search(r"[（(]([^()（）]*)[)）]\s*$", s)
+    if m and grade in GBADGE and m.group(1) == grade:
+        return s[: m.start()].rstrip()
+    return s
 
 
 def race_key(r):
@@ -294,7 +308,7 @@ def to_render_event(e):
     team = " ｜ ".join(x for x in (("騎手 " + jockey) if jockey else "",
                                    ("調教師 " + str(r["調教師"])) if r.get("調教師") else "") if x)
     race = {
-        "name": str(r.get("レース名") or ""),
+        "name": strip_grade_suffix(r.get("レース名"), r.get("格")),
         "grade": r.get("格") or "",
         "glabel": GLBL.get(r.get("格"), ""),
         "gbadge": GBADGE.get(r.get("格"), ""),

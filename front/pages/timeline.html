@@ -33,6 +33,11 @@
 .tl-photo.empty{display:flex;align-items:center;justify-content:center}
 .tl-photo.empty span{font-size:34px;opacity:.3;line-height:1}
 .tl-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 16px}
+/* 比赛名行（等级徽章 + 赛事名）：**恒单行**，PC / mb 同一套 —— 名字超宽由 fitRaceNames() 缩字号，
+   缩到下限仍放不下才用省略号兜底（此刻给 title，悬停可看全）。徽章 flex:none 不参与压缩。 */
+.tl-racename-row{display:flex;align-items:center;gap:8px;min-width:0}
+.tl-racename-row .yj-grade{flex:none}
+.tl-racename{flex:1 1 auto;min-width:0;font-size:15px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-item.left .tl-photo{order:2}
 .tl-item.left .tl-body{order:1}
 /* 年份：骑在轴线上的居中胶囊 */
@@ -96,7 +101,9 @@
  *   1. 全局级别首胜（每级别全站仅一次）  1b. 世代新马首胜  2. 全局重赏序数（重赏首胜/重赏第N胜/G2第N胜，跨马累计；级别第1胜=首胜不重复挂）  3. 世代重赏首胜（中央）
  *   4. 父子制覇（飞机云同胜）  5. 受赏 —— 同一场比赛可同时触发多枚徽章。
  * 渲染：时间自下而上（最新在顶；同日按発走晚者在顶——后端已按 日期→同日発走（缺失视为最大） 升序
- *       输出，同 races.html 模块 33），年份分组降序；中央轴卡片左右交替，图位（横A4比例）恒贴时间轴一侧。 */
+ *       输出，同 races.html 模块 33），年份分组降序；中央轴卡片左右交替，图位（横A4比例）恒贴时间轴一侧。
+ * 赛事名（race.name）：后端已剥掉徽章代劳的等级尾缀（见 build_timeline.py strip_grade_suffix），
+ *       前端恒单行显示，超宽由 fitRaceNames() 缩字号（PC / mb 同一套）。 */
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js（原页内副本 > 分支已漂移为无操作，此处一并修正） */
 function tagHTML(t){
   return '<span class="tl-tag '+t.cat+'"'+(t.tip?' title="'+esc(t.tip)+'"':'')+'>'+
@@ -147,9 +154,9 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
   } else {
     var r = ev.race || {};
     card +=
-      '<div class="flex flex-wrap items-center gap-x-2">'+
+      '<div class="tl-racename-row">'+
         (r.gbadge ? '<span class="yj-grade yj-'+r.gbadge+'">'+esc(r.glabel||"")+'</span>' : '')+
-        '<span class="text-[15px] font-semibold">'+esc(r.name||"")+'</span>'+
+        '<span class="tl-racename">'+esc(r.name||"")+'</span>'+
       '</div>'+
       (r.meta ? '<div class="text-[12px] text-muted-foreground">'+esc(r.meta)+'</div>' : '')+
       '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">'+
@@ -169,6 +176,28 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
            '<div class="tl-cardwrap">'+card+'</div>'+
          '</div>';
 }
+/* ===== 赛事名恒单行：超宽缩字号（PC / mb 同一套）=====
+ * 规则（用户定稿）：卡片里的比赛名无论 PC 还是 mb 都只占一行——名字过长就**缩小字号**，不换行、不撑破卡片；
+ *   名字后「(GII)/(JpnI)/(L)/(OP)」这类等级尾缀已由左侧徽章表达，后端产物 name 里已剥掉
+ *   （scripts/timeline/build_timeline.py 的 strip_grade_suffix），此处只管一行内自适应字号。
+ * 机制：先复位到 CSS 基准字号（单一出处 = 页内 .tl-racename）→ 量 scrollWidth/clientWidth →
+ *   超宽按 0.5px 步进降字号；降到下限 NAME_FLOOR 仍放不下才交给 CSS 省略号，并挂 title 悬停看全名。
+ * 幂等：每轮先复位字号，故 resize / 字体加载完成后可放心重跑。 */
+var NAME_FLOOR = 10.5;   /* 字号下限（px）：再小就伤可读性，改为省略号兜底 */
+function fitRaceNames(){
+  var els = document.querySelectorAll(".tl-racename");
+  for (var i = 0; i < els.length; i++){
+    var el = els[i];
+    el.style.fontSize = "";                                     /* 复位：可重复调用 */
+    el.removeAttribute("title");
+    var size = parseFloat(getComputedStyle(el).fontSize) || 15; /* 基准字号取自 CSS，页内不写死 */
+    while (el.scrollWidth > el.clientWidth && size > NAME_FLOOR){
+      size = Math.max(NAME_FLOOR, Math.round((size - 0.5) * 10) / 10);
+      el.style.fontSize = size + "px";
+    }
+    if (el.scrollWidth > el.clientWidth) el.setAttribute("title", el.textContent);  /* 缩到下限仍超宽：兜底提示 */
+  }
+}
 function render(events){
   /* 时间自下而上：最新在顶部（渲染前倒序），年份分组同步降序；卡片按序左右交替骑在中央轴上 */
   var year = "";
@@ -181,6 +210,7 @@ function render(events){
   document.getElementById("body").innerHTML = items.length
     ? '<div class="tl">'+items+'</div>'
     : '<div class="hint-empty">暂无里程碑事件</div>';
+  fitRaceNames();   /* 渲染完立即量一次：赛事名超宽缩字号，保证恒单行 */
 }
 function renderStats(st){
   st = st || {};
@@ -201,6 +231,10 @@ function init(){
   });
 }
 init();
+/* 卡片宽度随视口变 → 重新量；Web 字体（Noto Sans SC）到位后文字宽度会变 → 也重量一次 */
+var fitTimer = null;
+window.addEventListener("resize", function(){ clearTimeout(fitTimer); fitTimer = setTimeout(fitRaceNames, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitRaceNames(); });
 </script>
 </body>
 </html>
