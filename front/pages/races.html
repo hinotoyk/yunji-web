@@ -414,11 +414,11 @@ var LIB = null;   /* {horses:[], entries:[{h,r}]} */
 /* 已选维度：每个维度是数组，同维度多选=OR，跨维度=AND；空数组=不限
  * year=比赛年份（按比赛日付），byear=出生年份（按马 h.生年），两套独立可叠加 */
 var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[], horse:[],
-            turn:[], ninki:[], sex:[], trainer:[], jockey:[] };
+            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[] };
 var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear",
-                "turn","ninki","sex","trainer","jockey"];
+                "turn","ninki","sex","trainer","jockey","mps"];
 /* ?f=key:value,key2:value2 下钻（统计总览矩阵行 → 独立模式预置筛选）
- * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue）；
+ * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps）；
  * 无效维度或值在应用时由 validFilterValue 静默丢弃。 */
 var URL_F = (function(){
   var m=location.search.match(/[?&]f=([^&]+)/);
@@ -558,6 +558,7 @@ function entryVal(en,key){
   if(key==="sex") return en.h&&en.h.性別 ? (en.h.性別==="セ"?"セン":en.h.性別) : "";
   if(key==="trainer") return r.調教師||"";
   if(key==="jockey") return r.騎手||"";
+  if(key==="mps") return (en.h&&en.h.母父)||"";   /* 母父 = 血统图「母亲的父亲」（basic.json 母父字段） */
   return "";
 }
 
@@ -673,9 +674,9 @@ function renderFilters(){
       '<div class="f-horse-sel" id="fHorseSel"></div>'+
     '</div></div>';
 
-  /* 行序（用户 v10 定稿）：「A-B」= 一行两列；无 - = 独占一行（wide）
+  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行）：「A-B」= 一行两列；无 - = 独占一行（wide）
    * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
-   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气 / 调教师-骑手 */
+   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 */
   el.innerHTML=
     '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
     (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
@@ -695,9 +696,10 @@ function renderFilters(){
       (showCentral?rowWide("track","竞马场·中央",TRACK_CENTRAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showLocal?rowWide("track","竞马场·地方",TRACK_LOCAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showOversea?rowWide("track","竞马场·海外",[{v:"海外",l:"海外"}]):"")+
-      selRow("ninki","人气",true)+
-      selRow("trainer","调教师",null,false)+
+      selRow("ninki","人气",true,false)+
+      selRow("mps","母父",null,false)+
       selRow("jockey","骑手",null,false)+
+      selRow("trainer","调教师",null,false)+
     '</div></div>';
   /* 筛选条重建后重新挂载出走马搜索（selector 组件，compact+multi 模式；loadHorses 走缓存） */
   initHorseSel();

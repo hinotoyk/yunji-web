@@ -1827,3 +1827,59 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 ✅ 已完成（v1 方案 9 项全落地）：`tests/_smoke-refactor.cjs` 语法+功能冒烟全过（6 页内联脚本编译、esc 等值、PLACE_BG、G/GLABEL/gradeBadge 映射）；`npm run build` 后 dist 终检全过——theme-*.css 含 `.page-title/:before`、`.yj-g*` 五条配色（压缩器等价改写 `rgba(10,167,160,.15)`→`#0aa7a026`）、`.yj-grade margin-left:6px`，且不含任何被删死类；新旧构建**全量选择器 diff** = 计划内差异（删除死组件 + 新增 page-title，无计划外变化）；dist/pages 六页均引用 yj-util/page-title，stats/datechart 引用 `raceRows.PLACE_BG`，timeline 22px 变体覆盖在位。未 commit（等用户确认）。
 - ⚠ 事后补记（构建操作坑，非代码问题）：中途为提速用 `COPY_DATA=skip` 构建了两轮，与 `emptyOutDir:true` 叠加会**先清空 dist（含 data/）再跳过补拷** → dist/data 缺失、页面全部「数据加载失败（HTTP 404）」；已用完整 `npm run build` 恢复并临时起 ：8091 实测 basic.json/profile.html/yj-util.js 全 200。**dist 验证清单今后固定含 `dist/data/basic.json` 存在性检查**；`COPY_DATA=skip` 只适用于确认 dist/data 完好的快速迭代（但注意 emptyOutDir 仍会删它——该组合本就不安全）。
 - 📌 本节已提炼为**文首「★ 全站编码约定 · 复用抽离」**：此后新编码按那 6 条执行（工具/组件/语义色单一出处、动态类名出 @layer、收录门槛、零影响验证清单）。
+
+---
+
+## 49. 统计页 · 人气页签固定升序 + 总体平均行改中性灰
+
+### 49.1 需求（用户）
+
+1. 产驹倾向 · TENDENCY 的**人气**页签：行序按 **1、2、3、4、5…固定排序**（原按出赛数降序，10+人気 桶大时挤在前面，不自然）。
+2. 总体平均基准行是**绿色**（浅青底 `#f7fdfd` + 深青字 `#0b6b64`），而下方数据行「高于总体平均=绿」（`yj-up #0b8a84`）与其撞色 —— **基准行换个色**。
+
+### 49.2 思路与落地（`pages/stats.html`）
+
+- **人气固定序**：`matHtml()` 加 ninki 专用分支——桶键为数字字符串（"1".."18"，§35.7 逐一化），`parseInt` **数值升序**重排；不进 `TAB_ORDER` 写死 1-18 清单（海外等出现 >18人気 时自动续排，桶键唯一无同档问题）。距离/级别 TAB_ORDER 与其余维度出赛数降序不变；表头点击排序仍在其后生效（点了列头以列头为准）。页签 tip 补「按人气升序」，页头注释同步。
+- **基准行改中性灰**：`.st-mat tr.base td` 底 `#f7fdfd→#f4f4f5`（muted 灰，同 `.seg` hover 灰阶）、字 `#0b6b64→#52525b`（同 `.seg` 按钮字色），`font-weight:600` 保留——基准行语义改为「参照系」中性色，与率列 绿=高于/红=低于 的数据语义色彻底分离；「样本少」tag、下钻 hover 浅青（`#f4fbfa`）不受影响。
+
+### 49.3 验证与状态
+
+- `scripts/stats/verify_stats.cjs` 补两断言：[C3] 人气行按 data-href（整体 URI 编码，`encodeURIComponent("ninki:k,venue:")` 定位）断言 1→18 升序；基准行 CSS 断言 `#f4f4f5` 在位且无 `#f7fdfd` 残留。
+- **连带修复（§48 遗留）**：verify_stats 的 stub 自 §48 起就缺 `YJ.util`/`YJ.raceRows`（页面顶部 `var esc = YJ.util.esc` 直接 TypeError），本轮按 verify_drill.cjs 同款补载——按浏览器顺序间接 eval `public/yj-util.js` → `public/race-rows.js` 再 eval 页面脚本；套件恢复可用，**194 项全过**。
+- `npm run build` + dist/pages/stats.html 核对新 CSS/排序分支/tip 在位、`dist/data/basic.json` 存在（§48 清单项）；`tests/tendency-ninki-check.html` 挂具（iframe 加载 dist 产物 → 自动切「人气」页签停住）+ headless Edge `:8090` 截图目检：人气行序 1→5…升序、「总体平均」行中性灰、下方 高于=绿/低于=红 不变。未 commit（等用户确认）。
+
+---
+
+## 50. 统计页 · 倾向矩阵新增「母父」维（+页签序用户定稿）
+
+### 50.1 需求（用户）
+
+1. 产驹倾向 · TENDENCY 新增 **母父** 维度：取值按**血统图中母亲的父亲**的逻辑（= 血统图 母线第 2 代第 1 格，`pedigree.母[1][0].name`）。
+2. 页签展示顺序定为：**距离、竞马场、比赛级别、跑道、马场、人气、性别、赛道方向、母父、骑手、调教师**。
+
+### 50.2 数据链路（母父字段的单一 derive 点）
+
+- **`scripts/basic/merge_basic.py`**：新增 `damsire_of(h)` —— 读该马 `pedigree_file`，取 `pedigree.母[1][0].name`（同 front/public/pedigree.js simpleHTML/fullHTML 母线取格逻辑）；每次合并全量重 derive（血统文件世代加深自动跟上），文件缺失/结构不全保留旧值不抹；`ORDER` 在 母名 后插入 `母父`。重跑 merge（缓存空=纯 derive）→ basic.json **277/277 匹全部得到 母父**（146 个不同值，アオイハルカ→キングカメハメハ 与 JBIS 核对一致）。
+- **`scripts/stats/build_stats.py`**：`DIM_KEYS` 增 `"mps"`，dims 分桶加 `mps: h["母父"]`（空不入桶）；重算 `data/stats.json`（中央 all 100 桶，Galileo(IRE) n=33 居首）。
+
+### 50.3 前端落地
+
+- **`front/pages/stats.html`**：`TAB_DIMS` 按用户定稿重排为 11 维并增 `{k:"mps", l:"母父", tip:"母亲的父亲（血统图 母の父 格；按出赛数降序）"}`；`drillPairs` 加 `mps:` 下钻；NOTES 补「母父 = 产驹母亲的父亲（血统图「母の父」格，同血统图取值）」；页头注释 十维→十一维。
+- **`front/pages/races.html`**：`FLT/DIM_KEYS` 增 `mps`；`entryVal("mps") = en.h.母父`（马匹级 join，同 sex/byear 模式）；筛选条 人气 行后加 `selRow("mps","母父")` 半列（select 添加 + f-tag 删除复用现成委托）；`validFilterValue` 走按实际数据校验分支自动生效。
+
+### 50.4 断言同步 + §48 遗留修复
+
+- **`scripts/stats/verify_stats.cjs`**：DIMS 增 mps、十维→十一维、≤组加 mps；[B] 前**新增 derive 一致性断言**（basic.json.母父 == pedigree.母[1][0].name，277/277）；[C] 11 页签 + 页签序断言 + 母父页签（Galileo(IRE) 出走 33 / 100 桶）+ 下钻 URL 断言 → **198 项全过**。
+- **`scripts/races/verify_drill.cjs`**：[B] 加 `mps:キングカメハメハ` 正例（命中 18 == 独立重算 18）；[C] 加 母父 select 行断言 → **33 项全过**。
+- **§48 遗留修复（三套 stub 同病）**：verify_drill / verify_datechart 的 stub 也缺 `yj-util.js`（页面 `var esc = YJ.util.esc` 直接 TypeError，§48 收口后一直没跑过 [C] 段）——均按浏览器加载顺序补载 yj-util.js → race-rows.js；datechart **84 项**恢复全过。
+- `python run_update.py --check` 全绿（数据校验 + 四套断言）。
+
+### 50.5 状态
+
+✅ 已完成：`npm run build` + dist 核对（stats/races 页含 mps、dist/data 含 母父·mps）；`tests/tendency-mps-check.html` 挂具 + headless Edge `:8090` 截图目检（页签序、母父行降序、样本少 tag、总体平均中性灰不变）。未 commit（等用户确认）。
+
+### 50.6 追加调整（用户反馈，附截图）：比赛记录筛选尾部两行重排
+
+- 原布局（§50.3 首版）：人气 独占一行、母父-调教师 一行、骑手 半列孤行——尾部参差。
+- 改为：**人气-母父 一行 / 骑手-调教师 一行**（`selRow` 四行顺序 ninki→mps→jockey→trainer，人气 `wide=false` 收半列）；行序注释同步。
+- 验证：drill 33 项全过（无行序断言）；`npm run build` + headless Edge 截图目检（两行各两列对齐）。

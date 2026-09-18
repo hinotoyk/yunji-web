@@ -157,8 +157,10 @@ global.YJ = { i18n: {
 } };
 global.YJ_DATA = { url(p) { return "data/" + p; } };
 /* 页面已把「比赛行/徽章渲染」下沉到共享模块 front/public/race-rows.js（与比赛页同一份代码，
- * 见 UI优化记录 §42）。浏览器里它先于页面脚本加载，stub 环境须保持同样顺序，
- * 否则页面脚本取不到 YJ.raceRows。 */
+ * 见 UI优化记录 §42）；§48 后页面还依赖 yj-util.js 的 YJ.util.esc（页内薄别名）。
+ * 浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序（yj-util → race-rows），
+ * 否则页面脚本取不到 YJ.raceRows / YJ.util。 */
+eval(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 eval(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
 global.fetch = function (url) {
   const txt = fs.readFileSync(path.join(ROOT, String(url)), "utf8");

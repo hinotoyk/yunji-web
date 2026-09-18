@@ -80,8 +80,9 @@ global.YJ = {
   },
 };
 
-/* 比赛行/徽章渲染已下沉到共享模块 front/public/race-rows.js（与日期图明细同一份代码，
- * 见 UI优化记录 §42）。浏览器里它先于页面脚本加载，stub 环境须保持同样顺序。 */
+/* 共享模块按浏览器加载顺序入 stub：yj-util.js（YJ.util.esc，§48 后页面薄别名依赖）→ race-rows.js
+ * （比赛行/徽章渲染已下沉，见 UI优化记录 §42）。浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序。 */
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
 
 /* 间接 eval → 页面 var/function 落到 global（后续可读 LIB/FLT/entryVal/matchEntry） */
@@ -151,6 +152,8 @@ setTimeout(function () {
   ok(countFor("trainer", "矢作芳人") === rawTr && rawTr > 0, "trainer:矢作芳人 命中 " + countFor("trainer", "矢作芳人") + " == 源 " + rawTr);
   const rawJk = allEntries.filter(en => String(en.r.騎手 || "") === "武豊").length;
   ok(countFor("jockey", "武豊") === rawJk && rawJk > 0, "jockey:武豊 命中 " + countFor("jockey", "武豊") + " == 源 " + rawJk);
+  const rawMps = allEntries.filter(en => String(en.h["母父"] || "") === "キングカメハメハ").length;
+  ok(countFor("mps", "キングカメハメハ") === rawMps && rawMps > 0, "mps:キングカメハメハ（母父新维度）命中 " + countFor("mps", "キングカメハメハ") + " == 源 " + rawMps);
   /* 还原 12 维组合（供 [C] 继续） */
   global.DIM_KEYS.forEach(kk => { global.FLT[kk] = []; });
   global.URL_F && global.DIM_KEYS.forEach(k => {
@@ -172,6 +175,7 @@ setTimeout(function () {
   ok(!f.includes("矢作芳人（"), "调教师 select 选项排除已选值（矢作芳人仅以 tag 存在）");
   ok(!!f.match(/（\d+场）/), "调教师选项带出赛数（如 福永祐一（44场））");
   ok(f.includes('data-sel="jockey"') && f.includes("f-tag\">武豊"), "骑手 select 行 + 已选 tag");
+  ok(f.includes('data-sel="mps"') && f.includes(">母父<"), "筛选行 母父 select（统计页母父维度下钻落点）");
   ok(f.includes("data-k=\"grade\" data-v=\"1勝クラス\"") && f.includes("data-v=\"3勝クラス\""), "级别新增 1胜/2胜/3胜 单级 chip");
   ok(global.LIB && global.LIB.entries.length === allEntries.length, "LIB 加载完整（" + global.LIB.entries.length + " 条）");
   const bodyHtml = String(els["body"]._html);

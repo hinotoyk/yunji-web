@@ -40,7 +40,8 @@
                     "pr": 赏金合计(円) },
           "dims": {                    # 每维 = [{k, n, dnf, exc, w, p2, p3}]，按 n 降序
             "surf": [...], "dist": [...], "cond": [...], "turn": [...], "grade": [...],
-            "ninki": [...], "sex": [...], "track": [...], "trainer": [...], "jockey": [...]
+            "ninki": [...], "sex": [...], "track": [...], "trainer": [...], "jockey": [...],
+            "mps": [...]               # 母父（血统图 母の父 格；basic.json 母父字段）
           },
           "curve": [ { "gen": "2023", "a": 月龄, "n":..,"dnf":..,"exc":..,"w":..,"p2":..,"p3":.. } ],
           "trophies": [ { "d","id","h","r","g","v","R","jk","tr" } ]   # 重赏一着明细，按日期升序
@@ -72,7 +73,7 @@ DATA = ROOT / "data"
 
 # 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径；L/OP 不计入）
 TROPHY_GRADES = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}
-DIM_KEYS = ["surf", "dist", "cond", "turn", "grade", "ninki", "sex", "track", "trainer", "jockey"]
+DIM_KEYS = ["surf", "dist", "cond", "turn", "grade", "ninki", "sex", "track", "trainer", "jockey", "mps"]
 VENUE_KEYS = ["中央", "地方", "海外"]
 
 
@@ -305,7 +306,7 @@ def main():
             dates.append(d)
             horses_seen.add(h.get("id"))
 
-            # ── 十维分桶（切面共用同一份桶键） ──
+            # ── 十一维分桶（切面共用同一份桶键）──
             dims = {
                 "surf": str(r.get("芝ダ") or ""),
                 "dist": dist_bucket(r.get("距離")),
@@ -317,6 +318,7 @@ def main():
                 "track": str(r.get("場名") or ""),
                 "trainer": str(r.get("調教師") or ""),
                 "jockey": str(r.get("騎手") or ""),
+                "mps": str(h.get("母父") or ""),   # 母父 = 血统图「母亲的父亲」（basic.json 母父字段，merge_basic.py 从 pedigree.母[1][0] derive）
             }
 
             # ── 月龄曲线键（生产年 × 逐月） ──

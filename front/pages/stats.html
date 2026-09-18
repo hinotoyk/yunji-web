@@ -52,7 +52,8 @@
 /* 排序图标悬出表头文字右侧：负右外边距抵消自身宽度，不占表头长度、不影响文字居中 */
 .st-mat .st-sa{display:inline-block;width:12px;margin:0 -14px 0 2px;color:#c4c8cb;font-size:10px}
 .st-mat th[data-sk]:hover .st-sa,.st-mat .st-sa.on{color:#0aa7a0}
-.st-mat tr.base td{background:#f7fdfd;font-weight:600;color:#0b6b64}
+/* 基准行（总体平均）= 中性灰参照色：与率列「绿=高于/红=低于总体平均」的数据语义色分离，不再撞绿 */
+.st-mat tr.base td{background:#f4f4f5;font-weight:600;color:#52525b}
 .st-mat tr.yj-drill{cursor:pointer}
 .st-mat tr.yj-drill:hover td{background:#f4fbfa}
 .st-mat tr.yj-drill:hover td.left{text-decoration:underline;text-decoration-color:#0aa7a0;text-underline-offset:3px}
@@ -176,25 +177,26 @@ td.dim .num{color:#c6c6ca}
  *       scopes = { all 全部, yYYYY 自然年(比赛日历年), gYYYY 生产年(产驹生年) }）。
  * 场地范围：JRA/NAR/海外 组合多选，默认 JRA；统计切面：生产年/自然年 + 年份值。
  *           勾选场地在同一切面下的计数相加、比率重算。
- * 倾向矩阵：10 维（跑道/距离/马场/左右/比赛级别/人气/性别/竞马场/调教师/骑手），
+ * 倾向矩阵：11 维（距离/竞马场/比赛级别/跑道/马场/人气/性别/赛道方向/母父/骑手/调教师，页签序=用户定稿），
  *           顶行=库内基准；率列 红=低于/绿=高于基准（0.1pt 精度，同显示值）；表头点击排序；行可下钻比赛记录页查询（附带切面 byear/year）。
- *           距离/比赛级别 按固定序展示（TAB_ORDER：距离由短到长、级别由易到难），其余维度按出赛数降序。
- * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一；
+ *           距离/比赛级别 按固定序展示（TAB_ORDER：距离由短到长、级别由易到难），人气按 1人気→18人気 固定升序，其余维度按出赛数降序。
+ * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一 / 母父=血统图「母亲的父亲」；
  *       比率分母=出走（完赛+未完赛，取消/除外不计），同 races.html 模块 34。 */
 var STATS = null;
 var st = { vts: ["中央"], yMode: "gen", yVal: "all", gen: "全部", rates: ["win"], sort: { k: "", dir: "desc" }, tab: "surf" };
 
 var TAB_DIMS = [
-  { k: "surf",    l: "跑道",   tip: "草地/泥地/全天候" },
-  { k: "dist",    l: "距离",   tip: "短距离≤1400m / 英里1401-1800m / 中距离1801-2400m / 长距离>2400m" },
-  { k: "cond",    l: "马场",   tip: "良/稍重/重/不良" },
-  { k: "turn",    l: "赛道方向", tip: "右转（顺时针）/ 左转（逆时针）" },
+  { k: "dist",    l: "距离",     tip: "短距离≤1400m / 英里1401-1800m / 中距离1801-2400m / 长距离>2400m" },
+  { k: "track",   l: "竞马场",   tip: "各竞马场" },
   { k: "grade",   l: "比赛级别", tip: "新马/未胜利/一胜~三胜级/OP/L/Jpn1-3/G1-3/其他" },
-  { k: "ninki",   l: "人气",   tip: "1人気～18人気 逐一" },
-  { k: "sex",     l: "性别",   tip: "牡/牝/セン" },
-  { k: "track",   l: "竞马场", tip: "各竞马场" },
-  { k: "trainer", l: "调教师", tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" },
-  { k: "jockey",  l: "骑手",   tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" }
+  { k: "surf",    l: "跑道",     tip: "草地/泥地/全天候" },
+  { k: "cond",    l: "马场",     tip: "良/稍重/重/不良" },
+  { k: "ninki",   l: "人气",     tip: "1人気～18人気 逐一（按人気升序）" },
+  { k: "sex",     l: "性别",     tip: "牡/牝/セン" },
+  { k: "turn",    l: "赛道方向", tip: "右转（顺时针）/ 左转（逆时针）" },
+  { k: "mps",     l: "母父",     tip: "母亲的父亲（血统图 母の父 格；按出赛数降序）" },
+  { k: "jockey",  l: "骑手",     tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" },
+  { k: "trainer", l: "调教师",   tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" }
 ];
 var SM_F = 20;            /* 出走 < 20 → 样本少 */
 var DIM_F = 10;           /* 出走 < 10 → 数字弱化 */
@@ -528,6 +530,7 @@ function drillPairs(tab, k) {
     else return null;
   }
   else if (tab === "ninki") pairs.push("ninki:" + k);
+  else if (tab === "mps") pairs.push("mps:" + k);
   else if (tab === "sex") pairs.push("sex:" + k);
   else if (tab === "track") pairs.push("track:" + k);
   else if (tab === "trainer") pairs.push("trainer:" + k);
@@ -552,7 +555,9 @@ function matHtml(tab) {
   var base = baseMerged(), br = rates(base);
   var rows = dimMerged(tab);
   var order = TAB_ORDER[tab];
-  if (order) {                                         /* 固定展示序：距离由短到长 · 级别由易到难 */
+  if (tab === "ninki") {                               /* 人气固定序：1人気→18人気 数字升序（桶键=数字字符串逐一，不写死清单，>18人気 出现也自动续排） */
+    rows = rows.slice().sort(function (a, b) { return parseInt(a.k, 10) - parseInt(b.k, 10); });
+  } else if (order) {                                  /* 固定展示序：距离由短到长 · 级别由易到难 */
     var rank = {};
     order.forEach(function (k, i) { rank[k] = i; });
     rows = rows.slice().sort(function (a, b) {
@@ -701,6 +706,7 @@ function renderAbout() {
     "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，下钻链接会附带 byear/year 条件。" +
     "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 比率分母=出走，同比赛记录页。" +
     "<br>比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/其他；距离：短距离≤1400m/英里1401-1800m/中距离1801-2400m/长距离>2400m。" +
+    "<br>母父 = 产驹母亲的父亲（血统图「母の父」格，同血统图取值；按出赛数从多到少）。" +
     "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +
     "<br>样本少 = 出走 &lt; " + SM_F + "（数字弱化 = 出走 &lt; " + DIM_F + "），小样本仅供参考。";
 }

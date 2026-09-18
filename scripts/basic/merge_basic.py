@@ -18,6 +18,7 @@
     python merge_basic.py --keep     # 合并但保留缓存（调试用）
 """
 import argparse
+import json
 import re
 import sys
 
@@ -37,6 +38,23 @@ def is_unnamed(name):
     if s == "":
         return True
     return bool(_UNNAMED_RE.match(s))
+
+
+def damsire_of(h):
+    """母父 = 血统图「母亲的父亲」格：pedigree.母[1][0].name
+    （母系第 1 代 = [母]；第 2 代 = [母父, 母母]，取第 1 格，同 front/public/pedigree.js
+    simpleHTML/fullHTML 的母线取格逻辑）。文件缺失/结构不全/无名字 → None（保留旧值）。"""
+    pf = str(h.get("pedigree_file") or "")
+    if not pf:
+        return None
+    try:
+        ped = json.loads((common.ROOT / pf).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    m = ((ped.get("pedigree") or {}).get("母") or [])
+    if len(m) < 2 or not m[1] or not isinstance(m[1][0], dict):
+        return None
+    return str(m[1][0].get("name") or "").strip() or None
 
 
 def main():
@@ -97,8 +115,16 @@ def main():
         n_total += 1
     n_det = apply(det, None, is_dict=True)
 
+    # 母父：每次合并全量重 derive（血统文件世代加深后自动跟上）；derive 失败保留旧值不抹
+    n_mps = 0
+    for h in horses:
+        v = damsire_of(h)
+        if v is not None:
+            h["母父"] = v
+            n_mps += 1
+
     # 按标准字段顺序重排（模板见 build_registry.BASIC_TEMPLATE，此处固定顺序）
-    ORDER = ["id", "nk_id", "jbis_id", "馬名", "欧字馬名", "香港馬名", "自译馬名", "母名", "生年", "馬名意味",
+    ORDER = ["id", "nk_id", "jbis_id", "馬名", "欧字馬名", "香港馬名", "自译馬名", "母名", "母父", "生年", "馬名意味",
              "登録状態", "性別", "毛色", "馬齢", "生年月日", "産地", "馬主", "調教師",
              "生産牧場", "通算成績", "獲得賞金 (中央)", "獲得賞金 (地方)", "総賞金", "収得賞金", "セリ取引価格", "photo", "races_file",
              "pedigree_file"]
@@ -118,6 +144,7 @@ def main():
     print(f"   - 馬名意味:      {n_stud}")
     print(f"   - 総賞金:        {n_total}")
     print(f"   - 详情字段:      {n_det}")
+    print(f"   - 母父(血统图):  {n_mps}")
 
     if not args.keep:
         common.clean_cache_all()
