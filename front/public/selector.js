@@ -55,7 +55,10 @@ YJ.selector = (function () {
   let horsesCache = null;
   let cachePromise = null;
   let selFn = null; /* 当前 init 实例的 select（左栏目录联动用） */
-  let docClickHandler = null; /* document 关闭监听去重：多次 init 只保留最新一个（多实例/重建场景） */
+  /* 点击外部关闭下拉：多实例（筛选条 出走马+人气+母父+骑手+调教师 共 5 个）共用一个
+   * document 监听，实例注册表每次 init 时剔除已脱离 DOM 的旧实例，防泄漏 */
+  let dropInstances = [];
+  let docClickInstalled = false;
 
   async function loadHorses(base) {
     if (horsesCache) return horsesCache;
@@ -133,6 +136,9 @@ YJ.selector = (function () {
     const excluded = opts.excluded || null;
     /* compact: 紧凑样式（筛选条内嵌用）：h-26px、去图标/计数/清空按钮 */
     const compact = !!opts.compact;
+    /* items: 通用选项模式（筛选条维度下拉）：[{v,l,n}] 传入后不加载马匹数据，
+     * 下拉行 = 色块名 + 场数，搜索/键盘/多选添加/排除已选等交互与选马器完全同款 */
+    const items = opts.items || null;
     /* doubleName: 双格式马名（基本信息 PC 常驻列表 + mb 下拉用）——
      * 主名=日文(无则英文) + 副名=港译(无则自译)；其余实例不传即保持单格式 */
     const doubleName = !!opts.doubleName;
@@ -182,21 +188,29 @@ YJ.selector = (function () {
         clear.classList.toggle("hidden", !q);
       }
       /* multi + excluded：空输入也排除已选马，其余行为与原版一致 */
-      list = horses.filter(function (h) { return (!excluded || !excluded(h)) && (!q || matches(h, q)); });
+      list = items
+        ? items.filter(function (it) { return (!excluded || !excluded(it)) && (!q || String(it.l).toLowerCase().indexOf(q) >= 0); })
+        : horses.filter(function (h) { return (!excluded || !excluded(h)) && (!q || matches(h, q)); });
       if (cnt) {
-        cnt.textContent = q ? list.length : horses.length;
+        cnt.textContent = q ? list.length : (items ? items.length : horses.length);
         cnt.classList.toggle("on", !!q);
         if (q) { cnt.classList.add("text-primary","bg-accent"); } else { cnt.classList.remove("text-primary","bg-accent"); }
       }
       hl = -1;
       /* 与正式版 testpage 一致：聚焦即展开全部列表（即使未输入） */
       if (!list.length) {
-        drop.innerHTML = '<div class="empty px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">未找到匹配的马匹</div>';
+        drop.innerHTML = '<div class="empty px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">' + (items ? '未找到匹配选项' : '未找到匹配的马匹') + '</div>';
         if (!persistent) drop.classList.remove("hidden");
         return;
       }
-      drop.innerHTML = '<div class="dhead border-b border-border bg-muted/35 px-3.5 pb-1.25 pt-[7px] text-[10.5px] tracking-[.5px] text-muted-foreground">' + (q ? '匹配 <b class="font-bold text-primary">' + list.length + '</b> 匹' : '共 <b class="font-bold text-primary">' + horses.length + '</b> 匹') + '</div>' +
-        list.map(function (h, i) {
+      /* items 模式行：与马匹行同款 .row 容器，名字用 jp 色块、右侧计数「n场」 */
+      const rows = items
+        ? list.map(function (it, i) {
+            return '<div class="row relative cursor-pointer border-b border-border px-3.5 py-[9px] transition-colors duration-100 last:border-b-0 hover:bg-muted/50 max-md:px-2.5 max-md:py-2" data-i="' + i + '">' +
+              '<div class="top flex items-center gap-2 min-w-0"><span class="nblock jp inline-block max-w-full truncate rounded-md px-2 py-0.5 text-[12.5px] leading-[1.7] max-md:px-1.5 max-md:text-[12px] font-semibold ' + NB.jp + '">' + esc(it.l) + '</span>' +
+              '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + (it.n != null ? it.n + '场' : '') + '</span></div></div>';
+          }).join("")
+        : list.map(function (h, i) {
           const m = q ? matchInfo(h, q) : null;
           const chip = (m && m.fromExtra) ? '<span class="chip mt-px flex-none rounded-full bg-accent px-[7px] py-[1.5px] text-[9.5px] font-semibold tracking-[.3px] text-accent-foreground">' + esc(m.label) + '</span>' : '';
           const sub = (m && m.fromExtra && m.key !== 'id') ? '<div class="sub mt-0.5 text-[11px] text-muted-foreground max-md:text-[10.5px]">' + esc(EXTRA_LABEL[m.key] || m.label) + '：' + esc(h[m.key]) + '</div>' : '';
@@ -206,6 +220,7 @@ YJ.selector = (function () {
             (sxBar ? '<span class="sxbar absolute inset-y-0 left-0 w-2 ' + sxBar + '"></span>' : '') +
             '<div class="top flex items-start gap-2 min-w-0">' + nameHTML(h, doubleName) + chip + '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + metaHTML(h) + '</span></div>' + sub + '</div>';
         }).join("");
+      drop.innerHTML = '<div class="dhead border-b border-border bg-muted/35 px-3.5 pb-1.25 pt-[7px] text-[10.5px] tracking-[.5px] text-muted-foreground">' + (q ? '匹配 <b class="font-bold text-primary">' + list.length + '</b> ' + (items ? '项' : '匹') : (items ? '共 <b class="font-bold text-primary">' + items.length + '</b> 项' : '共 <b class="font-bold text-primary">' + horses.length + '</b> 匹')) + '</div>' + rows;
       if (!persistent) drop.classList.remove("hidden");
     }
 
@@ -273,17 +288,30 @@ YJ.selector = (function () {
       const it = e.target.closest ? e.target.closest(".row") : null;
       if (it) choose(parseInt(it.dataset.i, 10));
     });
-    /* document 关闭监听去重：多次 init 只保留最新一个，避免累积（筛选条重建场景） */
-    if (docClickHandler) document.removeEventListener("click", docClickHandler);
-    docClickHandler = function (e) {
-      if (!persistent && !wrap.contains(e.target)) drop.classList.add("hidden");
-    };
-    document.addEventListener("click", docClickHandler);
+    /* 点击外部关闭：只注册到本模块唯一监听；persistent 常驻列表不注册 */
+    if (!persistent) {
+      dropInstances = dropInstances.filter(function (m) { return document.body.contains(m.el); });
+      dropInstances.push({ el: el, close: function (e) {
+        if (!wrap.contains(e.target)) drop.classList.add("hidden");
+      } });
+      if (!docClickInstalled) {
+        docClickInstalled = true;
+        document.addEventListener("click", function (e) {
+          dropInstances.forEach(function (m) { m.close(e); });
+        });
+      }
+    }
 
+    /* items 模式：数据已在手，不加载马匹；compact 无 cnt 元素，需判空 */
+    if (items) {
+      if (cnt) cnt.textContent = items.length;
+      if (persistent) render("");
+      return Promise.resolve(items);
+    }
     return loadHorses(base).then(function (hs) {
       horses = hs;
       horsesCache = hs;
-      cnt.textContent = hs.length;
+      if (cnt) cnt.textContent = hs.length;
       if (persistent) render(""); /* 常驻模式：加载后直接展示全部列表 */
       return hs;
     });

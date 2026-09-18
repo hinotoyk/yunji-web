@@ -2028,3 +2028,11 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 **移植要点**：渐变质感受不了 utility 表达，皮肤整体收进 **theme.css `@layer components` 的 `.yj-ov-*`**（含 mb `@media (max-width:767px)`），类名字面量全部以完整名（`yj-ov-hi`/`yj-ov-dim` 而非泛词 hi/dim）出现在 `profile.html` JS 串里，content 可扫不被裁；防跳版逻辑保留（三率 `b` 的 `min-width:2.7em` + `tabular-nums` 进组件 CSS）。`ovCard/ovVal/mainCard/rateCell` 及 v10 网格全部删除。
 
 **验证**：构建产物 `theme-LQBWrubb.css` 含全部 `.yj-ov-*`（PC+mb 双份计数核对）；无头 Chrome 边界数据目检——1400px：马1 常规、马142 三率全 `100%`、马40 `1億1,615万円` 长金额不挤版；430px（注入定宽壳规避 headless 最小窗宽 500 的坑）：马1/马40 mb 堆叠无溢出。截图 `tests/ov5/v11pc.png`、`v11pc100.png`、`v11pcbig.png`、`v11mb.png`、`v11mbbig.png`。
+
+## 56. 比赛记录 · 人气/母父/骑手/调教师筛选改「出走马同款」搜索下拉（原生 select 退场）
+
+**最终思路**：四个维度原来的原生 select（方案甲 + Chrome base-select 渐进增强）观感与出走马搜索框不统一，用户点名改同款。做法是给 **selector.js 加 `items` 通用选项模式**（`[{v,l,n}]`，传入即不加载马匹数据）：搜索/键盘上下/回车、multi 连选、excluded 排除已选、点击外部关闭等交互与选马器共用同一套代码，仅下拉行渲染换成「jp 色块名 + n场」；races.html 四行 `selRow` 改为挂载点（类名 `.f-horse-sel` → 通用 `.f-csel`），已选仍为 f-tag 胶囊（× 删除走 data-fk 委托）。挂载点宽度定稿 `min-width:198px`（原 180 +10%，用户反馈避免遮挡名称/计数，PC/mb 同值）。添加/删除只做局部刷新（`refreshDimUI`：重渲 tag 区 + `__selRefresh` 重排候选），不重建筛选条，输入焦点不丢。排序口径不变：人气 1→18 固定升序（文本带「人気」），母父/骑手/调教师按出赛数降序；`?f=` 下钻预置筛选照常。
+
+**多实例坑（顺带修）**：selector.js 的「点击外部关闭」原来是模块级单 handler、init 时移除旧监听只留最新实例——单实例页面没问题，但筛选条现在有 5 个实例会互相顶掉。改为实例注册表 `dropInstances`（每次 init 剔除脱离 DOM 的旧实例）+ 模块唯一 document 监听遍历关闭；另修 compact 模式 `cnt` 为 null 时 init 末尾 `cnt.textContent` 抛错的潜在 bug（判空）。
+
+**验证**：`npm run build` 后 dist 核对（`.f-csel`×6、items 模式在 `dist/selector.js`、`f-sel`/`f-horse-sel` 零残留）；浏览器实测 5 挂载点渲染、人气下拉 18 项升序、点选→胶囊+候选排除+表 741→83 场、搜索「5」→匹配 2 项、× 删除→回 741、点击外部关闭、调教师 75 项降序（矢作芳人81场）、出走马回归正常、`?f=ninki:1,trainer:矢作芳人` 下钻胶囊预置；无头 Chrome 500px mb 截图筛选区单列无溢出。截图 `tests/_shots/dim-sel-mb.png`。
