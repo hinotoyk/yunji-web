@@ -16,7 +16,8 @@
   * 人气：逐一 1-18人気（同 races.html ninkiBucket）。
   * 回り：コース 前缀 右/左（其余不入桶）。
   * 性别：性別 归一 セ→セン。
-  * 级别聚合：新馬 / 未勝利 / 班赛(1-3勝クラス) / 重赏(GI-GIII+JpnI-III) / L / OP / 其他。
+  * 比赛级别细分：新马 / 未胜利 / 一胜级~三胜级(1-3勝クラス) / OP / L / Jpn1-3 / G1-3 / 其他
+    （桶键即中文标签，展示序见 stats.html TAB_ORDER.grade；下钻同 races.html gradeMatches）。
   * 重赏：GI/GII/GIII/JpnI/JpnII/JpnIII（同 races.html「重赏」筛选 / timeline GRADED 口径）。
 
 ═══════ data/stats.json 字段模板（产物，前端只读）═══════
@@ -126,15 +127,30 @@ def ninki_key(n):
 
 
 def grade_key(g):
+    """比赛级别细分：桶键即中文标签（同 stats.html TAB_ORDER.grade 展示序）。"""
     g = str(g or "").strip()
     if g == "新馬":
-        return "新馬"
+        return "新马"
     if g == "未勝利":
-        return "未勝利"
-    if g in ("1勝クラス", "2勝クラス", "3勝クラス"):
-        return "班赛"
-    if g in TROPHY_GRADES:
-        return "重赏"
+        return "未胜利"
+    if g == "1勝クラス":
+        return "一胜级"
+    if g == "2勝クラス":
+        return "二胜级"
+    if g == "3勝クラス":
+        return "三胜级"
+    if g == "GI":
+        return "G1"
+    if g == "GII":
+        return "G2"
+    if g == "GIII":
+        return "G3"
+    if g == "JpnI":
+        return "Jpn1"
+    if g == "JpnII":
+        return "Jpn2"
+    if g == "JpnIII":
+        return "Jpn3"
     if g in ("L", "OP"):
         return g                      # L / OP 拆开（同 races.html grade:L / grade:OP）
     return "其他"

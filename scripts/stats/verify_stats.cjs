@@ -132,10 +132,17 @@ const ninkiOf = n => {
 };
 const gradeOf = g => {
   g = String(g || "").trim();
-  if (g === "新馬") return "新馬";
-  if (g === "未勝利") return "未勝利";
-  if (g === "1勝クラス" || g === "2勝クラス" || g === "3勝クラス") return "班赛";
-  if (TROPHY_G.has(g)) return "重赏";
+  if (g === "新馬") return "新马";
+  if (g === "未勝利") return "未胜利";
+  if (g === "1勝クラス") return "一胜级";
+  if (g === "2勝クラス") return "二胜级";
+  if (g === "3勝クラス") return "三胜级";
+  if (g === "GI") return "G1";
+  if (g === "GII") return "G2";
+  if (g === "GIII") return "G3";
+  if (g === "JpnI") return "Jpn1";
+  if (g === "JpnII") return "Jpn2";
+  if (g === "JpnIII") return "Jpn3";
   if (g === "L") return "L";
   if (g === "OP") return "OP";
   return "其他";
@@ -462,8 +469,34 @@ setTimeout(function () {
   ok(oCls === "yj-up" && rowHtml("牡").includes("yj-up"), "牡胜率高于总体平均 → 绿（" + pctOf(oR.win) + " vs " + pctOf(r0.win) + "）");
   click("matTabs", "grade");
   const mtGr = String(els["matTable"]._html);
-  ok(mtGr.includes(">重赏<") && rowHtml("重赏").includes("<td>3</td>"), "级别页签：重赏行 1着 = 3（纯数字无样式）");
-  ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央") + '"'), "重赏行下钻 = grade:重赏");
+  /* 行内可能带「样本少」小标：用 >键(<span|</td>) 定位标签单元格 */
+  const cellIdx = (h, name) => { const m = h.match(new RegExp(">" + name + "(<span|</td>)")); return m ? m.index : -1; };
+  const gAll = byv["中央"].scopes.all.dims.grade;
+  ok(String(els["matTabs"]._html).includes(">比赛级别<"), "页签改名「比赛级别」");
+  const gradedKeys = ["G1", "G2", "G3", "Jpn1", "Jpn2", "Jpn3"];
+  const gEx = gradedKeys.filter(k => gAll.some(x => x.k === k));
+  const gk = gEx.find(k => gAll.find(x => x.k === k).w > 0) || gEx[0];   /* 优先取有胜场的重赏桶 */
+  ok(gk && new RegExp(">" + gk + "(<span[^>]*>样本少</span>)?</td>(<td( class=\"dim\")?>\\d+</td>)<td( class=\"dim\")?>" + gAll.find(x => x.k === gk).w + "</td>").test(mtGr),
+    "比赛级别页签：" + (gk || "?") + " 行 1着 = " + (gk ? gAll.find(x => x.k === gk).w : "?") + "（纯数字无样式）");
+  ok(gk && mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:" + gk + ",venue:中央") + '"'), (gk || "?") + " 行下钻 = grade:" + gk);
+  ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:1勝クラス,venue:中央") + '"'), "一胜级行下钻 = grade:1勝クラス（races.html gradeMatches 已支持）");
+  const G_SEQ = ["新马", "未胜利", "一胜级", "二胜级", "三胜级", "OP", "L", "Jpn1", "Jpn2", "Jpn3", "G1", "G2", "G3", "其他"]
+    .filter(k => gAll.some(x => x.k === k));
+  ok(G_SEQ.length >= 2 && G_SEQ.every((k, i) => cellIdx(mtGr, k) >= 0 && (i === 0 || cellIdx(mtGr, k) > cellIdx(mtGr, G_SEQ[i - 1]))),
+    "比赛级别固定序：" + G_SEQ.join("→"));
+  click("matTabs", "dist");
+  const mtDist = String(els["matTable"]._html);
+  const dAll = byv["中央"].scopes.all.dims.dist;
+  /* 标签含 >2400m 一类字符，页面经 esc() 输出为 &gt; —— 断言先按同规则转义再比对 */
+  const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const DIST_LBL = { "短距离": "短距离 ≤1400m", "英里": "英里 1401-1800m", "中距离": "中距离 1801-2400m", "长距离": "长距离 >2400m" };
+  ok(dAll.length >= 2 && dAll.every(x => mtDist.includes(escHtml(DIST_LBL[x.k]))), "距离行标签附范围（" + dAll.map(x => DIST_LBL[x.k]).join(" / ") + "）");
+  const dIdx = lbl => { const m = mtDist.match(new RegExp(">" + escHtml(lbl).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(<span|</td>)")); return m ? m.index : -1; };
+  const D_SEQ = ["短距离", "英里", "中距离", "长距离"].filter(k => dAll.some(x => x.k === k));
+  ok(D_SEQ.length >= 2 && D_SEQ.every((k, i) => dIdx(DIST_LBL[k]) >= 0 && (i === 0 || dIdx(DIST_LBL[k]) > dIdx(DIST_LBL[D_SEQ[i - 1]]))),
+    "距离固定序：" + D_SEQ.join("→"));
+  const dk = D_SEQ[0];
+  ok(dk && mtDist.includes('data-href="races.html?f=' + encodeURIComponent("dist:" + dk + ",venue:中央") + '"'), "距离行下钻 = dist:" + dk);
   click("matTabs", "trainer");
   const trRows = byv["中央"].scopes.all.dims.trainer;
   ok((String(els["matTable"]._html).match(/<tr/g) || []).length === 2 + trRows.length,
@@ -494,7 +527,7 @@ setTimeout(function () {
   click("yseg", "2023");
   const bG23 = sumB(["中央"], "g2023");
   ok(kpiV("出走") === String(startsOf(bG23)), "生产年 2023年产 → 出走 " + startsOf(bG23) + "（g2023 切面）");
-  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央,byear:2023") + '"'),
+  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,byear:2023") + '"'),
     "生产年切面下钻附带 byear:2023");
   click("ymodeSeg", "year");
   const yHtml2 = String(els["yseg"]._html);
@@ -502,7 +535,7 @@ setTimeout(function () {
   click("yseg", "2026");
   const bY26 = sumB(["中央"], "y2026");
   ok(kpiV("出走") === String(startsOf(bY26)), "自然年 2026年 → 出走 " + startsOf(bY26) + "（y2026 切面）");
-  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央,year:2026") + '"'),
+  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,year:2026") + '"'),
     "自然年切面下钻附带 year:2026");
   click("yseg", "all");
   ok(kpiV("出走") === String(startsOf(sumB(["中央"], "all"))), "切面回全部 → 出走 " + startsOf(sumB(["中央"], "all")));
@@ -514,8 +547,8 @@ setTimeout(function () {
   const r01 = ratesOf(b01);
   ok(kpiV("出走") === String(startsOf(b01)), "加勾 NAR → 出走 " + startsOf(b01));
   ok(String(els["matTable"]._html).includes(pctOf(r01.win)), "矩阵基准联动 = " + pctOf(r01.win));
-  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央,venue:地方") + '"'),
-    "组合下钻 URL 带双 venue（grade:重赏,venue:中央,venue:地方）");
+  ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,venue:地方") + '"'),
+    "组合下钻 URL 带双 venue（grade:新马,venue:中央,venue:地方）");
   click("vseg", "中央");                     /* 2 项时允许关中央 → 只剩地方 */
   const bL = sumB(["地方"], "all");
   ok(kpiV("出走") === String(startsOf(bL)), "关中央 → 只剩 NAR，出走 " + startsOf(bL));
@@ -525,10 +558,15 @@ setTimeout(function () {
   click("vseg", "地方");
   ok(kpiV("出走") === String(startsOf(sumB(["中央"], "all"))), "取消地方 → 回纯 JRA " + startsOf(sumB(["中央"], "all")));
   const mtGr2 = String(els["matTable"]._html);
-  ok(mtGr2.includes('data-href="races.html?f=' + encodeURIComponent("grade:重赏,venue:中央") + '"'), "回 JRA 后 重赏下钻仅 venue:中央");
+  ok(mtGr2.includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央") + '"'), "回 JRA 后 新马下钻仅 venue:中央");
 
   console.log("[C6] 重赏之路 + 补充");
   ok(String(els["gradedProg"]._html).includes("重赏") && String(els["gradedProg"]._html).includes("新马"), "级别胜利进度条");
+  const gW = k => (gAll.find(x => x.k === k) || {}).w || 0;
+  const prog = String(els["gradedProg"]._html);
+  const wBan = gW("一胜级") + gW("二胜级") + gW("三胜级"), wTrophy = gW("G1") + gW("G2") + gW("G3") + gW("Jpn1") + gW("Jpn2") + gW("Jpn3");
+  ok(prog.includes(">" + wBan + "</b>胜"), "班赛步数 = 一胜~三胜级合计 " + wBan);
+  ok(prog.includes(">" + wTrophy + "</b>胜"), "重赏步数 = G1-3+Jpn1-3 合计 " + wTrophy + "（不含 L/OP）");
   const gl = String(els["gradedList"]._html);
   ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
   ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");

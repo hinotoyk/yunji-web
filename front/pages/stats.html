@@ -181,8 +181,9 @@ td.dim .num{color:#c6c6ca}
  *       scopes = { all 全部, yYYYY 自然年(比赛日历年), gYYYY 生产年(产驹生年) }）。
  * 场地范围：JRA/NAR/海外 组合多选，默认 JRA；统计切面：生产年/自然年 + 年份值。
  *           勾选场地在同一切面下的计数相加、比率重算。
- * 倾向矩阵：10 维（跑道/距离/马场/左右/级别/人气/性别/竞马场/调教师/骑手），
+ * 倾向矩阵：10 维（跑道/距离/马场/左右/比赛级别/人气/性别/竞马场/调教师/骑手），
  *           顶行=库内基准；率列 红=低于/绿=高于基准（0.1pt 精度，同显示值）；表头点击排序；行可下钻比赛记录页查询（附带切面 byear/year）。
+ *           距离/比赛级别 按固定序展示（TAB_ORDER：距离由短到长、级别由易到难），其余维度按出赛数降序。
  * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一；
  *       比率分母=出走（完赛+未完赛，取消/除外不计），同 races.html 模块 34。 */
 var STATS = null;
@@ -193,7 +194,7 @@ var TAB_DIMS = [
   { k: "dist",    l: "距离",   tip: "短距离≤1400m / 英里1401-1800m / 中距离1801-2400m / 长距离>2400m" },
   { k: "cond",    l: "马场",   tip: "良/稍重/重/不良" },
   { k: "turn",    l: "赛道方向", tip: "右转（顺时针）/ 左转（逆时针）" },
-  { k: "grade",   l: "级别",   tip: "新马/未胜利/班赛(1-3胜)/OP/L/重赏(G1-3+Jpn1-3)" },
+  { k: "grade",   l: "比赛级别", tip: "新马/未胜利/一胜~三胜级/OP/L/Jpn1-3/G1-3/其他" },
   { k: "ninki",   l: "人气",   tip: "1人気～18人気 逐一" },
   { k: "sex",     l: "性别",   tip: "牡/牝/セン" },
   { k: "track",   l: "竞马场", tip: "各竞马场" },
@@ -202,6 +203,13 @@ var TAB_DIMS = [
 ];
 var SM_F = 20;            /* 出走 < 20 → 样本少 */
 var DIM_F = 10;           /* 出走 < 10 → 数字弱化 */
+/* 固定展示序（stats.json 内仍按 n 降序，仅渲染时重排；稳定排序，同档保持 n 降序）：
+ * 距离 = 由短到长 · 比赛级别 = 由易到难（桶键即中文标签，见 build_stats.py grade_key） */
+var TAB_ORDER = {
+  dist: ["短距离", "英里", "中距离", "长距离"],
+  grade: ["新马", "未胜利", "一胜级", "二胜级", "三胜级", "OP", "L", "Jpn1", "Jpn2", "Jpn3", "G1", "G2", "G3", "其他"]
+};
+var DIST_RANGE = { "短距离": "≤1400m", "英里": "1401-1800m", "中距离": "1801-2400m", "长距离": ">2400m" };
 var GEN_COLORS = ["#0aa7a0", "#0f8fd6", "#e8742a"];
 /* 年龄成绩曲线指标（seg 可组合多选）：颜色=产年 · 线型=指标（实线/虚线/点线）；分母=出走 */
 var RATE_METRICS = [
@@ -518,10 +526,10 @@ function drillPairs(tab, k) {
   else if (tab === "cond") { if (["良", "稍重", "重", "不良"].indexOf(k) < 0) return null; pairs.push("cond:" + k); }
   else if (tab === "turn") pairs.push("turn:" + k);
   else if (tab === "grade") {
-    if (k === "新馬") pairs.push("grade:新马");
-    else if (k === "未勝利") pairs.push("grade:未胜利");
-    else if (k === "班赛") pairs.push("grade:班赛");
-    else if (k === "重赏" || k === "L" || k === "OP") pairs.push("grade:" + k);
+    if (k === "一胜级") pairs.push("grade:1勝クラス");
+    else if (k === "二胜级") pairs.push("grade:2勝クラス");
+    else if (k === "三胜级") pairs.push("grade:3勝クラス");
+    else if (["新马", "未胜利", "OP", "L", "Jpn1", "Jpn2", "Jpn3", "G1", "G2", "G3"].indexOf(k) >= 0) pairs.push("grade:" + k);
     else return null;
   }
   else if (tab === "ninki") pairs.push("ninki:" + k);
@@ -539,11 +547,8 @@ function drillURL(tab, k) {
   return pairs ? "races.html?f=" + encodeURIComponent(pairs.join(",")) : "";
 }
 function bucketLabel(tab, k) {
-  if (tab === "grade") {
-    if (k === "新馬") return "新马";
-    if (k === "未勝利") return "未胜利";
-    return k;
-  }
+  if (tab === "dist") return DIST_RANGE[k] ? k + " " + DIST_RANGE[k] : k;   /* 类别后附范围，一眼读出距离 */
+  if (tab === "grade") return k;                     /* 桶键即中文标签（build_stats.py grade_key） */
   if (tab === "turn") return k === "右" ? "右转" : k === "左" ? "左转" : k;
   return surfLabel(k);
 }
@@ -551,6 +556,16 @@ function renderTable() {
   var tab = st.tab;
   var base = baseMerged(), br = rates(base);
   var rows = dimMerged(tab);
+  var order = TAB_ORDER[tab];
+  if (order) {                                         /* 固定展示序：距离由短到长 · 级别由易到难 */
+    var rank = {};
+    order.forEach(function (k, i) { rank[k] = i; });
+    rows = rows.slice().sort(function (a, b) {
+      var ra = rank[a.k] != null ? rank[a.k] : order.length;
+      var rb = rank[b.k] != null ? rank[b.k] : order.length;
+      return ra - rb;                                  /* 稳定排序：同档保持 n 降序 */
+    });
+  }
   var isLong = tab === "trainer" || tab === "jockey";
   /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 UI优化记录 §44）；8 个数值列表头可点击排序 */
   var COLS = [
@@ -618,16 +633,24 @@ function renderTable() {
 }
 
 /* ---- ④ 重赏之路 ---- */
-var GRADE_ORDER = [["新馬", "新马"], ["未勝利", "未胜利"], ["班赛", "班赛"], ["OP", "OP"], ["L", "L"], ["重赏", "重赏"]];
+/* 进阶步 ← 比赛级别细分桶（班赛 = 一胜~三胜级合计；重赏 = G1-3+Jpn1-3 合计，不含 L/OP） */
+var G_STEPS = [
+  ["新马",   ["新马"]],
+  ["未胜利", ["未胜利"]],
+  ["班赛",   ["一胜级", "二胜级", "三胜级"]],
+  ["OP",     ["OP"]],
+  ["L",      ["L"]],
+  ["重赏",   ["G1", "G2", "G3", "Jpn1", "Jpn2", "Jpn3"]]
+];
 function renderGraded() {
   var rows = dimMerged("grade");
   var wmap = {};
   rows.forEach(function (b) { wmap[b.k] = b.w; });
   var steps = [];
-  GRADE_ORDER.forEach(function (g, i) {
-    var w = wmap[g[0]] || 0;
-    steps.push('<span class="st-gstep">' + g[1] + ' <b style="color:' + (w ? "#0b6b64" : "#c6c6ca") + '">' + w + '</b>胜</span>');
-    if (i < GRADE_ORDER.length - 1) steps.push('<span class="st-garrow">→</span>');
+  G_STEPS.forEach(function (g, i) {
+    var w = g[1].reduce(function (a, k) { return a + (wmap[k] || 0); }, 0);
+    steps.push('<span class="st-gstep">' + g[0] + ' <b style="color:' + (w ? "#0b6b64" : "#c6c6ca") + '">' + w + '</b>胜</span>');
+    if (i < G_STEPS.length - 1) steps.push('<span class="st-garrow">→</span>');
   });
   document.getElementById("gradedProg").innerHTML = '<div class="st-gline">' + steps.join("") +
     '<span class="text-[12px] text-muted-foreground">胜场按级别（重赏 = G1/G2/G3/Jpn1-3，不含 L/OP）</span></div>';
@@ -660,6 +683,7 @@ function renderAbout() {
     "<br>统计切面：<b>生产年</b> = 产驹出生年份（可选 2023年产/2024年产…）；<b>自然年</b> = 比赛日历年份（1月1日–12月31日）。" +
     "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，下钻链接会附带 byear/year 条件。" +
     "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 比率分母=出走，同比赛记录页。" +
+    "<br>比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/其他；距离：短距离≤1400m/英里1401-1800m/中距离1801-2400m/长距离>2400m。" +
     "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +
     "<br>样本少 = 出走 &lt; " + SM_F + "（数字弱化 = 出走 &lt; " + DIM_F + "），小样本仅供参考。";
 }

@@ -1753,3 +1753,22 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 - **数据**：`build_timeline.py` 在标签收尾统一标记——`label` 以「首胜」结尾的 tag 追加 `"crown": true`（覆盖 级别首胜/重赏首胜/海外重赏首胜/年产新马首胜/年产重赏首胜 五族；假值键在 `to_render_event` 被剔除，非首胜标签不带该键），docstring 字段模板同步。
 - **前端**（`timeline.html`）：`tagHTML()` 在 `crown` 时输出内联 SVG 三珠金冠（path + 3 circle，viewBox 24）；CSS `.tl-tag .crown` 绝对定位 `top:-8px;right:-7px`、12px、`rotate(18deg)`、fill 金 `#dca026`（同站内金），`pointer-events:none` 不挡 tooltip。初版剪影太瘦不像皇冠 → 追加三峰圆珠并放大到 12px 定稿。
 - **验证**：重算产物仅 6 个首胜标签带 crown；`npm run build` + dist 核对；截图放大目检（皇冠三珠形态清晰、右倾、不压文字不撞邻签）。未 commit（等用户确认）。
+
+## 46. 统计页 · 倾向矩阵「级别→比赛级别」细分 13 档 + 距离行标签附范围
+
+### 46.1 需求（用户）
+
+1. **距离**：值排序固定为 短距离→英里→中距离→长距离，标签后面附距离范围，一眼读出多长。
+2. **级别**：页签改名「比赛级别」，统计粒度改为 新马 / 未胜利 / 一胜级 / 二胜级 / 三胜级 / OP / L / Jpn1 / Jpn2 / Jpn3 / G1 / G2 / G3。
+
+### 46.2 思路与落地
+
+- **桶细分（`scripts/stats/build_stats.py` `grade_key()`）**：班赛(1-3勝クラス) 拆 一胜级/二胜级/三胜级，重赏(GI-GIII+JpnI-III) 拆 G1/G2/G3/Jpn1/Jpn2/Jpn3；桶键即中文标签（新馬→新马 一并归一）；查无匹配仍归「其他」。TROPHY_GRADES（重赏判定）不动，trophy/trophies 口径不变。
+- **固定展示序（`pages/stats.html`）**：新增 `TAB_ORDER`（dist = 距离由短到长，grade = 级别由易到难 + 其他殿后）——`renderTable()` 在表头排序前先按序重排（稳定排序，同档保持 n 降序）；stats.json 内仍按 n 降序（[A] 契约不变）。新增 `DIST_RANGE`，`bucketLabel("dist")` 输出 `短距离 ≤1400m / 英里 1401-1800m / 中距离 1801-2400m / 长距离 >2400m`（`>` 经 `esc()` 转义为 `&gt;` 正常显示）。
+- **下钻（`drillPairs`）**：一胜级→`grade:1勝クラス`、二胜级→`grade:2勝クラス`、三胜级→`grade:3勝クラス`、其余同键直传（`races.html gradeMatches` 本就支持 G1-3/Jpn1-3/L/OP/新马/未胜利，比赛记录页零改动）；「其他」无对应筛选项 → 不下钻。
+- **重赏之路（`renderGraded`）**：`GRADE_ORDER` 改 `G_STEPS`（步 ← 桶组映射）：班赛步 = 一胜级+二胜级+三胜级 合计、重赏步 = G1-3+Jpn1-3 合计（不含 L/OP），其余步单桶直取。
+- **说明区**：NOTES 补一行「比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/其他；距离：短距离≤1400m/…」。
+
+### 46.3 状态
+
+✅ 已完成：重算 `data/stats.json`（中央 all 级别桶 = 未胜利423/新马125/一胜级85/G2 14/G3 12/L 9/二胜级9/G1 5/OP 1，三胜级/Jpn1-3/其他 当前库无记录不入桶）；`verify_stats.cjs` 同步（[B] `gradeOf` 镜像改 14 桶、[C3] 断言改动态取桶——`>` 转义敏感与 出走<10 整行 `class="dim"` 两处踩坑修正、距离/级别固定序与标签断言、[C6] 班赛/重赏步数按桶组合计断言），**191 项全过**；`npm run build` 后 dist/pages/stats.html 含新代码、dist/data/stats.json 与源一致。未 commit（等用户确认）。
