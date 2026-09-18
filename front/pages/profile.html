@@ -252,7 +252,7 @@ function render(h){
     '<div class="min-w-0 flex-1">'+info+'</div>'+
     '<div class="min-w-0 flex-1">'+pedBlock+'</div></div>';
 
-  /* ── 中段 · 数据概览（v8 卡片方案：主卡通算成績 + 右侧 2×2 副卡）── */
+  /* ── 中段 · 数据概览（v11 色带方案 · S9 晨雾光晕：渐变描边+径向雾，成绩|三率|三赏金一条带；皮肤见 theme.css .yj-ov-*）── */
   /* 通算成績 "5戦1勝 [ 1-0-0-4 ]" → {p1,p2,p3,p4,total}；解析失败 → null */
   function placeStats(v){
     var m=String(v||"").match(/\[[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*-[ ]*(\d+)[ ]*\]/);
@@ -277,51 +277,40 @@ function render(h){
   if(prize.障害&&prize.障害!==0&&prize.障害!=="0") prizeSub.push('障害 '+prize.障害);
   if(prize.Jpn&&prize.Jpn!==0&&prize.Jpn!=="0") prizeSub.push('Jpn '+prize.Jpn);
 
-  /* 副卡骨架：上小标签 + 主数字(+单位) + 可选副行 */
-  var ovCard=function(k,inner){
-    return '<div class="flex flex-col justify-center rounded-[12px] border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,.04)] max-md:px-3 max-md:py-3">'+
-      '<div class="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">'+esc(k)+'</div>'+inner+'</div>';
-  };
-  /* 金额数字 + 万円单位；0/— 用浅灰弱化；mb 缩字防溢出 */
-  var ovVal=function(v,u,hi){
-    var dim=(v==="0"||v==="—")?'text-[#d6d6d6]':(hi?'text-primary':'text-foreground');
-    return '<div class="mt-1.5 flex items-baseline gap-1 whitespace-nowrap text-[30px] font-bold leading-none tracking-[-.5px] max-md:text-[22px] '+dim+'">'+esc(v)+(u?'<span class="text-[12.5px] font-medium text-muted-foreground max-md:text-[11px]">'+esc(u)+'</span>':'')+'</div>';
-  };
   var money=function(raw){
     raw=(raw==null||raw==="")?"—":String(raw);
     var u=/万円/.test(raw)?"万円":"";
     return {v:u?raw.replace(/万円$/,""):raw, u:u};
   };
 
-  var mainCard='<div class="col-span-1 row-span-2 flex flex-col justify-center rounded-[14px] border border-border bg-card px-6 py-5 shadow-[0_4px_16px_rgba(16,24,40,.05)] max-md:col-span-2">'+
-    '<div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[1.6px] text-primary"><span class="h-[3px] w-3.5 flex-none rounded-full bg-primary"></span>通算成績 · RECORD</div>'+
-    '<div class="mt-3 flex items-baseline gap-1.5 whitespace-nowrap"><span class="text-[36px] font-semibold leading-none tracking-[-.2px] text-foreground max-md:text-[30px]">'+esc(mainBig)+'</span>'+
-      (brack?'<span class="ml-1 text-[14px] font-medium tracking-[.5px] text-[#a6a6a6] max-md:text-[12px]">'+esc(brack)+'</span>':'')+
-    '</div></div>';
-
   var mC=money(h["獲得賞金 (中央)"]), mL=money(h["獲得賞金 (地方)"]), mF=money(prizeFlat);
 
-  var rateCell=function(v,k,hi){
-    return '<div class="min-w-0"><div class="whitespace-nowrap text-[24px] font-bold leading-none tracking-[-.5px] max-md:text-[16px] '+(hi?'text-primary':'text-foreground')+'">'+esc(v)+'</div>'+
-      '<div class="mt-1.5 whitespace-nowrap text-[10.5px] font-medium tracking-[.5px] text-muted-foreground max-md:text-[9.5px] max-md:tracking-[.2px]">'+esc(k)+'</div></div>';
+  /* 色带格子：皮肤（渐变描边/径向雾/分格线/mb 堆叠）全部在 theme.css .yj-ov-*，此处只出结构 */
+  var ovRate=function(v,k,hi){
+    return '<div class="yj-ov-rate'+(hi?' yj-ov-hi':'')+'"><span class="yj-ov-k">'+esc(k)+'</span><b>'+esc(v)+'</b></div>';
   };
-  var sep='<div class="h-6 w-px flex-none bg-border max-md:h-4"></div>';
-  var rateCard=ovCard("胜率",
-    '<div class="mt-2 flex items-center gap-4 max-md:gap-2">'+
-      rateCell(ratePct(ps?ps.p1:0,ps?ps.total:0), "胜率", true)+sep+
-      rateCell(ratePct(ps?ps.p1+ps.p2:0,ps?ps.total:0), "连对率", false)+sep+
-      rateCell(ratePct(ps?ps.p1+ps.p2+ps.p3:0,ps?ps.total:0), "复胜率", false)+
-    '</div>');
+  var ovM=function(k,m,sub){
+    var dim=(m.v==="0"||m.v==="—")?' yj-ov-dim':'';
+    return '<div class="yj-ov-m"><span class="yj-ov-k">'+esc(k)+'</span><b'+dim+'>'+esc(m.v)+(m.u?'<em>'+esc(m.u)+'</em>':'')+'</b>'+
+      (sub?'<div class="yj-ov-sub">'+esc(sub)+'</div>':'')+'</div>';
+  };
 
   var statsBand='<div class="mt-10">'+
     '<div class="mb-4 flex items-center gap-2.5"><span class="h-4 w-1 flex-none rounded bg-primary"></span><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">数据概览 · OVERVIEW</span></div>'+
-    '<div class="grid grid-cols-[1.5fr_1fr_1fr] gap-3.5 max-md:grid-cols-2">'+
-      mainCard+
-      ovCard(t("獲得賞金 (中央)"), ovVal(mC.v, mC.u, false))+
-      ovCard(t("獲得賞金 (地方)"), ovVal(mL.v, mL.u, false))+
-      ovCard(t("収得賞金"), ovVal(mF.v, mF.u, false)+(prizeSub.length?'<div class="mt-1 text-[11px] text-muted-foreground">'+esc(prizeSub.join(' · '))+'</div>':''))+
-      rateCard+
-    '</div></div>';
+    '<div class="yj-ov-outer"><div class="yj-ov-band">'+
+      '<div class="yj-ov-rec"><span class="yj-ov-lab">通算成績 · RECORD</span>'+
+        '<span class="yj-ov-big">'+esc(mainBig)+'</span>'+
+        (brack?'<span class="yj-ov-br">'+esc(brack)+'</span>':'')+
+      '</div>'+
+      ovRate(ratePct(ps?ps.p1:0,ps?ps.total:0), "胜率", true)+
+      ovRate(ratePct(ps?ps.p1+ps.p2:0,ps?ps.total:0), "连对率", false)+
+      ovRate(ratePct(ps?ps.p1+ps.p2+ps.p3:0,ps?ps.total:0), "复胜率", false)+
+      '<div class="yj-ov-prizes">'+
+        ovM(t("獲得賞金 (中央)"), mC)+
+        ovM(t("獲得賞金 (地方)"), mL)+
+        ovM(t("収得賞金"), mF, prizeSub.length?prizeSub.join(' · '):'')+
+      '</div>'+
+    '</div></div></div>';
 
   /* ── 下段 · 比赛记录（内嵌 iframe 无边框）── */
   var raceSection='<div class="mt-10">'+

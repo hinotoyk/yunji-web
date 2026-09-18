@@ -2012,3 +2012,19 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 
 
 
+
+## 54. 基本信息页 · 数据概览改版（三率并入通算成績主卡 + 数字固定宽 + PC 赏金一列三卡）
+
+**最终思路**：胜率/连对率/复胜率不再是独立副卡，并入「通算成績 · RECORD」主卡——**PC 与大数字同行两端**（`justify-between`：左=大数字+着顺括号，右=三率，正好填掉用户圈出的主卡右侧大片空白）；**mb 仍在数字下方**（容器 `max-md:block` 回竖排，三率行 `max-md:border-t max-md:pt-3.5` 细分隔线）。概览网格 PC 为**主卡 + 右侧一列三张赏金卡** `grid-cols-[1.5fr_1fr]`：赏金卡包进 `flex flex-col gap-3.5` 容器、卡内账目式横排（标签左 / 金额右 `justify-end`），`flex-1` 三张等高正好填满主卡高度，消灭了「一行四卡」时右侧三个高个空白大框（用户反馈）；mb 容器 `max-md:contents` 让三卡回到两列网格（主卡通栏、中央|地方两半格、収得賞金 `max-md:col-span-2` 通栏），`ovCard`/`ovVal` 用 `max-md:block / max-md:justify-start / max-md:mt-1.5` 还原竖排形态，mb 观感与上一版一致。
+
+**数字防跳版（用户点名的坑）**：三率数字按最宽取值 `100%` 预留固定宽——`w-[2.7em]`（em 随字号缩放，PC 24px / mb 16px 一档类名两端自适应）+ `tabular-nums` 等宽数字，`20% → 100%` 或 `—` 切换都不再挤压相邻格。
+
+**当前成果**：`profile.html` 中段 `mainCard`/`rateCell`/`ovCard`/`ovVal`/`statsBand` 重排，`ovCard` 加可选 `cls` 第三参（仅用于 mb 通栏）；`rateCard`/`sep` 删除。构建核对 `dist/assets/theme-INKCHlgs.css` 含 `w-[2.7em]`、`tabular-nums`、`border-border/70`、`grid-cols-[1.5fr_1fr]`、`max-md:contents`、`max-md:justify-start`、`max-md:border-t`、`max-md:col-span-2` 全部新类；无头 Chrome 1400/430 双宽目检通过，含边界马 142（1戦1勝 → 三率全 `100%` 不挤版）——`tests/_tmp/ov_pc3.png`、`ov_pc3_100.png`、`ov_mb4.png`。
+
+## 55. 基本信息页 · 数据概览定稿 S9「晨雾光晕」色带（渐变描边 + 径向雾）
+
+**最终思路**：v10 卡片方案仍不满意（右侧赏金框空、三率无处安放），改走「候选对比 → 用户选型」流程：`tests/ov5/` 出 S1–S9 共 9 个骨架方案（S5–S9 为白青渐变系列：斜向晕染/阶梯热区/头马渐白/底轨流光/晨雾光晕），用户定稿 **S9**。概览收敛为**一条色带**：渐变描边外框（青→透 linear-gradient 1px padding 框）+ 白底上两团径向雾（左上/右下），内部按 成绩｜三率｜三赏金 发丝分格一行排布，赏金 `flex:1` 均分剩余宽度不留空；mb 堆叠为 成绩(着顺括号随大数字同行)→三率一行→赏金三行账目。
+
+**移植要点**：渐变质感受不了 utility 表达，皮肤整体收进 **theme.css `@layer components` 的 `.yj-ov-*`**（含 mb `@media (max-width:767px)`），类名字面量全部以完整名（`yj-ov-hi`/`yj-ov-dim` 而非泛词 hi/dim）出现在 `profile.html` JS 串里，content 可扫不被裁；防跳版逻辑保留（三率 `b` 的 `min-width:2.7em` + `tabular-nums` 进组件 CSS）。`ovCard/ovVal/mainCard/rateCell` 及 v10 网格全部删除。
+
+**验证**：构建产物 `theme-LQBWrubb.css` 含全部 `.yj-ov-*`（PC+mb 双份计数核对）；无头 Chrome 边界数据目检——1400px：马1 常规、马142 三率全 `100%`、马40 `1億1,615万円` 长金额不挤版；430px（注入定宽壳规避 headless 最小窗宽 500 的坑）：马1/马40 mb 堆叠无溢出。截图 `tests/ov5/v11pc.png`、`v11pc100.png`、`v11pcbig.png`、`v11mb.png`、`v11mbbig.png`。
