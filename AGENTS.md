@@ -28,6 +28,7 @@
 - i18n：日文字段/枚举 → 中文全部走 `front/public/i18n.js` 字典（`YJ.i18n.t/e/g`），**不改后端 JSON**。
 - 数据语义色（全站一致）：1着/胜=`primary` 青绿、2着=`chart-2` 青、3着=`chart-3` 橙、未完走（中止/取消/除外/失格）=`destructive` 红、重赏徽章（GI/GII/GIII/L/OP）用 `primary`/`chart-*` 分级。
 - 跨页联动走 `bus.js`（postMessage + localStorage），不另起机制。
+- **复用抽离（硬性约定，UI优化记录 §48 定稿）**：公共工具（esc 等）单一出处 `front/public/yj-util.js`（`YJ.util.*`，页面薄别名，禁止复制函数体）；比赛行/徽章/格式化/格级映射一律复用 `front/public/race-rows.js`；着顺浅色三件套 JS 侧 = `race-rows.js` 的 `PLACE_BG`（CSS 侧 = theme.css `.yj-nkm*`，两处互指、改色同步）。**只有全站统一语义或 ≥3 处使用才抽离，仅 2 处不动**；收口只做等值搬移/纯删除，改后照常 build+dist 核对。theme.css `@layer components` 里**不放 JS 动态拼类名、content 无字面量的类**（会被 Tailwind 按候选裁剪，如 `.yj-g*` 必须在 @layer 之外）。细则见 `front/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
 
 ## 3. 数据与路径
 
