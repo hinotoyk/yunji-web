@@ -4,6 +4,15 @@
 > 约定：每改一个模块，先把该模块的思路与最终成果写进本文档，再合并进正式页面（`front/` 源码 → `npm run build` → `dist/` 验证）。
 > 配套：`front/HANDOFF.md`（前端交接总览）、`front/README.md`（构建与数据路径约定）。
 
+## ★ 全站编码约定 · 复用抽离（§48 定稿，此后一切前端编码必须遵守）
+
+1. **公共工具单一出处**：HTML 转义等页面级工具放 `public/yj-util.js`（`YJ.util.*`），页面只写薄别名 `var esc = YJ.util.esc`，**禁止再复制函数体**；共享模块保持零依赖可独立单测的，内部实现可自包含（如 race-rows 的 esc），但语义必须两处一致。
+2. **业务语义组件单一出处**：比赛行/徽章/格式化（`gradeBadge/placeBadge/ninki*/G/GLABEL/weightOf/venueR…`）一律复用 `public/race-rows.js`，新页面直接引入，禁止本地重写映射表或徽章 HTML。
+3. **数据语义色单一出处**：着顺浅色三件套（1/2/3着+着外）JS 侧 = `race-rows.js` 的 `PLACE_BG`，CSS 侧 = theme.css `.yj-nkm*`，两处互指注释、**改色必须同步**；新增数据语义色先找单一出处再写。
+4. **组件样式进 theme.css**：≥3 页共用或全站统一的样式 → `@layer components` 用 `@apply` 封装（如 `.page-title`/`.sec-title`）；**但类名靠 JS 动态拼接、content 里没有字面量的类（如 `.yj-g*`），必须放在 @layer 之外**——Tailwind 会按 content 候选裁剪 @layer 内规则（详见 §48.2 隐藏耦合案例）。
+5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例清单见 §48.2：`.seg`/`manYen`/`#page.embed` 等）。
+6. **零影响红线与验证清单**：复用收口只做等值搬移/纯删除；改完必跑 `npm run build` + 核对 dist（theme css 新类在、旧类无、`dist/data/basic.json` 存在——`COPY_DATA=skip` 与 `emptyOutDir` 叠加会清掉 data，见 §48.4）。
+
 ---
 
 ## 1. 记录格式（模板）
@@ -1788,3 +1797,33 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 ### 47.3 状态
 
 ✅ 已完成：`verify_stats.cjs` 补结构断言（matWrap/applyMatScroll/matHtml("ninki")），**192 项全过**；`npm run build` 后 dist 含新代码、theme-*.css 含 `.relative`；`tests/tendency-scroll-check.html` 挂具（iframe 加载 dist 产物 → 自动切页签量测）+ headless Edge `:8090` 实测截图目检：人气 clientHeight=scrollHeight=618px 完整展示、调教师 scrollHeight=2021 钳在 618 出竖向滚动、跑道收缩至 119 无滚动。未 commit（等用户确认）。
+
+## 48. 全站复用收口 · 常量 / CSS / 内嵌页面（v1 方案 9 项全落地）
+
+### 48.1 背景与需求
+
+用户要求针对**常量、CSS、内嵌页面**做抽离与复用，提升可读性；硬约束：**不影响任何现有业务、不为复用而复用**，只收「全局统一的数据语义」或「≥3 处使用」的东西。先出方案（v1，含证据行号与「明确不动清单」），确认后 9 个查证项全部落地。
+
+### 48.2 选定与理由（思路）
+
+- **顺着既有惯例走**：`race-rows.js`（§38 明细单一出处）与 `device.js` 已是样板；本轮不引入新机制、不建组件框架、不改 `vite.config.js`。
+- **收录判定**（grep 逐一定位到行号）：`esc()` 6 处、着顺浅色三件套 3 文件 5 处（§36/§39/§44 已因漂移返工三轮，有历史血债）、`.yj-grade/.yj-g*` CSS 3 处、格级映射 G/GLABEL 2+ 处、页头「青绿条+大写标题」6 处、theme.css 死组件全站 0 引用——达标；`.seg`（2 处且尺寸不同）、`manYen`（2 处且空值行为故意分叉 `""` vs `"0万"`）、`#page.embed`、EMBED 引导、场地三值、重赏口径集合（键空间不同，是数据契约）、6 页 head 样板——**明确不动**。
+- **一个重要发现（隐藏耦合）**：theme.css `@layer components` 里的 `.yj-g*` 配色，类名全靠 JS 动态拼接（`'yj-'+k`），content 里没有字面量——历史上靠 **stats/timeline 页内重复的 `.yj-g*` CSS 兼职「候选锚点」**才被 Tailwind 输出。页内重复收口后这层保护消失，构建产物会静默丢失 G1/G2/G3/L/OP 徽章配色（对照实验证实：旧源构建含 `.yj-g1`、新源不含）。**修复：`.yj-g*` 五条移出 `@layer`**（未分层自定义 CSS 由 Tailwind 原样透传，免疫候选裁剪），并注释写明机制；`.yj-gop` 的 `color` 对 `.yj-grade{color:#fff}` 的胜出关系不变（未分层 > 分层），OP 徽章文字色不变。同机理确认 `.tblwrap/.badge` 在旧构建中本就已被裁剪（双重死代码），删除无副作用。
+
+### 48.3 最终落地
+
+| # | 项 | 落点 |
+|---|---|---|
+| 1 | `esc()` 6 处 → 单一出处 | **新增 `public/yj-util.js`**（`YJ.util.esc`）；6 页 `<script src="../yj-util.js">` + 页内薄别名 `var esc = YJ.util.esc`；顺带修正 timeline/datechart 副本的 `>` 无操作漂移（渲染结果不变）；race-rows.js 保留内部自包含 esc（零依赖可单测） |
+| 2 | 着顺浅色三件套 → JS 单一出处 | race-rows.js 导出 `PLACE_BG = ["#FEED88","#CCDFFD","#ECC6A2","#ececec"]`；datechart `BR_COLORS`、stats `BR`（含 2 处内联写死）改引用；theme.css `.yj-nkm*` 加同源互指注释（CSS 侧保留字面量，不引入 CSS 变量，防 verify stub 环境不可用 `getComputedStyle`） |
+| 3 | 格级映射单一出处 | stats.html 加载 race-rows.js，`gk/lbl` 两张字典改 `YJ.raceRows.G/GLABEL`（保留 `‖ "g3"` 兜底语义） |
+| 4 | 徽章 CSS 收口 | stats 删 6 行逐字副本；timeline 删 11 行，保留两个**故意变体**（`.yj-grade{margin-left:0}`、`.yj-no` 22px 仅尺寸覆盖）+ `.hjump` 副本删除 |
+| 5 | theme.css 死代码 | 删 `.kpis/.kpi×4/.tblwrap/.badge×2/.btn×4/.fieldgrid/.field×4` + 空媒体查询块 |
+| 6 | 页头组件化 | theme.css 新增 `.page-title`（6 页共享不变式 + `::before` 色条，与原 `<span class="h-4 w-1 ...">` 逐像素等值）；6 页页头统一 `<div class="page-title …">标题</div>`（profile 用组件 + 本页 padding；races 的 `querySelector(".page-title")` 类名不变零影响） |
+| 7 | races 页内 tooltip | `.filter-chip[data-tip]` 与 `.yj-name-toggle[data-tip]` 两段相同浮层 CSS 合并选择器 |
+
+### 48.4 状态
+
+✅ 已完成（v1 方案 9 项全落地）：`tests/_smoke-refactor.cjs` 语法+功能冒烟全过（6 页内联脚本编译、esc 等值、PLACE_BG、G/GLABEL/gradeBadge 映射）；`npm run build` 后 dist 终检全过——theme-*.css 含 `.page-title/:before`、`.yj-g*` 五条配色（压缩器等价改写 `rgba(10,167,160,.15)`→`#0aa7a026`）、`.yj-grade margin-left:6px`，且不含任何被删死类；新旧构建**全量选择器 diff** = 计划内差异（删除死组件 + 新增 page-title，无计划外变化）；dist/pages 六页均引用 yj-util/page-title，stats/datechart 引用 `raceRows.PLACE_BG`，timeline 22px 变体覆盖在位。未 commit（等用户确认）。
+- ⚠ 事后补记（构建操作坑，非代码问题）：中途为提速用 `COPY_DATA=skip` 构建了两轮，与 `emptyOutDir:true` 叠加会**先清空 dist（含 data/）再跳过补拷** → dist/data 缺失、页面全部「数据加载失败（HTTP 404）」；已用完整 `npm run build` 恢复并临时起 ：8091 实测 basic.json/profile.html/yj-util.js 全 200。**dist 验证清单今后固定含 `dist/data/basic.json` 存在性检查**；`COPY_DATA=skip` 只适用于确认 dist/data 完好的快速迭代（但注意 emptyOutDir 仍会删它——该组合本就不安全）。
+- 📌 本节已提炼为**文首「★ 全站编码约定 · 复用抽离」**：此后新编码按那 6 条执行（工具/组件/语义色单一出处、动态类名出 @layer、收录门槛、零影响验证清单）。

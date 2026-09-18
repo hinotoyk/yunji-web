@@ -62,13 +62,8 @@
 /* 样本少 */
 .yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
 td.dim .num{color:#c6c6ca}
-/* 等级徽章 = 比赛记录页同款（JBIS 胶囊 .yj-grade + .yj-g*，文字 G1/G2/G3/Jpn1…） */
-.yj-grade{display:inline-block;margin-left:6px;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
-.yj-g1{background-color:#d5302a}
-.yj-g2{background-color:#0a3b7e}
-.yj-g3{background-color:#087220}
-.yj-gl{background-color:#dca026}
-.yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
+/* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期图同源）；
+ * 本页仅保留行内变体：重赏之路行内徽章不左缩进 */
 .st-gline .yj-grade{margin-left:0}
 /* 图例 */
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
@@ -91,9 +86,7 @@ td.dim .num{color:#c6c6ca}
 <div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
 
   <!-- 页头 -->
-  <div class="mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-    <span class="block h-4 w-1 flex-none rounded bg-primary"></span>统计总览 · STATS
-  </div>
+  <div class="page-title mb-7 max-md:mt-2.5">统计总览 · STATS</div>
 
   <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年）；集計期間与口径说明在页尾「说明 · NOTES」 -->
   <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -174,7 +167,9 @@ td.dim .num{color:#c6c6ca}
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
 <script src="../i18n.js"></script>
+<script src="../race-rows.js"></script>
 <script>
 /* ================= 统计总览 STATS =================
  * 数据：data/stats.json（后端预计算，按 场地类型 × 统计切面 二维聚合：
@@ -218,10 +213,11 @@ var RATE_METRICS = [
   { k: "fuku", l: "复胜率", dash: "2,3" }
 ];
 
-var esc = function (s) {
-  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-};
+var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var i18n = (window.YJ && window.YJ.i18n) ? YJ.i18n : { t: function (k) { return k; }, e: function (f, v) { return v; } };
+
+/* 着顺浅色三件套（1/2/3着 + 着外）：JS 侧单一出处 = race-rows.js PLACE_BG（CSS 同源 = theme.css .yj-nkm1/2/3） */
+var BR = YJ.raceRows.PLACE_BG;
 
 /* ---- 统计切面：all / yYYYY(自然年) / gYYYY(生产年) ---- */
 function scopeKey() {
@@ -300,7 +296,6 @@ function renderKpis() {
   var fvn = fin(b);
   /* 通算战绩 [6-3-3-27]：格式保留连字符；四段底色连成一整条 ——
    * 数字格用各自名次底色，连字符格用「上一色→下一色」渐变把底色接起来（柔过渡、无硬边） */
-  var BR = ["#FEED88", "#CCDFFD", "#ECC6A2", "#ececec"];
   var vals = [b.w, b.p2, b.p3, Math.max(0, fvn - b.w - b.p2 - b.p3)];
   var brk = '<span class="st-brk st-brk-lg">[';
   vals.forEach(function (v, i) {
@@ -325,7 +320,7 @@ function renderDistBar() {
   var bar;
   if (fvn > 0) {
     var segs = [
-      { v: b.w, c: "#FEED88" }, { v: b.p2, c: "#CCDFFD" }, { v: b.p3, c: "#ECC6A2" }, { v: other, c: "#ececec" }
+      { v: b.w, c: BR[0] }, { v: b.p2, c: BR[1] }, { v: b.p3, c: BR[2] }, { v: other, c: BR[3] }
     ];
     bar = '<div class="st-bar">';
     segs.forEach(function (s) { if (s.v > 0) bar += '<i style="width:' + (s.v / fvn * 100) + '%;background:' + s.c + '"></i>'; });
@@ -336,8 +331,8 @@ function renderDistBar() {
   document.getElementById("distBar").innerHTML =
     bar +
     '<div class="mt-1.5 text-[12px] text-muted-foreground">' +
-    '1着<b class="st-chip" style="background:#FEED88"> ' + b.w + '</b> · 2着<b class="st-chip" style="background:#CCDFFD"> ' + b.p2 + '</b> · 3着<b class="st-chip" style="background:#ECC6A2"> ' + b.p3 +
-    '</b> · 着外<b class="st-chip" style="background:#ececec"> ' + other + '</b>　（完赛 ' + fvn + ' 场）</div>';
+    '1着<b class="st-chip" style="background:' + BR[0] + '"> ' + b.w + '</b> · 2着<b class="st-chip" style="background:' + BR[1] + '"> ' + b.p2 + '</b> · 3着<b class="st-chip" style="background:' + BR[2] + '"> ' + b.p3 +
+    '</b> · 着外<b class="st-chip" style="background:' + BR[3] + '"> ' + other + '</b>　（完赛 ' + fvn + ' 场）</div>';
 }
 function renderRateBand() {
   var b = baseMerged(), r = rates(b);
@@ -683,9 +678,9 @@ function renderGraded() {
     html = '<div class="text-[13px] text-muted-foreground">暂无重赏胜利</div>';
   }
   list.forEach(function (t) {
-    /* 等级徽章 = 比赛记录页同款（yj-grade 胶囊 + G 映射；禁用链式 replace——GIII 会被写成 G12） */
-    var gk = { "GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop", "JpnI": "g1", "JpnII": "g2", "JpnIII": "g3" }[t.g] || "g3";
-    var lbl = { "GI": "G1", "GII": "G2", "GIII": "G3", "L": "L", "OP": "OP", "JpnI": "Jpn1", "JpnII": "Jpn2", "JpnIII": "Jpn3" }[t.g] || t.g;
+    /* 等级徽章 = 比赛记录页同款（yj-grade 胶囊；G/显示名映射单一出处 = race-rows.js，g3 兜底语义保留） */
+    var gk = YJ.raceRows.G[t.g] || "g3";
+    var lbl = YJ.raceRows.GLABEL[t.g] || t.g;
     html += '<div class="st-gline">' +
       '<span class="yj-grade yj-' + gk + '">' + esc(lbl) + '</span>' +
       '<span class="text-muted-foreground">' + esc(t.d) + ' · ' + esc(t.v) + (t.R ? esc(t.R + "R") : "") + '</span>' +

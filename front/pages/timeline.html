@@ -6,21 +6,11 @@
 <title>时间线 · 云迹</title>
 <link rel="stylesheet" href="theme.css">
 <style>
-/* ===== 等级徽章（同 races.html：实心胶囊 + 白字；类名全小写） ===== */
-.yj-grade{display:inline-block;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
-.yj-g1{background-color:#d5302a}
-.yj-g2{background-color:#0a3b7e}
-.yj-g3{background-color:#087220}
-.yj-gl{background-color:#dca026}
-.yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
-
-/* ===== 1着 徽章（数据语义色：胜=primary 语境，此处用 races.html 同款金色底） ===== */
-.yj-no{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:4px;border:1px solid transparent;font-size:12px}
-.yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
-
-/* ===== 马名跳转（同 races.html） ===== */
-.hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
-.hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
+/* ===== 等级徽章 / 1着徽章 / 马名跳转：样式单一出处 = theme.css（.yj-grade/.yj-g*/.yj-no*/.yj-no1/.hjump）
+ * 本页只保留两个故意变体（页内 <style> 未分层，级联优先于 theme.css 的 @layer）：
+ * ① 卡片内等级徽章不左缩进；② 1着徽章 22px 小号（底座/颜色仍走 theme.css） ===== */
+.yj-grade{margin-left:0}
+.yj-no{flex:none;width:22px;height:22px;font-size:12px}
 
 /* ===== 中央时间轴：轴线居中，卡片 16:9 左右交替，日期在卡片对侧 ===== */
 .tl{position:relative}
@@ -90,14 +80,13 @@
 </head>
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
-  <div class="page-title mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-    <span class="h-4 w-1 flex-none rounded bg-primary"></span>时间线 · TIMELINE
-  </div>
+  <div class="page-title mb-7 max-md:mt-2.5">时间线 · TIMELINE</div>
   <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
   <div id="body"><div class="hint-empty">正在加载全库比赛数据…</div></div>
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
 <script>
 /* ================= 时间线 · 里程碑事件页 =================
  * 数据：data/timeline.json —— 后端预计算（scripts/timeline/build_timeline.py 生成，
@@ -108,7 +97,7 @@
  *   4. 父子制覇（飞机云同胜）  5. 受赏 —— 同一场比赛可同时触发多枚徽章。
  * 渲染：时间自下而上（最新在顶；同日按発走晚者在顶——后端已按 日期→同日発走（缺失视为最大） 升序
  *       输出，同 races.html 模块 33），年份分组降序；中央轴卡片左右交替，图位（横A4比例）恒贴时间轴一侧。 */
-function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,">");}
+var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js（原页内副本 > 分支已漂移为无操作，此处一并修正） */
 function tagHTML(t){
   return '<span class="tl-tag '+t.cat+'"'+(t.tip?' title="'+esc(t.tip)+'"':'')+'>'+
          (t.crown ? '<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8L8.3 12L12 5.5L15.7 12L20.5 8L19 18L5 18Z"/><circle cx="3.5" cy="6.2" r="1.9"/><circle cx="12" cy="3.6" r="1.9"/><circle cx="20.5" cy="6.2" r="1.9"/></svg>' : '')+

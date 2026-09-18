@@ -18,9 +18,7 @@
 <div class="flex h-screen flex-col max-md:h-auto">
 
   <!-- 页头 -->
-  <header class="flex w-full flex-none items-center gap-2.5 px-6 pt-[18px] pb-4 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground max-md:px-3.5 max-md:pt-4 max-md:pb-3">
-    <span class="h-4 w-1 flex-none rounded bg-primary"></span>基本信息 · PROFILE
-  </header>
+  <header class="page-title w-full flex-none px-6 pt-[18px] pb-4 max-md:px-3.5 max-md:pt-4 max-md:pb-3">基本信息 · PROFILE</header>
 
   <!-- 两栏：左=常驻过滤搜索 / 右=详情（目录 = 外壳侧边栏，已存在；铺满内容区避免两侧留白） -->
   <div class="grid w-full min-h-0 flex-1 grid-cols-[350px_minmax(0,1fr)] gap-5 px-6 pb-6 max-md:block max-md:gap-4 max-md:px-3.5 max-md:pb-12">
@@ -38,13 +36,14 @@
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
 <script src="../i18n.js"></script>
 <script src="../selector.js?v=3"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js"></script>
 <script>
-function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 
 /* 通算成績 形如 "5戦1勝 [ 1-0-0-4 ]" → 转中文符号 */
 function transStats(v){

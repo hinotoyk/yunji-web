@@ -55,19 +55,16 @@
 .f-horse-sel .yj-sel{margin-bottom:0}
 /* selector 组件挂载点：与 tag 胶囊同高，下拉绝对定位随组件自身 */
 .f-horse-sel{min-width:180px}
-/* 自定义 tooltip（悬停显示聚合含义） */
-.filter-chip[data-tip]{position:relative}
-.filter-chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
-.filter-chip[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
+/* 自定义 tooltip（悬停显示聚合含义）——维度 chip 与马名列头两族控件共用同一浮层 */
+.filter-chip[data-tip],.yj-name-toggle[data-tip]{position:relative}
+.filter-chip[data-tip]:hover::after,.yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
+.filter-chip[data-tip]:hover::before,.yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
 /* 马名跳转（.hjump）已移至 theme.css；此处只留本页专属控件 */
 /* 出走马列头：点击切换马名语言（日文名 ⇄ 港译名），仅独立 PC 跨马表 */
 .yj-name-toggle{display:inline-flex;align-items:center;gap:3px;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit}
 .yj-name-toggle:hover{color:#0aa7a0}
 .yj-name-toggle .yj-name-ico{font-size:12px;opacity:.55;transition:transform .18s}
 .yj-name-toggle:hover .yj-name-ico{opacity:1;transform:rotate(180deg)}
-.yj-name-toggle[data-tip]{position:relative}
-.yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
-.yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
 /* ===== 分页条 ===== */
 .pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:14px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;font-size:12px}
 .pg-nav{height:28px;padding:0 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -111,9 +108,7 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </head>
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
-  <div class="page-title mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-    <span class="h-4 w-1 flex-none rounded bg-primary"></span>比赛记录 · RACES
-  </div>
+  <div class="page-title mb-7 max-md:mt-2.5">比赛记录 · RACES</div>
   <div id="selector" class="embed-hide"></div>
   <!-- 独立模式：全库跨马多维组合查询（维度条 + 结果区）；内嵌模式不使用 -->
   <div id="filters" class="mb-4"></div>
@@ -121,13 +116,14 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
 <script src="../selector.js?v=3"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script>
-function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 
 var EMBED = /[?&]embed=1/.test(location.search);
 /* 从基本信息「在比赛记录中查看详情」跳转带来的 ?horse=id：独立模式预置出走马筛选 */

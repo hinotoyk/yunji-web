@@ -17,12 +17,13 @@
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
 <script src="../i18n.js"></script>
 <script src="../selector.js?v=3"></script>
 <script src="../bus.js"></script>
 <script src="../pedigree.js"></script>
 <script>
-function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 
 var EMBED = /[?&]embed=1/.test(location.search);
 var PAGE = document.getElementById("page");
@@ -36,8 +37,7 @@ function renderPedigree(h){
 
   /* 独立模式才有页面头 + 马名头；内嵌模式只渲染血统卡片本身 */
   var head = EMBED ? '' :
-    '<div class="mb-7 max-md:mt-2.5 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+
-      '<span class="h-4 w-1 flex-none rounded bg-primary"></span>血统图 · PEDIGREE</div>';
+    '<div class="page-title mb-7 max-md:mt-2.5">血统图 · PEDIGREE</div>';
   var hname = EMBED ? '' :
     '<div class="mb-1.5 flex flex-wrap items-baseline gap-3"><h2 class="text-[17px] font-bold">'+esc(title)+'</h2>'+
       '<span class="text-[12px] text-muted-foreground">'+esc(YJ.i18n.g(h,"性別"))+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';

@@ -28,6 +28,11 @@ YJ.raceRows = (function () {
   }
   function num(v) { return (v == null || v === "") ? "" : esc(String(v)); }
 
+  /* ---- 着顺浅色三件套（1/2/3着 + 着外）：数据语义色 JS 侧单一出处 ----
+   * CSS 侧同源处：theme.css .yj-nkm1/2/3（人气 mb 浅底）——两处改色需同步。
+   * 使用方：本模块徽章、datechart 进板数（BR_COLORS）、stats 通算战绩/着别分布条（BR）。 */
+  var PLACE_BG = ["#FEED88", "#CCDFFD", "#ECC6A2", "#ececec"];
+
   /* ---- 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 浅青绿）
    * ★ 取值必须与 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见 */
   var G = { "GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop",
@@ -187,7 +192,7 @@ YJ.raceRows = (function () {
   }
 
   return {
-    esc: esc, G: G, GLABEL: GLABEL,
+    esc: esc, G: G, GLABEL: GLABEL, PLACE_BG: PLACE_BG,
     gradeBadge: gradeBadge, placeBadge: placeBadge,
     ninkiBadge: ninkiBadge, ninkiMbCls: ninkiMbCls,
     raceNameText: raceNameText, venueR: venueR,

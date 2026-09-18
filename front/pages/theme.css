@@ -36,12 +36,6 @@
 /* ---------- 通用组件（Tailwind 组合类，@apply 封装复用） ---------- */
 @layer components {
   .card { @apply rounded-[10px] border border-border bg-card text-card-foreground; }
-  .kpis { @apply grid gap-3; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); }
-  .kpi { @apply p-4; }
-  .kpi .v { @apply text-2xl font-semibold; }
-  .kpi .v.hi { @apply text-primary; }
-  .kpi .k { @apply mt-1 text-[12.5px] text-secondary-foreground; }
-  .tblwrap { @apply overflow-x-auto rounded-[10px] border border-border bg-card text-card-foreground; }
   table { @apply w-full border-collapse text-[13.5px]; }
   thead th { @apply whitespace-nowrap border-b border-border bg-muted/40 px-[13px] py-[9px] text-left text-[12.5px] font-semibold tracking-[.5px]; }
   tbody td { @apply whitespace-nowrap border-b border-border px-[13px] py-2; }
@@ -51,32 +45,22 @@
   td.win { @apply font-semibold text-primary; }
   .sec-title { @apply mt-7 mb-3 flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground; }
   .sec-title::before { content:""; width:4px; height:16px; border-radius:2px; background:hsl(177 88.7% 34.7%); flex:none; }
-  .badge { @apply inline-block rounded-full border border-border bg-secondary px-[10px] py-0.5 text-[12px] text-foreground; }
-  .badge.acc { @apply border-transparent bg-primary text-primary-foreground; }
-  .btn { @apply inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-transparent bg-primary px-4 text-[13.5px] font-medium text-primary-foreground transition-opacity; }
-  .btn:hover { @apply opacity-90; }
-  .btn.sec { @apply bg-secondary text-secondary-foreground; }
-  .btn.out { @apply border-border bg-transparent text-foreground; }
-  .btn.ghost { @apply bg-transparent text-foreground; }
+
+  /* 页头标题（每页顶部「青绿条 + 大写标题」）：色条由 ::before 承担，页内不再放 <span>。
+   * 组件只含 6 页共享的不变式（排版 + 色条，与原 <span class="h-4 w-1 flex-none rounded bg-primary"> 逐像素等值）；
+   * 间距差异（内容页 mb-7 / profile 页头 padding）留在各页 utility，不进组件 */
+  .page-title { @apply flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-[1px] text-secondary-foreground; }
+  .page-title::before { content:""; @apply h-4 w-1 flex-none rounded bg-primary; }
   select, input { @apply h-9 rounded-md border border-input bg-background px-2.5 text-[13px] text-foreground; }
-  .fieldgrid { @apply grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-border bg-border; }
-  .field { @apply bg-card p-3 px-4; }
-  .field .k { @apply mb-[3px] text-[12px] uppercase tracking-[.5px] text-secondary-foreground; }
-  .field .v { @apply text-[14px] font-medium text-foreground; }
-  .field .v.sub { @apply text-[12.5px] font-normal text-muted-foreground; }
   .hint-empty { @apply py-[60px] px-5 text-center text-[13.5px] text-muted-foreground; }
 
   /* ---------- 比赛记录徽章与 mb 卡片（races.html / datechart.html 明细共用；单一出处） ----------
    * 与 front/public/race-rows.js 配套：共享模块产出这些类名的标记，样式定义只此一处。
    * 任何一页要改徽章/卡片观感，改这里即两页同步（timeline.html 另有 22px 小号徽章，
    * 其页内 <style> 在 theme.css 之后，按级联覆盖，不受影响）。 */
-  /* 等级徽章：JBIS 实心胶囊 + 白字；★ 类名全小写，与 G 表取值一一对应 */
+  /* 等级徽章：JBIS 实心胶囊 + 白字；★ 类名全小写，与 G 表取值一一对应
+   * （配色 .yj-g* 在 @layer 之外，见文件下方说明） */
   .yj-grade{display:inline-block;margin-left:6px;border-radius:100px;padding:2px 7px;font-size:11px;font-weight:700;line-height:1.35;color:#fff;vertical-align:1px}
-  .yj-g1{background-color:#d5302a}
-  .yj-g2{background-color:#0a3b7e}
-  .yj-g3{background-color:#087220}
-  .yj-gl{background-color:#dca026}
-  .yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
   /* 着顺徽章：仅 1/2/3 有颜色+边框（无字重/阴影/光晕） */
   .yj-no{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;border:1px solid transparent;font-size:13px}
   .yj-no1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
@@ -86,7 +70,8 @@
   .yj-nk1{background-color:#ffef7f;border-color:#e2cc38;color:#000}
   .yj-nk2{background-color:#cbdeff;border-color:#87aee6;color:#000}
   .yj-nk3{background-color:#efc79f;border-color:#dca167;color:#000}
-  /* 人气（mb 纯数字版）：1/2/3 浅色做底 + 深色数字，4+ 纯数字 */
+  /* 人气（mb 纯数字版）：1/2/3 浅色做底 + 深色数字，4+ 纯数字
+   * ★ 同源色板：JS 侧单一出处 = race-rows.js 的 PLACE_BG（datechart 进板数 / stats 着别分布条同源），改色两处同步 */
   .yj-nkm1{background:#FEED88}
   .yj-nkm2{background:#CCDFFD}
   .yj-nkm3{background:#ECC6A2}
@@ -112,11 +97,18 @@
   .hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
 }
 
-/* ---------- 手机（≤768px）：非桌面即手机 ---------- */
-@media (max-width:768px){
-  .fieldgrid{grid-template-columns:1fr}
-  .field{padding:11px 14px}
-}
+/* ---------- 等级徽章配色（.yj-g*）：必须置于 @layer 之外 ----------
+ * 原因：这些类名在 content 里没有任何字面量（race-rows.js 用 'yj-'+k、timeline 用
+ *   'yj-'+gbadge 动态拼接），放进 @layer components 会被 Tailwind 按候选裁剪掉。
+ *   历史上是 stats/timeline 页内重复的 .yj-g* CSS 兼职「锚点」才得以输出（隐藏耦合），
+ *   页内重复收口后移到 @layer 之外：Tailwind 对未分层自定义 CSS 原样透传，永不被裁。
+ * 配色单一出处 = 此处；JS 侧映射表 = race-rows.js 的 G（GI→g1…），取值必须与此处一一对应。
+ * .yj-gop 的 color 与 .yj-grade 的 color:#fff 冲突时仍由本块胜出（未分层 > 分层），OP 徽章文字色不变 */
+.yj-g1{background-color:#d5302a}
+.yj-g2{background-color:#0a3b7e}
+.yj-g3{background-color:#087220}
+.yj-gl{background-color:#dca026}
+.yj-gop{background-color:rgba(10,167,160,.15);color:#0a7a75}
 
 /* ---------- 搜索下拉：滚动条（与定稿方案 A 一致） ---------- */
 .yj-drop-scroll::-webkit-scrollbar{width:8px}
