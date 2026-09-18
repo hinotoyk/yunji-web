@@ -95,6 +95,16 @@
   /* 马名跳转（跨马列表 → 基本信息页） */
   .hjump{color:#0b6b64;font-weight:600;text-decoration:none;border-bottom:1px dashed rgba(10,167,160,.4)}
   .hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
+  /* 马名语言切换（日文名/英文名 ⇄ 港译名/自译名）：比赛记录页（跨马主表列头 / mb 汇总行）与
+   * 日期统计明细（列出马名列头 / 明细标题行）共用同一控件 —— 样式单一出处 = 此处；
+   * 带 data-tip 时自绘悬停浮层（与 races.html 的 .filter-chip[data-tip] 同款观感） */
+  .yj-name-toggle{display:inline-flex;align-items:center;gap:3px;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit}
+  .yj-name-toggle:hover{color:#0aa7a0}
+  .yj-name-toggle .yj-name-ico{font-size:12px;opacity:.55;transition:transform .18s}
+  .yj-name-toggle:hover .yj-name-ico{opacity:1;transform:rotate(180deg)}
+  .yj-name-toggle[data-tip]{position:relative}
+  .yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
+  .yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
 }
 
 /* ---------- 等级徽章配色（.yj-g*）：必须置于 @layer 之外 ----------

@@ -10,7 +10,7 @@
 #page.embed{max-width:none;padding:0;width:100%}
 
 /* ===== 等级 / 着顺 / 人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
- * 已收敛到 theme.css @layer components（单一出处，与日期图明细共用同一份样式定义）===== */
+ * 已收敛到 theme.css @layer components（单一出处，与日期统计明细共用同一份样式定义）===== */
 
 /* ===== 独立模式：全库跨马查询 维度条 ===== */
 .filter-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -55,16 +55,12 @@
 .f-horse-sel .yj-sel{margin-bottom:0}
 /* selector 组件挂载点：与 tag 胶囊同高，下拉绝对定位随组件自身 */
 .f-horse-sel{min-width:180px}
-/* 自定义 tooltip（悬停显示聚合含义）——维度 chip 与马名列头两族控件共用同一浮层 */
-.filter-chip[data-tip],.yj-name-toggle[data-tip]{position:relative}
-.filter-chip[data-tip]:hover::after,.yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
-.filter-chip[data-tip]:hover::before,.yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
-/* 马名跳转（.hjump）已移至 theme.css；此处只留本页专属控件 */
-/* 出走马列头：点击切换马名语言（日文名 ⇄ 港译名），仅独立 PC 跨马表 */
-.yj-name-toggle{display:inline-flex;align-items:center;gap:3px;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit}
-.yj-name-toggle:hover{color:#0aa7a0}
-.yj-name-toggle .yj-name-ico{font-size:12px;opacity:.55;transition:transform .18s}
-.yj-name-toggle:hover .yj-name-ico{opacity:1;transform:rotate(180deg)}
+/* 自定义 tooltip（悬停显示聚合含义）——维度 chip 用；马名列头/明细标题的 .yj-name-toggle
+ * 同款浮层已随该控件移入 theme.css（两页共用，单一出处） */
+.filter-chip[data-tip]{position:relative}
+.filter-chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
+.filter-chip[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
+/* 马名跳转（.hjump）与马名语言切换（.yj-name-toggle）已移至 theme.css（单一出处，两页共用） */
 /* ===== 分页条 ===== */
 .pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:14px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;font-size:12px}
 .pg-nav{height:28px;padding:0 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -133,49 +129,35 @@ if (EMBED) PAGE.classList.add("embed");
 var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 切换时免请求重渲染 */
 
 /* ---- 行/徽章渲染统一走共享模块 front/public/race-rows.js（单一出处）----
- * 等级徽章、着顺/人气徽章、赛事名去尾缀、场地+R、马体重、内嵌比赛表与 mb 卡片行
- * 全部由该模块提供 → 与日期图明细（同调该模块）永远一致，改一次两处同步。
+ * 全站比赛记录表格 = 本页独立模式跨马主表（列集 lib）+ 内嵌表（列集 embed，profile 下段与
+ * 日期统计明细同款），两者由该模块的「一份列定义 + 一台渲染器」产出：
+ * 表头 / PC 单元格 / mb 卡片项 / 列宽最小宽 全部同源 → 改列、改徽章、改格式只改 race-rows.js。
  * 下方薄别名只为保持本页既有调用点不变（数据键即原始日文键，无需适配）。 */
-var G = YJ.raceRows.G, GLABEL = YJ.raceRows.GLABEL;
-var gradeBadge = YJ.raceRows.gradeBadge, placeBadge = YJ.raceRows.placeBadge;
-var ninkiBadge = YJ.raceRows.ninkiBadge, ninkiMbCls = YJ.raceRows.ninkiMbCls;
-var raceNameText = YJ.raceRows.raceNameText, venueR = YJ.raceRows.venueR;
-function weightHTML(r){ return YJ.raceRows.weightOf(r); }
-function embedTableHTML(rows){ return YJ.raceRows.embedTableHTML(rows); }
-function rowEmbedHTML(r){ return YJ.raceRows.rowEmbedHTML(r); }
-function rowEmbedMbHTML(r){ return YJ.raceRows.rowEmbedMbHTML(r); }
+var RR = YJ.raceRows;
+var G = RR.G, GLABEL = RR.GLABEL;
+var gradeBadge = RR.gradeBadge, placeBadge = RR.placeBadge;
+var ninkiBadge = RR.ninkiBadge, ninkiMbCls = RR.ninkiMbCls;
+var raceNameText = RR.raceNameText, venueR = RR.venueR;
+function weightHTML(r){ return RR.weightOf(r); }
+function embedTableHTML(rows){ return RR.embedTableHTML(rows); }
+function rowEmbedHTML(r){ return RR.rowEmbedHTML(r); }
+function rowEmbedMbHTML(r){ return RR.rowEmbedMbHTML(r); }
+/* 跨马主表渲染 opts：马名走本页 horseText（NAME_VIEW 语言切换，量尺与渲染同源） */
+var ROW_OPT = { nameText: function(en){ return horseText(en); } };
+var NAME_TIP = "点击切换马名：日文名/英文名 ⇄ 港译名/自译名";
 
 /* ---- 着顺三态口径（对齐 JRA/netkeiba）----
  * 完赛 fin：数字着顺（1着～着外；将来若出现降着也是数字着顺，归此）
  * 未完赛 dnf：中止/失格（已出闸、无着顺，计入出走）
  * 未出走 dnr：取消/除外（未出闸，不计入出走——netkeiba 出走回数即此口径：
- *   産駒成績累計 678 = 677 数字着顺 + 1 中止，取消/除外不计） */
+ *   産駒成績累計 678 = 677 数字着顺 + 1 中止，取消/除外不计）
+ * 注：本页筛选走 resultMatches()，此分类器供口径定义/对账（scripts/races/verify_result.cjs 同口径），勿删 */
 function resultCode(n){
   return typeof n === "number" ? "fin" : (n === "中止" || n === "失格") ? "dnf" : "dnr";
 }
 
-/* ---- 统计（由逐场实时计算）----
- * 出赛=全部记录数；出走=出赛-未出走（胜率/连对/入赏分母，与 netkeiba 出走回数同口径） */
-function computeStats(rs){
-  var s = {出赛:0, 出走:0, 胜:0, 二:0, 三:0, 着外:0, 未完赛:0, 未出走:0, 赏金:0};
-  rs.forEach(function(r){
-    s.出赛++;
-    var c = resultCode(r.結果);
-    if (c !== "dnr") s.出走++;
-    var n = r.結果;
-    if (n === 1) s.胜++;
-    else if (n === 2) s.二++;
-    else if (n === 3) s.三++;
-    else if (typeof n === "number") s.着外++;
-    else if (c === "dnf") s.未完赛++;
-    else s.未出走++;
-    if (r.賞金) s.赏金 += r.賞金;
-  });
-  s.胜率 = s.出走 ? (s.胜/s.出走*100).toFixed(1) : "0.0";
-  s.连对 = s.出走 ? ((s.胜+s.二)/s.出走*100).toFixed(1) : "0.0";
-  s.入赏 = s.出走 ? ((s.胜+s.二+s.三)/s.出走*100).toFixed(1) : "0.0";
-  return s;
-}
+/* 单马 KPI 统计（computeStats）与「独立单马 22 列表 / 过滤条」一起，随表格渲染收口删除
+ * （其唯一调用点 renderRaces 非内嵌分支本就不可达，见 UI优化记录 §53） */
 
 /* ---- 排序比较器：日期降序（新→旧）；同日按発走降序（大→小），无発走视为最大（同日排最前）----
  * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
@@ -194,171 +176,25 @@ function raceCmp(a, b){
   return 0;
 }
 
-function rowHTML(r){
-  var dnf = typeof r.結果 === "string";            // 无着顺行（未完赛=中止/失格、未出走=取消/除外）整行淡化
-  var grade = gradeBadge(r.格);
-  var num = function(v){ return (v==null||v==="") ? "" : esc(String(v)); };
-  var prize = (r.賞金 ? Math.round(r.賞金/10000).toLocaleString() : "");   // 万円
-  var rowClass = 'border-b border-border last:border-b-0' + (dnf ? ' text-muted-foreground' : '');
-  var tc = 'px-1 py-1.5 text-center tabular-nums whitespace-nowrap';
-  var tl = 'px-1 py-1.5 text-center whitespace-nowrap';
-  return '<tr class="'+rowClass+'">'+
-    '<td class="'+tc+'">'+esc(r.日付)+'</td>'+
-    '<td class="'+tl+'">'+esc(r.場名||"")+'</td>'+
-    '<td class="'+tl+' text-muted-foreground">'+num(r.R)+'</td>'+
-    '<td class="px-1 py-1.5 text-center min-w-[80px] whitespace-normal">'+esc(raceNameText(r))+grade+'</td>'+
-    '<td class="'+tc+'">'+num(r.距離)+'</td>'+
-    '<td class="'+tl+'">'+esc(YJ.i18n.e("芝ダ", r.芝ダ))+'</td>'+
-    '<td class="'+tl+'">'+placeBadge(r.結果)+'</td>'+
-    '<td class="'+tl+'">'+(dnf?'—':num(r.タイム))+'</td>'+
-    '<td class="'+tl+'">'+(dnf?'—':num(r.着差))+'</td>'+
-    '<td class="'+tc+'">'+prize+'</td>'+
-    '<td class="'+tl+'">'+esc(r.天候||"")+'</td>'+
-    '<td class="'+tl+'">'+esc(r.馬場||"")+'</td>'+
-    '<td class="'+tc+'">'+num(r.斤量)+'</td>'+
-    '<td class="'+tc+'">'+num(r.枠番)+'</td>'+
-    '<td class="'+tc+'">'+num(r.馬番)+'</td>'+
-    '<td class="'+tc+'">'+num(r.頭数)+'</td>'+
-    '<td class="'+tc+'">'+ninkiBadge(r.人気)+'</td>'+
-    '<td class="'+tl+'">'+num(r.上り)+'</td>'+
-    '<td class="'+tl+' text-muted-foreground">'+num(r.通過)+'</td>'+
-    '<td class="'+tc+'">'+esc(weightHTML(r))+'</td>'+
-    '<td class="'+tl+' text-muted-foreground">'+num(r.ペース)+'</td>'+
-    '<td class="'+tl+'">'+esc(r.騎手||"")+'</td>'+
-  '</tr>';
-}
-
-/* mb 端（≤768px）软分行卡片：标题一行 + 固定分组行（统一走 YJ.device）
- * 跑道+距离合并「草地2000m」；行内项为 label：value；无横线分隔 */
+/* ===== 单马 22 列独立表 / 22 列 mb 卡片：已随「全库跨马查询」上线而失效（renderRaces 只在
+ * 内嵌模式被调用，内嵌走 embed 列集），2026-09-18 随表格渲染收口删除（见 UI优化记录 §53）。
+ * 需要旧形态可从 git 历史取回 ===== */
 function isMb(){ return YJ.device.isMb(); }
-
-function rowMbHTML(r){
-  var t = YJ.i18n.t;
-  var dnf = typeof r.結果 === "string";
-  var grade = gradeBadge(r.格);
-  var num = function(v){ return (v==null||v==="") ? "" : esc(String(v)); };
-  var prize = (r.賞金 ? Math.round(r.賞金/10000).toLocaleString()+'万' : '—');
-  var top = '<div class="yj-mb-top">'+
-    '<span class="yj-mb-date">'+esc(r.日付)+' '+esc(r.場名||"")+(r.R?' R'+num(r.R):'')+'</span>'+
-    '<span class="yj-mb-race">'+esc(raceNameText(r))+grade+'</span>'+
-    '<span class="yj-mb-place">'+placeBadge(r.結果)+'</span>'+
-  '</div>';
-  var dist = (r.芝ダ ? esc(YJ.i18n.e("芝ダ", r.芝ダ)) : '') + (r.距離 ? num(r.距離)+'m' : '');
-  var distItem = dist ? '<span class="yj-mb-item yj-mb-dist"><b>'+dist+'</b></span>' : null;
-  var item = function(label, v, vcls){
-    if (v==null || v==="") return null;
-    return '<span class="yj-mb-item">'+(label?'<i>'+esc(label)+'：</i>':'')+'<b'+(vcls?' class="'+vcls+'"':'')+'>'+v+'</b></span>';
-  };
-  var line = function(items){
-    items = items.filter(Boolean);
-    return items.length ? '<div class="yj-mb-line">'+items.join("")+'</div>' : '';
-  };
-  var l1 = line([distItem,
-    item(t("馬場"), esc(r.馬場||"")),
-    item(t("タイム"), dnf ? '—' : num(r.タイム), "tm"),
-    item(t("着差"), dnf ? null : num(r.着差), "diff"),
-    item(t("賞金"), prize)]);
-  var l2 = line([item(t("斤量"), num(r.斤量)), item(t("枠番"), num(r.枠番)), item(t("馬番"), num(r.馬番)), item(t("頭数"), num(r.頭数)), item(t("人気"), num(r.人気), ninkiMbCls(r.人気)), item(t("馬体重"), esc(weightHTML(r)))]);
-  var l3 = line([item(t("天候"), esc(r.天候||"")), item(t("上り"), num(r.上り)), item(t("通過"), num(r.通過)), item(t("ペース"), num(r.ペース))]);
-  var l4 = line([item(t("騎手"), esc(r.騎手||"")), item(t("調教師"), esc(r.調教師||""))]);
-  return '<div class="yj-mb'+(dnf?' dnf':'')+'">'+top+l1+l2+l3+l4+'</div>';
-}
 
 /* 内嵌模式（profile 下段）的表头/行/mb 卡片渲染见共享模块 front/public/race-rows.js
  * （embedTableHTML / rowEmbedHTML / rowEmbedMbHTML 已在上方按名取得别名）；
- * 日期图明细（datechart.html）调同一组函数 → 列与徽章样式两页永远一致。 */
+ * 日期统计明细（datechart.html）调同一组函数 → 列与徽章样式两页永远一致。 */
 
+/* 内嵌模式渲染（profile 下段 / races.html?embed=1）：表壳与行全部来自共享模块的 embed 列集。
+ * 独立模式（全库跨马查询）走 initLibrary → renderResults（lib 列集），两模式互斥：
+ * renderHorse 只在 EMBED 分支挂 bus，故这里不再有「独立单马表 / 过滤条」分支（§53 收口）。 */
 function renderRaces(h, races){
-  var t = YJ.i18n.t;
-  var s = computeStats(races);
-  var title = h.自译馬名 || h.欧字馬名 || h.馬名 || ("#"+h.id);
-
-  /* 内嵌模式（profile 下段一体式）：名字/计数由 profile 上段与筛选行承担，不再重复 */
-  var hname = EMBED
-    ? ''
-    : '<div class="mb-1.5 flex flex-wrap items-baseline gap-3"><h2 class="text-[17px] font-bold">'+esc(title)+'</h2><span class="text-[12px] text-muted-foreground">'+esc(YJ.i18n.g(h,"性別"))+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';
-
-  // KPI 仅在独立模式显示
-  var kpis = EMBED ? '' : '<div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">'+
-    '<div class="p-4" title="取消/除外（未出走）不计入出走与胜率分母"><div class="text-2xl font-semibold text-primary">'+s.出走+'</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("出走")+'</div></div>'+
-    '<div class="p-4"><div class="text-2xl font-semibold">'+s.胜+'</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("胜")+'</div></div>'+
-    '<div class="p-4"><div class="text-2xl font-semibold">'+s.二+' / '+s.三+'</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("2着")+' / '+t("3着")+'</div></div>'+
-    '<div class="p-4"><div class="text-2xl font-semibold">'+s.胜率+'%</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("胜率")+'</div></div>'+
-    '<div class="p-4"><div class="text-2xl font-semibold">'+s.连对+'%</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("连对率")+'</div></div>'+
-    '<div class="p-4"><div class="text-2xl font-semibold">'+(s.赏金?(s.赏金/10000).toLocaleString()+' 万':'—')+'</div><div class="mt-1 text-[12.5px] text-secondary-foreground">'+t("赏金合计")+'</div></div>'+
-  '</div>';
-
   var mb = isMb();
   var emptyMb = '<div class="px-4 py-6 text-center text-[12.5px] text-muted-foreground">暂无比赛记录</div>';
-  var listHtml;
-
-  if (mb) {
-    /* mb：内嵌/独立共用软分行卡片容器，行渲染器各用各的 */
-    var renderMbRow = EMBED ? rowEmbedMbHTML : rowMbHTML;
-    var mRows = races.length ? races.map(renderMbRow).join("") : emptyMb;
-    listHtml = '<div id="yj-mb-list" class="rounded-[10px] border border-border bg-card">'+mRows+'</div>';
-  } else if (EMBED) {
-    /* 内嵌 PC：14 列精简表（无过滤） */
-    var eRows = races.length ? races.map(rowEmbedHTML).join("")
-      : '<tr><td colspan="14" class="px-1 py-1.5 text-center text-muted-foreground">暂无比赛记录</td></tr>';
-    listHtml = embedTableHTML(eRows);
-  } else {
-    /* 独立 PC：20 列全量表（马体重含增减；表头与值全列居中） */
-    var th = function(label){
-      return '<th class="px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]">'+label+'</th>';
-    };
-    var pRows = races.length ? races.map(rowHTML).join("")
-      : '<tr><td colspan="22" class="px-1 py-1.5 text-center text-muted-foreground">暂无比赛记录</td></tr>';
-    listHtml = '<div class="overflow-x-auto rounded-[10px] border border-border bg-card">'+
-      '<table class="w-full border-collapse text-[12.5px]">'+
-      '<thead><tr class="border-b border-border bg-muted/40">'+
-      th(t("日付"))+th(t("場名"))+th('R')+th(t("レース名"))+th(t("距離"))+th(t("芝ダ"))+
-      th(t("着順"))+th(t("タイム"))+th(t("着差"))+th(t("賞金")+'(万円)')+th(t("天候"))+th(t("馬場"))+
-      th(t("斤量"))+th(t("枠番"))+th(t("馬番"))+th(t("頭数"))+th(t("人気"))+th(t("上り"))+th(t("通過"))+
-      th(t("馬体重"))+th(t("ペース"))+th(t("騎手"))+
-      '</tr></thead>'+
-      '<tbody>'+pRows+'</tbody>'+
-      '</table>'+
-      '</div>';
-  }
-
-  /* 过滤条：内嵌模式不提供（无过滤、无「显示 X 场」计数文案） */
-  var filterBar = EMBED ? '' : '<div class="my-3 flex flex-wrap items-center gap-2">'+
-      '<select id="fVenue" class="h-8 rounded-md border border-input bg-background px-2.5 text-[12.5px] text-foreground"><option value="all">全部场地</option><option value="中央">中央</option><option value="地方">地方</option><option value="海外">海外</option></select>'+
-      '<select id="fRes" class="h-8 rounded-md border border-input bg-background px-2.5 text-[12.5px] text-foreground"><option value="all">全部着顺</option><option value="win">胜</option><option value="top3">前三</option><option value="fuko">着外</option><option value="fin">完赛</option><option value="dnf">未完赛（中止/失格）</option><option value="dnr">未出走（取消/除外）</option></select>'+
-      '<span class="rhint ml-auto text-[12.5px] text-secondary-foreground">显示 <b class="font-bold text-primary">'+s.出赛+'</b> 场</span>'+
-    '</div>';
-
-  document.getElementById("body").innerHTML = hname + kpis + filterBar + listHtml;
-
-  if (EMBED) return;   // 内嵌模式：无过滤逻辑
-
-  // 过滤（仅独立模式）
-  var fVenue=document.getElementById("fVenue"), fRes=document.getElementById("fRes");
-  function applyFilter(){
-    var v=fVenue.value, r=fRes.value;
-    var list=races.filter(function(x){
-      if(v!=="all" && x.venue_type!==v) return false;
-      if(r==="win" && x.結果!==1) return false;
-      if(r==="top3" && !(x.結果===1||x.結果===2||x.結果===3)) return false;
-      if(r==="fuko" && !(typeof x.結果==="number" && x.結果>=4)) return false;
-      if(r==="fin" && typeof x.結果!=="number") return false;
-      if(r==="dnf" && resultCode(x.結果)!=="dnf") return false;
-      if(r==="dnr" && resultCode(x.結果)!=="dnr") return false;
-      return true;
-    });
-    if (mb) {
-      var c=document.getElementById("yj-mb-list");
-      if (c) c.innerHTML = list.length ? list.map(rowMbHTML).join("") : emptyMb;
-    } else {
-      var tb=document.querySelector("#body tbody");
-      tb.innerHTML = list.length ? list.map(rowHTML).join("")
-        : '<tr><td colspan="22" class="px-1 py-1.5 text-center text-muted-foreground">无符合条件的记录</td></tr>';
-    }
-    document.querySelector(".rhint b").textContent = list.length;
-  }
-  fVenue.addEventListener("change", applyFilter);
-  fRes.addEventListener("change", applyFilter);
+  var emptyPc = '<tr><td colspan="14" class="px-1 py-1.5 text-center text-muted-foreground">暂无比赛记录</td></tr>';
+  document.getElementById("body").innerHTML = mb
+    ? RR.mbListHTML(races.length ? races.map(rowEmbedMbHTML).join("") : emptyMb)
+    : embedTableHTML(races.length ? races.map(rowEmbedHTML).join("") : emptyPc);
 }
 
 function renderHorse(id){
@@ -705,26 +541,21 @@ function renderFilters(){
   initHorseSel();
 }
 
-/* ===== 独立 PC 跨马表：列宽策略（v6，取代模块 18 固定百分比 / v5 只喂弹性列）=====
- * 1) 跑道+距离合并为一列「距离」：草1200 / 泥1200 / 障1000 / AW1000
+/* ===== 独立 PC 跨马表：列宽策略（v6/v7；列集与字段口径见 front/public/race-rows.js 的 lib 列集）=====
+ * 1) 列定义（表头/单元格/mb 项/最小宽）来自共享模块 → 本页不再写任何列清单；
+ *    跑道+距离在 lib 列集里合并为一列「距离」：草1200 / 泥1200 / 障1000 / AW1000
  * 2) 固定列（日期/距离/枠番…赏金）= 格式上限 colW；弹性列（马名/赛事名/场地/天气/马场/骑手/调教师）
  *    = 当前页最长内容 pageW（马名/赛事名含级徽章宽）——都只是「最小宽」，不再决定最终宽。
  * 3) 留白分配（三阶段加权注水 fill()）：弹性文本列先吃（软上限 2.0×）→ 余量给数字列（软上限 1.5×）
  *    → 再有余量全表均分（保证表宽恒等于容器，右侧不留空条）。24 寸及以下留白本就被弹性列吃光，
  *    所以数字列不参与，观感与 v5 完全一致；只有宽屏（弹性列撞上限）数字列才开始吃掉富余。 */
-var SURF_SHORT = { 芝:"草", ダ:"泥", 障害:"障", AW:"AW" };
-function surfaceShort(v){ return SURF_SHORT[v] || ""; }
-/* 马名显示文本（与 NAME_VIEW 一致，量尺与渲染共用同一来源） */
+/* 马名显示文本（与 NAME_VIEW 一致，量尺与渲染共用同一来源；经 ROW_OPT.nameText 传给共享模块）
+ * 港译/自译名缺失时回退日文名（而非 #id）——切到中文名不该把马名降级成编号（明细同口径，§53.7） */
 function horseText(en){
   var h=en.h;
-  return (NAME_VIEW ? (h.香港馬名||h.自译馬名) : (h.馬名||h.欧字馬名)) || ("#"+h.id);
-}
-/* 赛事名显示文本 + 级徽章额外宽（margin-left 6 + 徽章左右 padding；都随档位放大）
- * 文本走 raceNameText（去冗余等级尾缀），量尺与渲染必须共用同一来源，否则列宽失真 */
-function raceText(en){
-  var r=en.r, gk=r.格&&G[r.格];
-  var pad = CUR_FS >= 13.5 ? 8 : 7;
-  return { t: raceNameText(r), x: gk ? (txtW(GLABEL[r.格], CUR_TH+1) + 6 + pad*2) : 0 };
+  return (NAME_VIEW
+    ? (h.香港馬名||h.自译馬名||h.馬名||h.欧字馬名)
+    : (h.馬名||h.欧字馬名||h.香港馬名||h.自译馬名)) || ("#"+h.id);
 }
 
 /* ===== 文本宽度量尺（v6 起：canvas 粗排 + DOM 精量）=====
@@ -779,86 +610,17 @@ var TIER_CAP={
   15.5:{race:1.3,  txt:1.45, num:2.0}
 };
 var CUR_FS=11.5, CUR_TH=10;                    /* 当前档位（量尺用） */
-/* 跨马表列分组：弹性=马名/场地/赛事/天气/马场/骑手/调教师；其余 14 个数字列为固定列 */
-var LIB_EL=[0,2,3,5,6,19,20], LIB_FIX=[1,4,7,8,9,10,11,12,13,14,15,16,17,18];
+/* 跨马表列分组由共享模块的列定义派生（flex=弹性文本列）——不再手写列序号，共享模块加列自动跟上 */
+var LIB_COLS = RR.cols("lib");
+var LIB_TH = LIB_COLS.map(function(c){ return c.thm; });      /* 表头文案（量宽用，与渲染同一份来源） */
+var LIB_EL = [], LIB_FIX = [];
+LIB_COLS.forEach(function(c,i){ (c.flex ? LIB_EL : LIB_FIX).push(i); });
+/* 赛事名列序号（注水上限单独一档：内容最长且带级徽章）——同样由列定义派生，不写死 idx */
+var LIB_RACE_IDX = LIB_COLS.map(function(c){ return c.k; }).indexOf("race");
 
-/* 跨马 PC 行：马名(可点击跳档案) + 核心赛绩字段
- * 列宽 v2：可固定长度字段=最小固定 px（colgroup），变长文本列由浏览器按当前页最长内容撑开，全列 nowrap 不截断 */
-function libRowHTML(en){
-  var h=en.h, r=en.r;
-  var dnf=typeof r.結果==="string";
-  var grade=gradeBadge(r.格);
-  var num=function(v){ return (v==null||v==="")?"":esc(String(v)); };
-  var prize=(r.賞金?Math.round(r.賞金/10000).toLocaleString():"");
-  var name=horseText(en);
-  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'">'+esc(name)+'</a>';
-  var rowClass='border-b border-border last:border-b-0'+(dnf?' text-muted-foreground':"");
-  var tc='px-[2px] py-1.5 text-center tabular-nums whitespace-nowrap';  /* 数字列 */
-  var tl='px-[2px] py-1.5 text-center whitespace-nowrap';               /* 文本列（列宽随内容，不省略） */
-  var dist=surfaceShort(r.芝ダ)+num(r.距離);                            /* 跑道+距离合并：草1200/泥1200/障1000/AW1000 */
-  return '<tr class="'+rowClass+'">'+
-    '<td class="'+tl+'">'+link+'</td>'+                               /* 出走马 */
-    '<td class="'+tc+'">'+esc(r.日付)+'</td>'+                        /* 日期 */
-    '<td class="'+tl+'">'+esc(venueR(r))+'</td>'+                    /* 场地 */
-    '<td class="'+tl+'">'+esc(raceText(en).t)+grade+'</td>'+         /* 赛事 */
-    '<td class="'+tl+'">'+dist+'</td>'+                               /* 距离（合并） */
-    '<td class="'+tl+'">'+esc(r.天候||"")+'</td>'+                    /* 天气 */
-    '<td class="'+tl+'">'+esc(r.馬場||"")+'</td>'+                    /* 马场状态 */
-    '<td class="'+tc+'">'+num(r.枠番)+'</td>'+                        /* 枠番 */
-    '<td class="'+tc+'">'+num(r.馬番)+'</td>'+                        /* 马番 */
-    '<td class="'+tc+'">'+num(r.頭数)+'</td>'+                        /* 出赛数 */
-    '<td class="'+tc+'">'+num(r.斤量)+'</td>'+                        /* 负磅 */
-    '<td class="'+tl+'">'+ninkiBadge(r.人気)+'</td>'+                 /* 人气 */
-    '<td class="'+tl+'">'+placeBadge(r.結果)+'</td>'+                 /* 着顺 */
-    '<td class="'+tc+'">'+(dnf?'—':num(r.タイム))+'</td>'+            /* 时间 */
-    '<td class="'+tl+'">'+(dnf?'—':num(r.着差))+'</td>'+              /* 着差 */
-    '<td class="'+tc+'">'+num(r.上り)+'</td>'+                        /* 后3F */
-    '<td class="'+tc+'">'+esc(weightHTML(r))+'</td>'+                 /* 马体重（500(+20)） */
-    '<td class="'+tc+'">'+num(r.単勝)+'</td>'+                        /* 独赢赔率 */
-    '<td class="'+tc+'">'+prize+'</td>'+                              /* 赏金 */
-    '<td class="'+tl+'">'+esc(r.騎手||"")+'</td>'+                    /* 骑手 */
-    '<td class="'+tl+'">'+esc(r.調教師||"")+'</td>'+                  /* 调教师 */
-  '</tr>';
-}
-
-/* 跨马 mb 卡片：顶部 日期+场地 / 马名 / 着顺；5 行镜像 PC 独立表列序（模块 20）
- * ①赛事+条件（PC 4-7：距离/天气/马场） ②成绩（PC 14-16：时间/着差/后3F）
- * ③出赛信息（PC 8-12：枠番/马番/出赛数/负磅/人气） ④身体+博彩+赏金（PC 17-19：体重/赔率/赏金）
- * ⑤人马（PC 20-21：骑手/调教师）；字段翻译与 PC 独立表一致（马场/体重/赔率 短标签硬编码，不进 i18n） */
-function libRowMbHTML(en){
-  var h=en.h, r=en.r;
-  var t=YJ.i18n.t;
-  var dnf=typeof r.結果==="string";
-  var grade=gradeBadge(r.格);
-  var num=function(v){ return (v==null||v==="")?"":esc(String(v)); };
-  var prize=(r.賞金?Math.round(r.賞金/10000).toLocaleString()+'万':'—');
-  var name=(NAME_VIEW ? (h.香港馬名||h.自译馬名) : (h.馬名||h.欧字馬名)) || ("#"+h.id);
-  var link='<a class="hjump" href="profile.html?horse='+encodeURIComponent(h.id)+'">'+esc(name)+'</a>';
-  var top='<div class="yj-mb-top">'+
-    '<span class="yj-mb-date">'+esc(r.日付)+' '+esc(venueR(r))+'</span>'+
-    '<span class="yj-mb-race">'+link+'</span>'+
-    '<span class="yj-mb-place">'+placeBadge(r.結果)+'</span>'+
-  '</div>';
-  var dist=(r.芝ダ?esc(YJ.i18n.e("芝ダ",r.芝ダ)):"")+(r.距離?num(r.距離)+'m':"");
-  var distItem=dist?'<span class="yj-mb-item yj-mb-dist"><b>'+dist+'</b></span>':null;
-  var raceItem=(raceNameText(r)?'<span class="yj-mb-item"><b class="yj-race">'+esc(raceNameText(r))+'</b>'+grade+'</span>':(grade?'<span class="yj-mb-item">'+grade+'</span>':""));
-  var item=function(label,v,vcls){
-    if(v==null||v==="")return null;
-    return '<span class="yj-mb-item">'+(label?'<i>'+esc(label)+'：</i>':"")+'<b'+(vcls?' class="'+vcls+'"':"")+'>'+v+'</b></span>';
-  };
-  var line=function(items){ items=items.filter(Boolean); return items.length?'<div class="yj-mb-line">'+items.join("")+'</div>':""; };
-  /* ① 赛事 + 条件（PC 4-7） */
-  var l1=line([raceItem,distItem,item(t("天候"),esc(r.天候||"")),item("马场",esc(r.馬場||""))]);
-  /* ② 成绩（PC 14-16） */
-  var l2=line([item(t("タイム"),dnf?'—':num(r.タイム),"tm"),item(t("着差"),dnf?null:num(r.着差),"diff"),item(t("上り"),num(r.上り))]);
-  /* ③ 出赛信息（PC 8-12） */
-  var l3=line([item(t("枠番"),num(r.枠番)),item(t("馬番"),num(r.馬番)),item(t("頭数"),num(r.頭数)),item(t("斤量"),num(r.斤量)),item(t("人気"),num(r.人気),ninkiMbCls(r.人気))]);
-  /* ④ 身体 + 博彩 + 赏金（PC 17-19） */
-  var l4=line([item("体重",esc(weightHTML(r))),item("赔率",num(r.単勝)),item(t("賞金"),prize)]);
-  /* ⑤ 人马（PC 20-21） */
-  var l5=line([item(t("騎手"),esc(r.騎手||"")),item(t("調教師"),esc(r.調教師||""))]);
-  return '<div class="yj-mb'+(dnf?' dnf':"")+'">'+top+l1+l2+l3+l4+l5+'</div>';
-}
+/* 跨马 PC 行 / mb 卡片：全部由共享模块的 lib 列集渲染（本页只传 opts；列序/标签/mb 分组见 race-rows.js） */
+function libRowHTML(en){ return RR.rowLibHTML(en, ROW_OPT); }
+function libRowMbHTML(en){ return RR.rowLibMbHTML(en, ROW_OPT); }
 
 /* 页码按钮序列：始终含首尾页，当前页 ±2，间断处用 null 表示省略号 */
 function pageSeq(cur, total){
@@ -902,17 +664,16 @@ function renderResults(){
   if(PG.page<1) PG.page=1;
   var start=(PG.page-1)*PG.size;
   var list=all.slice(start, start+PG.size);
-  var t=YJ.i18n.t;
   var summary='<div class="mb-3 flex flex-wrap items-baseline gap-2 text-[13px] text-secondary-foreground">'+
     '共 <b class="text-[16px] text-primary">'+total+'</b> 场 · <b class="text-[16px] text-primary">'+nH+'</b> 匹'+
     (pages>1?'<span class="text-[11.5px] text-muted-foreground">当前第 '+PG.page+' 页 · 显示 '+list.length+' 条</span>':"")+
-    (isMb()?'<button type="button" class="yj-name-toggle ml-auto self-center" data-tip="点击切换马名：日文名/英文名 ⇄ 港译名/自译名">出走马 <span class="yj-name-ico">⇄</span></button>':"")+
+    (isMb()?'<button type="button" class="yj-name-toggle ml-auto self-center" data-tip="'+esc(NAME_TIP)+'">出走马 <span class="yj-name-ico">⇄</span></button>':"")+
     '</div>';
   var empty='<div class="rounded-[10px] border border-border bg-card px-5 py-[48px] text-center text-[13px] text-muted-foreground">没有符合条件的比赛记录</div>';
   var listHtml;
   if(!list.length){ listHtml=empty; }
   else if(isMb()){
-    listHtml='<div id="yj-mb-list" class="rounded-[10px] border border-border bg-card">'+list.map(libRowMbHTML).join("")+'</div>';
+    listHtml=RR.mbListHTML(list.map(libRowMbHTML).join(""));
   } else {
     /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v7（详见文件上方 v7 说明）：
      * ① 量最小宽：固定列按格式上限 colW、弹性列按当前页最长内容 pageW（canvas 粗排 + DOM 精量）；
@@ -940,24 +701,11 @@ function renderResults(){
     }
     /* 列最小宽 = 值宽与表头宽（该档表头字号）取大，加 padding/余量 */
     function colMin(vw,h){ return Math.max(vw, Math.ceil(txtW(h,CUR_TH))+8); }
-    var TH=[ "出走马 ⇄", t("日付"), t("場名"), t("レース名"), t("距離"), t("天候"), "马场",
-      t("枠番"),t("馬番"),t("頭数"),t("斤量"),t("人気"),t("着順"),t("タイム"),t("着差"),t("上り"),
-      "体重","赔率",t("賞金")+"(万円)", t("騎手"), t("調教師") ];
+    /* 列最小宽输入：逐列取自共享模块的列定义（col.min(ctx)）——列增删改只改 race-rows.js 的 lib 列集。
+     * ctx.fmt=固定格式上限宽、ctx.page=页内最长内容宽、ctx.txt=DOM 精量（赛事名徽章额外宽要用） */
     function libVal(){
-      return [
-        pageW(horseText),
-        colW("2026-08-30"),
-        pageW(function(en){ return venueR(en.r); }),
-        pageW(raceText),
-        colW("AW1200"),
-        pageW(function(en){ return en.r.天候; }),
-        pageW(function(en){ return en.r.馬場; }),
-        colW("18"), colW("18"), colW("18"), colW("60.0"), colW("18"), colW("18"),
-        colW("12:34.5"), colW("±1.1"), colW("36.3"),
-        colW("500(+20)"), colW("100.11"), colW("90000"),
-        pageW(function(en){ return en.r.騎手; }),
-        pageW(function(en){ return en.r.調教師; })
-      ];
+      var ctx={ fmt:colW, page:pageW, txt:txtW, curFS:CUR_FS, curTH:CUR_TH, o:ROW_OPT };
+      return LIB_COLS.map(function(c){ return c.min(ctx); });
     }
     /* 加权注水：把 budget 按 base 占比发给 idx 各列，单列增量不超过 base[i]×(capFn(i)−1)
      * （capFn 返回该列软上限倍数，null=不限量）；返回没发完的余量 */
@@ -984,28 +732,23 @@ function renderResults(){
     function libLayout(fs, containerW){
       CUR_FS=fs; CUR_TH=TIER_TH[fs]||10;
       var VAL=libVal();
-      var base=VAL.map(function(v,i){ return colMin(v,TH[i]); });
+      var base=VAL.map(function(v,i){ return colMin(v,LIB_TH[i]); });
       var add=base.map(function(){ return 0; });
       var slack=containerW-2-base.reduce(function(a,b){ return a+b; },0);
       if(slack>0){
         var caps=TIER_CAP[fs]||TIER_CAP[11.5];
-        /* ① 弹性文本列（赛事名列 idx 3 单独上限，其余走 txt） */
-        var left=fill(base,add,LIB_EL,slack,function(i){ return i===3?caps.race:caps.txt; });
+        /* ① 弹性文本列（赛事名列单独上限，其余走 txt） */
+        var left=fill(base,add,LIB_EL,slack,function(i){ return i===LIB_RACE_IDX?caps.race:caps.txt; });
         /* ② 数字列 */
         if(left>0) left=fill(base,add,LIB_FIX,left,function(){ return caps.num; });
         /* ③ 余量全表均分，保证铺满；赛事名仍封顶在 race，不再被均分撑宽 */
-        if(left>0) fill(base,add,LIB_EL.concat(LIB_FIX),left,function(i){ return i===3?caps.race:null; });
+        if(left>0) fill(base,add,LIB_EL.concat(LIB_FIX),left,function(i){ return i===LIB_RACE_IDX?caps.race:null; });
       }
       var ink=VAL.reduce(function(a,b){ return a+Math.max(0, b-8); }, 0);  /* 去掉每列 8px 余量 */
       return { MIN:base.map(function(b,i){ return Math.round(b+add[i]); }), ink:ink };
     }
-    var th=function(label){ return '<th class="px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]">'+label+'</th>'; };
-    var thName='<th class="px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]">'+
-      '<button type="button" class="yj-name-toggle" data-tip="点击切换马名：日文名/英文名 ⇄ 港译名/自译名">出走马 <span class="yj-name-ico">⇄</span></button></th>';
-    var thead='<thead><tr class="border-b border-border bg-muted/40">'+
-      thName+th(t("日付"))+th(t("場名"))+th(t("レース名"))+th(t("距離"))+th(t("天候"))+th("马场")+
-      th(t("枠番"))+th(t("馬番"))+th(t("頭数"))+th(t("斤量"))+th(t("人気"))+th(t("着順"))+th(t("タイム"))+th(t("着差"))+th(t("上り"))+th("体重")+th("赔率")+th(t("賞金")+'(万円)')+th(t("騎手"))+th(t("調教師"))+
-      '</tr></thead>';
+    /* 表头（含出走马语言切换按钮）与行都来自共享模块的 lib 列集 —— 本页不再逐列拼表头 */
+    var thead=RR.libTheadHTML({ nameToggle:true, nameTip:NAME_TIP });
     var rows=list.map(libRowHTML).join("");
     var cgHtml=function(MIN){ return '<colgroup>'+MIN.map(function(w){ return '<col style="width:'+w+'px">'; }).join('')+'</colgroup>'; };
     var cardHtml=function(MIN,fs){

@@ -1883,3 +1883,132 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 - 原布局（§50.3 首版）：人气 独占一行、母父-调教师 一行、骑手 半列孤行——尾部参差。
 - 改为：**人气-母父 一行 / 骑手-调教师 一行**（`selRow` 四行顺序 ninki→mps→jockey→trainer，人气 `wide=false` 收半列）；行序注释同步。
 - 验证：drill 33 项全过（无行序断言）；`npm run build` + headless Edge 截图目检（两行各两列对齐）。
+
+---
+
+## 51. 时间线 · 赛事名恒单行（超宽缩字号）+ 等级尾缀改由徽章表达
+
+### 51.1 需求（用户，附截图）
+
+1. 时间线卡片的**比赛名固定一行**：超长不换行、但**缩小字号**；PC / mb 都必须只占一行。
+2. 比赛名后的 **G1/G2/G3、Jpn1/Jpn2/Jpn3 等**等级后缀**去掉**，等级只由左侧等级徽章表达（此前徽章与尾缀信息重复、还白占宽度）。
+
+### 51.2 等级尾缀剥离（数据产物侧，单一出处）
+
+- `scripts/timeline/build_timeline.py` 新增 **`strip_grade_suffix(name, grade)`**：只在「尾缀与 `格` 完全相等 **且** 该格确实会渲染徽章（`GBADGE` 命中）」时剥；`(1勝クラス)/(2勝クラス)/(3歳)/(C4)/(C1)` 等无徽章尾缀**必须保留**（剥了丢信息）。口径与前端 `race-rows.js` 的 `raceNameText()` **一致**（那里按原始记录形状判 `r.格`），两处注释互指。
+- **剥在产物而非渲染层**：`data/timeline.json` 的契约就是「渲染就绪、前端只画」，字段模板（脚本头部 docstring）同步改写；`norm_race()`（父子制覇匹配用，无条件去尾缀）语义不变、保持独立。
+- 重算 `data/timeline.json`：**3 条赛事名变化，其余零改动**（`萩S(L)→萩S`、`テレビ東京杯青葉賞(GII)→テレビ東京杯青葉賞`、`京都新聞杯(GII)→京都新聞杯`、`レパードS(GIII)→レパードS`；`2歳新馬` 无徽章尾缀原样）。
+- 全库 `data/races/*.json` 尾缀-格配对扫描佐证规则：`(GII)×14 / (GIII)×12 / (L)×9 / (GI)×6 / (OP)×1` 会剥，`(1勝クラス)×25 / (2勝クラス)×9 / (3歳)×9 / (C4)×6 / (C1)/ (C13歳)` 保留。
+
+### 51.3 前端「恒单行 + 缩字号」
+
+- **`front/pages/timeline.html`**：赛事名行由 `flex flex-wrap` 改为页内组件类 **`.tl-racename-row`（`display:flex` + `min-width:0`，不换行）+ `.tl-racename`（`flex:1 1 auto; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis`）**；徽章 `flex:none` 不参与压缩。PC / mb 同一套 CSS（mb 断点无需另写）。
+- 新增 **`fitRaceNames()`**：渲染完立即量 `scrollWidth > clientWidth` → **按 0.5px 步进降字号**；基准字号取自 CSS（`getComputedStyle`，页内不写死），下限 `NAME_FLOOR = 10.5px`；缩到下限仍放不下才走省略号兜底，并挂 `title` 悬停看全名。**幂等**（每轮先复位字号），故 `resize`（120ms 防抖）与 `document.fonts.ready` 各重量一次——Web 字体加载/视口变化都会改变文字宽度。
+- 副作用：删掉该处的 `text-[15px] font-semibold` utility（评审/手动分支仍在用，类不消失）。
+
+### 51.4 验证与状态
+
+- `npm run build` → `dist/pages/timeline.html` 含 `fitRaceNames/.tl-racename/.tl-racename-row`、`dist/data/timeline.json` 三条名字已剥尾缀；`node tests/_smoke-refactor.cjs` 全过（timeline 内联脚本编译 OK）。
+- **挂具量测** `tests/timeline-racename-check.html`（iframe 加载 dist 产物 → 量 `clientW/scrollW/cardRight/docScrollW`，`?w=` 传宽度）+ headless Edge `:8090` `--dump-dom`：
+  - **390px**：文档无横向溢出（`clientW=docScrollW=375`，卡片 `cardRight=361`），6 张卡全部 `clipped:false`；`テレビ東京杯青葉賞`（9 全角）自动落到下限 **10.5px** 恰好一行放完，其余名字 15px 不缩。
+  - **768px**（mb 断点上沿，卡片 614）：全部 15px 一行；**1280px**（PC 卡片 480、正文宽 219）：全部 15px 一行（最长名 144px < 可用宽）。
+- 截图目检 `tests/_shots/v51-probe-mb390.png`（390 档）、`v51-probe-pc1280.png`（1280 档）：徽章紧贴赛事名、无尾缀重复、恒一行。
+- ⚠ 踩坑记录：headless Edge `--window-size=390,…` 直接截 URL 时**窗口有最小宽度**，截图右侧被裁（看着像卡片溢出），实际布局无溢出——窄屏验收必须走 iframe 挂具（同 `tests/tendency-*-check.html` 惯例）。未 commit（等用户确认）。
+
+---
+
+## 52. 全站文案 · 侧边栏「日期图」→「日期统计」
+
+### 52.1 需求（用户）
+
+侧边栏菜单名「日期图」改成「日期统计」；范围经确认取**「侧边栏 + 页内标题一起改」**——菜单名与页内 H1 全站一一对应（基本信息/比赛记录/统计总览/时间线/日期图），只改菜单会破这层一致性。
+
+### 52.2 落地（用户可见 3 处 + 前端注释 8 处）
+
+- **`front/index.html`**：侧边栏「统计」组菜单项 `📅 日期图` → `📅 日期统计`（`data-href="pages/datechart.html"`、图标、顺序均不变）。
+- **`front/pages/datechart.html`**：`<title>日期图 · 云迹</title>` → `日期统计 · 云迹`；页内 H1 `日期图 · DATE CHART` → `日期统计 · DATE STATS`（英文跟 统计总览·STATS / 时间线·TIMELINE 的命名法；若想保留 DATE CHART 属一行回改）；本页头注释同步。
+- **引用该页名的前端注释同步（纯注释、零行为）**：`races.html`×3（明细共用样式/同调共享模块）、`stats.html`×1（徽章同源）、`public/race-rows.js`×4（明细表共用说明）。
+- **未动**：后端与脚本侧页名（`scripts/datechart/*`、`run_update.py` 步骤名「日期图·数据预计算/断言校验」、`data/check_report.md`）——数据管线一律走 `datechart` 域名词，与 UI 文案解耦；文档侧历史条目（本记录 §32/§33/§42 等、`front/README.md`/`HANDOFF.md` 的旧页名）保持原样不追改。
+
+### 52.3 验证与状态
+
+- `npm run build` → `dist/index.html` 菜单项、`dist/pages/datechart.html` 的 `<title>` 与 H1 均为新名，`front/` 下旧串零残留（仅剩上述文档）。
+- headless Edge `:8090` 截图目检：`tests/_shots/v52-sidebar-datechart.png`（侧边栏「统计」组第四项显示「日期统计」）、`v52-datechart-header.png`（页头「日期统计 · DATE STATS」）。未 commit（等用户确认）。
+
+---
+
+## 53. 全站比赛记录表格收口 · 一份列定义 + 一台渲染器
+
+### 53.1 需求（用户）
+
+「日期统计的明细 · 2026年9月 · 39 场是复用比赛记录的吗？我需要**全部的比赛记录的表格都是同一套逻辑**。」
+排查后确认现状（**3 套**，不是 1 套）：
+
+| 场景 | 行渲染 | 列集 |
+|---|---|---|
+| ① 比赛记录页跨马主表（侧边栏 → `races.html`） | `races.html` 本地 `libRowHTML`/`libRowMbHTML` | 21 列（首列出走马、跑道+距离合并、含天气/赔率/调教师） |
+| ② 内嵌表（profile 下段 `races.html?embed=1`） | `public/race-rows.js` 共享模块 | 14 列 |
+| ③ 日期统计明细（`datechart.html`） | 同一份共享模块（②+馬名列） | 15 列 |
+| ④ 单马 22 列独立表 / 22 列 mb 卡片 | `races.html` 本地 `rowHTML`/`rowMbHTML` | **死代码**（下详） |
+
+**④ 死代码的确认**：`renderRaces()` 唯一的上游 `renderHorse()` 只在 `EMBED` 分支挂 bus（`if (EMBED){ YJ.bus.onChange(renderHorse) } else initLibrary()`），而 `renderRaces` 内部 `EMBED` 恒真 → 非内嵌分支（22 列表 / 过滤条 / KPI / `computeStats` / `applyFilter`）**不可达**；实机验证 `races.html?horse=103` 渲染的是**跨马主表**（21 列、6 行，`?horse=` 只是预置出走马筛选）。
+用户选定方案：**只统一「渲染代码」，各场景列集维持现状**（视觉零变化）。
+
+### 53.2 落地（`front/public/race-rows.js` 重写为列定义驱动）
+
+- **`COL` 列定义表（全站唯一字段口径）**：每列 = `{k, th, flex, cls/clsLib, pc(r,en,o), mbItem(r,en,o,label), mbTop(r,en,o), mbLabel, min(ctx), thSuffix}` —— 表头 / PC 单元格 / mb 卡片项 / mb 顶部槽 / 列宽最小宽 全部挂在列上；共 23 列（含 lib 专用 distMerged、odds 与 embed 专用 surface）。
+- **`SETS` 列集**：`lib`（21 列，跨马主表）/ `embed`（14 列，`opts.horse` 时首列加「馬名」= 15 列 = 日期统计明细）。列集 entry 支持 `{k, th, label, onlyIf}`（表头/标签**字面量短标签**覆盖：lib 的「出走马 ⇄ / 马场 / 体重 / 赔率」；`onlyIf:"horse"` = 无馬名上下文时整列不出现）+ `mbTop`（三槽列键）+ `mbLines`（mb 卡片分组行）。
+- **渲染器**：`theadHTML(set,o)` / `rowHTML(set,r,en,o)` / `mbCardHTML(set,r,en,o)` / `embedTableHTML` / `mbListHTML`；视图层薄封装 `rowEmbedHTML·rowEmbedMbHTML·rowLibHTML·rowLibMbHTML·libTheadHTML`。
+- **`race-rows.js` → races.html 的列宽算法联动**：跨马表列宽算法的三个输入不再手写——表头 `TH` → `LIB_TH = cols("lib").map(c => c.thm)`、最小宽 `libVal()` → `LIB_COLS.map(c => c.min(ctx))`、弹性/固定列分组 `LIB_EL/LIB_FIX` → 由列定义 `flex` 派生（**加列自动跟上，不用再数列序号**）；`ctx = {fmt:colW, page:pageW, txt:txtW, curFS, curTH, o}` 由页面注入，量宽实现仍留页面（canvas 粗排 + DOM 精量）。
+- **页面侧删除（等值搬移/纯删除）**：`races.html` 的 `rowHTML/rowMbHTML`（死代码）、`renderRaces` 非内嵌分支 + 过滤条 + KPI + `computeStats` + `applyFilter`、`libRowHTML/libRowMbHTML` 函数体、内联 21 列表头、`TH/libVal/LIB_EL/LIB_FIX` 字面量、`surfaceShort/raceText`（并入模块：`surfaceShort` 导出、赛事名量宽 `raceMeasure(en, ctx)`）。`resultCode()` 保留（三态口径定义，HANDOFF 引用 + `verify_result.cjs` 同口径对账）。文件 58.8 kB → 43.8 kB。
+- **未改**：`datechart.html`（仍调 `rowEmbedHTML/embedTableHTML/rowEmbedMbHTML/mbListHTML`，只做了 `toRow()` 短键适配，零改动）、`profile.html`、CSS（theme.css 徽章/mb 卡片类名全量沿用）。
+
+### 53.3 验证
+
+- **金标逐字对照（最强证据）**：新增 `tests/rows-golden.html` —— 同一批记录（id 升序前 2 匹马的 13 场）分别喂给 **OLD**（`git show HEAD:` 版 `public/race-rows.js` + 从 HEAD 版 `races.html` 抽出的 lib 行函数，落 `tests/_trash/rows-old/`）与 **NEW**（收口后模块），逐字比较 **6 条渲染路径**（embed PC/mb × 带馬名/不带馬名 = 4 + lib PC/mb = 2）× 13 场 + **3 个表头**（embed 带馬名/不带馬名、lib 带切换按钮）→ **9 个比对桶全部逐字一致**。过程中金标抓出并修掉 3 个真 bug：① `rowLibHTML/rowLibMbHTML` 误把 `en` 当记录传（整表空单元格）；② mb 顶部漏 `<div class="yj-mb-top">` 包裹（CSS flex 失效）；③ 空值/无馬名时多渲染空 `<span class="yj-mb-item">`（老独立表 `item()` 是空值整项不出现）。
+- **页面级结构对照**：`tests/table-dump.html`（iframe 加载 dist 产物 → 轮询就绪后 dump 表头/列宽/前 3 行/行数/字号/mb 卡片）跑 6 个视图，`before`/`after` 两份 JSON 比对——**thead 全部相同**、embed PC 6 行同序、lib-mb / embed-mb / 明细 PC+mb 的 mb 卡片逐字相同、明细表头与行同序；lib PC 的 page-1 前三行中出现「同日同场并列项」先后差异 + 列宽联动 1–3px（下文溯源）。
+- **并列项顺序溯源**（非回归）：挂具 `?tie=2026-09-13 中山11` 实测 —— `LIB.entries` 插入顺序（= 277 个 races 文件并发拉取的完成顺序）`ゴーイントゥスカイ→バドリナート→フウセン` 与 DOM 行序**完全一致**；`raceCmp` 对同日同発走返回 0（并列），稳定排序保留插入序 → 并列项先后不属于渲染口径，跨构建/跨时序会变；列宽随之联动 1–3px（列宽总和 1231 → 1232px，21 列逐列一致）。同代码冷启动跑 5 次结果完全一致。
+- **套件**：`node tests/_smoke-refactor.cjs` 全过（6 页内联脚本编译 + 模块加载）；`python run_update.py --check` 五步全绿（数据校验 / 日期图 84 断言 / 统计 198 断言 / 比赛记录下钻 33 断言 / 结果对账三态闭合），日志内 `ok` 断言合计 **315 条**。
+- **量测**：lib 主表在容器 1233px（1440 视口）/1665px（1920）时**表宽 = 容器、横向溢出 0**，1920 档自动升到 12.5px；`≤1180px` 容器的横向滚动是既有行为（`.overflow-x-auto` + `@media (max-width:1180px)` 收紧档，非本次引入）。
+- 截图目检 `tests/_shots/v53-lib-pc.png`、`v53-lib-mb.png`、`v53-embed-pc.png`、`v53-embed-mb.png`、`v53-detail-pc.png`、`v53-detail-mb.png`。
+
+### 53.4 定论落地（用户拍板，2026-09-18）：字段基准化
+
+用户定论：**① PC 端与 mb 端都以「比赛记录 · RACES」页面的字段为基准；② 内嵌页面与明细保持自己的字段数量，但顺序按基准，通过「显隐基准字段」实现；③ 跑道与距离不拆列，统一进「距离」显示 `泥1500` 这种。**
+（追加确认：mb 卡片**保留内嵌/明细自己的 3 行分组**；距离文案 PC 与 mb **都**显示「泥1500」；内嵌/明细隐藏的字段 = 与现在完全相同的那 7 个。）
+
+- **`race-rows.js` 结构改为「基准 + 显隐」**：
+  - `BASE_COLS`（21 列基准列序：馬名→日付→場名→レース名→距離→天候→馬場→枠番→馬番→頭数→斤量→人気→着順→タイム→着差→上り→体重→賠率→賞金→騎手→調教師）+ `BASE_TOP`/`BASE_LINES`（基准 mb 卡片顶部三槽 + 5 行分组）。
+  - `VIEWS` 只允许三处视图差异：**`hide` 隐藏清单**（embed 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率）、`th`/`mbLabel` 短标签覆盖（lib 的 出走马 ⇄/马场/体重/赔率）、`mbLines` mb 分组（lib = 基准 5 行，embed = 自己的 3 行紧凑分组，字段顺序同样随基准）。
+  - `cols(view, o)` = 基准列序 − hide（− 无馬名上下文时的馬名列）→ **各视图不再各写一份列清单**，加列/调序只改基准。
+- **距离唯一列**：删除 `dist`（纯距离）与 `surface`（跑道）两列，`distMerged` 成为唯一距离列，PC 与 mb **同一文案**（`cn 草2200 / 泥1500 / 障1000 / AW1000`，原 mb 的「草地1800m」取消）。
+- **mb「名称槽」机制**：`BASE_TOP` 的中槽写 `"name"` = 馬名（基准首列）；当前视图没有馬名列时（profile 下段单马）退回赛事名，且该列在分组行里自动跳过（信息不重复）。
+- **结果**：明细 PC 由 15 列 → **14 列**（馬名提到首列、跑道并入距离、马体重排到赏金前）；profile 下段内嵌 14 → **13 列**；明细 mb 卡顶部中槽由赛事名改 **馬名**、赛事名落到第 1 行（与比赛记录 mb 卡同构）；**比赛记录页 PC 行与表头零变化**，其 mb 卡仅距离文案随定论变为「草1800」。
+- **字段数量变化说明**：明细 15→14、内嵌 14→13 是「跑道并入距离」的直接结果（用户显式指定的合并）；隐藏字段集合本身与之前完全一致。
+
+### 53.5 本轮验证
+
+- **金标逐字对照的差异恰好等于本次规格变化**（OLD = 收口前 HEAD 版）：`libRows` 与 `libThead` **SAME**（比赛记录页 PC 零变化）；`libMbs` 逐卡仅距离项 `草地1800m → 草1800`；embed 表头 `马名|日期|场地|赛事|距离|马场状态|负磅|人气|着顺|时间|马体重|赏金(万円)|骑手|调教师`（14 列，无馬名时 13 列）、行值随列移动、mb 卡名称槽与首行按新序 —— 无计划外变化。
+- **断言同步**：`scripts/datechart/verify_datechart.cjs` 的 [C2] 由「15 列」改为「14 列 + 列序随基准（逐列比对）+ 跑道并入距离（无独立跑道列、值形如 草1800）」；期望列序由 stub 自身 i18n 生成（只断言顺序与字段集）。**86 断言全过**。
+- `python run_update.py --check` 五步全绿（数据校验 / 日期图 86 / 统计 198 / 下钻 33 / 结果对账）；`node tests/_smoke-refactor.cjs` 全过。
+- 截图目检 `tests/_shots/v54-detail-pc.png`、`v54-detail-mb.png`、`v54-embed-pc.png`、`v54-embed-mb.png`。
+
+### 53.7 明细补齐「马名语言切换」（用户提问：为什么明细没有切换马名）
+
+**原因复盘**：① 该功能是 `races.html` 的**页面级实现**（`NAME_VIEW` 状态 + `horseText()` + PC 列头/mb 汇总行按钮 + `bindPager()` 里的点击委托），明细页 0 处钩子；② 更要紧的是**没有数据可切**——产物 `runs[].h` 只存一个名字（`馬名 → 出走馬名 → 欧字馬名` 回退链），港译/自译名根本没进 `data/datechart.json`。
+
+- **产物**：`build_datechart.py` 的 `runs[]` 增键 `"hc"`（`香港馬名 → 自译馬名`，两者皆无=空串）→ 键数 21→22，docstring 字段模板同步；重算 `data/datechart.json`（741 条出走中 **737 条有中文名**，99.5%）。
+- **页面 `datechart.html`**：`NAME_VIEW` / `NAME_TIP` / `horseNameOf(r)`（`NAME_VIEW && r.hc ? r.hc : r.h` —— 无中文名**回退日文名**，不显示 `#id`）；PC 给 `embedTableHTML(..., {nameToggle:true, nameTip})` → **「马名」列头即 ⇄ 按钮**（共享模块早已支持，零改动）；mb 在明细标题行右端加按钮（`md:hidden`——本页 PC/mb 一律用 CSS 断点分，故不引入 `device.js` 依赖）；`document` 点击委托翻状态后**只重渲染明细**（`renderDetail(st.mode, scopeKey(st.mode))`，日历/KPI 不动）。
+- **样式收口**：`.yj-name-toggle`（含 `[data-tip]` 悬停浮层）从 `races.html` 页内 `<style>` 移入 **`theme.css @layer components`**（两页共用、单一出处；races.html 只留本页维度 chip 的 `.filter-chip[data-tip]`）。类名字面量在两页 HTML 里都有 → Tailwind 候选不裁剪（构建产物已核对含全部 7 处规则）。
+- **顺带修正（同口径）**：`races.html` 的 `horseText()` 在缺港译/自译名时**回退日文名**（原为 `#id`）——切到中文名不该把马名降级成编号，明细同规则。
+- **验证**：`scripts/datechart/verify_datechart.cjs` 由 86 → **94 断言**（新增：产物 `hc` 类型 + 逐条 **22 字段全等**（含 `hc` 对账）、PC 列头即切换按钮、切换前=日文名、切换后=中文名、切换后不再显示原日文名、再点一次切回、无中文名回退且不出现 `#id`）；`run_update.py --check` 五步全绿；`tests/_smoke-refactor.cjs` 全过。
+- **截图**：`tests/_shots/v55-pc-head2.png`（PC「马名 ⇄」列头）、`v55-mb-head2.png`（mb 明细标题行右侧「马名 ⇄」）、`v55-lib-mb.png`（比赛记录页 mb 卡不受样式收口影响）。
+
+### 53.8 遗留
+
+- 「单马 22 列独立表（含 通過/ペース）」作为死代码删除，需要旧形态可从 git 历史取回。
+- 若日后要给明细补字段（如 着差/上り），先扩 `scripts/datechart/build_datechart.py` 产物键、再从 embed 的 `hide` 清单里移除该列即可（列序自动随基准）。
+
+
+
+

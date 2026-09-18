@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日期图 · 云迹</title>
+<title>日期统计 · 云迹</title>
 <link rel="stylesheet" href="theme.css">
 <style>
 /* ===== 等级/着顺/人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
@@ -121,7 +121,7 @@
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
 
-  <div class="page-title mb-7 max-md:mt-2.5">日期图 · DATE CHART</div>
+  <div class="page-title mb-7 max-md:mt-2.5">日期统计 · DATE STATS</div>
 
   <!-- 工具条：聚合口径分段切换 + 场地范围（多选，默认 JRA） -->
   <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -167,7 +167,7 @@
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
 <script>
-/* ================= 日期图 · 日历（真实数据版） =================
+/* ================= 日期统计 · 日历（真实数据版） =================
  * 需求（用户定）：日历形式；按 天/周/月/年 快速读出
  *   ① 通算战绩 [第1-第2-第3-第3名开外]（=着顺分布，4 段：1/2/3着 + 其余含未完走）
  *   ② 总赏金；③ 重赏以「图标+数字」（🏆 n）突出标记。
@@ -446,6 +446,14 @@ function toRow(r){
     馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr
   };
 }
+/* ---- 马名语言切换（与比赛记录页同一交互；§53.7）----
+ * 明细是跨马列表 → 与比赛记录页一样提供「日文名/英文名 ⇄ 港译名/自译名」切换：
+ * PC 按钮在「马名」列头（共享模块 nameToggle），mb 按钮在明细标题行右端（同比赛记录页 mb 放在汇总行）。
+ * 数据来自产物 runs[].h（日文名）/ .hc（香港馬名→自译馬名，两者皆无=空串 → 回退 h，不显示 #id）。 */
+var NAME_VIEW = 0;
+var NAME_TIP = "点击切换马名：日文名/英文名 ⇄ 港译名/自译名";
+function horseNameOf(r){ return (NAME_VIEW && r.hc) ? r.hc : r.h; }
+
 function renderDetail(mode, key){
   /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
    * 缺失视为最大（排同日最前）；同场（発走相同）按着顺升序（未完走 99 殿后）、同着顺按レース名 */
@@ -461,19 +469,23 @@ function renderDetail(mode, key){
     return pa !== pb ? pa - pb : (a.r < b.r ? -1 : 1);
   });
   document.getElementById("dTitle").innerHTML =
-    '明细 · ' + esc(keyLabel(mode, key)) + ' · ' + runs.length + ' 场';
+    '明细 · ' + esc(keyLabel(mode, key)) + ' · ' + runs.length + ' 场' +
+    /* mb 端切换按钮：本页 PC/mb 一律用 CSS 断点分（PC 表 hidden md:block / mb 卡 md:hidden），
+     * 故按钮同样用 md:hidden —— 不引入页内 JS 设备判断（device.js 本页未加载） */
+    '<button type="button" class="yj-name-toggle ml-auto md:hidden" data-tip="' + esc(NAME_TIP) + '">马名 <span class="yj-name-ico">⇄</span></button>';
   if (!runs.length){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;
   }
-  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义 */
+  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义；
+   * PC 表头传 nameToggle → 「马名」列头变成切换按钮（仅 PC 列头不带 cls，mb 卡片顶部中槽显示马名） */
   var RR = YJ.raceRows;
   var trs = runs.map(function(r){
-    return RR.rowEmbedHTML(toRow(r), { horse: { id: r.id, name: r.h } });
+    return RR.rowEmbedHTML(toRow(r), { horse: { id: r.id, name: horseNameOf(r) } });
   }).join("");
-  var pc = RR.embedTableHTML(trs, { horse: true, cls: "hidden md:block" });
+  var pc = RR.embedTableHTML(trs, { horse: true, cls: "hidden md:block", nameToggle: true, nameTip: NAME_TIP });
   var mbs = runs.map(function(r){
-    return RR.rowEmbedMbHTML(toRow(r), { horse: { id: r.id, name: r.h } });
+    return RR.rowEmbedMbHTML(toRow(r), { horse: { id: r.id, name: horseNameOf(r) } });
   }).join("");
   var mb = RR.mbListHTML(mbs, { cls: "md:hidden" });
   document.getElementById("dBody").innerHTML = pc + mb;
@@ -656,6 +668,13 @@ function dpPickDay(ds){
 }
 document.getElementById("dpTrigger").addEventListener("click", function(){
   if (DP.open) dpClose(); else dpOpen();
+});
+/* 马名切换（PC 列头 / mb 标题行按钮，事件委托）：翻语言 → 重渲染明细（标题行连同按钮一起重建） */
+document.addEventListener("click", function(e){
+  var b = (e && e.target && e.target.closest) ? e.target.closest(".yj-name-toggle") : null;
+  if (!b) return;
+  NAME_VIEW = NAME_VIEW ? 0 : 1;
+  renderDetail(st.mode, scopeKey(st.mode));   /* 只重渲染明细，日历/KPI 不动 */
 });
 document.addEventListener("click", function(e){
   var t = e && e.target;

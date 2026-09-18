@@ -4,7 +4,7 @@
  *   [B] 产物 ↔ data/races 源数据 1:1 对账（独立第二实现，防 build 脚本单点 bug）
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
  *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮 /
- *       年月卡 / 内嵌比赛表同款明细（PC 15 列 + mb 软分行卡片），期望值全部从源数据独立重算
+ *       年月卡 / 内嵌比赛表同款明细（PC 14 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
  * 用法: node scripts/datechart/verify_datechart.cjs */
 "use strict";
 const fs = require("fs");
@@ -23,7 +23,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "hc", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障害", "AW"]);
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -58,6 +58,7 @@ for (let i = 0; i < RUNS.length; i++) {
   if (!(typeof r.bk === "string" && typeof r.tm === "string" && typeof r.dz === "string" && typeof r.hs === "string")) badField++;
   if (!(typeof r.jk === "string" && typeof r.tr === "string")) badField++;
   if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw))) badField++;
+  if (!(typeof r.hc === "string")) badField++;      /* hc = 中文名（切换马名用；无=空串） */
   if (i && (RUNS[i - 1].d > r.d || (RUNS[i - 1].d === r.d && String(RUNS[i - 1].id) > String(r.id)))) badSort++;
 }
 ok(badKeys === 0, "字段同构：全部 " + RUNS.length + " 条恰为 " + EXPECTED_KEYS.length + " 键");
@@ -87,6 +88,7 @@ for (const h of basic.horses) {
       d,
       id: h.id,
       h: h["馬名"] || r["出走馬名"] || h["欧字馬名"] || "",
+      hc: h["香港馬名"] || h["自译馬名"] || "",
       r: String(r["レース名"] || ""),
       g: String(r["格"] || ""),
       v: String(r["場名"] || ""),
@@ -237,10 +239,19 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
   ok(/明细 · \d{4}年\d+月 · \d+ 场/.test(els["dTitle"]._html), "明细标题带场数");
 
-  console.log("[C2] 内嵌比赛表同款明细（PC 15 列 + mb 软分行卡片）");
+  console.log("[C2] 内嵌比赛表同款明细（PC 14 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
-  ok((pcHtml.match(/<th[\s\S]*?<\/th>/g) || []).length === 15, "PC 表头 15 列（内嵌 14 列 + 出走马）");
-  ok(pcHtml.includes(">日期<") && pcHtml.includes(">马名<") && pcHtml.includes(">调教师<") && pcHtml.includes("赏金(万元)") === false && pcHtml.includes("赏金(万円)"), "表头走 i18n（日期/马名/调教师/賞金(万円)）");
+  /* 字段基准（§53.5）= 比赛记录页跨马主表 21 列；明细 = 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 后的 14 列，
+   * 且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
+  const ths = (pcHtml.match(/<th[^>]*>[\s\S]*?<\/th>/g) || [])
+    .map(h => h.replace(/<[^>]+>/g, "").replace(/⇄/g, "").trim());   /* 馬名列头含 ⇄ 切换按钮 → 取纯文案 */
+  /* 期望列序用 stub 自己的 i18n 生成（断言的是**顺序与字段集**，不重复断言翻译文案本身） */
+  const EXPECT_TH = ["馬名", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "タイム", "馬体重", "賞金", "騎手", "調教師"]
+    .map(k => k === "賞金" ? YJ.i18n.t(k) + "(万円)" : YJ.i18n.t(k));
+  ok(ths.length === 14, "PC 表头 14 列（基准 21 列 − 隐藏 7 列）");
+  ok(JSON.stringify(ths) === JSON.stringify(EXPECT_TH), "列序随基准：" + ths.join("|"));
+  ok(ths.indexOf("跑道") < 0 && /(草|泥|障|AW)\d{3,4}/.test(pcHtml), "跑道并入距离列（无独立跑道列，值如 草1800）");
+  ok(pcHtml.includes(">日期<") && pcHtml.includes(">调教师<") && pcHtml.includes("赏金(万元)") === false && pcHtml.includes("赏金(万円)"), "表头走 i18n（日期/调教师/賞金(万円)；马名列表头是切换按钮，见下）");
   ok(pcHtml.includes("hjump") && pcHtml.includes("profile.html?horse="), "出走马列跳档案链接");
   /* 明细走共享模块 race-rows.js：人气 1/2/3 必须是「与着顺同款徽章」（yj-no yj-nk*），
    * 与比赛页内嵌表同源；窗口内无 1/2/3 人气时不假通过，而是断言确实没有彩色徽章 */
@@ -251,6 +262,37 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["dBody"]._html.includes("yj-mb") && els["dBody"]._html.includes("yj-mb-line"), "mb 软分行卡片（yj-mb*）");
   ok(els["dBody"]._html.includes("騎手") === false && els["dBody"]._html.includes("骑手："), "mb 卡 label：value 中文标签（骑手：）");
   ok(/\d+\(\+\d+\)|\d+\(-\d+\)/.test(String(els["dBody"]._html)), "马体重合并 500(+2) 格式存在");
+
+  /* 马名语言切换（§53.7）：PC 列头是 .yj-name-toggle 按钮；点击后「马名」列文本在
+   * 日文名（h）↔ 中文名（hc）之间切换；无中文名的马回退日文名（不显示 #id） */
+  const horseCol = r => {
+    const m = String(r).match(/<a class="hjump"[^>]*>([^<]*)<\/a>/);
+    return m ? m[1] : null;
+  };
+  const withHc = sMonth(ym).filter(r => (RUNS.find(x => x.d === r.d && x.id === r.id) || {}).hc);
+  const hcRow = withHc[0];
+  const hcName = hcRow ? RUNS.find(x => x.d === hcRow.d && x.id === hcRow.id).hc : "";
+  const jpName = hcRow ? RUNS.find(x => x.d === hcRow.d && x.id === hcRow.id).h : "";
+
+  /* [C2.1] 切换**前**：馬名列显示日文名 */
+  ok(hcRow && String(els["dBody"]._html).includes(">" + esc(jpName) + "</a>"), "切换前馬名列 = 日文名（" + jpName + "）");
+  ok(String(els["dBody"]._html).includes("yj-name-toggle"), "PC 列头/明细标题存在马名切换按钮（yj-name-toggle）");
+  ok(/<th[^>]*><button type="button" class="yj-name-toggle"/.test(pcHtml), "PC「马名」列头即切换按钮");
+  /* [C2.2] 点击切换 → 明细重渲染，馬名列变中文名 */
+  const tgl = document._handlers.click.find(f => String(f).indexOf("yj-name-toggle") >= 0);
+  ok(!!tgl, "页面挂了 .yj-name-toggle 的点击委托");
+  if (tgl) {
+    tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
+    const pcAfter = String(els["dBody"]._html).split('md:hidden')[0] || "";
+    ok(hcName && pcAfter.includes(">" + esc(hcName) + "</a>"), "切换后馬名列 = 中文名（" + hcName + "）");
+    ok(!pcAfter.includes(">" + esc(jpName) + "</a>"), "切换后不再显示原日文名");
+    /* [C2.3] 再点一次切回日文名（幂等往返） */
+    tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
+    const pcBack = String(els["dBody"]._html).split('md:hidden')[0] || "";
+    ok(pcBack.includes(">" + esc(jpName) + "</a>"), "再点一次切回日文名");
+    /* [C2.4] 无中文名的马：回退日文名，不出现 #id */
+    ok(!/#\d+<\/a>/.test(pcBack), "无中文名的马回退日文名（不显示 #id）");
+  }
 
   console.log("[C3] 场地范围 JRA/NAR/海外（多选，默认 JRA；最后一个不关）");
   const kpiRuns = () => kpiOf("出走", els["kpis"]._html);
@@ -383,3 +425,4 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   console.log((fails ? "FAILED: " + fails : "ALL PASS") + "（" + (passes + fails) + " assertions）");
   process.exit(fails ? 1 : 0);
 }, 30);
+
