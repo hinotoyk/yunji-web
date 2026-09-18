@@ -2,21 +2,22 @@
 # -*- coding: utf-8 -*-
 """时间线事件预计算：读 data/basic.json + data/races/*.json → data/timeline.json
 
-规则（自 front/pages/timeline.html 旧 JS 引擎逐条移植，事件语义不变）：
-  1.  级别初胜       —— OP/L/G3/G2/G1/Jpn1/Jpn2/Jpn3 每个级别的产驹史首胜，全局只出现一次
-                        （2026-09 确认：级别初胜为全局口径，不再按马）
-  1b. 世代首个新马胜 —— 每个世代（=生年/届）最早的新马战一着，一代只此一条
+规则（自 front/pages/timeline.html 旧 JS 引擎逐条移植，事件语义不变；2026-09-18 标签文案统一「首胜」措辞）：
+  1.  级别首胜       —— OP/L/G3/G2/G1/Jpn1/Jpn2/Jpn3 每个级别的产驹史首胜，全局只出现一次
+                        （2026-09 确认：级别首胜为全局口径，不再按马；标签「G2首胜」等）
+  1b. 世代新马首胜 —— 每个世代（=生年/届）最早的新马战一着，一代只此一条（标签「XXXX年产新马首胜」）
   2.  重赏胜利       —— 所有重赏一着都记录；序数为产驹史全局口径（跨马按日期累计，2026-09 确认）：
-                        「首个重赏 / 重赏第N胜」+ 该级别「G2第N胜」+ 海外全局「海外重赏第N胜」；
-                        马内不再记同级别序数（级别初胜 G2初胜 仍按马）
-  3.  世代首个重赏   —— 每届产驹在 JRA 中央的首场重赏胜利，一代只此一条
+                        「重赏首胜 / 重赏第N胜」+ 该级别「G2第N胜」（第1胜=级别首胜，不重复挂）+ 海外全局「海外重赏首胜 / 海外重赏第N胜」；
+                        马内不再记同级别序数（G2首胜 等级别首胜仍按马）
+  3.  世代重赏首胜   —— 每届产驹在 JRA 中央的首场重赏胜利，一代只此一条（标签「XXXX年产重赏首胜」）
   4.  父子制覇       —— 产驹赢下コントレイル（飞机云）赢过的重赏（常量内置，
                         レース名去格级括号尾缀后精确匹配）
   5.  受赏           —— basic.json 受賞歴（预留字段，兼容对象/字符串）
 一场比赛 = 一条事件（绝不按标签拆行），该场触发的所有里程碑以标签并列；节点类别取
 最高优先级标签（sire > gen > first > graded > award）。
 
-事件按日期升序输出（前端渲染时倒序展示 = 最新在顶）。
+事件按日期升序输出；同日按発走升序（缺失视为最大），同日同発走按着順降序
+（= 前端倒序展示后：最新在顶、同日发走晚者在顶、同场 1着 在上未完走殿后，同 races.html 模块 33）。
 前端 front/pages/timeline.html 只做渲染，不再实时计算。
 
 ═══ data/timeline.json 字段模板（产物，前端只读；人工节点编辑 data/timeline_manual.json）═══
@@ -31,7 +32,8 @@
       "sire_wins":   父子制覇事件数
     }
   },
-  "events": [   // 按日期升序；同日并列时自动事件在前；前端倒序展示=最新在顶
+  "events": [   // 按日期升序；同日按発走升序（缺失视为最大）→ 前端倒序后同日发走晚者在顶；
+                // 同日同発走（同场两产驹均触发）按着順降序（1着显示在上）；受赏/人工节点按発走缺失处理（同日置顶）
     {
       "date":  "YYYY-MM-DD —— 排序与年份分组依据（缺失排最后）",
       "type":  "race（比赛胜利）| award（受赏）| manual（人工节点）",
@@ -40,7 +42,8 @@
       "horse": { "id": 产驹id（profile 跳转用）, "name": 馬名, "cn": 〈港译/自译〉 },
                // race/award 才有；manual 无此键
       "photo": "图源 URL/路径：race.photo 优先 → 回退马照片；manual 可自带；空串=浅灰占位",
-      "tags":  [ { "cat": "标签类别色（同 node 取值）", "label": "徽章文字", "tip": "可选：悬停提示" } ],
+      "tags":  [ { "cat": "标签类别色（同 node 取值）", "label": "徽章文字", "tip": "可选：悬停提示",
+                   "crown": true —— 可选：首胜标签（label 以「首胜」结尾）前端在右上角画斜置小皇冠 } ],
 
       // ── type=race 专属 ──
       "race": {
@@ -52,7 +55,7 @@
         "time":   "タイム（缺失=—）",
         "agari":  "上り（缺失=—）",
         "pop":    "人気（如 4番；缺失=—）",
-        "team":   "「騎手 武豊 · 57kg ｜ 調教師 大久保龍志」一行（缺失整行不渲染）"
+        "team":   "「騎手 武豊 · 57kg ｜ 調教師 大久保龍志」单串（前端按 ｜ 拆为一人一行；缺失整行不渲染）"
       },
 
       // ── type=award 专属 ──
@@ -134,6 +137,30 @@ def first_photo(p):
     return ""
 
 
+def posttime_key(r):
+    """発走升序分量：缺失（空/None，海外场）视为最大（升序排最后 → 倒序后同日显示在最上）；
+    "HH:MM" 为零填充字符串可直接比较。同 races.html 模块 33 口径。"""
+    hk = str((r or {}).get("発走") or "")
+    return (1, "") if not hk else (0, hk)
+
+
+def place_desc_key(rk):
+    """着順降序分量（用于升序键的末位）：数字着順取负（着順越大越靠前 → 倒序后同场 1着
+    显示在最上）；未完走（中止/取消/除外/失格等非数字）取 -inf（升序最前 → 倒序后殿后）。"""
+    try:
+        return -float(str(rk))
+    except (TypeError, ValueError):
+        return float("-inf")
+
+
+def event_sort_key(date, r):
+    """事件升序排序键（前端倒序后 = 最新在顶）：① 日期升序；② 同日按発走升序（缺失视为最大）；
+    ③ 同日同発走按着順降序。受赏/人工节点无比赛记录（r=None）→ 発走/着順均按缺失（同日置顶）。"""
+    return (str(date or "") or "9999-99-99",
+            posttime_key(r),
+            place_desc_key((r or {}).get("結果")) if r else float("-inf"))
+
+
 def build_events(horses, races_by_id):
     # 先扫一遍：每个世代（生年）的两条「首个」，一代各只有一条、之后不再标记：
     #   genBest   —— 该届产驹在 JRA 中央的首场重赏胜利
@@ -146,29 +173,32 @@ def build_events(horses, races_by_id):
         for r in races_by_id.get(h["id"], []):
             if str(r.get("結果")) != "1":
                 continue
-            cand = {"date": str(r.get("日付") or ""), "key": race_key(r)}
+            cand = {"date": str(r.get("日付") or ""), "key": race_key(r), "pt": posttime_key(r)}
             if g_shin is None and r.get("格") == "新馬":
                 g_shin = cand
             if g_best is None and r.get("格") in GRADED and r.get("venue_type") == "中央":
                 g_best = cand
+        # 「最早」比较 = (日付, 発走) 元组：同日两场新馬/重赏一着时按発走分先后
+        # （如 2026-08-09 中京2R 10:20 先于 中京3R 10:50；発走缺失视为最大），同 races.html 模块 33
         if g_best is not None:
             cur = gen_best.get(h["生年"])
-            if cur is None or g_best["date"] < cur["date"]:
+            if cur is None or (g_best["date"], g_best["pt"]) < (cur["date"], cur["pt"]):
                 gen_best[h["生年"]] = g_best
         if g_shin is not None:
             cur_s = gen_shinba.get(h["生年"])
-            if cur_s is None or g_shin["date"] < cur_s["date"]:
+            if cur_s is None or (g_shin["date"], g_shin["pt"]) < (cur_s["date"], cur_s["pt"]):
                 gen_shinba[h["生年"]] = g_shin
 
-    # 全局预扫（单一遍历，跨马按日期累计；同日按 race_key + horse id 稳定排序）：
-    #   grade_first  —— 每个级别的产驹史首胜（全局只挂一次；2026-09 确认级别初胜为全局口径）
+    # 全局预扫（单一遍历，跨马按日期累计；同日按発走升序（缺失视为最大）+ race_key + horse id 稳定排序，
+    # 与最终展示顺序同口径）：
+    #   grade_first  —— 每个级别的产驹史首胜（全局只挂一次；2026-09 确认级别首胜为全局口径）
     #   global_index —— 重赏全局序 / 该级别全局序 / 海外重赏全局序（2026-09 确认：全局替代马内序数）
     all_wins = []
     for h in horses:
         for r in races_by_id.get(h["id"], []):
             if str(r.get("結果")) == "1" and r.get("格") in GLBL:
                 all_wins.append((str(r.get("日付") or ""), race_key(r), str(h.get("id")), h, r))
-    all_wins.sort(key=lambda x: (x[0], x[1], x[2]))
+    all_wins.sort(key=lambda x: (x[0], posttime_key(x[4]), x[1], x[2]))
     grade_first, global_index, g_seq, grade_cnt, ovs_cnt = {}, {}, 0, {}, 0
     for _d, _key, hid, h, r in all_wins:
         g = r["格"]
@@ -193,23 +223,27 @@ def build_events(horses, races_by_id):
             g = r.get("格")
             tags = []
             if g in GLBL and grade_first.get(g) == (str(h["id"]), race_key(r)):
-                tags.append({"cat": "first", "label": GLBL[g] + "初胜"})   # 1. 级别初胜：全局口径，每级别全站仅一次
+                tags.append({"cat": "first", "label": GLBL[g] + "首胜"})   # 1. 级别首胜：全局口径，每级别全站仅一次
             if g in GRADED:                                  # 2. 全局重赏序数（产驹史上第 N 个，跨马累计）
                 seq, grade_seq, ovs_seq = global_index[(str(h["id"]), race_key(r))]
-                tags.append({"cat": "graded", "label": "首个重赏" if seq == 1 else "重赏第" + str(seq) + "胜"})
-                tags.append({"cat": "graded", "label": GLBL[g] + "第" + str(grade_seq) + "胜"})
+                tags.append({"cat": "graded", "label": "重赏首胜" if seq == 1 else "重赏第" + str(seq) + "胜"})
+                if grade_seq > 1:   # 该级别第1胜 =「级别首胜」，不重复挂（§45.5 用户反馈）
+                    tags.append({"cat": "graded", "label": GLBL[g] + "第" + str(grade_seq) + "胜"})
                 if ovs_seq:
-                    tags.append({"cat": "graded", "label": "海外重赏初胜" if ovs_seq == 1 else "海外重赏第" + str(ovs_seq) + "胜"})
+                    tags.append({"cat": "graded", "label": "海外重赏首胜" if ovs_seq == 1 else "海外重赏第" + str(ovs_seq) + "胜"})
                 if r.get("venue_type") == "中央" and h.get("生年") \
                         and h["生年"] in gen_best and gen_best[h["生年"]]["key"] == race_key(r):
-                    tags.append({"cat": "gen", "label": str(h["生年"]) + "年产首个重赏"})   # 3. 世代首个重赏（中央）
+                    tags.append({"cat": "gen", "label": str(h["生年"]) + "年产重赏首胜"})   # 3. 世代重赏首胜（中央）
             if g == "新馬" and h.get("生年") \
                     and h["生年"] in gen_shinba and gen_shinba[h["生年"]]["key"] == race_key(r):
-                tags.append({"cat": "gen", "label": str(h["生年"]) + "年产首个新马胜"})     # 1b. 世代首个新马胜
+                tags.append({"cat": "gen", "label": str(h["生年"]) + "年产新马首胜"})     # 1b. 世代新马首胜
             sw = sire_set.get(norm_race(r.get("レース名")))
             if sw:
                 tags.append({"cat": "sire", "label": "父子制覇",
                              "tip": "飞机云同胜：" + (sw.get("cn") or sw["name"])})        # 4. 父子制覇
+            for t in tags:
+                if t["label"].endswith("首胜"):
+                    t["crown"] = True   # 首胜标签右上角小皇冠（§45.6；to_render_event 会省略假值键）
             if tags:
                 out.append({"date": str(r.get("日付") or ""), "h": h, "r": r, "tags": tags})
         # 5. 受赏（非比赛事件；受賞歴 为后端预留字段，兼容对象/字符串）
@@ -316,7 +350,10 @@ def main():
         arr = sorted(arr, key=lambda x: str(x.get("日付") or ""))   # 与前端旧逻辑一致：先按日付升序再算「首个」
         races_by_id[h["id"]] = arr
 
-    events = [to_render_event(e) for e in build_events(horses, races_by_id)]
+    # 自动事件：转渲染事件的同时生成排序键（build_events 内部 out.sort 只保证「首个」判定的
+    # 稳定输入顺序；最终顺序以这里为准）
+    items = [(event_sort_key(e["date"], e.get("r")), to_render_event(e))
+             for e in build_events(horses, races_by_id)]
 
     # 人工节点：data/timeline_manual.json（用户自维护）。重算永不覆盖该文件，
     # 仅把其中节点合并进产物并按日期排到合适位置；缺 date/title 的条目跳过并告警。
@@ -334,8 +371,9 @@ def main():
                 manual.append(to_manual_event(e))
         except (json.JSONDecodeError, OSError) as ex:
             print(f"  ⚠ timeline_manual.json 读取失败，本次不含人工节点: {ex}")
-    events += manual
-    events.sort(key=lambda e: e["date"] or "9999-99-99")   # 合并后统一按日期升序（同日自动事件在前）
+    items += [(event_sort_key(e.get("date"), None), e) for e in manual]   # 人工节点：発走/着順按缺失
+    items.sort(key=lambda kv: kv[0])   # 升序（同日按発走，见 event_sort_key）；前端倒序 = 最新在顶
+    events = [ev for _, ev in items]
 
     stats = {
         "events": len(events),

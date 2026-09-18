@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-15T18:28:49",
+  "generated_at": "2026-09-18T11:17:47",
   "source": "basic.json + races/*.json",
   "stats": {
    "events": 6,
@@ -23,7 +23,8 @@
    "tags": [
     {
      "cat": "gen",
-     "label": "2023年产首个新马胜"
+     "label": "2023年产新马首胜",
+     "crown": true
     }
    ],
    "race": {
@@ -51,7 +52,8 @@
    "tags": [
     {
      "cat": "first",
-     "label": "L初胜"
+     "label": "L首胜",
+     "crown": true
     }
    ],
    "race": {
@@ -79,19 +81,18 @@
    "tags": [
     {
      "cat": "first",
-     "label": "G2初胜"
+     "label": "G2首胜",
+     "crown": true
     },
     {
      "cat": "graded",
-     "label": "首个重赏"
-    },
-    {
-     "cat": "graded",
-     "label": "G2第1胜"
+     "label": "重赏首胜",
+     "crown": true
     },
     {
      "cat": "gen",
-     "label": "2023年产首个重赏"
+     "label": "2023年产重赏首胜",
+     "crown": true
     }
    ],
    "race": {
@@ -141,6 +142,35 @@
   {
    "date": "2026-08-09",
    "type": "race",
+   "node": "gen",
+   "horse": {
+    "id": 264,
+    "name": "レニュアージュ",
+    "cn": "香槟云朵"
+   },
+   "photo": "",
+   "tags": [
+    {
+     "cat": "gen",
+     "label": "2024年产新马首胜",
+     "crown": true
+    }
+   ],
+   "race": {
+    "name": "2歳新馬",
+    "grade": "新馬",
+    "glabel": "",
+    "gbadge": "",
+    "meta": "中京2R · 芝1600m · 良",
+    "time": "1:34.8",
+    "agari": "34.8",
+    "pop": "3番",
+    "team": "騎手 松山弘平 · 55kg ｜ 調教師 藤原英昭"
+   }
+  },
+  {
+   "date": "2026-08-09",
+   "type": "race",
    "node": "first",
    "horse": {
     "id": 66,
@@ -151,15 +181,12 @@
    "tags": [
     {
      "cat": "first",
-     "label": "G3初胜"
+     "label": "G3首胜",
+     "crown": true
     },
     {
      "cat": "graded",
      "label": "重赏第3胜"
-    },
-    {
-     "cat": "graded",
-     "label": "G3第1胜"
     }
    ],
    "race": {
@@ -172,34 +199,6 @@
     "agari": "37.6",
     "pop": "6番",
     "team": "騎手 吉村誠之助 · 57kg ｜ 調教師 清水久詞"
-   }
-  },
-  {
-   "date": "2026-08-09",
-   "type": "race",
-   "node": "gen",
-   "horse": {
-    "id": 209,
-    "name": "ドラゴンバルド",
-    "cn": "骁勇龙"
-   },
-   "photo": "",
-   "tags": [
-    {
-     "cat": "gen",
-     "label": "2024年产首个新马胜"
-    }
-   ],
-   "race": {
-    "name": "2歳新馬",
-    "grade": "新馬",
-    "glabel": "",
-    "gbadge": "",
-    "meta": "中京3R · 芝2000m · 良",
-    "time": "2:03.6",
-    "agari": "33.6",
-    "pop": "1番",
-    "team": "騎手 川田将雅 · 55kg ｜ 調教師 福永祐一"
    }
   }
  ]
