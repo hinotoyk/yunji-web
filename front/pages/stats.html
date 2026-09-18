@@ -145,7 +145,7 @@ td.dim .num{color:#c6c6ca}
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
       <div class="mb-3 flex flex-wrap gap-1.5" id="matTabs"></div>
-      <div class="overflow-x-auto"><table class="st-mat" id="matTable"></table></div>
+      <div class="overflow-x-auto relative" id="matWrap"><table class="st-mat" id="matTable"></table></div>
       <div id="matNote" class="mt-2.5 text-[12px] text-muted-foreground"></div>
     </div>
   </section>
@@ -552,8 +552,8 @@ function bucketLabel(tab, k) {
   if (tab === "turn") return k === "右" ? "右转" : k === "左" ? "左转" : k;
   return surfLabel(k);
 }
-function renderTable() {
-  var tab = st.tab;
+/* 表格 HTML 构建（renderTable 与 人气高度离屏实测 applyMatScroll 共用，保证参考高度与实际渲染一致） */
+function matHtml(tab) {
   var base = baseMerged(), br = rates(base);
   var rows = dimMerged(tab);
   var order = TAB_ORDER[tab];
@@ -566,7 +566,6 @@ function renderTable() {
       return ra - rb;                                  /* 稳定排序：同档保持 n 降序 */
     });
   }
-  var isLong = tab === "trainer" || tab === "jockey";
   /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 UI优化记录 §44）；8 个数值列表头可点击排序 */
   var COLS = [
     { k: "starts", l: "出走" },
@@ -624,12 +623,35 @@ function renderTable() {
       '</tr>';
   });
   html += '</tbody>';
-  document.getElementById("matTable").innerHTML = html;
+  return html;
+}
+function renderTable() {
+  var tab = st.tab;
+  document.getElementById("matTable").innerHTML = matHtml(tab);
   var note = "红=低于总体平均 · 绿=高于总体平均（分母=出走） · 样本少 = 出走&lt;" + SM_F + " · 点击行可查看该条件下的全部比赛 · 点击表头按该列排序";
-  if (isLong) {
+  if (tab === "trainer" || tab === "jockey") {
     note = "调教师/骑手全部列出，按出赛数从多到少。胜率受马匹实力与配对影响，仅供参考。";
   }
   document.getElementById("matNote").innerHTML = note;
+}
+/* ---- 倾向矩阵纵向滚动：容器 max-height = 「人气」页签完整展示高度 ----
+ * 用同一构建代码（matHtml("ninki")）离屏实测：表头 + 基准行 + 全部人气行，
+ * 行高随视口宽度/字体/换行自适应，无需写死像素；加载与 resize（防抖）时重测。
+ * 当前页签内容更矮 → 容器自然收缩；更高（调教师/骑手/竞马场等）→ 出现竖向滚动条。 */
+function applyMatScroll() {
+  var wrap = document.getElementById("matWrap");
+  if (!wrap || !document.createElement || !STATS) return;   /* stub/无量测环境：不裁切 */
+  var probe = document.createElement("table");
+  probe.className = "st-mat";
+  probe.style.cssText = "position:absolute;left:0;top:0;visibility:hidden";   /* 脱离文档流叠在原表上，含块 = matWrap（relative），宽度一致才量得准 */
+  probe.innerHTML = matHtml("ninki");
+  wrap.appendChild(probe);
+  var h = probe.offsetHeight;
+  wrap.removeChild(probe);
+  if (h > 0) {
+    wrap.style.overflowY = "auto";
+    wrap.style.maxHeight = h + "px";
+  }
 }
 
 /* ---- ④ 重赏之路 ---- */
@@ -696,6 +718,7 @@ function renderAll() {
   renderTabs(); renderTable();
   renderGraded();
   renderAbout();
+  applyMatScroll();                                    /* 容器高度对齐人气页签（场地/切面变化后行数会变，随 renderAll 重测） */
 }
 
 /* ---- 事件 ---- */
@@ -770,7 +793,7 @@ document.getElementById("matTable").addEventListener("click", function (e) {
 var resizeTimer = null;
 window.addEventListener("resize", function () {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(renderCurve, 150);
+  resizeTimer = setTimeout(function () { renderCurve(); applyMatScroll(); }, 150);
 });
 
 /* ---- 初始化 ---- */

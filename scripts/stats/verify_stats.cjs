@@ -446,6 +446,8 @@ setTimeout(function () {
 
   console.log("[C3] 倾向矩阵（10 页签 + 库内基准 + 下钻 URL）");
   ok((String(els["matTabs"]._html).match(/data-tab=/g) || []).length === 10, "矩阵 10 页签");
+  ok(html.includes('id="matWrap"') && code.includes("applyMatScroll") && code.includes('matHtml("ninki")'),
+    "倾向矩阵滚动容器：max-height = 人气完整展示高度（更矮收缩 · 更高竖向滚动，离屏实测）");
   const mt = String(els["matTable"]._html);
   ok(mt.includes("总体平均") && mt.includes(pctOf(r0.win)), "基准顶行 = 总体平均胜率 " + pctOf(r0.win) + "（分母=出走）");
   ok(mt.includes("2着") && mt.includes("3着") && mt.includes("着外"), "着别列：1/2/3着 + 着外");

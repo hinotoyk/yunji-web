@@ -1772,3 +1772,19 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 ### 46.3 状态
 
 ✅ 已完成：重算 `data/stats.json`（中央 all 级别桶 = 未胜利423/新马125/一胜级85/G2 14/G3 12/L 9/二胜级9/G1 5/OP 1，三胜级/Jpn1-3/其他 当前库无记录不入桶）；`verify_stats.cjs` 同步（[B] `gradeOf` 镜像改 14 桶、[C3] 断言改动态取桶——`>` 转义敏感与 出走<10 整行 `class="dim"` 两处踩坑修正、距离/级别固定序与标签断言、[C6] 班赛/重赏步数按桶组合计断言），**191 项全过**；`npm run build` 后 dist/pages/stats.html 含新代码、dist/data/stats.json 与源一致。未 commit（等用户确认）。
+
+## 47. 统计页 · 倾向矩阵容器高度对齐「人气」完整展示（更矮收缩 · 更高竖向滚动）
+
+### 47.1 需求（用户）
+
+表格的高度按照「人气」页签完整展示的高度来：内容小于这个高度就收缩容器，高于就出现竖向滚动条。
+
+### 47.2 思路与落地（`pages/stats.html`）
+
+- **参考高度不写死像素**：`renderTable` 拆出 `matHtml(tab)`（渲染与量测共用同一构建代码，保证参考高度与实际渲染一致）；`applyMatScroll()` 用 `matHtml("ninki")` 把人气表（表头+基准+全部人气行）以 `position:absolute;visibility:hidden` 离屏实测 `offsetHeight`，设为 `#matWrap`（`overflow-x-auto` 上新增 `relative`，作探测表包含块保证测宽一致）的 `max-height`，并 `overflowY:auto`。行高随视口/字体/换行自适应，场地/切面变化（人气行数可能变少）随 `renderAll` 重测，resize 走既有防抖（150ms）。
+- **行为语义**：`max-height` 天然满足——内容更矮容器收缩到内容高；更高（调教师/骑手 63 行等）钳在参考高度出竖向滚动条。stub/无量测环境（verify 的 stub DOM 无 `document.createElement`）直接跳过不裁切。
+- 表头未做 sticky（需求只提高度行为，未动视觉）。
+
+### 47.3 状态
+
+✅ 已完成：`verify_stats.cjs` 补结构断言（matWrap/applyMatScroll/matHtml("ninki")），**192 项全过**；`npm run build` 后 dist 含新代码、theme-*.css 含 `.relative`；`tests/tendency-scroll-check.html` 挂具（iframe 加载 dist 产物 → 自动切页签量测）+ headless Edge `:8090` 实测截图目检：人气 clientHeight=scrollHeight=618px 完整展示、调教师 scrollHeight=2021 钳在 618 出竖向滚动、跑道收缩至 119 无滚动。未 commit（等用户确认）。
