@@ -21,7 +21,7 @@
 .st-kpi .v.hi{color:#0aa7a0}
 .st-kpi .v.dim{color:#a1a1aa}
 .st-trophy{font-size:15px;margin-right:2px}
-/* 通算战绩 [6-3-3-27]：**格式保留连字符**，但 4 段底色连成「一整条」——
+/* 通算战绩 [95-13-12-4-66]：**格式保留连字符**，五段底色连成「一整条」——
  * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
  * 因此底色连续、过渡柔和无硬边；圆角只留在整条两端（首段左圆 / 末段右圆），中缝直角。 */
 .st-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
@@ -170,7 +170,7 @@ td.dim .num{color:#c6c6ca}
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../race-rows.js"></script>
+<script src="../race-rows.js?v=1"></script>
 <script>
 /* ================= 统计总览 STATS =================
  * 数据：data/stats.json（后端预计算，按 场地类型 × 统计切面 二维聚合：
@@ -218,8 +218,11 @@ var RATE_METRICS = [
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var i18n = (window.YJ && window.YJ.i18n) ? YJ.i18n : { t: function (k) { return k; }, e: function (f, v) { return v; } };
 
-/* 着顺浅色三件套（1/2/3着 + 着外）：JS 侧单一出处 = race-rows.js PLACE_BG（CSS 同源 = theme.css .yj-nkm1/2/3） */
+/* 着顺浅色三件套（1/2/3着 + 着外）：JS 侧单一出处 = race-rows.js PLACE_BG（CSS 同源 = theme.css .yj-nkm1/2/3）
+ * → 着别分布条与图例用它（4 段，完赛口径） */
 var BR = YJ.raceRows.PLACE_BG;
+/* 通算战绩括号五段配色（首位「出走」浅青绿 + 着顺四色）：同源 race-rows.js CAREER_BG（§65） */
+var CBR = YJ.raceRows.CAREER_BG;
 
 /* ---- 统计切面：all / yYYYY(自然年) / gYYYY(生产年) ---- */
 function scopeKey() {
@@ -295,14 +298,15 @@ var ageLabel = function (a) { return Math.floor(a / 12) + "岁" + (a % 12) + "�
 /* ---- ① 数据概览 ---- */
 function renderKpis() {
   var b = baseMerged(), r = rates(b);
-  var fvn = fin(b);
-  /* 通算战绩 [6-3-3-27]：格式保留连字符；四段底色连成一整条 ——
-   * 数字格用各自名次底色，连字符格用「上一色→下一色」渐变把底色接起来（柔过渡、无硬边） */
-  var vals = [b.w, b.p2, b.p3, Math.max(0, fvn - b.w - b.p2 - b.p3)];
+  /* 通算战绩 [95-13-12-4-66]：五段 = 出走-1着-2着-3着-着外，末段按**出走**口径（含中止/失格），
+   * 与 profile RECORD、datechart 日历同口径 → 后四段之和 == 首段出走（§65）；
+   * 格式保留连字符，五段底色连成一整条（数字格用各段底色，连字符格用「上一色→下一色」渐变接缝） */
+  var nStart = starts(b);
+  var vals = [nStart, b.w, b.p2, b.p3, Math.max(0, nStart - b.w - b.p2 - b.p3)];
   var brk = '<span class="st-brk st-brk-lg">[';
   vals.forEach(function (v, i) {
-    if (i) brk += '<i style="background:linear-gradient(90deg,' + BR[i - 1] + ',' + BR[i] + ')">-</i>';
-    brk += '<b style="background:' + BR[i] + '">' + v + '</b>';
+    if (i) brk += '<i style="background:linear-gradient(90deg,' + CBR[i - 1] + ',' + CBR[i] + ')">-</i>';
+    brk += '<b style="background:' + CBR[i] + '">' + v + '</b>';
   });
   brk += ']</span>';
   var kpi = function (k, v, cls) {
@@ -495,7 +499,7 @@ function renderCurve() {
   rows.forEach(function (p) {
     var r = rates(p);
     html += '<tr><td class="left">' + p.gen + '年产</td><td class="left">' + ageLabel(p.a) + '</td><td>' + starts(p) + '</td><td>' + p.w +
-      '</td><td>' + p.p2 + '</td><td>' + p.p3 + '</td><td>' + (fin(p) - p.w - p.p2 - p.p3) +
+      '</td><td>' + p.p2 + '</td><td>' + p.p3 + '</td><td>' + (starts(p) - p.w - p.p2 - p.p3) +
       '</td><td>' + pct(r.win) + '</td><td>' + pct(r.ren) + '</td><td>' + pct(r.fuku) + '</td></tr>';
   });
   html += '</tbody></table>';
@@ -580,7 +584,7 @@ function matHtml(tab) {
   ];
   var valOf = function (k, b, r) {
     if (k === "starts") return starts(b);
-    if (k === "out") return Math.max(0, fin(b) - b.w - b.p2 - b.p3);
+    if (k === "out") return Math.max(0, starts(b) - b.w - b.p2 - b.p3);   /* 出走口径（含未完走）→ 一行加得起来 */
     if (k === "win" || k === "ren" || k === "fuku") return r[k];
     return b[k];                                       /* w / p2 / p3 */
   };
@@ -597,7 +601,7 @@ function matHtml(tab) {
       '<span class="st-sa' + (on ? " on" : "") + '">' + (on ? (st.sort.dir === "asc" ? "↑" : "↓") : "⇅") + '</span></th>';
   }).join("");
   var html = '<thead><tr><th class="left">类别</th>' + ths + '</tr></thead><tbody>';
-  var baseOut = Math.max(0, fin(base) - base.w - base.p2 - base.p3);
+  var baseOut = Math.max(0, starts(base) - base.w - base.p2 - base.p3);
   html += '<tr class="base" title="当前勾选范围（场地×切面）的整体平均"><td class="left">总体平均</td><td>' + starts(base) + '</td>' +
     '<td>' + base.w + '</td>' +
     '<td>' + base.p2 + '</td>' +
@@ -609,7 +613,7 @@ function matHtml(tab) {
     var url = drillURL(tab, b.k);
     var sm = r.f < SM_F ? '<span class="yj-sm">样本少</span>' : "";
     var dimCls = r.f < DIM_F ? ' class="dim"' : "";
-    var rowOut = Math.max(0, fin(b) - b.w - b.p2 - b.p3);
+    var rowOut = Math.max(0, starts(b) - b.w - b.p2 - b.p3);
     var td = function (v) { return '<td' + dimCls + '>' + v + '</td>'; };
     html += '<tr' + (url ? ' class="yj-drill" data-href="' + esc(url) + '" title="点击查看该条件下的比赛记录"' : "") + '>' +
       '<td class="left">' + esc(bucketLabel(tab, b.k)) + sm + '</td>' +
@@ -705,7 +709,7 @@ function renderAbout() {
     "集計期間：<b>" + m.first_date + "</b> ~ <b>" + m.last_date + "</b> · " + m.runs + " 条记录 / " + m.horses + " 匹出赛产驹。" +
     "<br>统计切面：<b>生产年</b> = 产驹出生年份（可选 2023年产/2024年产…）；<b>自然年</b> = 比赛日历年份（1月1日–12月31日）。" +
     "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，下钻链接会附带 byear/year 条件。" +
-    "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 比率分母=出走，同比赛记录页。" +
+    "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 着外=出走−前三（含未完赛） · 比率分母=出走，同比赛记录页。" +
     "<br>比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/其他；距离：短距离≤1400m/英里1401-1800m/中距离1801-2400m/长距离>2400m。" +
     "<br>母父 = 产驹母亲的父亲（血统图「母の父」格，同血统图取值；按出赛数从多到少）。" +
     "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +

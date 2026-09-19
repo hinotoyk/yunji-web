@@ -35,8 +35,14 @@ YJ.raceRows = (function () {
 
   /* ---- 着顺浅色三件套（1/2/3着 + 着外）：数据语义色 JS 侧单一出处 ----
    * CSS 侧同源处：theme.css .yj-nkm1/2/3（人气 mb 浅底）——两处改色需同步。
-   * 使用方：本模块徽章、datechart 进板数（BR_COLORS）、stats 通算战绩/着别分布条（BR）。 */
+   * 使用方：本模块徽章、stats 着别分布条与图例（BR）。 */
   var PLACE_BG = ["#FEED88", "#CCDFFD", "#ECC6A2", "#ececec"];
+
+  /* ---- 通算战绩括号五段配色 [出走-1着-2着-3着-着外]（§65）----
+   * 首位「出走」= primary 浅青绿 #E0F5F4（与 selector 日文名色块、profile 出走强调色同值），
+   * 后四段直接复用 PLACE_BG → 着顺语义不变。使用方：datechart bracketHTML、stats renderKpis、
+   * profile RECORD 括号（纯文本无色）。CSS 侧无对应类（括号底色全部由 JS 内联 style 出）。 */
+  var CAREER_BG = ["#E0F5F4"].concat(PLACE_BG);
 
   /* ---- 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 浅青绿）
    * ★ 取值必须与 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见 */
@@ -468,7 +474,7 @@ YJ.raceRows = (function () {
   function libTheadHTML(o) { return theadHTML("lib", o); }
 
   return {
-    esc: esc, G: G, GLABEL: GLABEL, PLACE_BG: PLACE_BG,
+    esc: esc, G: G, GLABEL: GLABEL, PLACE_BG: PLACE_BG, CAREER_BG: CAREER_BG,
     gradeBadge: gradeBadge, placeBadge: placeBadge,
     ninkiBadge: ninkiBadge, ninkiMbCls: ninkiMbCls,
     raceNameText: raceNameText, venueR: venueR, surfaceShort: surfaceShort,

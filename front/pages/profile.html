@@ -265,12 +265,13 @@ function render(h){
 
   /* 通算战绩 = 后端逐场全量派生（h.通算成績_逐场，含海外台账场）。
    * 不再解析官方 通算成績 字符串：那份只覆盖 netkeiba 收录的比赛，海外马会因此显示「未出赛」。
-   * 后端已保证 1着+2着+3着+着外 == 出走，故括号格式与观感与原 netkeiba 展示一致。 */
+   * 括号五段 [出走-1着-2着-3着-着外]（§65，与 datechart/stats 同格式）；
+   * 后端已保证 1着+2着+3着+着外 == 出走，故首段与后四段之和必然相等。 */
   var car = h.通算成績_逐场 || null;
   var starts = car ? (car.出走 || 0) : 0;
   var isNR = starts <= 0;
   var mainBig = isNR ? '未出赛' : (starts + '战' + (car['1着'] || 0) + '胜');
-  var brack = isNR ? '' : ('[' + [car['1着'], car['2着'], car['3着'], car['着外']].join('-') + ']');
+  var brack = isNR ? '' : ('[' + [starts, car['1着'], car['2着'], car['3着'], car['着外']].join('-') + ']');
 
   /* 収得賞金：主数字=平地；障害/Jpn 非 0 才显示副行 */
   var prize=h.収得賞金||{};

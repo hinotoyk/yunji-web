@@ -409,12 +409,12 @@ setTimeout(function () {
   ok(kpiV("出走") === String(startsOf(b0)), "KPI 出走 = " + startsOf(b0) + "（仅 JRA）");
   ok(kpiV("总赏金") === manYenOf(b0.pr), "KPI 总赏金 " + manYenOf(b0.pr));
   ok(kpiV("重赏胜利") === '<span class="st-trophy">🏆</span>' + byv["中央"].scopes.all.trophies.length, "KPI 重赏 🏆" + byv["中央"].scopes.all.trophies.length);
-  ok(String(kpiV("通算战绩") || "").replace(/<[^>]+>/g, "") === "[" + b0.w + "-" + b0.p2 + "-" + b0.p3 + "-" + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "]",
-    "KPI 通算战绩 4 段（着别=完赛口径；格式保留 - 连字符）");
+  ok(String(kpiV("通算战绩") || "").replace(/<[^>]+>/g, "") === "[" + startsOf(b0) + "-" + b0.w + "-" + b0.p2 + "-" + b0.p3 + "-" + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "]",
+    "KPI 通算战绩 5 段 [出走-1-2-3-着外]（§65；着外=出走−前三含未完赛 → 后四段之和==首段）");
   const brkH = String(kpiV("通算战绩") || "");
-  ok(brkH.includes("#FEED88") && brkH.includes("#CCDFFD") && brkH.includes("#ECC6A2") && brkH.includes("#ececec")
+  ok(brkH.includes("#E0F5F4") && brkH.includes("#FEED88") && brkH.includes("#CCDFFD") && brkH.includes("#ECC6A2") && brkH.includes("#ececec")
     && /<i[^>]*>-<\/i>/.test(brkH) && brkH.includes("linear-gradient") && !brkH.includes("#0aa7a0"),
-    "通算战绩 = [1-1-1-1] 格式 + 1/2/3 浅色做底 + 连字符带渐变接缝（底色连成一整条，柔过渡）");
+    "通算战绩 = 5 段 + 首位出走浅青绿 #E0F5F4 + 1/2/3 浅色做底 + 连字符带渐变接缝（底色连成一整条）");
   const bar = String(els["distBar"]._html);
   ok(bar.includes("st-bar") && bar.includes("#FEED88") && bar.includes("完赛 " + (b0.n - b0.dnf - b0.exc) + " 场"), "着顺分布条（着别=完赛口径；1/2/3 浅色三件套）");
   const rb = String(els["rateBand"]._html);
@@ -475,8 +475,8 @@ setTimeout(function () {
   const mt = String(els["matTable"]._html);
   ok(mt.includes("总体平均") && mt.includes(pctOf(r0.win)), "基准顶行 = 总体平均胜率 " + pctOf(r0.win) + "（分母=出走）");
   ok(mt.includes("2着") && mt.includes("3着") && mt.includes("着外"), "着别列：1/2/3着 + 着外");
-  ok(mt.includes("<td>" + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "</td>"),
-    "基准行着外 = " + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "（完赛口径）");
+  ok(mt.includes("<td>" + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "</td>"),
+    "基准行着外 = " + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "（出走口径含未完赛 → 出走列 = 前三 + 着外）");
   ok(html.includes("tr.base td{background:#f4f4f5") && !html.includes("#f7fdfd"),
     "基准行（总体平均）= 中性灰底（与率列 绿=高于/红=低于 的数据语义色分离）");
   ok(mt.includes("短距离"), "默认页签 = 距离（首屏渲染短/英/中/长距离行）");

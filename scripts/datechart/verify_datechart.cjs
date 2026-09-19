@@ -201,12 +201,14 @@ const kpiOf = (label, khtml) => {
   const m = String(khtml).match(new RegExp('k">' + label + '</div><div class="v(?: hi| dim)?">([\\s\\S]*?)</div>'));
   return m ? m[1] : null;
 };
-/* 未出走（取消/除外）＝未出闸：不计出走、不进通算战绩 4 段、不计赏金/胜场
+/* 未出走（取消/除外）＝未出闸：不计出走、不进通算战绩后四段、不计赏金/胜场
  * （与 datechart.html statsOf、stats.html starts()、races.html 模块 34 同口径） */
 const NR_SET = new Set(["取消", "除外"]);
 const starts = arr => arr.filter(r => !NR_SET.has(String(r.p)));
 const slot4 = p => (typeof p === "number" ? (p >= 1 && p <= 3 ? p - 1 : 3) : 3);
 const br4 = arr => { const b = [0, 0, 0, 0]; starts(arr).forEach(r => b[slot4(r.p)]++); return b; };
+/* 页面括号 = 五段 [出走, 1着, 2着, 3着, 着外]（§65）；后四段之和恒等于首段 */
+const br5 = arr => [starts(arr).length].concat(br4(arr));
 const winsOf = arr => starts(arr).filter(r => r.p === 1).length;
 const trophyOf = arr => starts(arr).filter(r => r.p === 1 && TROPHY_G.has(r.g)).length;
 const prizeOf = arr => starts(arr).reduce((a, r) => a + r.pr, 0);
@@ -229,12 +231,12 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(kpiOf("出走", els["kpis"]._html) === String(starts(sm).length), "KPI 出走 " + starts(sm).length + "（仅 JRA，剔除未出走，与源数据一致）");
   ok(String(kpiOf("总赏金", els["kpis"]._html)) === man(prizeOf(sm)), "KPI 总赏金 " + man(prizeOf(sm)));
   ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sm), "KPI 重赏胜利 🏆" + trophyOf(sm));
-  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sm).join("-") + "]",
-    "KPI 通算战绩 4 段 [" + br4(sm).join("-") + "]（标签剥离后逐段比对：格式保留 - 连字符）");
+  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br5(sm).join("-") + "]",
+    "KPI 通算战绩 5 段 [" + br5(sm).join("-") + "]（首位=出走；标签剥离后逐段比对，格式保留 - 连字符）");
   const brkHtml = String(kpiOf("通算战绩", els["kpis"]._html) || "");
-  ok(brkHtml.includes("#FEED88") && brkHtml.includes("#CCDFFD") && brkHtml.includes("#ECC6A2") && brkHtml.includes("#ececec")
+  ok(brkHtml.includes("#E0F5F4") && brkHtml.includes("#FEED88") && brkHtml.includes("#CCDFFD") && brkHtml.includes("#ECC6A2") && brkHtml.includes("#ececec")
     && /<i[^>]*>-<\/i>/.test(brkHtml) && brkHtml.includes("linear-gradient") && !brkHtml.includes("#0aa7a0"),
-    "通算战绩 = [1-1-1-1] 格式（含 - 连字符）+ 1/2/3 浅色做底（#FEED88/#CCDFFD/#ECC6A2）+ 着外浅灰，连字符带渐变接缝使底色连成一整条");
+    "通算战绩 = 5 段（含 - 连字符）+ 首位出走浅青绿 #E0F5F4 + 1/2/3 浅色做底（#FEED88/#CCDFFD/#ECC6A2）+ 着外浅灰，连字符带渐变接缝使底色连成一整条");
   ok(man(1150345000) === "11亿5,034万" && man(1e8) === "1亿" && man(25140000) === "2,514万" && man(99990000) === "9,999万" && man(0) === "",
     "manYen 亿转换：11亿5,034万 / 1亿 / 2,514万 / 9,999万 / 空");
   const winDays = new Set(sm.filter(r => r.p === 1).map(r => r.d)).size;
@@ -432,10 +434,10 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const c801 = cellOf(r31, "2026-08-01"), c802 = cellOf(r31, "2026-08-02");
   ok(c801.startsWith('<button type="button" class="dc-cell dc-outm"'), "邻月格不套 win/run 底色（class 恰为 dc-cell dc-outm）");
   ok(c801.includes(">8/1<") && c802.includes(">8/2<"), "邻月格日期写成 M/D 以区分月份");
-  ok(c801.replace(/<[^>]+>/g, "").includes("[" + br4(sDay("2026-08-01")).join("-") + "]") && c801.includes("dc-prz"),
-    "邻月格带数据：8/1 进板数 [" + br4(sDay("2026-08-01")).join("-") + "] + 赏金 " + man(prizeOf(sDay("2026-08-01"))));
-  ok(c802.replace(/<[^>]+>/g, "").includes("[" + br4(sDay("2026-08-02")).join("-") + "]"),
-    "邻月格带数据：8/2 进板数 [" + br4(sDay("2026-08-02")).join("-") + "]");
+  ok(c801.replace(/<[^>]+>/g, "").includes("[" + br5(sDay("2026-08-01")).join("-") + "]") && c801.includes("dc-prz"),
+    "邻月格带数据：8/1 通算战绩 [" + br5(sDay("2026-08-01")).join("-") + "] + 赏金 " + man(prizeOf(sDay("2026-08-01"))));
+  ok(c802.replace(/<[^>]+>/g, "").includes("[" + br5(sDay("2026-08-02")).join("-") + "]"),
+    "邻月格带数据：8/2 通算战绩 [" + br5(sDay("2026-08-02")).join("-") + "]");
   ok(+kpiRuns() === starts(sWeek(2026, 31)).length && starts(sWeek(2026, 31)).length ===
      starts(sDay("2026-08-01")).length + starts(sDay("2026-08-02")).length,
     "KPI 出走 " + starts(sWeek(2026, 31)).length + " 全部来自补位格（修复前高亮行整行无数据）");
@@ -446,9 +448,9 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === ay + "年", "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/class="dc-ym( zero)?"/g) || []).length === 12, "12 个月卡");
   ok(+kpiRuns() === starts(sy).length, "年 KPI 出走 " + starts(sy).length);
-  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sy).join("-") + "]", "年通算战绩 4 段 [" + br4(sy).join("-") + "]（格式保留 - 连字符）");
-  ok(br4(sy).reduce((a, b) => a + b, 0) === starts(sy).length,
-    "未出走(取消/除外)不计通算：4 段之和 " + starts(sy).length + " == 出走（剔除未出走）" + starts(sy).length);
+  ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br5(sy).join("-") + "]", "年通算战绩 5 段 [" + br5(sy).join("-") + "]（格式保留 - 连字符）");
+  ok(br5(sy)[0] === starts(sy).length && br5(sy).slice(1).reduce((a, b) => a + b, 0) === br5(sy)[0],
+    "首段=出走 且 后四段之和==首段（" + br5(sy)[0] + "）→ 未出走(取消/除外)不进任何段");
   const dnfAll = src.filter(r => typeof r.p === "string");
   const nrAll = src.filter(r => NR_SET.has(String(r.p)));
   ok(dnfAll.length > 0, "源数据含未完走/未出走 " + dnfAll.length + " 条（中止/失格 " + (dnfAll.length - nrAll.length) + " · 取消/除外 " + nrAll.length + "）");

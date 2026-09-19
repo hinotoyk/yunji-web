@@ -60,8 +60,8 @@
 .dc-kpi .v.dim{color:#a1a1aa}
 .dc-kpi .trophy{font-size:16px;margin-right:2px}
 
-/* ===== 进板数 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
- * 四段底色连成「一整条」：数字格各用名次底色，连字符格用「上一色→下一色」线性渐变接缝，
+/* ===== 通算战绩 [1-1-1-1-1]（**格式保留连字符**；首位出走浅青绿底，1/2/3 浅色做底 + 深色数字，着外浅灰底）
+ * 五段底色连成「一整条」：数字格各用该段底色，连字符格用「上一色→下一色」线性渐变接缝，
  * 底色连续、过渡柔和无硬边；圆角只留在整条两端（KPI 大括号 5px / 日历小格 3px） ===== */
 .dc-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
 .dc-brk b{color:#171717;font-weight:600}
@@ -108,7 +108,7 @@
 
 /* ===== 明细：行/卡片渲染与样式统一走 race-rows.js + theme.css（与比赛页内嵌表同一份代码） ===== */
 
-/* ===== 手机（≤768px）：日历格只留 日期+🏆，进板数/赏金收进 KPI 带与明细 ===== */
+/* ===== 手机（≤768px）：日历格只留 日期+🏆，通算战绩/赏金收进 KPI 带与明细 ===== */
 @media (max-width:768px){
   .dc-cell{min-height:38px;padding:3px 5px;gap:1px}
   .dc-d{font-size:11px}
@@ -169,11 +169,11 @@
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../race-rows.js"></script>
+<script src="../race-rows.js?v=1"></script>
 <script>
 /* ================= 日期统计 · 日历（真实数据版） =================
  * 需求（用户定）：日历形式；按 天/周/月/年 快速读出
- *   ① 通算战绩 [第1-第2-第3-第3名开外]（=着顺分布，4 段：1/2/3着 + 其余含未完走）
+ *   ① 通算战绩 [出走-第1-第2-第3-第3名开外]（5 段：首位=出走，后四段=着顺分布，其余含未完走）
  *   ② 总赏金；③ 重赏以「图标+数字」（🏆 n）突出标记。
  * 数据：data/datechart.json —— 后端预计算（scripts/datechart/build_datechart.py 生成，
  *       run_update.py 各数据策略自动重算），runs[] 字段与本页渲染层完全同构，
@@ -196,7 +196,7 @@ var RUNS = [];
 var G = YJ.raceRows.G, GLABEL = YJ.raceRows.GLABEL;
 /* 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 */
 var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
-/* ---- 着顺归类（4 段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
+/* ---- 着顺归类（括号后四段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
  * 未出走(取消/除外) 不进任何段——见 statsOf()，未出闸不算通算战绩 */
 function placeSlot(p){
   if (typeof p === "number") return (p >= 1 && p <= 3) ? p - 1 : 3;
@@ -205,16 +205,18 @@ function placeSlot(p){
 /* 未出走（取消/除外）＝未出闸：不计出走、不进通算战绩、不计赏金/胜场
  * （同 stats.html starts() 与 races.html 模块 34 的三态口径） */
 function isNR(p){ return p === "取消" || p === "除外"; }
-/* 进板数配色 = 着顺浅色三件套（1/2/3 浅底 + 着外灰）：JS 侧单一出处 race-rows.js PLACE_BG
- * （CSS 同源 = theme.css .yj-nkm1/2/3，改色需同步） */
-var BR_COLORS = YJ.raceRows.PLACE_BG;
-/* 进板数 [1-1-1-1]：格式保留连字符；四段底色连成一整条 —— 数字格用名次底色，
+/* 通算战绩配色 = 五段 CAREER_BG（首位「出走」浅青绿 #E0F5F4 + 着顺三件套 + 着外灰）：
+ * JS 侧单一出处 race-rows.js（后四色与 theme.css .yj-nkm1/2/3 同源，改色需同步） */
+var BR_COLORS = YJ.raceRows.CAREER_BG;
+/* 聚合结果 → 五段值 [出走, 1着, 2着, 3着, 着外]（statsOf 已保证后四段之和 == 出走） */
+function careerVals(s){ return [s.n].concat(s.br); }
+/* 通算战绩 [8-2-1-0-5]：格式保留连字符；五段底色连成一整条 —— 数字格用各段底色，
  * 连字符格用「上一色→下一色」渐变接缝（柔过渡、无硬边） */
-function bracketHTML(br, cls){
-  var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="进板数：第1:第2:第3:第3名开外">[';
-  for (var i = 0; i < 4; i++){
+function bracketHTML(vals, cls){
+  var s = '<span class="dc-brk' + (cls ? " " + cls : "") + '" title="通算战绩：出走:第1:第2:第3:第3名开外">[';
+  for (var i = 0; i < vals.length; i++){
     if (i) s += '<i style="background:linear-gradient(90deg,' + BR_COLORS[i - 1] + ',' + BR_COLORS[i] + ')">-</i>';
-    s += '<b style="background:' + BR_COLORS[i] + '">' + br[i] + '</b>';
+    s += '<b style="background:' + BR_COLORS[i] + '">' + vals[i] + '</b>';
   }
   return s + ']</span>';
 }
@@ -304,7 +306,7 @@ function scopeRuns(mode, key){
   var y = +key.slice(0,4), w = +key.slice(6);
   return RUNS.filter(function(r){ return inVenue(r) && (function(){ var iw = isoWeekInfo(r.d); return iw.y === y && iw.w === w; })(); });
 }
-/* 一组记录的聚合：n 出走 / w 胜 / br 进板数(4 段) / pr 总赏金 / gr 重赏胜
+/* 一组记录的聚合：n 出走 / w 胜 / br 着顺分布(后四段) / pr 总赏金 / gr 重赏胜
  * 未出走（取消/除外）整行剔除——未出闸不算通算战绩（同 stats.html / races.html 三态口径） */
 function statsOf(runs){
   var s = { n: 0, w: 0, br: [0,0,0,0], pr: 0, gr: 0 };
@@ -369,7 +371,7 @@ function renderKpis(mode, key){
   var prize = s.pr ? manYen(s.pr) : (s.n ? "0万" : "—");
   document.getElementById("kpis").innerHTML =
     kpi("出走", s.n, s.n ? "" : "dim") +
-    kpi("通算战绩", bracketHTML(s.br, "dc-brk-lg")) +
+    kpi("通算战绩", bracketHTML(careerVals(s), "dc-brk-lg")) +
     kpi("总赏金", prize, s.pr ? "" : "dim") +
     kpi("重赏胜利", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
 }
@@ -418,10 +420,10 @@ function dayCellHTML(y, m, d, mode, key, dim){
     if (s.w) style = ' style="background:rgba(10,167,160,' + (s.w >= 3 ? ".22" : s.w === 2 ? ".16" : ".10") + ')"';
   }
   if (mode === "day" && ds === key) cls += " dc-sel";
-  var tip = dayTitle(ds) + " · " + s.n + " 场 · [" + s.br.join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
+  var tip = dayTitle(ds) + " · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
   var inner = '<span class="dc-cell-top"><b class="dc-d">' + (dim ? m + "/" + d : d) + '</b>' +
     (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>';
-  if (s.n) inner += bracketHTML(s.br) + '<span class="dc-prz">' + (s.pr ? manYen(s.pr) : "") + '</span>';
+  if (s.n) inner += bracketHTML(careerVals(s)) + '<span class="dc-prz">' + (s.pr ? manYen(s.pr) : "") + '</span>';
   return '<button type="button" class="' + cls.trim() + '" data-d="' + ds + '"' + style + ' title="' + esc(tip) + '">' + inner + '</button>';
 }
 
@@ -431,12 +433,12 @@ function yearCardsHTML(y){
   for (var m = 1; m <= 12; m++){
     var s = statsOf(scopeRuns("month", y + "-" + pad2(m)));
     var zero = s.n ? "" : " zero";
-    var tip = y + "年" + m + "月 · " + s.n + " 场 · [" + s.br.join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
+    var tip = y + "年" + m + "月 · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
     out += '<button type="button" class="dc-ym' + zero + '" data-m="' + m + '" title="' + esc(tip) + '">' +
       '<span class="dc-ym-top"><b>' + m + '月</b>' + (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>' +
-      bracketHTML(s.br) +
+      bracketHTML(careerVals(s)) +
       '<span class="dc-ym-prz">' + (s.pr ? manYen(s.pr) : "—") + '</span>' +
-      '<span class="dc-ym-n">' + (s.n ? s.n + " 场 · 勝 " + s.w : "无出走") + '</span>' +
+      '<span class="dc-ym-n">' + (s.n ? "勝 " + s.w : "无出走") + '</span>' +
     '</button>';
   }
   return '<div class="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-2.5">' + out + '</div>';
