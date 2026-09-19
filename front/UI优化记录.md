@@ -2036,3 +2036,43 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 **多实例坑（顺带修）**：selector.js 的「点击外部关闭」原来是模块级单 handler、init 时移除旧监听只留最新实例——单实例页面没问题，但筛选条现在有 5 个实例会互相顶掉。改为实例注册表 `dropInstances`（每次 init 剔除脱离 DOM 的旧实例）+ 模块唯一 document 监听遍历关闭；另修 compact 模式 `cnt` 为 null 时 init 末尾 `cnt.textContent` 抛错的潜在 bug（判空）。
 
 **验证**：`npm run build` 后 dist 核对（`.f-csel`×6、items 模式在 `dist/selector.js`、`f-sel`/`f-horse-sel` 零残留）；浏览器实测 5 挂载点渲染、人气下拉 18 项升序、点选→胶囊+候选排除+表 741→83 场、搜索「5」→匹配 2 项、× 删除→回 741、点击外部关闭、调教师 75 项降序（矢作芳人81场）、出走马回归正常、`?f=ninki:1,trainer:矢作芳人` 下钻胶囊预置；无头 Chrome 500px mb 截图筛选区单列无溢出。截图 `tests/_shots/dim-sel-mb.png`。
+
+## 57. 海外出赛马两项修正 · 马名语言按内容判定 + 当前性别派生（触发案例 id 130）
+
+**背景（探针定位）**：id 130 `Grand Warrior(JPN)` 在北美出赛、从未做 JRA 馬名登録 —— netkeiba 详情页连马名都没有，标题是「母名+生年」占位 `サウンドバリアーの2023`（页面内 `Grand` 出现 0 次），所以 `欧字馬名` 必然抓空；8 场逐场记录全来自 Google Sheets 台账（`venue_type=海外 / 來源=台账`）。由此暴露两个全站性缺陷：马名四格把 `馬名` 字段硬标成「日文」（拉丁名挂日文标签、真正的英文名槽显示「—」），以及 `性別` 每次抓取被 netkeiba 的**登录性别**打回（该马 2025-12~2026-05 间去势，逐场台账 `性` 已是 `セ`，但 netkeiba `p.txt_01` 与 JBIS プロフィール 两边官方都仍写 `牡`——没有 JRA 登录就不会提交性别变更）。全库同类：马名拉丁 2 匹（130、131 `Hazey Jane`，两者 netkeiba 均为占位标题，判定成立）、有海外行的马 2 匹（130 全 8 场、56 有 1 场）。
+
+**① 马名语言判定收口（`yj-util.js` 单一出处）**：新增 `splitName()`（剥 JBIS/netkeiba 尾缀生产国码，国家码表与后端 `racelib._COUNTRY_SUFFIX_RE` 对齐，兼容全/半角括号与链式尾缀）与 `nameKind()`（含假名/汉字/半角片假名 → `jp`，拉丁字母 → `en`，无字母回退 `jp` 维持旧行为）。消费方两处：`profile.html` 名字四格按内容填槽（拉丁名进「英文」槽并剥尾缀、日文槽走弱化 `nslot`），**主名改给第一个非空槽**（原来固定第一格最大，日文槽为空时会把弱化「—」放大成 30px 主名）；`selector.js` 色块 key 同源取 `nameKind`（拉丁名不再一律渲成日文配色）。搜索匹配仍走原始字段，`grand warrior` / `JPN` 都照常命中，剥尾缀只影响展示。`yj-util.js` 首次带 API 变更 → 六页引用统一加 `?v=1`，`selector.js` bump `v=3→4`（否则旧缓存会让 `YJ.util.nameKind` 未定义直接炸选马器）。
+
+**② 当前性别派生（后端）+ 全站口径（前端）**：`merge_races.py` 在既有逐场循环里加 5b —— `current_sex()` 取「最近一场的 `性`」（该字段只有台账记录带，`セン` 归一为 `セ`），**仅当 ≠ 官方 `性別` 时**写派生字段 `性別_当前`，相等或无逐场性别则 `pop` 掉，绝不留脏值；官方 `性別` 保持 netkeiba 镜像不动（哪天官方自己更新，派生字段自动消失），`races_report.md` 加差异表。5c 套人工维护表 `data/manual_overrides.json`（`{ "<id>": { "<字段>": "<值>", "_note": "" } }`，命名与既有 `data/timeline_manual.json` 一致、突出「人只碰这个文件」；`_` 开头顶层键是说明与示范，脚本忽略）：文件内置 `_readme` + `_examples`（130 `性別_当前:"セ"` 的写法示范，当前该值已由 5b 自动派生，故示范不参与套用）。在全部派生**之后**套用故人工值优先，抓取脚本永不写该表 —— 给「台账也没标、但人工先于数据查到」的情况兜底。
+
+**当前性别 = 全站单一口径（用户定稿）**：`YJ.util.sexOf(h)`（`性別_当前 || 性別`）为唯一出处，凡按性别统计/筛选/展示一律走它 —— profile 性别行（**只显示 `⚲ セン`，不并排「登录 牡」**，用户定稿）与产驹概览 `bySex` 分布、races.html `entryVal("sex")` 维度筛选、pedigree.html 页头枚举、selector.js 行左性别色条；后端 `build_stats.py` 性别维度同步改 `性別_当前 or 性別`（`verify_stats.cjs` / `verify_drill.cjs` 两处期望值镜像同步，否则自比对失真）。`BASIC_TEMPLATE` 增 `性別_当前`（紧跟 `性別`），存量记录由 `merge_races.move_after()` 在派生与人工两条写入路径后统一归位（只动键序不动值）。stats.json 重算后变化面 = 130 的 8 场从 `牡` 桶移入 `セン` 桶（仅 海外 场地分组，4 个桶键）。
+
+**赏金 0 → 「—」（用户定稿）**：`profile.html` `money()` 对 `0万円` 与 `0` 一律返回 `{v:"—", u:""}` —— 海外场只记战绩不带赏金，属正常缺失而非抓漏，显示 0 会被读成抓漏；`1億1615.8万円` 这类复合串首字符非 0 不受影响。
+
+**验证**：Node 单元探针 10/10（含 `Grand Warrior（JPN）` 全角括号、`T M Gala`、`12345`、`コントレイル(USA)` 混合形态）+ 全库 277 匹回归——仅 130/131 判为 `en`，其余全 `jp`；`merge_races.py` 跑完 `性別_当前 派生 1 匹`、字段序核对 `登録状態 → 性別 → 性別_当前 → 毛色`、`git diff data/basic.json` 只有 130 一处 + `_meta.updated`（収得賞金重算零 diff，证明幂等）；`npm run build` 后 dist 核对（`dist/data/basic.json` 含派生字段、`dist/data/manual_overrides.json` 已随 copy-data 进产物）；浏览器实测 130 = `日文— / 英文 Grand Warrior(30px 主名) / 自译 大武士` + 性别 `⚲ セン` + 三赏金格全 `—`，回归 1 号 = `♀ 牝` + `580万円/—/400万円` + `5战1胜 [1-0-0-4]` 不变，races 页 `?f=sex:セン` 由 0 场变 **18 场 3 匹**（含 Grand Warrior 海外 8 场），pedigree 侧 `sexOf+i18n.e` 探针 = 阉/公/母/—；`python run_update.py --check` 五步全绿。
+
+**遗留（下一步 §60）**：基本信息「通算成績 · RECORD」仍只读 netkeiba 的 `通算成績` 字符串（JRA/NAR 口径），130 因此显示「未出赛」而下方比赛记录明明有 8 场 —— 已定方案改为由 `races/*.json` 全量逐场推导（`stats.json`/`datechart.json` 早已含海外、比赛记录页也含，属两处真相源不一致），并把 `check_data.py` 的比对左值从「文件全部行数」改成「`來源=netkeiba` 行数」做同口径对账（现规则拿含台账的总行数比 netkeiba 战数，台账补一场就能把漏抓抵消掉）。
+
+## 58. 数据门禁修复 · `--check` 两条失败回绿（§56 遗留的测试侧欠账）
+
+**问题**：`python run_update.py --check` 五步里两步 FAIL —— `verify_stats.cjs` 196 过 2 失败、`verify_drill.cjs` 中途抛 `TypeError` 直接崩。用 `git worktree add .head-check HEAD` 拉干净副本对照跑，结果与工作区完全一致，确认是 §56（四维度改搜索下拉 + 倾向矩阵默认页签改距离）留下的**测试侧欠账**，产品代码没问题。⚠ 按 TESTING.md「断言非 0 → 跳过 git 提交」的约定，这两条红灯会让 `update-data.yml` 的数据自动提交一直静默跳过，必须常绿。
+
+**verify_stats 两条**：`跑道页签：泥地ダ 行出走` 与 `泥地行下钻 URL` 直接读**默认渲染**的矩阵 HTML，而默认页签已从 跑道 改成 距离 → ダ 行根本不在表里。修法：断言前先 `click("matTabs","surf")` 再重读表格，并**补一条正向断言**「默认页签 = 距离（首屏渲染短/英/中/长距离行）」，把这个变更本身钉住（原来只有页签顺序断言，钉不住默认值）。196+2 → **199 过 0 失败**。
+
+**verify_drill 崩溃 + 被崩溃掩盖的 6 条**：① stub 元素没有 `insertAdjacentHTML`，而 §56 后 `refreshDimUI()` 用 `selEl.insertAdjacentHTML("beforebegin", dimTags(key))` 局部重渲 tag 区 → 补该方法，并按「先 remove 旧 `.f-tag` 再插全量」的生产语义用 `_injected` **覆盖式**记录最近一次注入（`_html` 累加会让「旧 tag 已消失」这类断言失真）；② `[D]` 块还在模拟已退场的原生 `select` change 事件（且本套件把 `YJ.selector.init` 桩掉，事件路径根本不存在）→ 改为直接调下拉 `onSelect` 走的同一个生产函数 `addDim("ninki","2")`，tag 断言随之改读 `fDimSel_ninki._injected`，并新增「删除后 tag 区只剩 2人気」；③ 崩溃之前 `[C]` 里 6 条断言已在静默 FAIL，它们匹配的是已删除的原生 select 标记（`data-sel="ninki"`、选项文案 `1人気（N场）` 写在 filters HTML 里）→ 改断言新契约：挂载点 `id="fDimSel_<key>"`、筛选条 HTML 无 `<select>` 残留、候选值/排序/文案/出赛数从传给组件的 `items` 断言（`YJ.selector.init` 桩改为记录实例配置），并补 `excluded` 回调（已选 1人気 排除、未选 2人気 保留）与 `multi/compact/onSelect` 同款交互断言。31 → **36 过 0 失败**。
+
+**验证**：`python run_update.py --check` 五步全绿（数据校验 / 日期图 / 统计 / 下钻 / 结果对账）；本轮 §57 的性别口径改动同步更新了 `verify_stats.cjs` 与 `verify_drill.cjs` 两处期望值镜像（`性別_当前 || 性別`），改后仍全绿。
+
+## 59. 逐场记录补全 · SP 结果页「性齢」列拆成 性 / 年齢 入库
+
+**背景**：§57 的 `性別_当前` 只能靠台账海外记录带的 `性` 字段派生，而**全库 741 行里只有 8 行带 `性`**（全是 130 的台账行），netkeiba 的 733 行连键都没有 —— 因为 `parse_races()` 抓的**成绩页**（`db.netkeiba.com/horse/result/{nk_id}/`）表格没有 性齢 列。用户指出：我们**每条新增记录都会再抓一张 SP 结果页**补 格/条件/厩舎/発走，而那张表里有 性齢（截图红框 `セ3`）→ 就地拆出 `性` + `年齢`，netkeiba 源记录从此与台账源字段集一致，`性別_当前` 派生也才真正有全站数据源（可自动校验官方登录性别是否滞后）。
+
+**可行性探针**（先验证再动手，8 场实抓）：中央 `race.netkeiba.com`（GI 東京11R / GII 東京11R / 未勝利 / 1勝クラス）、地方 `nar.netkeiba.com`（金沢・園田・大井・高知）、海外（デルマー GI）—— 结果表 `RaceTable01` 表头**第 5 列恒为 性齢**，值形态只有 `牡3 / 牝5 / セ3` 三类，18/18、9/9、14/14 行零不匹配；**取消・除外 行同样能取到**（这类行常缺 馬番，靠 馬名 兜底定位命中：アオイハルカ 除外行 → `牝3`、エースフライト 取消行 → `牡3`）。
+
+**实现**：① 把 `find_stable_cell()` 里「按 馬番/馬名 定位 SP 页该行」的逻辑抽成公共 `find_race_row(soup, cb) → (tds, 表头索引)`（厩舎与 性齢 同一行取，不再两份查找），`find_stable_cell` 改为复用并自行校验 `厩舎` 列存在；② 新增 `sexage_from_sp()`，正则 `^(牡|牝|セ|セン)\s*(\d{1,2})$`（先过 `_fold_fullwidth` 折全角），**`セン` 归一为 `セ`** 与台账同口径；③ `to_contract_b()` 初始化 `"性": "", "年齢": ""`（放 出走馬名 之后），`enrich_from_sp()` 只填当前为空的值（不覆盖台账原值）；④ `backfill_existing()` 把 性/年齢 纳入 `--force` 回填清单（缺这两项也触发抓 SP 页）。
+
+**列序收口**：`性 / 年齢` 原先不在 `RACE_RECORD_ORDER` 里，靠 `order_record()` 的「未知键追加末尾」落到行尾 → 正式写入模板 **`日付, 発走, 出走馬名, 性, 年齢, 開催, 場名, R, …`**。存量 276 个 races 文件按新模板归一化重跑一遍：只有 `130.json` 实际变化（8 行 × 2 字段移位），其余 275 个文件本就合规、零 diff，证明模板与历史数据无冲突。
+
+**待回填规模**（`--force` 一次性，需你点头再跑）：733 行 netkeiba 记录缺 性/年齢，涉及 **147 匹马 / 571 张去重 SP 页**（中央 524 · 地方 46 · 海外 1）；按域内节流 `db 6s + SP 2s` 估算 **≈34 分钟**（不含 403 退避与调教师/骑手页补拉）。命令 `python scripts/races/fetch_races.py --force` → `python scripts/races/merge_races.py`；不跑也不影响增量 —— 此后每场新记录自动带 性/年齢。
+
+**验证**：端到端函数探针（不写数据）3+4 场全中 —— カモンレイル 金沢7R `セ/3`（与截图一致）、大井3R `牝/3`、高知10R `牝/4`、除外 `牝/3`、取消 `牡/3`、海外デルマーGI `牝/2`、中山 GII `牡/3`；`python -m py_compile` 五个被改脚本全过；`npm run build` + `python run_update.py --check` 五步全绿。

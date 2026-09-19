@@ -17,13 +17,14 @@
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js"></script>
+<script src="../yj-util.js?v=1"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=3"></script>
+<script src="../selector.js?v=4"></script>
 <script src="../bus.js"></script>
 <script src="../pedigree.js"></script>
 <script>
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
+var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
 var EMBED = /[?&]embed=1/.test(location.search);
 var PAGE = document.getElementById("page");
@@ -40,7 +41,7 @@ function renderPedigree(h){
     '<div class="page-title mb-7 max-md:mt-2.5">血统图 · PEDIGREE</div>';
   var hname = EMBED ? '' :
     '<div class="mb-1.5 flex flex-wrap items-baseline gap-3"><h2 class="text-[17px] font-bold">'+esc(title)+'</h2>'+
-      '<span class="text-[12px] text-muted-foreground">'+esc(YJ.i18n.g(h,"性別"))+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';
+      '<span class="text-[12px] text-muted-foreground">'+esc(YJ.i18n.e("性別",sexOf(h))||"—")+(h.生年?' · '+esc(h.生年)+'年生':'')+'</span></div>';
 
   /* 内嵌模式（profile 上段一体式）：不包卡片、不重复标题（label 由 profile 提供）；
    * 独立模式保留卡片容器。 */

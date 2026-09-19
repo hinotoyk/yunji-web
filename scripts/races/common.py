@@ -46,6 +46,7 @@ DATA_DIR = ROOT / "data"                             # 全部数据统一放根 
 RACES_DATA_DIR = DATA_DIR / "races"                  # 每匹逐场成绩文件 data/races/{id}.json
 TMP_DIR = DATA_DIR / "_tmp" / "races"                # 竞赛环节缓存（merge 后删除）
 BASIC_JSON = DATA_DIR / "basic.json"                 # 共享数据源
+OVERRIDES_JSON = DATA_DIR / "manual_overrides.json"  # 人工维护表（文件名带 manual，脚本永不写入）
 
 # ---- 站点/常量 ----
 NK = "https://db.netkeiba.com"
@@ -173,6 +174,33 @@ def save_basic(data):
     BASIC_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+# ---------------- 人工维护表 data/manual_overrides.json ----------------
+# 用途：官方源（netkeiba / JBIS）滞后或缺失时，人工钉住某个展示字段，
+#       例：海外去赛马的登录性別仍写「牡」而逐场记录已是「セ」。
+# 契约：形如 { "130": { "性別_当前": "セ", "_note": "2026-05-31 起台账为セ" } }；
+#       由合并环节在全部派生之后最后套用（人工值优先），抓取脚本永不写本表。
+#       '_' 开头的顶层键（如 _readme / _examples 写法示范）一律忽略，不参与套用。
+def load_overrides():
+    """data/manual_overrides.json → {id: {字段: 值}}；文件不存在 → {}。"""
+    if not OVERRIDES_JSON.exists():
+        return {}
+    raw = json.loads(OVERRIDES_JSON.read_text(encoding="utf-8"))
+    return {str(k): v for k, v in raw.items()
+            if not str(k).startswith("_") and isinstance(v, dict)}
+
+
+def apply_overrides(h, overrides):
+    """把该马的人工值套到记录上 → 返回被套字段名列表（无覆盖 → []）。"""
+    ov = overrides.get(str(h.get("id"))) or {}
+    hit = []
+    for k, v in ov.items():
+        if k.startswith("_") or v in (None, ""):
+            continue
+        h[k] = v
+        hit.append(k)
+    return hit
+
+
 # ---------------- 并发缓存（写独立文件，避免并发覆盖 basic.json） ----------------
 def tmp_path(name):
     """缓存文件路径：data/_tmp/<name>.json"""
@@ -228,7 +256,7 @@ def record_keys(r):
 
 # ---- 比赛记录字段模板（键顺序 = 落库列序；写 races 文件时统一按此重排，保证新老记录一致） ----
 RACE_RECORD_ORDER = [
-    "日付", "発走", "出走馬名", "開催", "場名", "R", "コース", "レース名",
+    "日付", "発走", "出走馬名", "性", "年齢", "開催", "場名", "R", "コース", "レース名",
     "格", "条件", "距離", "芝ダ", "馬場", "天候", "斤量", "枠番", "馬番",
     "頭数", "人気", "単勝", "結果", "タイム", "上り", "着差", "通過", "ペース",
     "馬体重", "増減", "賞金", "本賞金", "騎手", "調教師", "jockey_id", "trainer_id",

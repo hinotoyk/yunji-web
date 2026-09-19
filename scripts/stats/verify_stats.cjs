@@ -203,7 +203,7 @@ for (const h of basic.horses) {
   const birth = birthOf(h["生年月日"]);
   const gen = String(h["生年"] || "").trim();
   const gkey = /^\d{4}$/.test(gen) ? "g" + gen : null;
-  const sex = sexOf(h["性別"]);
+  const sex = sexOf(h["性別_当前"] || h["性別"]);   // 当前性别（与 build_stats.py 同口径，官方 性別 仅登录值）
   for (const r of arr) {
     const ds = String(r["日付"] || "");
     if (!ds) continue;
@@ -479,9 +479,12 @@ setTimeout(function () {
     "基准行着外 = " + (b0.n - b0.dnf - b0.exc - b0.w - b0.p2 - b0.p3) + "（完赛口径）");
   ok(html.includes("tr.base td{background:#f4f4f5") && !html.includes("#f7fdfd"),
     "基准行（总体平均）= 中性灰底（与率列 绿=高于/红=低于 的数据语义色分离）");
+  ok(mt.includes("短距离"), "默认页签 = 距离（首屏渲染短/英/中/长距离行）");
+  click("matTabs", "surf");                      /* 跑道维度需切页签（默认已是距离，见 UI优化记录 §56） */
+  const mtSurf = String(els["matTable"]._html);
   const daRow = byv["中央"].scopes.all.dims.surf.find(x => x.k === "ダ");
-  ok(mt.includes(">ダ<") && mt.includes(String(startsOf(daRow))), "跑道页签：泥地行 出走 " + startsOf(daRow));
-  ok(mt.includes('data-href="races.html?f=' + encodeURIComponent("surface:ダ,venue:中央") + '"'), "泥地行下钻 = surface:ダ,venue:中央");
+  ok(mtSurf.includes(">ダ<") && mtSurf.includes(String(startsOf(daRow))), "跑道页签：泥地行 出走 " + startsOf(daRow));
+  ok(mtSurf.includes('data-href="races.html?f=' + encodeURIComponent("surface:ダ,venue:中央") + '"'), "泥地行下钻 = surface:ダ,venue:中央");
   const daR = ratesOf(daRow), daDiff = (daR.win - r0.win) * 100;
   const cellCls = (cur, base) => (Math.round(cur * 1000) > Math.round(base * 1000) ? "yj-up" : Math.round(cur * 1000) < Math.round(base * 1000) ? "yj-down" : "");
   const rowHtml = key => (String(els["matTable"]._html).split("<tr").find(s => s.includes(">" + key + "<")) || "");

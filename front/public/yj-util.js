@@ -19,5 +19,39 @@ YJ.util = (function () {
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  return { esc: esc };
+  /* ── 馬名脚本判定 ─────────────────────────────────────────────
+   * 海外出赛马的 馬名 字段本身就是拉丁字母名（JBIS 建档值，如 "Grand Warrior(JPN)"），
+   * 且这类马多无 JRA 登録名 → netkeiba 只写「母名+生年」占位、欧字馬名 抓为空。
+   * 所以「日文 / 英文」槽位与色块不能按字段名硬分，必须按内容判定 + 剥生产国尾缀。
+   * 国家码表与后端 scripts/races/racelib.py 的 _COUNTRY_SUFFIX_RE 保持一致。 */
+  var COUNTRY_SUFFIX = /[（(]\s*(JPN|USA|GB|IRE|NZ|AUS|AU|FR|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK|SGP|UAE|NZL|BR|CL|PE|MX|KOR|TWN)\s*[）)]\s*$/;
+  var JP_CHARS = /[぀-ヿ㐀-䶿一-鿿豈-﫿ｱ-ﾝ]/;   /* 平/片假名 + 汉字 + 半角片假名 */
+
+  /* "Grand Warrior(JPN)" → { name:"Grand Warrior", code:"JPN" }；无尾缀 → code:"" */
+  function splitName(v) {
+    var s = String(v == null ? "" : v).trim(), code = "", m;
+    while ((m = s.match(COUNTRY_SUFFIX))) {
+      code = m[1].toUpperCase();
+      s = s.slice(0, m.index).trim();
+    }
+    return { name: s, code: code };
+  }
+
+  /* → "jp"（含假名/汉字）| "en"（拉丁字母名）。无字母时回退 jp，维持旧行为 */
+  function nameKind(v) {
+    var s = splitName(v).name;
+    if (JP_CHARS.test(s)) return "jp";
+    return /[A-Za-zＡ-Ｚａ-ｚ]/.test(s) ? "en" : "jp";
+  }
+
+  /* 当前性别（全站按性别统计/筛选的单一出处）：
+   * 官方 性別 是「登录性别」，无 JRA 登录的海外马去势后 netkeiba/JBIS 都不回写；
+   * 后端 性別_当前 由最近一场的逐场 性 派生（见 scripts/races/merge_races.py 3b），
+   * 与后端 scripts/stats/build_stats.py 的 sex_key 取值口径保持一致。 */
+  function sexOf(h) {
+    h = h || {};
+    return h.性別_当前 || h.性別 || "";
+  }
+
+  return { esc: esc, splitName: splitName, nameKind: nameKind, sexOf: sexOf };
 })();

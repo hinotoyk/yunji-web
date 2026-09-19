@@ -36,14 +36,15 @@
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js"></script>
+<script src="../yj-util.js?v=1"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=3"></script>
+<script src="../selector.js?v=4"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js"></script>
 <script>
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
+var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
 /* 通算成績 形如 "5戦1勝 [ 1-0-0-4 ]" → 转中文符号 */
 function transStats(v){
@@ -140,7 +141,7 @@ function renderOverview(hs){
   var byYear={}, bySex={};
   hs.forEach(function(h){
     var y=h.生年||'未知'; byYear[y]=(byYear[y]||0)+1;
-    var s=h.性別;
+    var s=sexOf(h);
     if(s==='セ') s='セン'; /* セ/セン 两种写法都算骟马 */
     if(s) bySex[s]=(bySex[s]||0)+1;
   });
@@ -210,13 +211,23 @@ function render(h){
       '<span class="text-[10.5px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/70">'+lbl+'</span>'+
       '<span class="mt-0.5 text-[19px] font-normal leading-tight text-muted-foreground/60">—</span></div>';
   };
-  var names=[
-    h.馬名     ? ncol('日文',h.馬名,true)        : nslot('日文'),
-    h.欧字馬名 ? ncol('英文',h.欧字馬名,false)   : nslot('英文'),
-    h.香港馬名 ? ncol('港译',h.香港馬名,false)   : nslot('港译'),
-    h.自译馬名 ? ncol('自译',h.自译馬名,false)   : nslot('自译')
+  /* 槽位按「内容脚本」判定（YJ.util.nameKind），不按字段名硬分：海外登録马的 馬名
+   * 本身就是拉丁名（且 netkeiba 无 JRA 登録名 → 欧字馬名 抓空），硬分会让拉丁名挂上「日文」标签。
+   * 主名 = 第一个非空槽（原来固定第一格，日文槽为空时会把弱化「—」放大成主名）。 */
+  var jpSlot = (YJ.util.nameKind(h.馬名) === 'jp') ? h.馬名 : '';
+  var enSlot = h.欧字馬名 || (jpSlot ? '' : YJ.util.splitName(h.馬名).name);
+  var slots = [
+    { lbl: '日文', v: jpSlot },
+    { lbl: '英文', v: enSlot },
+    { lbl: '港译', v: h.香港馬名 },
+    { lbl: '自译', v: h.自译馬名 }
   ];
-  if(!h.馬名 && !h.欧字馬名 && !h.香港馬名 && !h.自译馬名) names[0]=ncol('日文','#'+h.id,true);
+  var bigIdx = 0;
+  for (var si = 0; si < slots.length; si++) { if (slots[si].v) { bigIdx = si; break; } }
+  if (!slots[bigIdx].v) slots[bigIdx].v = '#' + h.id;   /* 四格全空才回退 #id */
+  var names = slots.map(function (s, i) {
+    return s.v ? ncol(s.lbl, s.v, i === bigIdx) : nslot(s.lbl);
+  });
   var sep='<span class="mb-0.5 select-none text-[15px] font-light text-muted-foreground/45">/</span>';
   var nameHeader='<div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>';
 
@@ -228,8 +239,10 @@ function render(h){
     ? '<span class="inline-flex items-center rounded-full bg-accent px-2 py-[2px] text-[11.5px] font-semibold text-accent-foreground">现役</span>'
     : '<span class="inline-flex items-center rounded-full bg-muted px-2 py-[2px] text-[11.5px] font-medium text-muted-foreground">'+esc(YJ.i18n.e("登録状態",h.登録状態))+'</span>')
     : '<span class="text-muted-foreground">—</span>';
+  /* 当前性别（YJ.util.sexOf：后端 性別_当前 优先，回退官方 性別）。官方 性別 是「登录性别」，
+   * 无 JRA 登录的海外马去势后 netkeiba/JBIS 都不回写，逐场记录才是当期事实 → 只展示当期值。 */
   var info='<div class="grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border">'+
-    fi(t("性別"), sexBadge(h.性別))+
+    fi(t("性別"), sexBadge(sexOf(h)))+
     fi(t("生年月日"), esc(h.生年月日||"—"))+
     fi(t("登録状態"), stBadge)+
     fi(t("毛色"), esc(YJ.i18n.e("毛色",h.毛色)||"—"))+
@@ -280,7 +293,10 @@ function render(h){
   var money=function(raw){
     raw=(raw==null||raw==="")?"—":String(raw);
     var u=/万円/.test(raw)?"万円":"";
-    return {v:u?raw.replace(/万円$/,""):raw, u:u};
+    var v=u?raw.replace(/万円$/,""):raw;
+    /* 0 → 显示「—」：海外场只记战绩不带赏金，0 是正常缺失而非抓漏（用户定稿） */
+    if(parseFloat(String(v).replace(/,/g,""))===0) return {v:"—", u:""};
+    return {v:v, u:u};
   };
 
   var mC=money(h["獲得賞金 (中央)"]), mL=money(h["獲得賞金 (地方)"]), mF=money(prizeFlat);

@@ -36,7 +36,9 @@ YJ.selector = (function () {
    * 默认单格式行为与之前完全一致。 */
   function nameHTML(h, dbl) {
     var names = [];
-    if (h.馬名)            names.push({ key: 'jp', v: h.馬名 });
+    /* 色块语言按内容判定（YJ.util.nameKind），与 profile 名字四格同口径：
+     * 海外登録马的 馬名 是拉丁名（如 "Grand Warrior(JPN)"），不能再一律渲成日文配色 */
+    if (h.馬名)            names.push({ key: YJ.util.nameKind(h.馬名), v: YJ.util.splitName(h.馬名).name });
     else if (h.欧字馬名)   names.push({ key: 'en', v: h.欧字馬名 });
     else {
       var fb = fallbackName(h);
@@ -214,8 +216,10 @@ YJ.selector = (function () {
           const m = q ? matchInfo(h, q) : null;
           const chip = (m && m.fromExtra) ? '<span class="chip mt-px flex-none rounded-full bg-accent px-[7px] py-[1.5px] text-[9.5px] font-semibold tracking-[.3px] text-accent-foreground">' + esc(m.label) + '</span>' : '';
           const sub = (m && m.fromExtra && m.key !== 'id') ? '<div class="sub mt-0.5 text-[11px] text-muted-foreground max-md:text-[10.5px]">' + esc(EXTRA_LABEL[m.key] || m.label) + '：' + esc(h[m.key]) + '</div>' : '';
-          /* 性别左侧色条：淡蓝=牡、淡粉=牝，上下顶满整行、贴左；骟马/未知不渲染色条 */
-          const sxBar = h.性別 === '牡' ? 'bg-[#C9EFFE]' : (h.性別 === '牝' ? 'bg-[#FFDBD5]' : '');
+          /* 性别左侧色条：淡蓝=牡、淡粉=牝，上下顶满整行、贴左；骟马/未知不渲染色条。
+           * 当前性别走 YJ.util.sexOf 单一出处（与 profile 性别行、统计页同口径） */
+          const sx = YJ.util.sexOf(h);
+          const sxBar = sx === '牡' ? 'bg-[#C9EFFE]' : (sx === '牝' ? 'bg-[#FFDBD5]' : '');
           return '<div class="row relative cursor-pointer border-b border-border px-3.5 py-[9px] transition-colors duration-100 last:border-b-0 hover:bg-muted/50 max-md:px-2.5 max-md:py-2" data-i="' + i + '">' +
             (sxBar ? '<span class="sxbar absolute inset-y-0 left-0 w-2 ' + sxBar + '"></span>' : '') +
             '<div class="top flex items-start gap-2 min-w-0">' + nameHTML(h, doubleName) + chip + '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + metaHTML(h) + '</span></div>' + sub + '</div>';

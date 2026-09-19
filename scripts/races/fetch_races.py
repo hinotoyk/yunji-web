@@ -17,13 +17,14 @@
 
 每条**新增记录**再抓一次 SP 比赛结果页（race/nar.netkeiba.com，同场多马共享页缓存），
 一次性回填：格/条件（Icon + RaceData02）、厩舎→調教師（+ trainer_id）、本賞金（重赏 1/2着）、
-発走（RaceData01 的 `12:40発走`）+ コース表记（`(右 A)`/`(左 外 A)` 归一为 右A/左外A）。
+発走（RaceData01 的 `12:40発走`）+ コース表记（`(右 A)`/`(左 外 A)` 归一为 右A/左外A）、
+性/年齢（结果表「性齢」列 `セ3` 拆分；**成绩页没这一列**，故只能从 SP 页取，セン 归一为 セ 与台账同口径）。
 骑手名 = 成绩页「骑手」列 + 按 jockey_id 抓骑手页 <title> 归一正式全名（成绩页列是简名）。
 本賞金不再单独 fetch_prize 环节（同一 URL 已在成绩增量时抓到）。
 
 说明：
   - 已有记录一律不动（增量只增不覆盖）；--force 时对已有记录回填缺失字段
-    （調教師/trainer_id/馬番/骑手名/発走/コース，SP 页/骑手页补拉）；比赛键 = race_id，无 race_id 用 (日付,場名,R)。
+    （調教師/trainer_id/馬番/骑手名/発走/コース/性/年齢，SP 页/骑手页补拉）；比赛键 = race_id，无 race_id 用 (日付,場名,R)。
   - 「数据缺失」判变是核心兜底：即使通算成績 字符串没变化，只要文件出赛数对不上
     通算战数（如上次抓取失败落了空文件、或只并入了台账海外记录），也会自动补拉，
     不会出现「永远拉不到成绩」。
@@ -192,6 +193,7 @@ def to_contract_b(rec, horse_name):
             prize_yen = ""
     return {
         "日付": rec.get("日付", ""), "発走": "", "出走馬名": horse_name,
+        "性": "", "年齢": "",        # 由 enrich_from_sp 拆 SP 结果页「性齢」列回填（成绩页无此列）
         "開催": rec.get("開催", ""), "場名": rec.get("場名", ""),
         "R": rec.get("R", ""), "コース": "", "レース名": rec.get("レース名", ""),
         "格": grade, "条件": cond,
@@ -213,7 +215,8 @@ def to_contract_b(rec, horse_name):
 
 def enrich_from_sp(cb, sp_html):
     """从 SP 比赛结果页补全一条新增记录：格/条件 + 厩舎→(調教師,trainer_id) + 本賞金（重赏 1/2着）
-    + 発走 + コース表记（RaceData01：`12:40発走 / 芝2000m (右 A)` → 発走=12:40、コース=右A）。
+    + 発走 + コース表记（RaceData01：`12:40発走 / 芝2000m (右 A)` → 発走=12:40、コース=右A）
+    + 性/年齢（该行「性齢」列 `セ3` → 性=セ、年齢=3；成绩页没这一列）。
     sp_html 由调用方提供（同场多马共享页缓存）；无页面/抓取失败 → 名字解析兜底，不阻塞入库。"""
     name = cb.get("レース名", "")
     venue = cb.get("venue_type", "")
@@ -252,6 +255,12 @@ def enrich_from_sp(cb, sp_html):
     if tid:
         cb["trainer_id"] = tid
 
+    sex, age = sexage_from_sp(soup, cb)      # 同一行的「性齢」列 → 性 / 年齢
+    if sex and not (cb.get("性") or "").strip():
+        cb["性"] = sex
+    if age and not str(cb.get("年齢") or "").strip():
+        cb["年齢"] = age
+
     if racelib.needs_honsho(cb):
         ladder = parse_honsho_nar(sp_html) if (venue or "").strip() == "地方" else parse_honsho(sp_html)
         if ladder and isinstance(cb.get("結果"), int) and 1 <= cb["結果"] <= len(ladder):
@@ -278,17 +287,16 @@ def trainer_id_from_db_race(rid, hname):
     return tm.group(1) if tm else ""
 
 
-def find_stable_cell(soup, cb):
-    """SP 页马表（RaceTable01）→ 该马所在行的厩舎单元格 → (调教师名, trainer_id)。
-    优先按 馬番 匹配，兜底按 馬名；厩舎名去掉場所前缀（美浦/栗東/北海道…），可能被截断。
-    厩舎只有文字无链接（部分地方场）→ 按马名去 db 域比赛页兜底取 trainer_id。"""
+def find_race_row(soup, cb):
+    """SP 页马表（RaceTable01，兜底 HorseList）→ 该马所在行 (tds, 表头索引)；找不到 → (None, {})。
+    优先按 馬番 匹配，兜底按 馬名（取消/除外 行常缺馬番）。厩舎与 性齢 都从这一行取。"""
     tbl = soup.find("table", class_=re.compile("RaceTable01")) or soup.find("table", class_=re.compile("HorseList"))
     if not tbl:
-        return "", ""
+        return None, {}
     ths = [re.sub(r"\s+", "", th.get_text(" ", strip=True)) for th in tbl.find_all("th")]
     idx = {n: i for i, n in enumerate(ths) if n}
-    if not ({"厩舎", "馬番", "馬名"} <= set(idx)):
-        return "", ""
+    if not ({"馬番", "馬名"} <= set(idx)):
+        return None, {}
     want = str(cb.get("馬番") or "").strip()
     hname = cb.get("出走馬名") or ""
     for tr in tbl.find_all("tr"):
@@ -298,18 +306,46 @@ def find_stable_cell(soup, cb):
         num = tds[idx["馬番"]].get_text(" ", strip=True).strip()
         if not ((want and num == want) or (not want and tds[idx["馬名"]].get_text(" ", strip=True) == hname)):
             continue
-        cell = tds[idx["厩舎"]]
-        a = cell.find("a", href=True)
-        # 注意：netkeiba 新式 id 为字母数字混合（如 a027e），不能用纯数字正则
-        m = re.search(r"/trainer/result/(?:recent/)?([0-9A-Za-z]+)", a["href"] or "") if a else None
-        raw = cell.get_text(" ", strip=True)
-        parts = raw.split(None, 1)
-        tname = parts[1].strip() if len(parts) > 1 else raw
-        tid = m.group(1) if m else ""
-        if not tid and tname:
-            tid = trainer_id_from_db_race(cb.get("race_id") or "", cb.get("出走馬名") or "")
-        return tname, tid
-    return "", ""
+        return tds, idx
+    return None, {}
+
+
+SEXAGE_RE = re.compile(r"^(牡|牝|セ|セン)\s*(\d{1,2})$")
+
+
+def sexage_from_sp(soup, cb):
+    """SP 结果页「性齢」列 → (性, 年齢)；缺列/找不到行 → ("", "")。
+    实测 中央(GI/GII/未勝利) / 地方(金沢・園田) / 海外(デルマー) 与 取消・除外 行的结果表
+    第 5 列恒为 性齢（`牡3`/`牝5`/`セ3`），セン 归一为 セ 与台账记录同口径。"""
+    tds, idx = find_race_row(soup, cb)
+    i = idx.get("性齢")
+    if not tds or i is None or i >= len(tds):
+        return "", ""
+    v = racelib._fold_fullwidth(re.sub(r"\s+", "", tds[i].get_text("", strip=True)))
+    m = SEXAGE_RE.match(v)
+    if not m:
+        return "", ""
+    return ("セ" if m.group(1).startswith("セ") else m.group(1)), m.group(2)
+
+
+def find_stable_cell(soup, cb):
+    """SP 页马表 → 该马所在行的厩舎单元格 → (调教师名, trainer_id)。
+    厩舎名去掉場所前缀（美浦/栗東/北海道…），可能被截断。
+    厩舎只有文字无链接（部分地方场）→ 按马名去 db 域比赛页兜底取 trainer_id。"""
+    tds, idx = find_race_row(soup, cb)
+    if not tds or "厩舎" not in idx:
+        return "", ""
+    cell = tds[idx["厩舎"]]
+    a = cell.find("a", href=True)
+    # 注意：netkeiba 新式 id 为字母数字混合（如 a027e），不能用纯数字正则
+    m = re.search(r"/trainer/result/(?:recent/)?([0-9A-Za-z]+)", a["href"] or "") if a else None
+    raw = cell.get_text(" ", strip=True)
+    parts = raw.split(None, 1)
+    tname = parts[1].strip() if len(parts) > 1 else raw
+    tid = m.group(1) if m else ""
+    if not tid and tname:
+        tid = trainer_id_from_db_race(cb.get("race_id") or "", cb.get("出走馬名") or "")
+    return tname, tid
 
 
 def fetch_trainer_name(tid):
@@ -368,12 +404,13 @@ def resolve_jockey(cb, jockey_map):
 
 
 def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
-    """--force：已有记录缺失 調教師/trainer_id/馬番 → 用 SP 页回填（同场共享缓存）；
+    """--force：已有记录缺失 調教師/trainer_id/馬番/発走/コース/性/年齢 → 用 SP 页回填（同场共享缓存）；
     骑手名 → 按 jockey_id 归一正式名（仅对 netkeiba 源记录，台账记录保持台账值）。
     无 SP 页时由 resolve_trainer 兜底到 basic.json 马级调教师。返回回填字段数。"""
     changed = 0
     need_sp = (not (ex.get("調教師") or "").strip() or not (ex.get("trainer_id") or "").strip()
-               or not (ex.get("発走") or "").strip() or not (ex.get("コース") or "").strip())
+               or not (ex.get("発走") or "").strip() or not (ex.get("コース") or "").strip()
+               or not (ex.get("性") or "").strip() or not str(ex.get("年齢") or "").strip())
     if need_sp:
         rid = str(cb.get("race_id") or "").strip()
         is_local = (cb.get("venue_type") or "").strip() == "地方"
@@ -387,8 +424,8 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
             time.sleep(common.sleep_for(sp_url))
         enrich_from_sp(cb, sp_cache.get(key))   # 格/条件 + 発走/コース + 厩舎→調教師 + 本賞金
         resolve_trainer(cb, h, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
-        for f in ("調教師", "trainer_id", "発走", "コース"):
-            if not (ex.get(f) or "").strip() and cb.get(f):
+        for f in ("調教師", "trainer_id", "発走", "コース", "性", "年齢"):
+            if not str(ex.get(f) or "").strip() and cb.get(f):
                 ex[f] = cb[f]
                 changed += 1
     # 骑手名归一：只动 netkeiba 源记录（有 jockey_id）；台账记录无 jockey_id 保持台账值

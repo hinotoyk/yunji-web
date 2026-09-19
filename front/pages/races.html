@@ -97,14 +97,15 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js"></script>
+<script src="../yj-util.js?v=1"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
-<script src="../selector.js?v=3"></script>
+<script src="../selector.js?v=4"></script>
 <script src="../bus.js"></script>
 <script src="../device.js"></script>
 <script>
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
+var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
 var EMBED = /[?&]embed=1/.test(location.search);
 /* 从基本信息「在比赛记录中查看详情」跳转带来的 ?horse=id：独立模式预置出走马筛选 */
@@ -376,7 +377,7 @@ function entryVal(en,key){
   if(key==="byear") return String(en.h&&en.h.生年!=null?en.h.生年:"").slice(0,4); /* 出生年份 */
   if(key==="turn"){ var cs=String(r.コース||""); return cs.slice(0,1)==="右"?"右":(cs.slice(0,1)==="左"?"左":""); }
   if(key==="ninki") return ninkiBucket(r.人気);
-  if(key==="sex") return en.h&&en.h.性別 ? (en.h.性別==="セ"?"セン":en.h.性別) : "";
+  if(key==="sex"){ var sx=sexOf(en.h); return sx==="セ"?"セン":sx; }   /* 当前性别，非官方登录值 */
   if(key==="trainer") return r.調教師||"";
   if(key==="jockey") return r.騎手||"";
   if(key==="mps") return (en.h&&en.h.母父)||"";   /* 母父 = 血统图「母亲的父亲」（basic.json 母父字段） */

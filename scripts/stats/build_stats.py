@@ -15,7 +15,7 @@
   * 距离四档：短距离≤1400 / 英里 1401-1800 / 中距离 1801-2400 / 长距离>2400（同 distBucket）。
   * 人气：逐一 1-18人気（同 races.html ninkiBucket）。
   * 回り：コース 前缀 右/左（其余不入桶）。
-  * 性别：性別 归一 セ→セン。
+  * 性别：当前性别（性別_当前 优先，回退官方 性別 登录值）归一 セ→セン（同前端 YJ.util.sexOf）。
   * 比赛级别细分：新马 / 未胜利 / 一胜级~三胜级(1-3勝クラス) / OP / L / Jpn1-3 / G1-3 / 其他
     （桶键即中文标签，展示序见 stats.html TAB_ORDER.grade；下钻同 races.html gradeMatches）。
   * 重赏：GI/GII/GIII/JpnI/JpnII/JpnIII（同 races.html「重赏」筛选 / timeline GRADED 口径）。
@@ -275,7 +275,7 @@ def main():
         birth = parse_birth(h.get("生年月日"))
         gen = str(h.get("生年") or "").strip()
         gkey = "g" + gen if re.fullmatch(r"\d{4}", gen) else None   # 生产年切面
-        sex = sex_key(h.get("性別"))
+        sex = sex_key(h.get("性別_当前") or h.get("性別"))   # 当前性别（官方 性別 仅登录值）
         for r in arr:
             d = str(r.get("日付") or "")
             if not d:

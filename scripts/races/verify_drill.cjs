@@ -24,11 +24,23 @@ const basic = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "basic.json"), 
 /* ---- 丰富 DOM stub（够 renderResults 的 canvas 量宽 / txtW 探针跑通） ---- */
 function mkEl(id) {
   return {
-    id, _html: "", text: "", value: "", style: {}, dataset: {}, attrs: {}, handlers: {}, children: [],
+    id, _html: "", _injected: "", text: "", value: "", style: {}, dataset: {}, attrs: {}, handlers: {}, children: [],
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     set innerHTML(v) { this._html = String(v); }, get innerHTML() { return this._html; },
     set textContent(v) { this.text = String(v); }, get textContent() { return this.text; },
     setAttribute(k, v) { this.attrs[k] = String(v); },
+    /* races.html refreshDimUI 用 selEl.insertAdjacentHTML("beforebegin", dimTags(key)) 把已选 tag
+     * 插到下拉挂载点之前（§56 四维度改搜索下拉后新增的 DOM 写法），stub 必须支持，否则整串崩。
+     * 断言因此读该元素自身的 _html（真实浏览器里它落在 #filters 内）。 */
+    insertAdjacentHTML(pos, html) {
+      if (pos === "beforebegin") {
+        /* 生产路径先 chips.querySelectorAll(".f-tag").remove() 再插全量 → 覆盖式记录最近一次注入 */
+        this._injected = String(html);
+        this._html = String(html) + this._html;
+      } else {
+        this._html = this._html + String(html);
+      }
+    },
     getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
     addEventListener(t, f) { (this.handlers[t] = this.handlers[t] || []).push(f); },
     appendChild(c) { this.children.push(c); return c; },
@@ -75,7 +87,9 @@ global.YJ = {
   bus: { onChange() {}, send() {} },
   selector: {
     loadHorses() { return Promise.resolve(basic.horses); },
-    init() {},
+    /* §56 后四维度的候选值/排序/文案只存在于传给组件的 items 里（不再有原生 select 标记），
+     * 故记录每个实例配置供断言取用；出走马与 items 模式共用同一 init。 */
+    init(o) { (global.__selInits = global.__selInits || []).push(o); },
     getHorses() { return basic.horses; },
   },
 };
@@ -94,6 +108,7 @@ const distOf = d => { d = Number(d); if (!isFinite(d) || !d) return ""; return d
 const ninkiOf = n => { if (n === "" || n == null) return ""; n = Number(n); if (!isFinite(n) || n < 1 || n > 18) return ""; return String(n); };
 const turnOf = c => { const s = String(c || ""); return s.slice(0, 1) === "右" ? "右" : s.slice(0, 1) === "左" ? "左" : ""; };
 const sexOf = s => (String(s || "").trim() === "セ" ? "セン" : String(s || "").trim());
+const sexOfH = h => sexOf((h || {}).性別_当前 || (h || {}).性別);   // 当前性别（同 races.html entryVal / YJ.util.sexOf）
 const allEntries = [];
 for (const h of basic.horses) {
   if (!h.races_file) continue;
@@ -109,7 +124,7 @@ const match = en => {
   if (String(r.馬場 || "") !== "良") return false;
   if (turnOf(r.コース) !== "右") return false;
   if (ninkiOf(r.人気) !== "1") return false;
-  if (sexOf(en.h.性別) !== "牝") return false;
+  if (sexOfH(en.h) !== "牝") return false;
   if (String(r.格 || "") !== "2勝クラス") return false;
   if (String(r.調教師 || "") !== "矢作芳人") return false;
   if (String(r.騎手 || "") !== "武豊") return false;
@@ -164,18 +179,31 @@ setTimeout(function () {
 
   console.log("[C] renderFilters 新筛选行 + 页面不崩");
   const f = String(els["filters"]._html);
+  /* §56：四维度改「出走马同款」搜索下拉 → 候选值/排序/文案只存在于传给组件的 items，
+   * 断言随之从「读 filters 里的原生 select 标记」改为「读挂载点 id + 组件实例配置」 */
+  const inits = global.__selInits || [];
+  const selOf = ph => inits.find(o => o.placeholder === ph);
   ok(f.includes("赛道方向") && f.includes("右转") && f.includes("左转"), "筛选行 赛道方向（右转/左转）");
-  ok(f.includes('data-sel="ninki"') && f.includes('f-tag">1人気'), "筛选行 人气 select + 已选 tag（1人気，同调教师/骑手逻辑）");
-  ok(!f.includes(">1人気（"), "人气 select 选项排除已选值（1人気仅以 tag 存在）");
-  ok(f.match(/1人気（\d+场）/), "人气选项带出赛数（1人気（N场））且固定升序");
-  ok(f.indexOf(">2人気（") < f.indexOf(">10人気（"), "人气选项 1→18 升序（2人気 在 10人気 之前）");
+  ok(f.includes('id="fDimSel_ninki"') && f.includes('f-tag">1人気'), "人气 下拉挂载点 + 已选 tag（URL 预置 1人気）");
+  ok(!f.includes("<select"), "四维度原生 select 已退场（筛选条 HTML 无 <select> 残留）");
+  const ninkiSel = selOf("搜索人气添加…");
+  ok(!!ninkiSel && ninkiSel.items.length >= 10 && ninkiSel.items.every(it => it.n > 0),
+    "人气候选 items 带出赛数 n（共 " + (ninkiSel && ninkiSel.items.length) + " 档）");
+  ok(!!ninkiSel && ninkiSel.items.map(it => +it.v).join(",") ===
+    ninkiSel.items.map(it => +it.v).slice().sort((a, b) => a - b).join(","), "人气候选 1→18 固定升序");
+  ok(!!ninkiSel && ninkiSel.items[0].l === ninkiSel.items[0].v + "人気", "人气候选文案带「人気」后缀");
+  ok(!!ninkiSel && ninkiSel.excluded({ v: "1" }) === true && ninkiSel.excluded({ v: "2" }) === false,
+    "excluded 回调：已选 1人気 从候选排除、未选 2人気 保留");
+  const trSel = selOf("搜索调教师添加…");
+  ok(!!trSel && trSel.items[0].n >= trSel.items[trSel.items.length - 1].n && trSel.items.length > 10,
+    "调教师候选按出赛数降序（首位 " + (trSel && trSel.items[0].v) + " " + (trSel && trSel.items[0].n) + "场 / 共 " + (trSel && trSel.items.length) + " 人）");
+  ok(!!trSel && trSel.multi === true && trSel.compact === true && typeof trSel.onSelect === "function",
+    "维度下拉 = multi + compact + onSelect（与出走马同款交互）");
+  ok(f.includes('id="fDimSel_jockey"') && !!selOf("搜索骑手添加…"), "骑手 下拉挂载点 + 实例");
+  ok(f.includes('id="fDimSel_mps"') && f.includes(">母父<") && !!selOf("搜索母父添加…"),
+    "母父 下拉挂载点（统计页母父维度下钻落点）");
   ok(f.includes("性别") && f.includes(">セン<"), "筛选行 性别（牡/牝/セン）");
-  ok(f.includes('data-sel="trainer"') && f.includes('data-k="trainer" data-v="矢作芳人"'.replace("data-k=\"trainer\" ", "")) ||
-     f.includes("f-tag\">矢作芳人"), "调教师 select 行 + 已选 tag");
-  ok(!f.includes("矢作芳人（"), "调教师 select 选项排除已选值（矢作芳人仅以 tag 存在）");
-  ok(!!f.match(/（\d+场）/), "调教师选项带出赛数（如 福永祐一（44场））");
-  ok(f.includes('data-sel="jockey"') && f.includes("f-tag\">武豊"), "骑手 select 行 + 已选 tag");
-  ok(f.includes('data-sel="mps"') && f.includes(">母父<"), "筛选行 母父 select（统计页母父维度下钻落点）");
+  ok(f.includes("f-tag\">矢作芳人") || f.includes('data-fk="trainer"'), "调教师已选胶囊走 data-fk 委托");
   ok(f.includes("data-k=\"grade\" data-v=\"1勝クラス\"") && f.includes("data-v=\"3勝クラス\""), "级别新增 1胜/2胜/3胜 单级 chip");
   ok(global.LIB && global.LIB.entries.length === allEntries.length, "LIB 加载完整（" + global.LIB.entries.length + " 条）");
   const bodyHtml = String(els["body"]._html);
@@ -183,15 +211,14 @@ setTimeout(function () {
   const clearBtn = f.includes("清空条件");
   ok(clearBtn, "有预置条件 → 显示 清空条件 按钮");
 
-  console.log("[D] 人气 select 交互（添加 + tag 删除，同调教师/骑手）");
+  console.log("[D] 人气维度 添加 + tag 删除（§56 后走 addDim，原生 select 已退场）");
   {
-    /* 模拟 select change：ninki 选 2 → FLT=[1,2]（URL 已预置 1） */
-    const h = els["filters"].handlers.change;
-    const evt = { target: { closest: sel => sel === "select[data-sel]" ? { dataset: { sel: "ninki" }, value: "2" } : null } };
-    if (h && h.length) h[h.length - 1].call(els["filters"], evt);
+    /* 四维度已改 selector.js 搜索下拉（候选渲染在组件内部，无原生 select 事件可模拟），
+     * 故直接调下拉 onSelect 走的同一个生产函数 addDim → 覆盖 FLT 更新 + refreshDimUI + renderResults */
+    global.addDim("ninki", "2");
   }
-  ok(global.FLT.ninki.join(",") === "1,2", "select 添加 → FLT.ninki = 1,2");
-  ok(String(els["filters"]._html).includes('f-tag">2人気'), "tag 2人気 渲染（文本带人気）");
+  ok(global.FLT.ninki.join(",") === "1,2", "addDim 添加 → FLT.ninki = 1,2");
+  ok(String(els["fDimSel_ninki"]._injected).includes('f-tag">2人気'), "tag 2人気 渲染（refreshDimUI 插到下拉挂载点前，文本带人気）");
   {
     /* 模拟点 f-tag-x 删除 1人気 → FLT=[2] */
     const h = els["filters"].handlers.click;
@@ -199,6 +226,10 @@ setTimeout(function () {
     if (h && h.length) h[h.length - 1].call(els["filters"], evt);
   }
   ok(global.FLT.ninki.join(",") === "2", "点 tag × → 删除 1人気（FLT.ninki = 2）");
+  {
+    const t = String(els["fDimSel_ninki"]._injected);
+    ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后 tag 区只剩 2人気（局部刷新不重建筛选条）");
+  }
 }, 100);
 
 /* 汇总（放最后：等微任务+finish 全跑完） */

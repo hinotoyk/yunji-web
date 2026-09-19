@@ -18,6 +18,11 @@
      新记录本賞金已由 fetch_races 的 SP 页解析写好，台账记录按映射附调教师 id。
   3. 由合并后的完整履历统一计算 収得賞金（中央 compute_shutoku + 地方 Jpn
      compute_shutoku_jpn，纯规则无网络），写 basic.json 新字段（円 → 'xx万円'/'xx億xx万円'，零值保留 0）。
+  3b. 派生 性別_当前：取最近一场的 性（只有台账海外记录带），与官方 性別 不同才写入。
+     官方 性別 是「登录性别」且保持 netkeiba 镜像不动 —— 无 JRA 登录的海外马去势后
+     netkeiba / JBIS 两边都不回写，逐场记录才是当期事实；官方一旦更新，派生字段自动消失。
+  3c. 最后套用人工维护表 data/manual_overrides.json（{id:{字段:值}}）：人工值优先于派生值，
+     抓取脚本永不写该表（见 common.load_overrides）。
   4. 回填 races_file（"data/races/{id}.json"，站点根相对，与 pedigree_file 同口径）。
   5. 写 data/races_report.md 报告，删除 _tmp 缓存（--keep 保留调试）。
 
@@ -67,6 +72,29 @@ def fmt_yen(yen):
     if not yen:
         return 0
     return fmt_man(yen / 10000)
+
+
+def current_sex(recs):
+    """逐场记录里「最近一场的 性」→ 牡/牝/セ；无则 ""。
+    性 字段只有台账海外记录带（netkeiba 成绩页无此列），セン 归一为 セ。"""
+    dated = [r for r in recs if r.get("性") and r.get("日付")]
+    if not dated:
+        return ""
+    v = str(max(dated, key=lambda r: str(r.get("日付")))["性"]).strip()
+    return "セ" if v.startswith("セ") else v
+
+
+def move_after(h, field, anchor):
+    """派生字段在 basic.json 里的位置归位：紧跟其同源字段（只动键序，不动值）。"""
+    keys = list(h.keys())
+    if field not in keys or anchor not in keys:
+        return
+    keys.remove(field)
+    keys.insert(keys.index(anchor) + 1, field)
+    if keys == list(h.keys()):
+        return
+    for k in keys:
+        h[k] = h.pop(k)
 
 
 def load_races_file(id_s):
@@ -172,6 +200,13 @@ def main():
             save_races_file(id_s, recs)
 
     # 5) 収得賞金：由合并后的完整履历统一计算（纯规则）
+    # 5b) 性別_当前（派生）：官方 性別 是「登录性别」——无 JRA 登录的海外马去势后
+    #     netkeiba / JBIS 两边都长期停在去势前的值，逐场记录的 性 才是当期事实。
+    #     只在「最近一场的 性 ≠ 官方 性別」时另存派生字段；官方 性別 保持 netkeiba 镜像不动，
+    #     哪天官方自己更新了，派生值与之相等即自动消失，不会留脏字段。
+    overrides = common.load_overrides()
+    sex_diff = []               # (馬名, 官方 性別, 逐场 性)
+    manual_hits = []            # (馬名, [被套字段])
     for h in horses:
         id_s = str(h["id"])
         p = common.RACES_DATA_DIR / f"{id_s}.json"
@@ -188,7 +223,20 @@ def main():
         for it in jpn["缺失"]:
             shutoku_missing.append((h.get("馬名"), *it))
         h["races_file"] = RACES_FILE_PREFIX.format(id=id_s)
+        cur = current_sex(recs)
+        if cur and cur != h.get("性別"):
+            h["性別_当前"] = cur
+            sex_diff.append((h.get("馬名"), h.get("性別") or "—", cur))
+        else:
+            h.pop("性別_当前", None)
         n_prize += 1
+
+    # 5c) 人工维护表（data/manual_overrides.json）：在全部派生之后套用，人工值优先
+    for h in horses:
+        hit = common.apply_overrides(h, overrides)
+        if hit:
+            manual_hits.append((h.get("馬名"), hit))
+        move_after(h, "性別_当前", "性別")   # 派生/人工两条写入路径都归位到 性別 下面
 
     common.save_basic(data)
 
@@ -200,8 +248,18 @@ def main():
         f"- 详情更新: {n_detail} 匹 · 通算成績变化: {n_changed} 匹",
         f"- 新增成绩记录: {n_new} 条 · 台账海外新增: {n_led} 条 · force 全量回填: {n_full} 匹",
         f"- 収得賞金计算: {n_prize} 匹 · 収得缺本賞金: {len(shutoku_missing)} 场",
+        f"- 性別_当前 派生（官方登录 ≠ 逐场）: {len(sex_diff)} 匹 · 人工兜底套用: {len(manual_hits)} 匹",
         f"- 抓取失败: {len(failures)} 匹",
     ]
+    if sex_diff:
+        lines += ["", "## 性別_当前 派生（官方为登录性别，逐场记录为当期性别）", "",
+                  "| 馬名 | 官方登录 | 逐场当前 |", "|---|---|---|"]
+        for name, official, cur in sex_diff:
+            lines.append(f"| {name} | {official} | {cur} |")
+    if manual_hits:
+        lines += ["", "## 人工维护覆盖（data/manual_overrides.json，优先级最高）", ""]
+        for name, hit in manual_hits:
+            lines.append(f"- {name}: {', '.join(hit)}")
     if shutoku_missing:
         lines += ["", "## 収得缺本賞金（重赏 1/2着，按 0 暂计）", "", "| 馬名 | 日付 | レース名 | 結果 |", "|---|---|---|---|"]
         for name, d, rn, res in shutoku_missing:
@@ -218,6 +276,7 @@ def main():
     print(f"   - 详情更新 {n_detail} 匹 · 通算成績变化 {n_changed} 匹")
     print(f"   - 新增成绩 {n_new} 条 · 台账海外 {n_led} 条 · force 全量回填 {n_full} 匹 · 収得计算 {n_prize} 匹")
     print(f"   - 収得缺本賞金 {len(shutoku_missing)} 场 · 抓取失败 {len(failures)} 匹")
+    print(f"   - 性別_当前 派生 {len(sex_diff)} 匹 · 人工维护覆盖 {len(manual_hits)} 匹")
     print(f"✔ 已写 {report.name}")
 
     if not args.keep:
