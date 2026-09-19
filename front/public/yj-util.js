@@ -44,6 +44,25 @@ YJ.util = (function () {
     return /[A-Za-zＡ-Ｚａ-ｚ]/.test(s) ? "en" : "jp";
   }
 
+  /* 无任何马名时的兜底显示名「母名の生年」（如 ダイシンステルラの2023）——从未做 JRA 馬名登録的
+   * 马，netkeiba 详情页标题就是这个占位值，比 #id 可读；母名也缺才逐级退到 生年 → #id。
+   * 原为 selector.js 页内私有函数，§64 等值搬来此处做全站单一出处（profile 名字四格等同步跟）。 */
+  function fallbackName(h) {
+    h = h || {};
+    var dam = h.母名, yr = h.生年;
+    if (dam && yr) return dam + "の" + yr;
+    if (dam) return dam;
+    if (yr) return String(yr);
+    return "#" + (h.id == null ? "" : h.id);
+  }
+
+  /* 主名（全站统一兜底链）：馬名（剥生产国尾缀）→ 欧字馬名 → 母名の生年 → #id。
+   * 尾缀 (JPN)/(USA)… 一律不展示（语义未证实，见 §57），但数据侧 basic.json 保留 JBIS 原值不动。 */
+  function mainName(h) {
+    h = h || {};
+    return splitName(h.馬名).name || splitName(h.欧字馬名).name || fallbackName(h);
+  }
+
   /* 当前性别（全站按性别统计/筛选的单一出处）：
    * 官方 性別 是「登录性别」，无 JRA 登录的海外马去势后 netkeiba/JBIS 都不回写；
    * 后端 性別_当前 由最近一场的逐场 性 派生（见 scripts/races/merge_races.py 3b），
@@ -53,5 +72,6 @@ YJ.util = (function () {
     return h.性別_当前 || h.性別 || "";
   }
 
-  return { esc: esc, splitName: splitName, nameKind: nameKind, sexOf: sexOf };
+  return { esc: esc, splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
+    mainName: mainName, sexOf: sexOf };
 })();

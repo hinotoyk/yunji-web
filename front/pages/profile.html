@@ -36,9 +36,9 @@
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=1"></script>
+<script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=4"></script>
+<script src="../selector.js?v=5"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js"></script>
@@ -188,7 +188,7 @@ function renderOverview(hs){
 
 function render(h){
   var t=YJ.i18n.t;
-  var title = h.自译馬名 || h.欧字馬名 || h.馬名 || ('#'+h.id);
+  var title = h.自译馬名 || h.欧字馬名 || YJ.util.splitName(h.馬名).name || YJ.util.fallbackName(h);
 
   /* ── 上段 · 图片 + 基本信息 + 血统（一体式，无卡片无分割线）── */
 
@@ -199,7 +199,7 @@ function render(h){
       '<span class="mt-0.5 whitespace-nowrap '+(big?'text-[30px] font-bold leading-tight text-foreground':'text-[19px] font-semibold leading-tight text-secondary-foreground')+'">'+esc(v)+'</span></div>';
   };
   /* 空值槽位：名字固定四格（日文/英文/港译/自译），缺名保留位置显示弱化「—」（沿用全站缺失=—惯例），
-   * 标签与名字都比真值淡，一眼区分空槽 vs 数据；四格全空才回退 #id */
+   * 标签与名字都比真值淡，一眼区分空槽 vs 数据；四格全空回退「母名の生年」（与选马器列表同款兜底） */
   var nslot=function(lbl){
     return '<div class="flex min-w-0 flex-col justify-center">'+
       '<span class="text-[10.5px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/70">'+lbl+'</span>'+
@@ -208,7 +208,7 @@ function render(h){
   /* 槽位按「内容脚本」判定（YJ.util.nameKind），不按字段名硬分：海外登録马的 馬名
    * 本身就是拉丁名（且 netkeiba 无 JRA 登録名 → 欧字馬名 抓空），硬分会让拉丁名挂上「日文」标签。
    * 主名 = 第一个非空槽（原来固定第一格，日文槽为空时会把弱化「—」放大成主名）。 */
-  var jpSlot = (YJ.util.nameKind(h.馬名) === 'jp') ? h.馬名 : '';
+  var jpSlot = (YJ.util.nameKind(h.馬名) === 'jp') ? YJ.util.splitName(h.馬名).name : '';
   var enSlot = h.欧字馬名 || (jpSlot ? '' : YJ.util.splitName(h.馬名).name);
   var slots = [
     { lbl: '日文', v: jpSlot },
@@ -218,7 +218,7 @@ function render(h){
   ];
   var bigIdx = 0;
   for (var si = 0; si < slots.length; si++) { if (slots[si].v) { bigIdx = si; break; } }
-  if (!slots[bigIdx].v) slots[bigIdx].v = '#' + h.id;   /* 四格全空才回退 #id */
+  if (!slots[bigIdx].v) slots[bigIdx].v = YJ.util.fallbackName(h);   /* 四格全空 → 母名の生年（无母名才退 #id） */
   var names = slots.map(function (s, i) {
     return s.v ? ncol(s.lbl, s.v, i === bigIdx) : nslot(s.lbl);
   });

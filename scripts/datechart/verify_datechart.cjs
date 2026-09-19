@@ -3,7 +3,8 @@
  *   [A] data/datechart.json 产物断言：字段同构性（21 键契约）、着顺段位合法、排序稳定
  *   [B] 产物 ↔ data/races 源数据 1:1 对账（独立第二实现，防 build 脚本单点 bug）
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
- *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮 /
+ *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮（含跨月周
+ *       补真实邻月日：邻月格灰显 M/D、不套 win/run 底色但数据照出）/
  *       年月卡 / 内嵌比赛表同款明细（PC 14 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
  * 用法: node scripts/datechart/verify_datechart.cjs */
 "use strict";
@@ -401,13 +402,43 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   els["navNext"].handlers.click[0]();
   ok(els["winLabel"].textContent === dayInCur.replace(/-/g, "/") + "（" + weekdayCn(dayInCur) + "）", "› 回到原日");
 
-  console.log("[C6] 周口径（ISO 週 + 行高亮）");
+  console.log("[C6] 周口径（ISO 週 + 行高亮 + 跨月周补真实邻月日）");
   seg("week");
   const iw = isoWeek(dayInCur);
   const sw = sWeek(iw.y, iw.w);
   ok(/第\d+週（\d+\/\d+–\d+\/\d+）/.test(els["winLabel"].textContent), "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/dc-wrow hl/g) || []).length === 1, "所在周行高亮 ×1");
   ok(+kpiRuns() === starts(sw).length, "周 KPI 出走 " + starts(sw).length + "（与源 ISO 週聚合一致）");
+  /* 高亮行提取：行内只有 button/span（无嵌套 div）→ 首个 </div> 即行尾 */
+  const rowOf = tag => { const h = String(els["cal"]._html), i = h.indexOf(tag); return i < 0 ? "" : h.slice(i + tag.length).split("</div>")[0]; };
+  const rowDs = h => [...String(h).matchAll(/data-d="(\d{4}-\d{2}-\d{2})"/g)].map(x => x[1]);
+  const cellOf = (h, ds) => (String(h).match(new RegExp('<button[^>]*data-d="' + ds + '"[\\s\\S]*?</button>')) || [""])[0];
+  ok(!/"dc-cell dc-out"/.test(String(els["cal"]._html)), "空白补位格（dc-out）已废除，网格每格都是可点的真实日期");
+  const mon = new Date(dayInCur + "T00:00:00");
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));                 /* 独立回推到周一 */
+  const wantDs = [];
+  for (let k = 0; k < 7; k++){ const t = new Date(mon); t.setDate(mon.getDate() + k);
+    wantDs.push(t.getFullYear() + "-" + pad2(t.getMonth() + 1) + "-" + pad2(t.getDate())); }
+  ok(JSON.stringify(rowDs(rowOf('class="dc-wrow hl">'))) === JSON.stringify(wantDs),
+    "高亮行 = 该 ISO 周完整 7 日（含跨月日 " + wantDs.filter(x => x.slice(0, 7) !== dayInCur.slice(0, 7)).join(",") + "）");
+  /* 复现用户报回场景：同一周把锚点放回 7 月 → 补位落在行尾，8/1·8/2 必须出数据
+   * （2026-W31 JRA 出走 18 场全在这两天，补位若是空格则高亮行整行空白） */
+  dpTrigger(); dpClick({ name: "data-nav", v: "pm" }); dpClick({ name: "data-nav", v: "pm" });
+  dpClick({ name: "data-d", v: "2026-07-30" });
+  ok(els["winLabel"].textContent === "2026年 第31週（7/27–8/2）", "锚点回 7 月同一周 → " + els["winLabel"].textContent);
+  const r31 = rowOf('class="dc-wrow hl">');
+  ok(JSON.stringify(rowDs(r31)) === JSON.stringify(["2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31","2026-08-01","2026-08-02"]),
+    "行尾补出 8/1·8/2（跨月周 7 日齐全）");
+  const c801 = cellOf(r31, "2026-08-01"), c802 = cellOf(r31, "2026-08-02");
+  ok(c801.startsWith('<button type="button" class="dc-cell dc-outm"'), "邻月格不套 win/run 底色（class 恰为 dc-cell dc-outm）");
+  ok(c801.includes(">8/1<") && c802.includes(">8/2<"), "邻月格日期写成 M/D 以区分月份");
+  ok(c801.replace(/<[^>]+>/g, "").includes("[" + br4(sDay("2026-08-01")).join("-") + "]") && c801.includes("dc-prz"),
+    "邻月格带数据：8/1 进板数 [" + br4(sDay("2026-08-01")).join("-") + "] + 赏金 " + man(prizeOf(sDay("2026-08-01"))));
+  ok(c802.replace(/<[^>]+>/g, "").includes("[" + br4(sDay("2026-08-02")).join("-") + "]"),
+    "邻月格带数据：8/2 进板数 [" + br4(sDay("2026-08-02")).join("-") + "]");
+  ok(+kpiRuns() === starts(sWeek(2026, 31)).length && starts(sWeek(2026, 31)).length ===
+     starts(sDay("2026-08-01")).length + starts(sDay("2026-08-02")).length,
+    "KPI 出走 " + starts(sWeek(2026, 31)).length + " 全部来自补位格（修复前高亮行整行无数据）");
 
   console.log("[C7] 年口径（12 月卡 + 下钻）与未完走降灰");
   seg("year");
@@ -428,6 +459,25 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(+kpiRuns() === starts(sdm).length, "月 KPI 出走 " + starts(sdm).length + "（" + dnf.d.slice(0, 7) + "）");
   ok(String(els["dBody"]._html).includes("yj-mb dnf") || String(els["dBody"]._html).includes("text-muted-foreground"), "未完走降灰（mb 卡 dnf / PC 行 muted）（" + dnf.d + " " + dnf.p + "）");
   ok(String(els["dBody"]._html).includes(">" + esc(dnf.p) + "<"), "未完走着顺灰字展示（" + dnf.p + "）");
+
+  console.log("[C8] 马名口径收口（§64）· 生产国尾缀不展示 + 无登録名兜底「母名の生年」");
+  const SUF_RE = /[（(](JPN|USA|GB|IRE|NZ|AUS|AU|FR|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK|SGP|UAE|NZL)[）)]$/;
+  const sufH = basic.horses.filter(h => SUF_RE.test(String(h["馬名"] || "")));
+  ok(sufH.length > 0 && sufH.every(h => !SUF_RE.test(YJ.util.mainName(h))),
+    "单一出处 YJ.util.mainName：全库带生产国尾缀 " + sufH.length + " 匹（" +
+    sufH.map(h => h.id + " " + h["馬名"] + " → " + YJ.util.mainName(h)).join("、") + "）全部剥净");
+  const nlH = basic.horses.filter(h => !h["馬名"] && !h["欧字馬名"]);
+  ok(nlH.length > 0 && nlH.every(h => YJ.util.fallbackName(h) === h["母名"] + "の" + h["生年"]),
+    "无 馬名/欧字名 " + nlH.length + " 匹兜底 =「母名の生年」（" +
+    nlH.slice(0, 2).map(h => h.id + "=" + YJ.util.fallbackName(h)).join("、") + " 等），不再降级成 #id");
+  ok(YJ.util.fallbackName({ id: 999 }) === "#999", "母名也缺才退化 #id（兜底的兜底）");
+  /* 页面接线：明细马名列取自产物 runs[].h（= 后端直取的基本信息 馬名 原值，130 带尾缀） */
+  VT.add("海外"); vseg("海外");
+  dpTrigger(); dpClick({ name: "data-mi", v: "8" });
+  const gwHtml = String(els["dBody"]._html);
+  ok(gwHtml.includes(">Grand Warrior<") && !gwHtml.includes("Grand Warrior(JPN)"),
+    "日期统计明细 2026年8月（含海外）马名列 = Grand Warrior（尾缀已剥）");
+  VT.delete("海外"); vseg("海外");
 
   console.log((fails ? "FAILED: " + fails : "ALL PASS") + "（" + (passes + fails) + " assertions）");
   process.exit(fails ? 1 : 0);

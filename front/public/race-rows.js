@@ -107,11 +107,13 @@ YJ.raceRows = (function () {
 
   /* ---- 马名 ----
    * 跨马场景页面可传 opts.nameText(en) 覆盖（比赛记录页的马名语言切换 NAME_VIEW：量尺与渲染必须同源）；
-   * 缺省 = 日文名 → 欧字名 → #id；内嵌/明细场景传 opts.horse={id,name}（name 由后端产物给出）。 */
+   * 缺省 = YJ.util.mainName(h)：日文名（剥生产国尾缀）→ 欧字名 → 母名の生年 → #id，
+   *   与选马器/profile 同一口径（§64 收口；本模块 esc 仍自包含，只有马名链取 YJ.util，
+   *   故 yj-util.js 必须先于本文件加载——全站页面与三个 verify stub 同序）；
+   * 内嵌/明细场景传 opts.horse={id,name}（name 由后端产物给出）。 */
   function horseName(en, o) {
     if (typeof o.nameText === "function") return o.nameText(en);
-    var h = (en && en.h) || {};
-    return h.馬名 || h.欧字馬名 || ("#" + h.id);
+    return YJ.util.mainName((en && en.h) || {});
   }
   function horseLink(id, name) {
     if (id == null || id === "") return esc(name);

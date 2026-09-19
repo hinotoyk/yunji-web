@@ -17,9 +17,9 @@
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=1"></script>
+<script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=4"></script>
+<script src="../selector.js?v=5"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../pedigree.js"></script>
 <script>
@@ -34,7 +34,7 @@ if (EMBED) PAGE.classList.add("embed");
 function renderPedigree(h){
   if (h == null) return;
   var t = YJ.i18n.t;
-  var title = h.香港馬名 || h.馬名 || h.欧字馬名 || ('#'+h.id);
+  var title = h.香港馬名 || YJ.util.splitName(h.馬名).name || h.欧字馬名 || YJ.util.fallbackName(h);
 
   /* 独立模式才有页面头 + 马名头；内嵌模式只渲染血统卡片本身 */
   var head = EMBED ? '' :

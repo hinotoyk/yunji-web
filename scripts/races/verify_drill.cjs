@@ -5,6 +5,7 @@
  *   [B] FLT 预置后 matchEntry 命中数 == 源数据独立重算（口径互证，覆盖新维度）
  *   [C] renderFilters 新筛选行（赛道方向/人气/性别/调教师/骑手 select）渲染 + 页面不崩
  *   [D] 人气 select 交互（添加 + tag 删除，同调教师/骑手）
+ *   [E] 马名口径收口（horseText 剥生产国尾缀 + 无登録名兜底「母名の生年」，见 UI优化记录 §64）
  * 用法: node scripts/races/verify_drill.cjs */
 "use strict";
 const fs = require("fs");
@@ -230,6 +231,19 @@ setTimeout(function () {
     const t = String(els["fDimSel_ninki"]._injected);
     ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后 tag 区只剩 2人気（局部刷新不重建筛选条）");
   }
+
+  console.log("[E] 马名口径收口（§64）· horseText 剥生产国尾缀 + 无登録名兜底「母名の生年」");
+  const SUF_RE = /[（(](JPN|USA|GB|IRE|NZ|AUS|AU|FR|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK|SGP|UAE|NZL)[）)]$/;
+  const hSuf = basic.horses.find(h => SUF_RE.test(String(h["馬名"] || "")));
+  const hNil = basic.horses.find(h => !h["馬名"] && !h["欧字馬名"]);
+  ok(!!hSuf && global.horseText({ h: hSuf }) === "Grand Warrior",
+    "出走马列 130 = Grand Warrior（源值 " + (hSuf && hSuf["馬名"]) + " 的生产国尾缀不展示，量尺同源）");
+  ok(!!hNil && global.horseText({ h: hNil }) === hNil["母名"] + "の" + hNil["生年"],
+    "无登録名马（id " + (hNil && hNil.id) + "）=「母名の生年」" + (hNil && global.horseText({ h: hNil })) + "，不再降级成 #" + (hNil && hNil.id));
+  global.NAME_VIEW = 1;                                    /* 中文名档：同规则（缺港译/自译也不出 #id） */
+  ok(global.horseText({ h: hSuf }) === hSuf["自译馬名"] && global.horseText({ h: hNil }) === hNil["母名"] + "の" + hNil["生年"],
+    "NAME_VIEW=1 同规则：130 → " + hSuf["自译馬名"] + "、无名马仍 母名の生年");
+  global.NAME_VIEW = 0;
 }, 100);
 
 /* 汇总（放最后：等微任务+finish 全跑完） */

@@ -41,7 +41,7 @@ YJ.selector = (function () {
     if (h.馬名)            names.push({ key: YJ.util.nameKind(h.馬名), v: YJ.util.splitName(h.馬名).name });
     else if (h.欧字馬名)   names.push({ key: 'en', v: h.欧字馬名 });
     else {
-      var fb = fallbackName(h);
+      var fb = YJ.util.fallbackName(h);
       names.push({ key: String(fb).charAt(0) === '#' ? 'id' : 'miss', v: fb });
     }
     if (dbl) {
@@ -111,17 +111,10 @@ YJ.selector = (function () {
     return null;
   }
 
-  /* 无任何名字时的兜底显示名：「母名の生年」（如 ダイシンステルラの2023），母名也没有才退化 #id */
-  function fallbackName(h) {
-    var dam = h.母名, yr = h.生年;
-    if (dam && yr) return dam + 'の' + yr;
-    if (dam) return dam;
-    if (yr) return yr;
-    return '#' + h.id;
-  }
-
+  /* 兜底显示名「母名の生年」与主名链统一取 YJ.util（§64 收口，原页内 fallbackName 已等值搬走）；
+   * displayName 对外导出不变，现在多剥一层生产国尾缀 → 130 得 "Grand Warrior" 而非 "Grand Warrior(JPN)" */
   function displayName(h) {
-    return h.馬名 || h.欧字馬名 || fallbackName(h);
+    return YJ.util.mainName(h);
   }
 
   function init(opts) {
@@ -176,7 +169,7 @@ YJ.selector = (function () {
 
     function setSel(h) {
       selected = !!h;
-      if (h) input.value = h.馬名 || displayName(h);
+      if (h) input.value = displayName(h);   /* 主名链同源：剥尾缀 + 母名の生年兜底，不直取原始 馬名 */
       if (cnt) {
         cnt.textContent = horses.length;
         cnt.classList.remove("on");

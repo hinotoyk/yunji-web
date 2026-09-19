@@ -97,10 +97,10 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=1"></script>
+<script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
-<script src="../selector.js?v=4"></script>
+<script src="../selector.js?v=5"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script>
@@ -524,12 +524,13 @@ function renderFilters(){
  *    → 再有余量全表均分（保证表宽恒等于容器，右侧不留空条）。24 寸及以下留白本就被弹性列吃光，
  *    所以数字列不参与，观感与 v5 完全一致；只有宽屏（弹性列撞上限）数字列才开始吃掉富余。 */
 /* 马名显示文本（与 NAME_VIEW 一致，量尺与渲染共用同一来源；经 ROW_OPT.nameText 传给共享模块）
- * 港译/自译名缺失时回退日文名（而非 #id）——切到中文名不该把马名降级成编号（明细同口径，§53.7） */
+ * 港译/自译名缺失时回退日文名（而非 #id）——切到中文名不该把马名降级成编号（明细同规则，§53.7）；
+ * 日文名一律剥生产国尾缀（§57「(JPN) 不展示」），全空才走 母名の生年 兜底（§64 全站收口） */
 function horseText(en){
-  var h=en.h;
+  var h=en.h, jp=YJ.util.splitName(h.馬名).name;
   return (NAME_VIEW
-    ? (h.香港馬名||h.自译馬名||h.馬名||h.欧字馬名)
-    : (h.馬名||h.欧字馬名||h.香港馬名||h.自译馬名)) || ("#"+h.id);
+    ? (h.香港馬名||h.自译馬名||jp||h.欧字馬名)
+    : (jp||h.欧字馬名||h.香港馬名||h.自译馬名)) || YJ.util.fallbackName(h);
 }
 
 /* ===== 文本宽度量尺（v6 起：canvas 粗排 + DOM 精量）=====

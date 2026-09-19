@@ -2106,3 +2106,26 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 **修法**：联动载体换成 **sessionStorage**（`front/public/bus.js`）。sessionStorage **按标签页隔离** → 跨标签页不再互顶；而**同源父子 iframe 共享同一份、`storage` 事件在同标签页的 frame 之间照常触发**，所以原本依赖的两个能力（profile 内嵌 races/pedigree 实时联动、profile→pedigree 同标签页跳转恢复选中马）完全不受影响。另加 `store()` 取器，存储被禁用/隐私模式时降级为仅 postMessage 不抛错。三页 `bus.js` 引用 bump `?v=1` 防旧缓存。
 
 **验证与局限**：✅ 同标签页 —— 开 `?horse=35` 内嵌记录正确是 35 的首战 2026-08-08 中京12R、`sessionStorage=35`；切 `?horse=47` 后 `sessionStorage=47` 而 `localStorage` 仍是旧版残留的 `1` **未被改写** → 证明跨标签页通道已断开。⚠ 内置浏览器开不出第二个标签页（`window.open` 被拦成同标签导航），**双标签场景需用户复测**。旧版遗留在用户浏览器里的 `localStorage['yj:currentHorse']` 已无任何读取方，无害；介意为清可控制台跑 `localStorage.removeItem('yj:currentHorse')`。
+## 63. 日期统计 · 周口径跨月周补真实邻月日（高亮行不再空一半）
+
+**问题（用户实测报回）**：选「周」统计 2026-W31（7/27–8/2）时，高亮那一行只有 7/27–7/31 五格有内容，**8/1、8/2 是空格**，而上方 KPI 写着「出走 18」——这一周的数据整行看不见。
+
+**根因 + 取证**：`monthGridHTML()` 永远画**严格月网格**，行首 `lead` / 行尾 `trail` 补的是 `<span class="dc-cell dc-out">` 纯空占位（不带日期、不可点）；周口径只给所在行套一个 `.hl` 外框，而 **ISO 周可以跨月** → 跨月周的两端必然落空。拿 `data/datechart.json` 实测这一周：JRA 出走 18 场 = `8/1`(9 场) + `8/2`(9 场)，**全部落在两个空格子里**（7/28 那 1 场是地方，不在 JRA 口径），所以高亮行整行无数据；同理行首的 6/29、6/30 也永远取不到数。
+
+**修法（三档统一，一条规则）**：① 月网格首尾改成**真实邻月日期** —— `base = Date.UTC(y, m-1, 1-lead)` 起逐日铺满 `ceil((lead+nDays)/7)*7` 格，每格走同一个 `dayCellHTML`，跨月周天然补齐 7 日；② `dayCellHTML` 加 `dim` 参数区分本月 / 邻月：**邻月格日期写成 `8/1`（本月格仍写 `1`）、进板数与赏金照显示，但不套 `.win/.run` 底色**，配 `.dc-outm` 把日期与赏金降灰（降灰语义同日期面板 `.dc-dp-cell.out`）→ 一眼分得出不是本月，又不丢数据，月口径下也不会误把邻月格算进本月合计；③ 删 `.dc-cell.dc-out`（已无格使用）。天/周/月 三档共用同一骨架（页头「日历骨架不变」的约定保住），邻月格**可点**，点了照常下钻到那一天。
+
+**验证**：`verify_datechart.cjs` 95 → **104 断言**（新增：高亮行 == 该 ISO 周完整 7 日、空补位类 `dc-out` 已绝迹、复现截图场景把锚点回 7 月 → 行尾补出 `8/1·8/2` 且 class 恰为 `dc-cell dc-outm`（证明 `run` 底色确被抑制）、日期写成 M/D、进板数 `[0-0-0-9]`/`[0-2-2-5]` 与源数据逐段一致、KPI 出走 18 == 两个补位格之和）；`npm run build` 后 dist 核对 `.dc-outm` 三条规则在位、`dc-out` 零残留；`:8090` 浏览器实测 W31 月网格 = 行首 `6/29 6/30` 灰显、高亮行 `27 28 29 30 31 8/1 8/2` 数据齐全（截图 `tests/_shots/v63-week-crossmonth.png`）；`python run_update.py --check` 五步全绿。
+
+## 64. 马名口径全站收口 · 生产国尾缀不展示 + 无登録名兜底「母名の生年」
+
+**问题（用户实测报回两条）**：① 基本信息左侧搜索框显示 `Grand Warrior(JPN)`，而 §57 早已拍板「生产国尾缀统一不展示」；② 从未做 JRA 馬名登録的马（如 127）页面主名显示 `#127`，要求改成 `母名の生年`（`ダイシンステルラの2023`）。
+
+**根因（两条同病：口径只落在某一个页面，没收到单一出处）**：
+- **尾缀**：§57 的剥离只做在 **profile 名字四格**（页内调 `YJ.util.splitName`），而 `basic.json` 存的是 JBIS 原值 `Grand Warrior(JPN)`（身份归一、台账 `name_key` 匹配都要用，不该动）→ 其余显示点直取 `h.馬名` 原值就漏：选马器选中回填 `setSel`（=用户截图那格）、`selector.displayName()`、比赛记录 `horseText()`、`race-rows.js` 默认马名链、profile / pedigree 的页面标题、日期统计明细马名列（产物 `runs[].h` 有 8 条带尾缀）。
+- **#id**：正确实现其实早就有 —— `selector.js` 页内私有 `fallbackName()` = `母名の生年`（所以左侧列表一直是对的、搜索框选中后却变 `#127` 之外还另说），但 profile 四格兜底、profile / pedigree 标题、`horseText()`、`race-rows.js` 五处各写各的 `'#' + h.id` → 同一件事两套兜底，页面之间自相矛盾。
+
+**修法（收口到 `YJ.util` 单一出处，其余全改薄引用）**：① `public/yj-util.js` 新增 `fallbackName(h)`（从 selector.js **等值搬移**：母名の生年 → 母名 → 生年 → `#id`）与 `mainName(h)`（`馬名` 剥尾缀 → `欧字馬名` → `fallbackName`）= 全站主名唯一口径；② `selector.js` 删页内 `fallbackName`，`displayName()` / `setSel()` 改走 `mainName`；③ `profile.html`（四格兜底 + 标题）、`pedigree.html`（标题）、`races.html`（`horseText()`，一处改则 PC 列 / mb 卡 / 列宽量尺三处同源）、`race-rows.js`（`horseName()` 默认链）、`datechart.html`（`horseNameOf()`）全部改薄引用；④ 顺带修 profile 日文槽 `jpSlot` 取的是原值（`nameKind` 判语言时内部已剥、展示没剥，出现「日文名+(USA)」就会漏）；⑤ **数据侧不动**：`basic.json` / `datechart.json` 保留 JBIS 原值，只在展示层剥 —— 与 §57「官方字段保持镜像 + 展示层归一」的分层一致；⑥ 共享脚本缓存位 bump `yj-util.js?v=1→2`（6 页）、`selector.js?v=4→5`（3 页），防「新函数配旧缓存」报错。`race-rows.js` 的 `esc` 仍自包含，只有马名链取 `YJ.util`（yj-util 必须先加载，全站页面与三个 verify stub 同序）。
+
+**影响面（全库实测）**：带尾缀 **1 匹**（130 `Grand Warrior(JPN)`）；无 `馬名` 且无 `欧字馬名` **11 匹**（127/128/129/269/271~277），**11 匹全部有 `母名`+`生年`** → 兜底 100% 出「母名の生年」，`#id` 只在连母名都缺时才可能露出。
+
+**验证**：`verify_datechart.cjs` 104 → **108**（新增 [C8]：拿真实 `basic.json` 全库直接打单一出处 `mainName`/`fallbackName`（130 剥净、11 匹兜底、母名也缺才 `#id`）+ 明细接线断言 2026年8月含海外显示 `Grand Warrior` 且无 `(JPN)`）；`verify_drill.cjs` 36 → **39**（新增 [E]：`horseText` 默认档 130 = `Grand Warrior`、无名马 = `ダイシンステルラの2023`、`NAME_VIEW=1` 同规则）；`python run_update.py --check` 五步全绿；`npm run build` 后 dist 核对（6 页引 `yj-util.js?v=2`、3 页引 `selector.js?v=5`、`dist/yj-util.js` 含新导出、`dist/data/*.json` JBIS 原值仍在）；`:8090` 浏览器实测 —— 127 = 日文槽 / 搜索框 / 标签标题三处全出 `ダイシンステルラの2023` 且整页搜不到 `#127`；130 = 搜索框 `Grand Warrior`，主页面与 pedigree、races 两个内嵌 iframe 全文均无 `(JPN)`；`races.html?f=horse:130` 出走马列 8 行全 `Grand Warrior`；日期统计 2026年8月（含海外）明细 1 条 `Grand Warrior` 无尾缀。未 commit（等用户确认）。

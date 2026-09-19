@@ -74,7 +74,7 @@
 .dc-brk-lg b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
 .dc-brk-lg b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
 
-/* ===== 日历（月网格：周一行 + 日格） ===== */
+/* ===== 日历（月网格：周一行 + 日格，行首尾补真实邻月日 .dc-outm） ===== */
 .dc-cal{display:flex;flex-direction:column;gap:3px}
 .dc-dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .dc-dow{text-align:center;font-size:10.5px;font-weight:600;color:#8a8a8a;padding:2px 0}
@@ -85,7 +85,11 @@
 .dc-cell.run{background:#f5f5f5}
 .dc-cell.run:hover{background:#ededed}
 .dc-cell.dc-sel{box-shadow:inset 0 0 0 2px #0aa7a0}
-.dc-cell.dc-out{cursor:default;pointer-events:none}
+/* 邻月补位格：真实日期 + 数据照出，但日期/赏金降灰、格底不套 win/run 色 → 一眼分得出不是本月
+ * （降灰语义同日期面板 .dc-dp-cell.out） */
+.dc-cell.dc-outm .dc-d{color:#b4b4b8}
+.dc-cell.dc-outm .dc-prz{color:#b8b8bc}
+.dc-cell.dc-outm:hover{background:#f7f7f7}
 .dc-cell-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
 .dc-d{font-size:12.5px;font-weight:600;color:#52525b;font-variant-numeric:tabular-nums}
 .dc-cell.win .dc-d{color:#0aa7a0}
@@ -163,7 +167,7 @@
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=1"></script>
+<script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
 <script>
@@ -174,7 +178,8 @@
  * 数据：data/datechart.json —— 后端预计算（scripts/datechart/build_datechart.py 生成，
  *       run_update.py 各数据策略自动重算），runs[] 字段与本页渲染层完全同构，
  *       本页只做 天/周/月/年 聚合与渲染，不改数据。
- * 交互：seg 切换聚合口径（日历骨架不变，口径=高亮+KPI 范围）；vseg 切换场地范围 JRA/NAR/海外
+ * 交互：seg 切换聚合口径（日历骨架不变，口径=高亮+KPI 范围；月网格行首尾补**真实邻月日**并灰显 M/D，
+ *       因 ISO 周可跨月，补空格会让跨月周的高亮行整行无数据）；vseg 切换场地范围 JRA/NAR/海外
  *       （多选，默认只统计 JRA）；选择器随口径出 日/周/月/年 面板（Element date-picker 风格），任意窗口一击直达；
  *       点日历格下钻（月/周 → 天，年 → 月）；‹ › 按口径步进（天±1日 / 周±7日 / 月±1月 / 年±1年），
  *       边界自动禁用。明细 = races.html 内嵌比赛表同款（PC 14 列表 + mb 软分行卡片）。 */
@@ -369,16 +374,21 @@ function renderKpis(mode, key){
     kpi("重赏胜利", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
 }
 
-/* 月网格（天/周/月共用，差异只是高亮）：lead/trail 补空格 */
+/* 月网格（天/周/月共用，差异只是高亮）：整格铺**真实日期**，行首/行尾补邻月日（灰显 M/D）。
+ * 邻月补位是必需的：周口径只给所在行加 .hl 外框，而 ISO 周可以跨月 ——
+ * 如 2026-W31 = 7/27–8/2，该周 JRA 出走 18 场全在 8/1·8/2，补位若是空格则高亮行整行无数据 */
 function monthGridHTML(mode, key){
-  var y = st.y, m = st.m, i, d;
+  var y = st.y, m = st.m, i;
   var lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
   var nDays = daysInMonth(y, m);
+  var base = Date.UTC(y, m - 1, 1 - lead);                 /* 首格 = 本月 1 日往前 lead 天 */
+  var total = Math.ceil((lead + nDays) / 7) * 7;
   var cells = [];
-  for (i = 0; i < lead; i++) cells.push('<span class="dc-cell dc-out"></span>');
-  for (d = 1; d <= nDays; d++) cells.push(dayCellHTML(y, m, d, mode, key));
-  var trail = (7 - (lead + nDays) % 7) % 7;
-  for (i = 0; i < trail; i++) cells.push('<span class="dc-cell dc-out"></span>');
+  for (i = 0; i < total; i++){
+    var dt = new Date(base + i * 86400000);
+    var cm = dt.getUTCMonth() + 1;
+    cells.push(dayCellHTML(dt.getUTCFullYear(), cm, dt.getUTCDate(), mode, key, cm !== m));
+  }
   var rows = "";
   for (i = 0; i < cells.length; i += 7){
     var hl = "";
@@ -396,17 +406,20 @@ function monthGridHTML(mode, key){
   return rows;
 }
 
-function dayCellHTML(y, m, d, mode, key){
+/* dim = 邻月补位格：日期写成 M/D、不套 win/run 底色（数据照显示，样式见 .dc-outm） */
+function dayCellHTML(y, m, d, mode, key, dim){
   var ds = dstr(y, m, d);
   var s = statsOf(scopeRuns("day", ds));
   var cls = "dc-cell", style = "";
-  if (s.n){
+  if (dim){
+    cls += " dc-outm";
+  } else if (s.n){
     cls += s.w ? " win" : " run";
     if (s.w) style = ' style="background:rgba(10,167,160,' + (s.w >= 3 ? ".22" : s.w === 2 ? ".16" : ".10") + ')"';
   }
   if (mode === "day" && ds === key) cls += " dc-sel";
   var tip = dayTitle(ds) + " · " + s.n + " 场 · [" + s.br.join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
-  var inner = '<span class="dc-cell-top"><b class="dc-d">' + d + '</b>' +
+  var inner = '<span class="dc-cell-top"><b class="dc-d">' + (dim ? m + "/" + d : d) + '</b>' +
     (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>';
   if (s.n) inner += bracketHTML(s.br) + '<span class="dc-prz">' + (s.pr ? manYen(s.pr) : "") + '</span>';
   return '<button type="button" class="' + cls.trim() + '" data-d="' + ds + '"' + style + ' title="' + esc(tip) + '">' + inner + '</button>';
@@ -456,10 +469,11 @@ function toRow(r){
 /* ---- 马名语言切换（与比赛记录页同一交互；§53.7）----
  * 明细是跨马列表 → 与比赛记录页一样提供「日文名/英文名 ⇄ 港译名/自译名」切换：
  * PC 按钮在「马名」列头（共享模块 nameToggle），mb 按钮在明细标题行右端（同比赛记录页 mb 放在汇总行）。
- * 数据来自产物 runs[].h（日文名）/ .hc（香港馬名→自译馬名，两者皆无=空串 → 回退 h，不显示 #id）。 */
+ * 数据来自产物 runs[].h（日文名）/ .hc（香港馬名→自译馬名，两者皆无=空串 → 回退 h，不显示 #id）。
+ * .h 是后端直取的基本信息 馬名 原值（130 = "Grand Warrior(JPN)"）→ 展示前一律剥生产国尾缀（§57/§64）。 */
 var NAME_VIEW = 0;
 var NAME_TIP = "点击切换马名：日文名/英文名 ⇄ 港译名/自译名";
-function horseNameOf(r){ return (NAME_VIEW && r.hc) ? r.hc : r.h; }
+function horseNameOf(r){ return (NAME_VIEW && r.hc) ? r.hc : YJ.util.splitName(r.h).name; }
 
 function renderDetail(mode, key){
   /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
