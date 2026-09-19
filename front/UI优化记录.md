@@ -2096,3 +2096,13 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 **修法**：① `datechart.html` 新增 `isNR(p)`，`statsOf()` 遇未出走**整行 return**（出走/4 段/赏金/胜场全部不计），`placeSlot()` 注释改为只说明 中止/失格；② **明细标题计数单位 `场` → `条`** —— 明细表仍逐条列出未走行（着顺红色，全站未完走语义色），所以「明细 39 条」与「KPI 出走 38」本就不是同一数，用「条」消除"两个数字谁错了"的误读；③ `verify_datechart.cjs` 全部出走期望改走新增的 `starts()` 过滤器（`br4/winsOf/trophyOf/prizeOf` 内部先剔除未出走，日历「有出走格」的天数同口径，共 12 处断言），并**新增两条钉住断言**：`4 段之和 == 出走`（未出走不进任何段）、源数据断言区分 `中止/失格` 与 `取消/除外` 两类计数。
 
 **验证**：`verify_datechart.cjs` **ALL PASS（95 断言）**；浏览器实测含除外行的两个月 —— 2026年9月 `出走 38 / [6-3-3-26]`（和=38）明细 `39 条`、2026年8月 `出走 93 / [13-12-4-64]`（和=93）明细 `94 条`，各差 1 条正是那 1 场除外；`npm run build` + `python run_update.py --check` 五步全绿。
+
+## 62. 跨标签页串扰修复 · bus 联动载体 localStorage → sessionStorage
+
+**现象（用户实测报回）**：同一浏览器同时打开 `profile.html?horse=35`（ゴッドアイ）与 `?horse=47`（シャロン），两页的**页面头部、性别徽章、RECORD 带都各自正确**，唯独下方内嵌的「比赛记录」两页显示成**同一份**（都是 47 的 5 行，而 35 应有 8 行）。
+
+**根因**：`bus.js` 用 **localStorage** 做跨 iframe 选中马联动，而 localStorage 是**同源全局共享**的，且 `setItem` 会在**其它标签页**触发 `storage` 事件。profile 每次渲染都 `broadcast(h.id)` → 后开的 B 页写入 47 → 该写入以 `storage` 事件反推给 A 页 → A 页内嵌 races iframe 正订阅 `bus.onChange` → 比赛记录被切成 47。头部/RECORD 是直接渲染、不走 bus，所以只有比赛记录串。
+
+**修法**：联动载体换成 **sessionStorage**（`front/public/bus.js`）。sessionStorage **按标签页隔离** → 跨标签页不再互顶；而**同源父子 iframe 共享同一份、`storage` 事件在同标签页的 frame 之间照常触发**，所以原本依赖的两个能力（profile 内嵌 races/pedigree 实时联动、profile→pedigree 同标签页跳转恢复选中马）完全不受影响。另加 `store()` 取器，存储被禁用/隐私模式时降级为仅 postMessage 不抛错。三页 `bus.js` 引用 bump `?v=1` 防旧缓存。
+
+**验证与局限**：✅ 同标签页 —— 开 `?horse=35` 内嵌记录正确是 35 的首战 2026-08-08 中京12R、`sessionStorage=35`；切 `?horse=47` 后 `sessionStorage=47` 而 `localStorage` 仍是旧版残留的 `1` **未被改写** → 证明跨标签页通道已断开。⚠ 内置浏览器开不出第二个标签页（`window.open` 被拦成同标签导航），**双标签场景需用户复测**。旧版遗留在用户浏览器里的 `localStorage['yj:currentHorse']` 已无任何读取方，无害；介意为清可控制台跑 `localStorage.removeItem('yj:currentHorse')`。
