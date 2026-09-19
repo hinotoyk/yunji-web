@@ -200,11 +200,15 @@ const kpiOf = (label, khtml) => {
   const m = String(khtml).match(new RegExp('k">' + label + '</div><div class="v(?: hi| dim)?">([\\s\\S]*?)</div>'));
   return m ? m[1] : null;
 };
+/* 未出走（取消/除外）＝未出闸：不计出走、不进通算战绩 4 段、不计赏金/胜场
+ * （与 datechart.html statsOf、stats.html starts()、races.html 模块 34 同口径） */
+const NR_SET = new Set(["取消", "除外"]);
+const starts = arr => arr.filter(r => !NR_SET.has(String(r.p)));
 const slot4 = p => (typeof p === "number" ? (p >= 1 && p <= 3 ? p - 1 : 3) : 3);
-const br4 = arr => { const b = [0, 0, 0, 0]; arr.forEach(r => b[slot4(r.p)]++); return b; };
-const winsOf = arr => arr.filter(r => r.p === 1).length;
-const trophyOf = arr => arr.filter(r => r.p === 1 && TROPHY_G.has(r.g)).length;
-const prizeOf = arr => arr.reduce((a, r) => a + r.pr, 0);
+const br4 = arr => { const b = [0, 0, 0, 0]; starts(arr).forEach(r => b[slot4(r.p)]++); return b; };
+const winsOf = arr => starts(arr).filter(r => r.p === 1).length;
+const trophyOf = arr => starts(arr).filter(r => r.p === 1 && TROPHY_G.has(r.g)).length;
+const prizeOf = arr => starts(arr).reduce((a, r) => a + r.pr, 0);
 const seg = ev => els["seg"].handlers.click[0].call(els["seg"], { target: { closest: () => ({ getAttribute: () => ev }) } });
 const vseg = ev => els["vseg"].handlers.click[0].call(els["vseg"], { target: { closest: () => ({ getAttribute: () => ev, setAttribute: (k, v) => {} }) } });
 const dpTrigger = () => els["dpTrigger"].handlers.click[0].call(els["dpTrigger"]);
@@ -221,7 +225,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const ym = ay + "-" + pad2(am);
   const sm = sMonth(ym);
   ok(els["winLabel"].textContent === ay + "年" + am + "月", "窗口标签 → " + els["winLabel"].textContent + "（即选择器触发标签）");
-  ok(kpiOf("出走", els["kpis"]._html) === String(sm.length), "KPI 出走 " + sm.length + "（仅 JRA，与源数据一致）");
+  ok(kpiOf("出走", els["kpis"]._html) === String(starts(sm).length), "KPI 出走 " + starts(sm).length + "（仅 JRA，剔除未出走，与源数据一致）");
   ok(String(kpiOf("总赏金", els["kpis"]._html)) === man(prizeOf(sm)), "KPI 总赏金 " + man(prizeOf(sm)));
   ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sm), "KPI 重赏胜利 🏆" + trophyOf(sm));
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sm).join("-") + "]",
@@ -233,11 +237,11 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(man(1150345000) === "11亿5,034万" && man(1e8) === "1亿" && man(25140000) === "2,514万" && man(99990000) === "9,999万" && man(0) === "",
     "manYen 亿转换：11亿5,034万 / 1亿 / 2,514万 / 9,999万 / 空");
   const winDays = new Set(sm.filter(r => r.p === 1).map(r => r.d)).size;
-  const runDays = new Set(sm.map(r => r.d)).size;
+  const runDays = new Set(starts(sm).map(r => r.d)).size;
   ok((String(els["cal"]._html).match(/class="dc-cell win/g) || []).length === winDays, "日历有胜格 " + winDays);
   ok((String(els["cal"]._html).match(/class="dc-cell run/g) || []).length === runDays - winDays, "日历有出走无胜格 " + (runDays - winDays));
   ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
-  ok(/明细 · \d{4}年\d+月 · \d+ 场/.test(els["dTitle"]._html), "明细标题带场数");
+  ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
 
   console.log("[C2] 内嵌比赛表同款明细（PC 14 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
@@ -297,15 +301,15 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   console.log("[C3] 场地范围 JRA/NAR/海外（多选，默认 JRA；最后一个不关）");
   const kpiRuns = () => kpiOf("出走", els["kpis"]._html);
   const baseRuns = +kpiRuns();
-  ok(baseRuns === sm.length, "初始 KPI 出走 = JRA 场数 " + baseRuns);
-  const nar = src.filter(r => r.vt === "地方" && r.d.slice(0, 7) === ym).length;
-  const ovs = src.filter(r => r.vt === "海外" && r.d.slice(0, 7) === ym).length;
+  ok(baseRuns === starts(sm).length, "初始 KPI 出走 = JRA 场数 " + baseRuns);
+  const nar = starts(src.filter(r => r.vt === "地方" && r.d.slice(0, 7) === ym)).length;
+  const ovs = starts(src.filter(r => r.vt === "海外" && r.d.slice(0, 7) === ym)).length;
   vseg("中央");   /* 只剩中央时点关 → 不生效 */
   ok(+kpiRuns() === baseRuns && VT.has("中央"), "唯一启用项不可关闭（JRA 保持）");
   vseg("地方"); VT.add("地方");
-  ok(+kpiRuns() === sm.length + nar, "+NAR → 出走 " + (sm.length + nar) + "（中央+地方）");
+  ok(+kpiRuns() === starts(sm).length + nar, "+NAR → 出走 " + (starts(sm).length + nar) + "（中央+地方）");
   vseg("海外"); VT.add("海外");
-  ok(+kpiRuns() === sm.length + nar + ovs, "+海外 → 出走 " + (sm.length + nar + ovs) + "（全部场地）");
+  ok(+kpiRuns() === starts(sm).length + nar + ovs, "+海外 → 出走 " + (starts(sm).length + nar + ovs) + "（全部场地）");
   ok(nar > 0 && ovs >= 0, "锚点月地方场 " + nar + " 条 / 海外 " + ovs + " 条（数据形态核对）");
   vseg("海外"); VT.delete("海外");
   vseg("地方"); VT.delete("地方");
@@ -334,7 +338,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-d", v: "2026-08-09" });
   ok(els["winLabel"].textContent === "2026/08/09（" + weekdayCn("2026-08-09") + "）", "点 8/9 → " + els["winLabel"].textContent);
   const sd = sDay("2026-08-09");
-  ok(+kpiRuns() === sd.length, "天 KPI 出走 " + sd.length + "（J·GIII 胜日）");
+  ok(+kpiRuns() === starts(sd).length, "天 KPI 出走 " + starts(sd).length + "（J·GIII 胜日）");
   ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sd), "天 KPI 重赏胜利 🏆" + trophyOf(sd) + "（G1-3/Jpn1-3 口径）");
   /* 周口径 → 带周号日历面板 */
   seg("week");
@@ -345,7 +349,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const iw831 = isoWeek("2026-08-06");
   const sw831 = sWeek(iw831.y, iw831.w);
   ok(els["winLabel"].textContent === iw831.y + "年 第" + iw831.w + "週（8/3–8/9）", "点第 " + iw831.w + " 周行 → " + els["winLabel"].textContent);
-  ok(+kpiRuns() === sw831.length, "周 KPI 出走 " + sw831.length + "（与源一致）");
+  ok(+kpiRuns() === starts(sw831).length, "周 KPI 出走 " + starts(sw831).length + "（与源一致）");
   /* 周面板翻周：‹ › = ±7 天（跨月连续翻），« » = 翻月；翻页只改浏览态、面板保持打开 */
   dpTrigger();
   dpClick({ name: "data-nav", v: "nw" });
@@ -365,7 +369,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const iw810 = isoWeek("2026-08-13");
   const sw810 = sWeek(iw810.y, iw810.w);
   ok(els["winLabel"].textContent === iw810.y + "年 第" + iw810.w + "週（8/10–8/16）", "选翻到的周 → " + els["winLabel"].textContent);
-  ok(+kpiRuns() === sw810.length, "W" + iw810.w + " KPI 出走 " + sw810.length + "（与源一致）");
+  ok(+kpiRuns() === starts(sw810).length, "W" + iw810.w + " KPI 出走 " + starts(sw810).length + "（与源一致）");
   /* 年口径 → 十年面板 */
   seg("year");
   dpTrigger();
@@ -374,7 +378,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-y", v: "2025" });
   ok(els["winLabel"].textContent === "2025年", "点 2025 → " + els["winLabel"].textContent);
   const sy25 = sYear(2025);
-  ok(+kpiRuns() === sy25.length, "2025 年 KPI 出走 " + sy25.length + "（JRA）");
+  ok(+kpiRuns() === starts(sy25).length, "2025 年 KPI 出走 " + starts(sy25).length + "（JRA）");
   /* 面板浏览不改锚点 + 选中落锚 + 回最新 */
   seg("month");
   dpTrigger();
@@ -403,22 +407,25 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const sw = sWeek(iw.y, iw.w);
   ok(/第\d+週（\d+\/\d+–\d+\/\d+）/.test(els["winLabel"].textContent), "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/dc-wrow hl/g) || []).length === 1, "所在周行高亮 ×1");
-  ok(+kpiRuns() === sw.length, "周 KPI 出走 " + sw.length + "（与源 ISO 週聚合一致）");
+  ok(+kpiRuns() === starts(sw).length, "周 KPI 出走 " + starts(sw).length + "（与源 ISO 週聚合一致）");
 
   console.log("[C7] 年口径（12 月卡 + 下钻）与未完走降灰");
   seg("year");
   const sy = sYear(ay);
   ok(els["winLabel"].textContent === ay + "年", "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/class="dc-ym( zero)?"/g) || []).length === 12, "12 个月卡");
-  ok(+kpiRuns() === sy.length, "年 KPI 出走 " + sy.length);
+  ok(+kpiRuns() === starts(sy).length, "年 KPI 出走 " + starts(sy).length);
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sy).join("-") + "]", "年通算战绩 4 段 [" + br4(sy).join("-") + "]（格式保留 - 连字符）");
+  ok(br4(sy).reduce((a, b) => a + b, 0) === starts(sy).length,
+    "未出走(取消/除外)不计通算：4 段之和 " + starts(sy).length + " == 出走（剔除未出走）" + starts(sy).length);
   const dnfAll = src.filter(r => typeof r.p === "string");
-  ok(dnfAll.length > 0, "源数据含未完走 " + dnfAll.length + " 条（中止/取消/除外）");
+  const nrAll = src.filter(r => NR_SET.has(String(r.p)));
+  ok(dnfAll.length > 0, "源数据含未完走/未出走 " + dnfAll.length + " 条（中止/失格 " + (dnfAll.length - nrAll.length) + " · 取消/除外 " + nrAll.length + "）");
   const dnf = dnfAll.find(r => +r.d.slice(0, 4) === ay) || dnfAll[0];
   calClick({ name: "data-m", v: String(+dnf.d.slice(5, 7)) });
   ok(els["winLabel"].textContent === dnf.d.slice(0, 4) + "年" + (+dnf.d.slice(5, 7)) + "月", "年卡下钻 → " + els["winLabel"].textContent);
   const sdm = sMonth(dnf.d.slice(0, 7));
-  ok(+kpiRuns() === sdm.length, "月 KPI 出走 " + sdm.length + "（" + dnf.d.slice(0, 7) + "）");
+  ok(+kpiRuns() === starts(sdm).length, "月 KPI 出走 " + starts(sdm).length + "（" + dnf.d.slice(0, 7) + "）");
   ok(String(els["dBody"]._html).includes("yj-mb dnf") || String(els["dBody"]._html).includes("text-muted-foreground"), "未完走降灰（mb 卡 dnf / PC 行 muted）（" + dnf.d + " " + dnf.p + "）");
   ok(String(els["dBody"]._html).includes(">" + esc(dnf.p) + "<"), "未完走着顺灰字展示（" + dnf.p + "）");
 

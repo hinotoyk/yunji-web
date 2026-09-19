@@ -6,7 +6,8 @@
   1. basic.json 结构：能加载、匹数、必需字段存在
   2. pedigree_file 引用：文件存在
   3. races_file 引用：文件存在
-  4. 比赛数据完整性：races 文件里 中央+地方 实际出赛数 < 通算成績 应有战数 → 数据缺失
+  4. 比赛数据完整性：netkeiba 通算成績 战数 ≠ 文件里「來源=netkeiba」的出赛行数 → 抓漏/重复
+     （同口径对账；台账补录的海外场次不在该口径内，只在报告里信息性列出）
   5. 信息性统计：nk_id / 欧字馬名 / 馬名意味 / 香港馬名 / 自译馬名 填充数
 
 输出：stdout 摘要 + data/check_report.md（含问题明细与问题 id 清单）。
@@ -57,11 +58,15 @@ def expected_starts(h):
     return int(m.group(1)) if m else 0
 
 
-def actual_starts(recs):
+def actual_starts(recs, src=None):
     """实际出赛数：結果为名次(int)/中止/失格 算出赛，取消/除外 不算；全部场地。
-    兼容历史单字 DNF（中/失），新数据已归一为全称。"""
+    兼容历史单字 DNF（中/失），新数据已归一为全称。
+    src 非空时只数该来源（來源=netkeiba / 台账）——与 netkeiba 通算成績 对账必须同口径：
+    台账补录的海外场次不在通算成績 口径内，混算会让「netkeiba 抓漏一场」被「台账补一场」抵消。"""
     n = 0
     for r in recs:
+        if src and (r.get("來源") or "netkeiba") != src:
+            continue
         res = r.get("結果")
         if isinstance(res, int) or res in ("中止", "失格", "中", "失"):
             n += 1
@@ -109,8 +114,9 @@ def main():
                     fix_todo["pedigree"].append(h["id"])
     lines.append(f"- 引用文件缺失: {missing_ref}")
 
-    # 2) 比赛数据完整性（通算战数 vs 文件出赛数）
+    # 2) 比赛数据完整性（netkeiba 通算战数 vs 文件里 netkeiba 源出赛数 —— 同口径才叫对账）
     missing_races = 0
+    ledger_only = []            # (id, 馬名, 台账场数)：台账补录的海外场次不在 netkeiba 口径内
     for h in hs:
         ref = h.get("races_file") or ""
         if not ref:
@@ -120,13 +126,22 @@ def main():
         if not p.exists():
             continue
         recs = json.loads(p.read_text(encoding="utf-8"))
-        if actual_starts(recs) < expected_starts(h):
+        nk = actual_starts(recs, "netkeiba")
+        exp = expected_starts(h)
+        led = actual_starts(recs, "台账")
+        if led:
+            ledger_only.append((h["id"], h.get("馬名", ""), led))
+        if nk != exp:
             missing_races += 1
             problems += 1
+            why = "数据缺失（抓漏）" if nk < exp else "行数多于通算战数（重复/异常）"
             lines.append(f"  ✗ {h['id']} {h.get('馬名','')} 通算 {h.get('通算成績')} "
-                         f"但文件出赛 {actual_starts(recs)} 场 → 数据缺失")
+                         f"但 netkeiba 源出赛 {nk} 场 → {why}")
             fix_todo["races"].append(h["id"])
-    lines.append(f"- 比赛数据缺失（通算战数 > 文件出赛）: {missing_races}")
+    lines.append(f"- 比赛数据缺失（netkeiba 通算战数 ≠ 文件 netkeiba 源出赛）: {missing_races}")
+    if ledger_only:
+        lines.append(f"- 台账补录场次（不在 netkeiba 通算成績 口径内，逐场通算战绩会大于展示值）: "
+                     + "、".join(f"{m}(id{i} {c}场)" for i, m, c in ledger_only))
 
     # 3) 重复比赛检测：同一场比赛出现多条记录（同 race_id / 同 slot / 海外同 (日付,場名) 跨来源）
     dup = 0

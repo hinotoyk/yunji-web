@@ -14,7 +14,7 @@
     "generated_at": "产物生成时间(ISO)，仅标识新鲜度；内容无变化时连文件都不重写",
     "source":       "数据来源说明",
     "stats": {
-      "runs":        出走记录总数,
+      "runs":        逐场记录总数（含未出走行；前端 KPI「出走」按三态口径剔除 取消/除外）,
       "horses":      出走过的产驹数,
       "wins":        一着数（全部口径）,
       "trophy_wins": 重赏一着数（GI/GII/GIII/JpnI-3，同 races.html 重赏口径 = 🏆 计数）,

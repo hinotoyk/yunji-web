@@ -191,11 +191,15 @@ var RUNS = [];
 var G = YJ.raceRows.G, GLABEL = YJ.raceRows.GLABEL;
 /* 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 */
 var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
-/* ---- 着顺归类（4 段）：1/2/3 各一段，4 名及以后 + 未完走(字符串) → 第 3 名开外 ---- */
+/* ---- 着顺归类（4 段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
+ * 未出走(取消/除外) 不进任何段——见 statsOf()，未出闸不算通算战绩 */
 function placeSlot(p){
   if (typeof p === "number") return (p >= 1 && p <= 3) ? p - 1 : 3;
-  return 3;                                  /* 中止/取消/除外/失格 计入第 3 名开外 */
+  return 3;                                  /* 中止/失格 计入第 3 名开外 */
 }
+/* 未出走（取消/除外）＝未出闸：不计出走、不进通算战绩、不计赏金/胜场
+ * （同 stats.html starts() 与 races.html 模块 34 的三态口径） */
+function isNR(p){ return p === "取消" || p === "除外"; }
 /* 进板数配色 = 着顺浅色三件套（1/2/3 浅底 + 着外灰）：JS 侧单一出处 race-rows.js PLACE_BG
  * （CSS 同源 = theme.css .yj-nkm1/2/3，改色需同步） */
 var BR_COLORS = YJ.raceRows.PLACE_BG;
@@ -295,10 +299,13 @@ function scopeRuns(mode, key){
   var y = +key.slice(0,4), w = +key.slice(6);
   return RUNS.filter(function(r){ return inVenue(r) && (function(){ var iw = isoWeekInfo(r.d); return iw.y === y && iw.w === w; })(); });
 }
-/* 一组记录的聚合：n 出走 / w 胜 / br 进板数(4 段) / pr 总赏金 / gr 重赏胜 */
+/* 一组记录的聚合：n 出走 / w 胜 / br 进板数(4 段) / pr 总赏金 / gr 重赏胜
+ * 未出走（取消/除外）整行剔除——未出闸不算通算战绩（同 stats.html / races.html 三态口径） */
 function statsOf(runs){
-  var s = { n: runs.length, w: 0, br: [0,0,0,0], pr: 0, gr: 0 };
+  var s = { n: 0, w: 0, br: [0,0,0,0], pr: 0, gr: 0 };
   runs.forEach(function(r){
+    if (isNR(r.p)) return;
+    s.n++;
     s.br[placeSlot(r.p)]++;
     if (r.p === 1){ s.w++; if (GRADED[r.g]) s.gr++; }
     s.pr += r.pr || 0;
@@ -469,7 +476,7 @@ function renderDetail(mode, key){
     return pa !== pb ? pa - pb : (a.r < b.r ? -1 : 1);
   });
   document.getElementById("dTitle").innerHTML =
-    '明细 · ' + esc(keyLabel(mode, key)) + ' · ' + runs.length + ' 场' +
+    '明细 · ' + esc(keyLabel(mode, key)) + ' · ' + runs.length + ' 条' +   /* 条=记录数（含未走行）；KPI「出走」已剔除未出走 */
     /* mb 端切换按钮：本页 PC/mb 一律用 CSS 断点分（PC 表 hidden md:block / mb 卡 md:hidden），
      * 故按钮同样用 md:hidden —— 不引入页内 JS 设备判断（device.js 本页未加载） */
     '<button type="button" class="yj-name-toggle ml-auto md:hidden" data-tip="' + esc(NAME_TIP) + '">马名 <span class="yj-name-ico">⇄</span></button>';

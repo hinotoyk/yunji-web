@@ -23,6 +23,9 @@
      netkeiba / JBIS 两边都不回写，逐场记录才是当期事实；官方一旦更新，派生字段自动消失。
   3c. 最后套用人工维护表 data/manual_overrides.json（{id:{字段:值}}）：人工值优先于派生值，
      抓取脚本永不写该表（见 common.load_overrides）。
+  3d. 派生 通算成績_逐场：由逐场全量记录（含海外台账场）计算 出走/1-3着/着外/未完走/未出走，
+     作为全站通算战绩的唯一展示源（口径与 netkeiba 展示值对齐，实测 276 匹仅 id 130 不同）。
+     官方 通算成績 字符串保持 netkeiba 镜像、降级为对账用（check_data 拿它比 netkeiba 源行数）。
   4. 回填 races_file（"data/races/{id}.json"，站点根相对，与 pedigree_file 同口径）。
   5. 写 data/races_report.md 报告，删除 _tmp 缓存（--keep 保留调试）。
 
@@ -32,6 +35,7 @@
 """
 import argparse
 import json
+import re
 import sys
 from datetime import datetime
 
@@ -82,6 +86,37 @@ def current_sex(recs):
         return ""
     v = str(max(dated, key=lambda r: str(r.get("日付")))["性"]).strip()
     return "セ" if v.startswith("セ") else v
+
+
+DNF_RES = ("中止", "失格")        # 未完走：计出走、不算完赛
+EXC_RES = ("取消", "除外")        # 未出走：不计出走
+
+
+def career_from_recs(recs):
+    """逐场全量记录（含海外台账行）→ 通算成绩。
+
+    口径与 netkeiba 详情页展示值对齐（实测全库 276 匹逐场推导 == 官方字符串）：
+      出走 = 全部记录 − 未出走(取消/除外)；中止/失格 计入出走并单列未完走；
+      着外 = 出走 − 1着 − 2着 − 3着（含未完走，故 1+2+3+着外 == 出走）。
+    取代「前端正则解析 netkeiba 通算成績 字符串」——那份只覆盖 netkeiba 收录的比赛，
+    海外台账补录的场次不进该口径，会导致有战绩的马显示「未出赛」（案例 id 130）。"""
+    starts = exc = dnf = w = p2 = p3 = 0
+    for r in recs:
+        res = r.get("結果")
+        if res in EXC_RES:
+            exc += 1
+            continue
+        starts += 1
+        if res in DNF_RES:
+            dnf += 1
+        elif res == 1:
+            w += 1
+        elif res == 2:
+            p2 += 1
+        elif res == 3:
+            p3 += 1
+    return {"出走": starts, "1着": w, "2着": p2, "3着": p3,
+            "着外": starts - w - p2 - p3, "未完走": dnf, "未出走": exc}
 
 
 def move_after(h, field, anchor):
@@ -206,6 +241,7 @@ def main():
     #     哪天官方自己更新了，派生值与之相等即自动消失，不会留脏字段。
     overrides = common.load_overrides()
     sex_diff = []               # (馬名, 官方 性別, 逐场 性)
+    career_diff = []            # (馬名, 官方 通算成績, 逐场推导) —— 两口径不一致即 netkeiba 未收录的场次
     manual_hits = []            # (馬名, [被套字段])
     for h in horses:
         id_s = str(h["id"])
@@ -229,6 +265,13 @@ def main():
             sex_diff.append((h.get("馬名"), h.get("性別") or "—", cur))
         else:
             h.pop("性別_当前", None)
+        # 5d) 通算成績_逐场：全站通算战绩的唯一展示源（含海外台账场）。
+        #     官方 通算成績 字符串保持 netkeiba 镜像、降级为对账用（check_data 拿它比 netkeiba 源行数）。
+        car = career_from_recs(recs)
+        h["通算成績_逐场"] = car
+        m = re.search(r"(\d+)戦", h.get("通算成績") or "")
+        if m and int(m.group(1)) != car["出走"]:
+            career_diff.append((h.get("馬名"), h.get("通算成績"), car))
         n_prize += 1
 
     # 5c) 人工维护表（data/manual_overrides.json）：在全部派生之后套用，人工值优先
@@ -237,6 +280,7 @@ def main():
         if hit:
             manual_hits.append((h.get("馬名"), hit))
         move_after(h, "性別_当前", "性別")   # 派生/人工两条写入路径都归位到 性別 下面
+        move_after(h, "通算成績_逐场", "通算成績")
 
     common.save_basic(data)
 
@@ -248,9 +292,16 @@ def main():
         f"- 详情更新: {n_detail} 匹 · 通算成績变化: {n_changed} 匹",
         f"- 新增成绩记录: {n_new} 条 · 台账海外新增: {n_led} 条 · force 全量回填: {n_full} 匹",
         f"- 収得賞金计算: {n_prize} 匹 · 収得缺本賞金: {len(shutoku_missing)} 场",
-        f"- 性別_当前 派生（官方登录 ≠ 逐场）: {len(sex_diff)} 匹 · 人工兜底套用: {len(manual_hits)} 匹",
+        f"- 性別_当前 派生（官方登录 ≠ 逐场）: {len(sex_diff)} 匹 · 人工维护覆盖: {len(manual_hits)} 匹",
+        f"- 通算成績 逐场推导 ≠ netkeiba 展示值: {len(career_diff)} 匹",
         f"- 抓取失败: {len(failures)} 匹",
     ]
+    if career_diff:
+        lines += ["", "## 通算成績 逐场推导 ≠ netkeiba 展示值（差值 = netkeiba 未收录的场次，多为海外台账）", "",
+                  "| 馬名 | netkeiba 展示 | 逐场推导 |", "|---|---|---|"]
+        for name, official, car in career_diff:
+            lines.append(f"| {name} | {official or '—'} | {car['出走']}戦{car['1着']}勝 "
+                         f"[ {car['1着']}-{car['2着']}-{car['3着']}-{car['着外']} ] |")
     if sex_diff:
         lines += ["", "## 性別_当前 派生（官方为登录性别，逐场记录为当期性别）", "",
                   "| 馬名 | 官方登录 | 逐场当前 |", "|---|---|---|"]
@@ -277,6 +328,7 @@ def main():
     print(f"   - 新增成绩 {n_new} 条 · 台账海外 {n_led} 条 · force 全量回填 {n_full} 匹 · 収得计算 {n_prize} 匹")
     print(f"   - 収得缺本賞金 {len(shutoku_missing)} 场 · 抓取失败 {len(failures)} 匹")
     print(f"   - 性別_当前 派生 {len(sex_diff)} 匹 · 人工维护覆盖 {len(manual_hits)} 匹")
+    print(f"   - 通算成績 逐场推导 ≠ netkeiba 展示值 {len(career_diff)} 匹")
     print(f"✔ 已写 {report.name}")
 
     if not args.keep:
