@@ -192,9 +192,7 @@ function pad2(n){return n<10?"0"+n:""+n;}
  * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
 var RUNS = [];
 
-/* ---- 级别/徽章表统一取自共享模块 front/public/race-rows.js（与比赛页同一份） ---- */
-var G = YJ.raceRows.G, GLABEL = YJ.raceRows.GLABEL;
-/* 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 */
+/* ---- 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 ---- */
 var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
 /* ---- 着顺归类（括号后四段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
  * 未出走(取消/除外) 不进任何段——见 statsOf()，未出闸不算通算战绩 */
@@ -495,7 +493,7 @@ function renderDetail(mode, key){
     '明细 · ' + esc(keyLabel(mode, key)) + ' · ' + runs.length + ' 条' +   /* 条=记录数（含未走行）；KPI「出走」已剔除未出走 */
     /* mb 端切换按钮：本页 PC/mb 一律用 CSS 断点分（PC 表 hidden md:block / mb 卡 md:hidden），
      * 故按钮同样用 md:hidden —— 不引入页内 JS 设备判断（device.js 本页未加载） */
-    '<button type="button" class="yj-name-toggle ml-auto md:hidden" data-tip="' + esc(NAME_TIP) + '">马名 <span class="yj-name-ico">⇄</span></button>';
+    YJ.raceRows.nameToggleHTML("马名", NAME_TIP, "ml-auto md:hidden");
   if (!runs.length){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;

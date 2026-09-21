@@ -87,11 +87,12 @@
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
   <div class="page-title mb-7 max-md:mt-2.5">时间线 · TIMELINE</div>
   <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
-  <div id="body"><div class="hint-empty">正在加载全库比赛数据…</div></div>
+  <div id="body"><div class="hint-empty">正在加载时间线数据…</div></div>
 </div>
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
+<script src="../loading.js?v=2"></script>
 <script>
 /* ================= 时间线 · 里程碑事件页 =================
  * 数据：data/timeline.json —— 后端预计算（scripts/timeline/build_timeline.py 生成，
@@ -121,11 +122,13 @@ function teamHTML(team){
            team.split('｜').map(function(s){ return '<div>'+esc(s.trim())+'</div>'; }).join('')+
          '</div>';
 }
-/* 图源：timeline.json 已解析（race photo 优先→马照片），空=浅灰占位 */
+/* 图源：timeline.json 已解析（race photo 优先→马照片），空=浅灰占位。
+ * 图片标记统一走 YJ.ui.img（§5.3.2）：loading=lazy + decoding=async + 写死占位尺寸
+ * 297×210 —— 与 .tl-photo 的 aspect-ratio:297/210 同源，解码前比例即已确定，不会顶动卡片位置。 */
 function photoHTML(ev){
   var src = ev.photo || "";
   return src
-    ? '<div class="tl-photo"><img src="'+esc(src)+'" alt="" loading="lazy"></div>'
+    ? '<div class="tl-photo">'+YJ.ui.img({ src: src, alt: "", cls: "", w: 297, h: 210 })+'</div>'
     : '<div class="tl-photo empty"><span>🐎</span></div>';
 }
 function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在左），"left"=卡片在轴左侧；图位恒贴时间轴一侧 */

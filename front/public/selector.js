@@ -31,9 +31,7 @@ YJ.selector = (function () {
   function metaHTML(h) {
     return h.生年 || '';
   }
-  /* 主名 = 日文 → 英文 → 兜底「母名の生年」（母名也没有才退化 #id）。
-   * doubleName 双格式（基本信息用）：主名之后追加 港译(无则自译)，与主名相同/为空则跳过；
-   * 默认单格式行为与之前完全一致。 */
+  /* 主名链 = 日文 → 英文 → 「母名の生年」兜底(母名也缺才退化 #id)；dbl=true 时主名后追加 港译(无则自译)，与主名相同/为空则跳过。双格式契约见 front/UI优化记录.md §64 */
   function nameHTML(h, dbl) {
     var names = [];
     /* 色块语言按内容判定（YJ.util.nameKind），与 profile 名字四格同口径：
@@ -62,15 +60,84 @@ YJ.selector = (function () {
   let dropInstances = [];
   let docClickInstalled = false;
 
+  /* ============ 路 D · basic.json 跨上下文共享缓存（OPTIMIZATION_PLAN §5.2） ============
+   * 动机：profile 页 + 其内嵌 races / pedigree iframe 各自 fetch 一次 328KB 的 basic.json，
+   *   同 tab 内最多 3~5 份重复请求（线上还要各付一个 must-revalidate 条件请求）。
+   * 两级：① 内存 horsesCache（同一 JS 上下文，零成本）
+   *       ② sessionStorage 原文（同一标签页的 iframe 之间同源共享 → 省掉后续 fetch）
+   *   ⚠ sessionStorage 判定/降级沿用 bus.js:11-17 的踩坑结论：隐私模式或被站点禁用时
+   *     访问属性就会抛，setItem 还可能 QuotaExceeded —— 探测一次，失败即整模块退回纯内存。
+   * 失效：键名带版本号（字段口径变化 +1，旧条目自然作废）+ 写入超 1h（BASIC_TTL）作废重取 + 解析失败即删键；
+   *       编辑台 init 与保存成功回调都会调 clearBasicCache() 立即清（editor.js 的 init()/save()；
+   *       跨标签页的缓存各自隔离，只能等 1h TTL 或刷新——sessionStorage 载体选择的既定边界）。
+   * 收益口径：这是「跨页/跨 iframe」优化，不是首屏优化（探针 §6 结论：单页只省 34~49ms）。 */
+  const BASIC_V = "v1";
+  const BASIC_MAX = 4 * 1024 * 1024;   /* 超过 4MB 的产物不进 sessionStorage（避免挤爆配额） */
+  const BASIC_TTL = 60 * 60 * 1000;    /* 共享缓存寿命 1h（用户 2026-09-21 定）：同标签页长挂也能等到 CI 新数据 */
+  const SS = (function () {
+    try {
+      const s = window.sessionStorage;
+      const probe = "yj:probe";
+      s.setItem(probe, "1");
+      const ok = s.getItem(probe) === "1";
+      s.removeItem(probe);
+      return ok ? s : null;
+    } catch (e) { return null; }         /* 不可用 → null，本模块全程只走内存 */
+  })();
+
+  function absUrl(url) {
+    try { return new URL(String(url), document.baseURI || location.href).href; }
+    catch (e) { return String(url); }
+  }
+  function basicKey(url) { return "yj:basic:" + BASIC_V + ":" + absUrl(url); }
+  function readStore(url) {
+    if (!SS) return null;
+    const key = basicKey(url);
+    try {
+      const raw = SS.getItem(key);
+      if (!raw) return null;
+      const nl = raw.indexOf("\n");                 /* 存储格式 = 写入时间戳 + \n + 原文；无之前缀=旧格式一并作废 */
+      const t = nl > 0 ? Number(raw.slice(0, nl)) : NaN;
+      if (!isFinite(t) || Date.now() - t > BASIC_TTL) { SS.removeItem(key); return null; }
+      const horses = parseHorses(raw.slice(nl + 1));
+      if (!horses) SS.removeItem(key);   /* 结构不合法（截断/旧格式）→ 作废重取 */
+      return horses;
+    } catch (e) {
+      try { SS.removeItem(key); } catch (e2) {}
+      return null;
+    }
+  }
+  function writeStore(url, text) {
+    if (!SS || !text || text.length > BASIC_MAX) return;
+    try { SS.setItem(basicKey(url), Date.now() + "\n" + text); } catch (e) { /* 配额满：静默降级为内存缓存 */ }
+  }
+  function horsesOf(d) {
+    const horses = Array.isArray(d) ? d : (d && d.horses) || null;
+    return Array.isArray(horses) ? horses : null;
+  }
+  function parseHorses(text) { return horsesOf(JSON.parse(text)) }
+
   async function loadHorses(base) {
-    if (horsesCache) return horsesCache;
+    if (horsesCache) return horsesCache;      /* ① 本上下文内存命中 */
     if (cachePromise) return cachePromise;
+    const url = base || YJ_DATA.url('basic.json');
+    const shared = readStore(url);            /* ② 同标签页其它 iframe 已取过 → 直接用，不发请求 */
+    if (shared) { horsesCache = shared; return shared; }
     cachePromise = (async function () {
-      const r = await fetch(base || YJ_DATA.url('basic.json'));
+      const r = await fetch(url);
       if (!r.ok) throw new Error("HTTP " + r.status);
-      const d = await r.json();
-      const horses = Array.isArray(d) ? d : (d.horses || []);
+      /* 取原文而非直接 .json()：原文才能塞进 sessionStorage；
+       * 无 text() 的响应（测试替身等）退回 .json()，只是不写共享缓存。 */
+      let horses, text = null;
+      if (r && typeof r.text === "function") {
+        text = await r.text();
+        horses = parseHorses(text);
+      } else {
+        horses = horsesOf(await r.json());
+      }
+      if (!horses) throw new Error("basic.json 解析失败");
       horsesCache = horses;
+      writeStore(url, text);
       return horses;
     })();
     try {
@@ -326,5 +393,19 @@ YJ.selector = (function () {
     select(id);
   }
 
-  return { init, loadHorses, displayName, matches, getHorses, select, selectById };
+  /* 手动失效（数据更新后 / 排障用）：内存 + sessionStorage 一起清，下次 loadHorses 重新 fetch */
+  function clearBasicCache() {
+    horsesCache = null;
+    cachePromise = null;
+    if (!SS) return;
+    const pre = "yj:basic:" + BASIC_V + ":";
+    try {
+      for (let i = SS.length - 1; i >= 0; i--) {
+        const k = SS.key(i);
+        if (k && k.indexOf(pre) === 0) SS.removeItem(k);
+      }
+    } catch (e) { /* 忽略：探测已确认可用，遍历期被清空属极端情形 */ }
+  }
+
+  return { init, loadHorses, displayName, matches, getHorses, select, selectById, clearBasicCache };
 })();

@@ -100,7 +100,7 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js?v=1"></script>
-<script src="../selector.js?v=5"></script>
+<script src="../selector.js?v=6"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script>
@@ -120,11 +120,6 @@ var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 
  * 表头 / PC 单元格 / mb 卡片项 / 列宽最小宽 全部同源 → 改列、改徽章、改格式只改 race-rows.js。
  * 下方薄别名只为保持本页既有调用点不变（数据键即原始日文键，无需适配）。 */
 var RR = YJ.raceRows;
-var G = RR.G, GLABEL = RR.GLABEL;
-var gradeBadge = RR.gradeBadge, placeBadge = RR.placeBadge;
-var ninkiBadge = RR.ninkiBadge, ninkiMbCls = RR.ninkiMbCls;
-var raceNameText = RR.raceNameText, venueR = RR.venueR;
-function weightHTML(r){ return RR.weightOf(r); }
 function embedTableHTML(rows){ return RR.embedTableHTML(rows); }
 function rowEmbedHTML(r){ return RR.rowEmbedHTML(r); }
 function rowEmbedMbHTML(r){ return RR.rowEmbedMbHTML(r); }
@@ -149,7 +144,11 @@ function resultCode(n){
  * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
  * 内嵌单马表（renderHorse 加载后）与独立跨马表（renderResults）共用；
  * PC 表与 mb 卡片渲染同一份有序列表，一份排序四处（内嵌/独立 × pc/mb）同时生效。
- * 完全同键（跨马表里同一场比赛的多匹马）返回 0，走稳定排序保持加载顺序。 */
+ * ★ 末位比较键（UI优化记录 §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
+ *   稳定排序只能保持「并入顺序」，而全库 276 个文件是 16 并发逐个 push 进 entries 的（顺序 = 到达时序）
+ *   → 最终行序不唯一（实测同键组 135 个 / 298 行）。故同键后一律按数据字段定序：
+ *   着顺升序（未完走殿后，与日期统计明细同口径）→ race_id（不同场次不交错）→ 馬番升序 → 馬名。
+ *   只用行上的字段、不引比较器之外的上下文（如马 id），两条调用路径同一语义。 */
 function raceCmp(a, b){
   var da=String(a.日付||""), db=String(b.日付||"");
   if(da!==db) return da<db?1:-1;              /* 日期降序 */
@@ -159,7 +158,19 @@ function raceCmp(a, b){
     if(!tb) return 1;
     return ta<tb?1:-1;                         /* 発走降序（大→小） */
   }
-  return 0;
+  return raceTieCmp(a, b);                     /* 完全同键 → 末位键给出唯一行序 */
+}
+/* 着顺值：数字着顺即本身；中止/失格/取消/除外（非数字）统一殿后 */
+function placeVal(r){ return typeof r.結果 === "number" ? r.結果 : 99; }
+/* 馬番值：缺失/非数字排同场最后 */
+function banVal(r){ var v=r.馬番, n=(v===""||v==null)?NaN:+v; return isNaN(n)?999:n; }
+function raceTieCmp(a, b){
+  var p=placeVal(a)-placeVal(b); if(p) return p;
+  var ra=String(a.race_id||""), rb=String(b.race_id||"");
+  if(ra!==rb) return ra<rb?-1:1;
+  var q=banVal(a)-banVal(b); if(q) return q;
+  var na=String(a.出走馬名||""), nb=String(b.出走馬名||"");
+  return na===nb?0:(na<nb?-1:1);
 }
 
 /* ===== 单马 22 列独立表 / 22 列 mb 卡片：已随「全库跨马查询」上线而失效（renderRaces 只在
@@ -202,8 +213,8 @@ function renderHorse(id){
     });
   };
   if (h) { renderR(h); return; }
-  fetch(YJ_DATA.url('basic.json')).then(function(r){return r.json();}).then(function(d){
-    var arr = Array.isArray(d)?d:(d.horses||[]);
+  /* 马匹信息走 YJ.selector.loadHorses（路 D 共享缓存：与 profile 父页面 / 本页独立模式同一份，不再各拉 328KB） */
+  YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(arr){
     renderR(arr.find(function(x){return x.id===id;}));
   }).catch(function(){ renderR(null); });
 }
@@ -642,7 +653,7 @@ function renderResults(){
   var summary='<div class="mb-3 flex flex-wrap items-baseline gap-2 text-[13px] text-secondary-foreground">'+
     '共 <b class="text-[16px] text-primary">'+total+'</b> 场 · <b class="text-[16px] text-primary">'+nH+'</b> 匹'+
     (pages>1?'<span class="text-[11.5px] text-muted-foreground">当前第 '+PG.page+' 页 · 显示 '+list.length+' 条</span>':"")+
-    (isMb()?'<button type="button" class="yj-name-toggle ml-auto self-center" data-tip="'+esc(NAME_TIP)+'">出走马 <span class="yj-name-ico">⇄</span></button>':"")+
+    (isMb()?RR.nameToggleHTML("出走马", NAME_TIP, "ml-auto self-center"):"")+
     '</div>';
   var empty='<div class="rounded-[10px] border border-border bg-card px-5 py-[48px] text-center text-[13px] text-muted-foreground">没有符合条件的比赛记录</div>';
   var listHtml;

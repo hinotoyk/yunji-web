@@ -133,6 +133,16 @@ YJ.raceRows = (function () {
   }
   function hasHorse(en, o) { return !!(en && en.h) || !!(o && o.horse); }
 
+  /* ---- 马名语言切换按钮（.yj-name-toggle）HTML 单一出处 ----
+   * 同款按钮三处重复（§69 收口）：本模块 theadHTML 的出走马列头 + 比赛记录页 mb 汇总行
+   * + 日期统计页明细标题行；三处只差「定位类」与「列名文案」，结构与图标同源。
+   * cls 空 → 只留基类；tip 空 → 整个 data-tip 属性不出（列头无 tooltip 的老行为）。 */
+  function nameToggleHTML(label, tip, cls) {
+    return '<button type="button" class="yj-name-toggle' + (cls ? " " + cls : "") + '"' +
+      (tip ? ' data-tip="' + esc(tip) + '"' : "") + '>' +
+      esc(label) + ' <span class="yj-name-ico">⇄</span></button>';
+  }
+
   /* ---- 单元格类名（PC）：embed 与 lib 两套 padding；数字列加 tabular-nums ---- */
   var TC = "px-1 py-1.5 text-center tabular-nums whitespace-nowrap";
   var TT = "px-1 py-1.5 text-center whitespace-nowrap";
@@ -388,8 +398,7 @@ YJ.raceRows = (function () {
     var cells = cols(setName, o).map(function (e) {
       var label = e.th;
       if (o.nameToggle && e.k === "horse") {   /* 出走马列头 = 马名语言切换按钮（比赛记录页专属交互） */
-        label = '<button type="button" class="yj-name-toggle"' + (o.nameTip ? ' data-tip="' + esc(o.nameTip) + '"' : '') + '>' +
-                esc(e.th.replace(/\s*⇄\s*$/, "")) + ' <span class="yj-name-ico">⇄</span></button>';
+        label = nameToggleHTML(e.th.replace(/\s*⇄\s*$/, ""), o.nameTip, "");
       } else {
         label = esc(label);
       }
@@ -479,6 +488,7 @@ YJ.raceRows = (function () {
     ninkiBadge: ninkiBadge, ninkiMbCls: ninkiMbCls,
     raceNameText: raceNameText, venueR: venueR, surfaceShort: surfaceShort,
     weight: weight, weightOf: weightOf, horseLink: horseLink,
+    nameToggleHTML: nameToggleHTML,
     cols: cols, raceMeasure: raceMeasure,
     theadHTML: theadHTML, rowHTML: rowHTML, mbCardHTML: mbCardHTML, mbListHTML: mbListHTML,
     embedTableHTML: embedTableHTML,
