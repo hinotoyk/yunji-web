@@ -1,31 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""基础部分共享工具：请求 / 解析辅助 / basic.json 读写 / 输出。
+"""基础管线共享工具：本管线特有的站点常量 + 将中立层（scripts/_shared）注入本管线口径。
 
-设计原则（线性流）：
-  - 每个脚本只负责一条独立的业务链路，无跨源来回兜底。
-  - 请求统一走 fetch()，带 重试 + 风控日志 + 可选 jitter。
-  - basic.json 是唯一「前合并」数据源，各并发脚本按 id 回写字段。
-
-basic.json 结构：
-  {
-    "_meta": {"schema": "basic/v1", "updated": "...", "count": N},
-    "horses": [ { "id": int 自增, "jbis_id": ..., "生年": ..., "馬名": ..., "母名": ...,
-                   "nk_id": ..., "馬名意味": ..., "pedigree_file": ..., ... } ]
-  }
+网络/路径/basic.json 读写/人工表等与竞赛管线逐字重复的部分已收进 _shared；
+设计原则与并发架构见 scripts/README.md，basic.json 字段契约见 data/SCHEMA.md。
 """
-import csv
+import functools
 import io
-import json
-import random
-import re
 import sys
-import time
-from datetime import datetime
 from pathlib import Path
 
-import requests
-from bs4 import BeautifulSoup
+import requests                  # noqa: F401  脚本以 common.requests 使用
+from bs4 import BeautifulSoup    # noqa: F401  脚本以 common.BeautifulSoup 使用
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
+from _shared import basic_io, manual, net, paths, text    # noqa: E402
 
 if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     try:
@@ -34,18 +23,13 @@ if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
         pass
 
 # ---- 路径 ----
-SCRIPTS_DIR = Path(__file__).resolve().parent        # scripts/basic/
-ROOT = SCRIPTS_DIR.parent.parent                     # 重构工作区根
-DATA_DIR = ROOT / "data"                             # 全部数据统一放根 data/
+ROOT = paths.ROOT
+DATA_DIR = paths.DATA_DIR                                  # 全部数据统一放根 data/
+BASIC_JSON = paths.BASIC_JSON
 PEDIGREE_DIR = DATA_DIR / "pedigree"
-TMP_DIR = DATA_DIR / "_tmp" / "basic"                # 基础并发缓存（merge 后删除）
-BASIC_JSON = DATA_DIR / "basic.json"
+TMP_DIR = paths.tmp_dir("basic")                           # 基础并发缓存（merge 后删除）
 
-# 全角罗马数字 → 拉丁（统一用 I/II/III...）
-ROMAN_FULL = {"Ⅰ": "I", "Ⅱ": "II", "Ⅲ": "III", "Ⅳ": "IV", "Ⅴ": "V",
-              "Ⅵ": "VI", "Ⅶ": "VII", "Ⅷ": "VIII", "Ⅸ": "IX", "Ⅹ": "X"}
-
-# ---- 站点/常量 ----
+# ---- 站点/常量（仅基础管线消费） ----
 JBIS = "https://www.jbis.or.jp"
 JBIS_SIRE_ID = "0001237042"                        # コントレイル JBIS id
 JBIS_PROGENY_URL = (JBIS + "/horse/{sid}/sire/progeny/"
@@ -59,15 +43,11 @@ NK_HORSE_URL = NK + "/horse/{nk_id}/"
 
 STUD = "https://www.studbook.jp"
 
-COLORS = ("青鹿毛", "黒鹿毛", "鹿毛", "芦毛", "栗毛", "白毛", "青毛", "粕毛", "栃栗毛", "鹿栗毛", "月毛", "河原毛")
+COLORS = net.COLORS
+HEADERS = net.HEADERS
+DEFAULT_SLEEP = net.DEFAULT_SLEEP
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-    "Accept-Language": "ja,en;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-}
-
-# ---- 按域名配置请求间隔（基准秒，会再乘以 0.8~1.2 抖动） ----
+# ---- 本管线的网络口径（以形参注进中立层：net 不含管线概念） ----
 # 值参考实际风控表现：netkeiba 对高频抓取敏感（间隔需大），JBIS/studbook 相对宽松。
 # 运行后可在 data/fetch_log.csv 里按 host 观察，按需调整这里。
 DOMAIN_SLEEP = {
@@ -75,143 +55,30 @@ DOMAIN_SLEEP = {
     "db.netkeiba.com": 6.0,      # netkeiba 列表/详情（风控严，保守）
     "www.studbook.jp": 1.2,      # studbook 産駒/意味
 }
-DEFAULT_SLEEP = 2.0              # 未匹配到域名的兜底间隔
+STRIP_BASES = (JBIS, NK, STUD)   # log_fetch 记 path 时剥掉的站点根
 
+domain_of = net.domain_of
+sleep_for = functools.partial(net.sleep_for, domain_sleep=DOMAIN_SLEEP)
+jitter = functools.partial(net.jitter, domain_sleep=DOMAIN_SLEEP)
+fetch = functools.partial(net.fetch, domain_sleep=DOMAIN_SLEEP, strip_bases=STRIP_BASES)
+soup_of = functools.partial(net.soup_of, domain_sleep=DOMAIN_SLEEP, strip_bases=STRIP_BASES)
+log_fetch = functools.partial(net.log_fetch, strip_bases=STRIP_BASES)
 
-def domain_of(url):
-    """从 URL 提取 host（小写）。"""
-    m = re.search(r"https?://([^/]+)", url or "")
-    return m.group(1).lower() if m else ""
+norm = text.norm
+norm_mare = text.norm_mare
+ROMAN_FULL = text.ROMAN_FULL
 
+load_basic = basic_io.load_basic
+save_basic = basic_io.save_basic
+next_id = basic_io.next_id
+BASIC_FIELDS = basic_io.BASIC_FIELDS
+BASIC_ORDER = basic_io.BASIC_ORDER
+BASIC_TEMPLATE = basic_io.BASIC_TEMPLATE
 
-def sleep_for(url, fallback=None):
-    """按域名返回抖动后的请求间隔（秒）。
-    优先 DOMAIN_SLEEP[host]，未配置则用 fallback 或 DEFAULT_SLEEP。"""
-    base = DOMAIN_SLEEP.get(domain_of(url), fallback if fallback is not None else DEFAULT_SLEEP)
-    return base * random.uniform(0.8, 1.2)
+tmp_path = functools.partial(basic_io.tmp_path, tmp_dir=TMP_DIR)
+write_cache = functools.partial(basic_io.write_cache, tmp_dir=TMP_DIR)
+read_cache = functools.partial(basic_io.read_cache, tmp_dir=TMP_DIR)
+clean_cache_all = functools.partial(basic_io.clean_cache_all, tmp_dir=TMP_DIR)
 
-
-# ---------------- 请求 ----------------
-def fetch(url, retries=3, encoding="utf-8", session=None, sleep_on_403=20):
-    """GET 并按 encoding 解码；403 长退避，其余重试。返回响应文本。"""
-    t0 = time.time()
-    s = session or requests
-    for attempt in range(retries):
-        try:
-            r = s.get(url, headers=HEADERS, timeout=30)
-            r.encoding = encoding
-            r.raise_for_status()
-            log_fetch(url, r.status_code, time.time() - t0, attempt + 1)
-            return r.text
-        except requests.exceptions.HTTPError as e:
-            if "403" in str(e) and attempt < retries - 1:
-                time.sleep(sleep_on_403 + attempt * 15)
-                continue
-            log_fetch(url, "ERR", time.time() - t0, attempt + 1, str(e)[:80])
-            raise
-        except Exception as e:
-            if attempt == retries - 1:
-                log_fetch(url, "ERR", time.time() - t0, attempt + 1, str(e)[:80])
-                raise
-            time.sleep(2)
-    raise RuntimeError(f"fetch failed: {url}")
-
-
-def log_fetch(url, status, dur, retries, note=""):
-    """风控观测：记录 域名 + 最小必要请求信息，失败不影响抓取。"""
-    try:
-        log = DATA_DIR / "fetch_log.csv"
-        path = url.split("?")[0].replace(JBIS, "").replace(NK, "").replace(STUD, "")
-        new = not log.exists()
-        with open(log, "a", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            if new:
-                w.writerow(["ts", "script", "host", "path", "status", "dur_s", "retries", "note"])
-            w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        Path(sys.argv[0]).name, domain_of(url), path,
-                        status, round(dur, 2), retries, note])
-    except Exception:
-        pass
-
-
-def jitter(url_or_base, fallback=None):
-    """请求间隔（0.8~1.2 抖动）。
-    传 URL → 按域名取间隔（DOMAIN_SLEEP）；
-    传数值 base → 兼容旧调用，当作基准间隔。"""
-    if isinstance(url_or_base, str) and url_or_base.startswith("http"):
-        return sleep_for(url_or_base, fallback)
-    base = url_or_base if url_or_base is not None else DEFAULT_SLEEP
-    return base * random.uniform(0.8, 1.2)
-
-
-def soup_of(url, encoding="utf-8", **kw):
-    return BeautifulSoup(fetch(url, encoding=encoding, **kw), "lxml")
-
-
-def norm(s):
-    """去 全半角空格/括号 等噪音（用于名字/键归一）。"""
-    return re.sub(r"[ 　()（）\[\]【】]", "", s or "").strip()
-
-
-# ---------------- basic.json 读写 ----------------
-def load_basic():
-    """读 basic.json → {_meta, horses}；不存在则返回空骨架。"""
-    if not BASIC_JSON.exists():
-        return {"_meta": {"schema": "basic/v1", "updated": "", "count": 0}, "horses": []}
-    data = json.loads(BASIC_JSON.read_text(encoding="utf-8"))
-    if isinstance(data, dict) and "horses" in data:
-        return data
-    return {"_meta": {"schema": "basic/v1", "updated": "", "count": len(data)}, "horses": data}
-
-
-def save_basic(data):
-    """写 basic.json（更新 _meta）。"""
-    data["_meta"] = {
-        "schema": "basic/v1",
-        "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "count": len(data["horses"]),
-    }
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    BASIC_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-
-
-def next_id(data):
-    """下一个自增主键（从 1 开始）。"""
-    return max((h["id"] for h in data["horses"]), default=0) + 1
-
-
-# ---------------- 并发缓存（写独立文件，避免并发覆盖 basic.json） ----------------
-def tmp_path(name):
-    """缓存文件路径：data/_tmp/<name>.json"""
-    return TMP_DIR / f"{name}.json"
-
-
-def write_cache(name, mapping):
-    """把 {id: 值} 映射写入独立缓存文件。可被并发脚本安全使用（互不覆盖）。"""
-    TMP_DIR.mkdir(parents=True, exist_ok=True)
-    tmp_path(name).write_text(json.dumps(mapping, ensure_ascii=False, indent=1), encoding="utf-8")
-
-
-def read_cache(name):
-    """读缓存文件 → dict；不存在返回 {}。"""
-    p = tmp_path(name)
-    if not p.exists():
-        return {}
-    return json.loads(p.read_text(encoding="utf-8"))
-
-
-def clean_cache_all():
-    """合并完成后删除全部缓存（_tmp 目录）。"""
-    if TMP_DIR.exists():
-        for f in TMP_DIR.glob("*.json"):
-            f.unlink()
-
-
-# ---------------- 归一化 ----------------
-def norm_mare(s):
-    """母名归一化：去产地括注 + 去空白 + 罗马数字统一拉丁。netkeiba/JBIS 两侧一致。"""
-    s = re.sub(r"[（(][A-Za-z]+[）)]", "", s or "")
-    s = s.replace(" ", "").replace("　", "")
-    for k, v in ROMAN_FULL.items():
-        s = s.replace(k, v)
-    return s
+load_overrides = manual.load_overrides
+apply_overrides = manual.apply_overrides

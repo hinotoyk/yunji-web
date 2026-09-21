@@ -338,20 +338,67 @@ const html = fs.readFileSync(path.join(ROOT, "front", "pages", "stats.html"), "u
 const code = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
 ok(code.includes('YJ_DATA.url("stats.json")'), "页面引用 stats.json");
 
-/* ---- 最小 DOM stub ---- */
-const els = {};
-function el(id) {
+/* els 用惰性 Proxy：断言里 els["xxx"] 取未注册元素时自动给一个空 stub（_html=""），
+ * 让该条断言正常判 FAIL —— 否则旧写法直接 TypeError 崩栈、把后面几十条断言一起吞掉 */
+const els = new Proxy({}, {
+  get(t, k) {
+    if (typeof k === "symbol") return undefined;
+    if (!(k in t)) t[k] = el(k);
+    return t[k];
+  },
+});
+/* ---- 最小 DOM stub：只补「页面真的会调」的结构 API，不参与任何断言取值 ----
+ *   classList —— W1-A ③ 首屏给矩阵表体挂 stagger 容器类（table.tBodies[0].classList.add("yj-st")）
+ *   tBodies   —— 按 innerHTML 里 <tbody> 的个数派生（真 DOM 同源规则），否则 renderTable 里取 [0] 直接抛
+ *                TypeError，渲染链断在 renderAbout 之前 → aboutNote 从未被写、KPI/着顺断言全红 */
+function mkClassList(initial) {
+  const set = new Set(String(initial || "").trim().split(/\s+/).filter(Boolean));
   return {
-    id, _html: "", text: "", attrs: {}, handlers: {}, value: "", style: {}, clientWidth: 800,
+    add() { for (const c of arguments) set.add(c); },
+    remove() { for (const c of arguments) set.delete(c); },
+    toggle(c) { if (set.has(c)) set.delete(c); else set.add(c); },
+    contains(c) { return set.has(c); },
+    item(i) { return [...set][i] || null; },
+    toString() { return [...set].join(" "); },
+  };
+}
+function mkChild(tag) {                                   /* 表体这类子节点：只要结构与 class 接口 */
+  return {
+    tagName: String(tag).toUpperCase(), _html: "", attrs: {}, handlers: {}, style: {}, classList: mkClassList(),
+    offsetWidth: 0, offsetHeight: 0, isConnected: true, parentNode: null, children: [],
     set innerHTML(v) { this._html = String(v); }, get innerHTML() { return this._html; },
-    set textContent(v) { this.text = String(v); }, get textContent() { return this.text; },
+    set textContent(v) { this._text = String(v); }, get textContent() { return this._text; },
     setAttribute(k, v) { this.attrs[k] = String(v); },
     getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
     addEventListener(t, f) { (this.handlers[t] = this.handlers[t] || []).push(f); },
+    appendChild(c) { this.children.push(c); return c; },
+    removeChild(c) { const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); return c; },
+    insertAdjacentHTML(pos, h) { if (pos === "beforeend") this.innerHTML = this._html + h; },
     closest() { return null; },
     querySelectorAll() { return []; },
     getBoundingClientRect() { return { left: 0, right: 0, width: 800, height: 200 }; },
   };
+}
+function el(id) {
+  const n = {
+    id, _html: "", text: "", attrs: {}, handlers: {}, value: "", style: {}, clientWidth: 800,
+    classList: mkClassList(), tBodies: [], tHead: null, offsetWidth: 0, offsetHeight: 0, isConnected: true,
+    set innerHTML(v) {
+      this._html = String(v);
+      this.tBodies = (String(v).match(/<tbody[\s>]/gi) || []).map(() => mkChild("tbody"));
+    },
+    get innerHTML() { return this._html; },
+    set textContent(v) { this.text = String(v); }, get textContent() { return this.text; },
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+    addEventListener(t, f) { (this.handlers[t] = this.handlers[t] || []).push(f); },
+    appendChild(c) { c.parentNode = this; return c; },
+    removeChild(c) { return c; },
+    closest() { return null; },
+    querySelectorAll() { return []; },
+    getBoundingClientRect() { return { left: 0, right: 0, width: 800, height: 200 }; },
+  };
+  return n;
 }
 global.document = {
   _handlers: {},
@@ -369,9 +416,12 @@ global.fetch = function (url) {
   return Promise.resolve({ ok: true, json() { return Promise.resolve(JSON.parse(txt)); } });
 };
 /* §48 复用收口后页面依赖共享模块（YJ.util.esc / YJ.raceRows.PLACE_BG·G·GLABEL）：
- * stub 按浏览器加载顺序先入 yj-util.js → race-rows.js（window=global，挂到同一 YJ），再 eval 页面脚本 */
+ * stub 按浏览器加载顺序先入 yj-util.js → race-rows.js → loading.js（window=global，挂到同一 YJ），再 eval 页面脚本。
+ * ★ #18 撤销骨架屏/分批渲染后 loading.js 只剩 YJ.ui.img（B4 图片标记），stats 页已不调 YJ.ui →
+ *   这里入它只为与本分支各页的浏览器加载顺序一致，删了也不影响下列断言。 */
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "loading.js"), "utf8"));
 eval(code);
 
 /* ---- 期望值工具（全部从产物独立重算；比率分母=出走） ---- */

@@ -108,5 +108,9 @@ python merge_races.py --keep       # 单独合并（保留缓存调试）
 - 本部分是**竞赛相关**，只做逐场成绩 + 収得，不碰建档/血统（那些在 `scripts/basic/`）。
 - 单源线性：成绩只走 netkeiba 成绩页，台账只补海外；任何环节失败记报告，**不跨源回退**。
 - 抓取脚本只写 `data/_tmp/races/` 独立缓存，`basic.json` 只在 merge 时写一次 → 无覆盖风险。
+- 与 `scripts/basic/` **互不 import**，但可共用中立层 `scripts/_shared`（请求/路径/basic.json 读写/人工表）；
+  本部分 `common.py` 只留站点 URL、比赛记录键（`race_key`/`record_keys`/`order_record`）与 `racelib` 依赖，
+  限速表 `DOMAIN_SLEEP` 与剥前缀 `STRIP_BASES` 以形参注进中立层。
+- 人工表 `data/manual_overrides.json` 在**全部派生之后**套用（`merge_basic.py` 写回前也套同一份），字段契约见 `data/SCHEMA.md` §3。
 - `races_file` 引用口径与 `pedigree_file` 一致：`data/races/{id}.json`（站点根相对）。
 - 原项目 `Z:\IdeaProjects\yunji-web` 为只读参考，业务逻辑不照抄。

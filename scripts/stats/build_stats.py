@@ -2,58 +2,7 @@
 # -*- coding: utf-8 -*-
 """统计总览数据预计算：读 data/basic.json + data/races/*.json → data/stats.json
 
-页面 front/pages/stats.html 只做渲染：fetch 本产物 → 选场地范围 + 年份切面 → 计数合并 → 各统计块。
-产物按 场地类型（中央/地方/海外）× 统计切面（scopes）二维聚合：
-  * "all"    全部记录
-  * "yYYYY"  自然年切面（比赛日历年份，1月1日–12月31日）
-  * "gYYYY"  生产年切面（产驹出生年份，即 生年）
-前端把勾选场地在同一切面下的计数相加、比率重算 —— 任意 场地×年份 组合无需重新拉数据。
-
-口径约定（与比赛记录页 races.html 完全一致，改动必须同步）：
-  * 三态：完赛=数字着顺；未完赛=中止/失格（计出走）；
-          未出走=取消/除外（不计出走）。比率分母=出走数（完赛+未完赛，同 races.html 模块 34）。
-  * 距离四档：短距离≤1400 / 英里 1401-1800 / 中距离 1801-2400 / 长距离>2400（同 distBucket）。
-  * 人气：逐一 1-18人気（同 races.html ninkiBucket）。
-  * 回り：コース 前缀 右/左（其余不入桶）。
-  * 性别：当前性别（性別_当前 优先，回退官方 性別 登录值）归一 セ→セン（同前端 YJ.util.sexOf）。
-  * 比赛级别细分：新马 / 未胜利 / 一胜级~三胜级(1-3勝クラス) / OP / L / Jpn1-3 / G1-3 / 其他
-    （桶键即中文标签，展示序见 stats.html TAB_ORDER.grade；下钻同 races.html gradeMatches）。
-  * 重赏：GI/GII/GIII/JpnI/JpnII/JpnIII（同 races.html「重赏」筛选 / timeline GRADED 口径）。
-
-═══════ data/stats.json 字段模板（产物，前端只读）═══════
-{
-  "meta": {
-    "generated_at": "...",            # 仅标识新鲜度；内容无变化时不重写
-    "source": "basic.json + races/*.json",
-    "stats": {                        # 全库（三场地合计）
-      "runs": 记录总数, "finished": 完赛数, "dnf": 未完赛数, "exc": 未出走数,
-      "horses": 出走过的产驹数, "wins": 一着数,
-      "trophy_wins": 重赏一着数, "prize_total": 赏金合计(円),
-      "first_date": "YYYY-MM-DD", "last_date": "YYYY-MM-DD"
-    }
-  },
-  "by_venue": {                       # 键=venue_type：中央/地方/海外
-    "中央": {
-      "scopes": {                     # 键="all" / "yYYYY"(自然年) / "gYYYY"(生产年)
-        "all": {
-          "base": { "n": 记录数, "dnf": 未完赛, "exc": 未出走, "w": 一着, "p2": 二着, "p3": 三着,
-                    "pr": 赏金合计(円) },
-          "dims": {                    # 每维 = [{k, n, dnf, exc, w, p2, p3}]，按 n 降序
-            "surf": [...], "dist": [...], "cond": [...], "turn": [...], "grade": [...],
-            "ninki": [...], "sex": [...], "track": [...], "trainer": [...], "jockey": [...],
-            "mps": [...]               # 母父（血统图 母の父 格；basic.json 母父字段）
-          },
-          "curve": [ { "gen": "2023", "a": 月龄, "n":..,"dnf":..,"exc":..,"w":..,"p2":..,"p3":.. } ],
-          "trophies": [ { "d","id","h","r","g","v","R","jk","tr" } ]   # 重赏一着明细，按日期升序
-        },
-        "y2025": { ... }, "y2026": { ... }, "g2023": { ... }, "g2024": { ... }
-      }
-    }
-  }
-}
-
-接入：run_update.py 各数据策略末尾自动重算；内容签名比对，无变化跳过写入（同 datechart/timeline）。
-用法:  python scripts/stats/build_stats.py
+口径约定与产物字段契约见 data/SCHEMA.md（6a 搬家）。
 """
 import datetime
 import io

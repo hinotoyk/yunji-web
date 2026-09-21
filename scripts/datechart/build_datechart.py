@@ -2,59 +2,7 @@
 # -*- coding: utf-8 -*-
 """日期图数据预计算：读 data/basic.json + data/races/*.json → data/datechart.json
 
-页面 front/pages/datechart.html 只做渲染：fetch 本产物 → RUNS → 天/周/月/年 日历聚合
-（2026-09-14 布局样式定稿，按 UI优化记录 §32.6 接入真实数据）。
-产物 runs[] 与页面字段完全同构（布局稿 RUNS 契约），本脚本只做
-「字段抽取 + 类型归一 + 排序」，不做任何聚合口径计算——进板数 6 段、🏆 计数、
-赏金合计等全部由前端在 runs[] 上聚合，保证单一事实源（data/races）与页面零换算。
-
-═══ data/datechart.json 字段模板（产物，前端只读）═══
-{
-  "meta": {
-    "generated_at": "产物生成时间(ISO)，仅标识新鲜度；内容无变化时连文件都不重写",
-    "source":       "数据来源说明",
-    "stats": {
-      "runs":        逐场记录总数（含未出走行；前端 KPI「出走」按三态口径剔除 取消/除外）,
-      "horses":      出走过的产驹数,
-      "wins":        一着数（全部口径）,
-      "trophy_wins": 重赏一着数（GI/GII/GIII/JpnI-3，同 races.html 重赏口径 = 🏆 计数）,
-      "prize_total": 赏金合计（円，各条 pr 相加）,
-      "first_date":  最早出走日（YYYY-MM-DD，无记录为空串）,
-      "last_date":   最晚出走日（同上）
-    }
-  },
-  "runs": [   // 按 日付 → 马id → R 升序（同日同马按 R）
-    {
-      "d":    "YYYY-MM-DD —— 日付",
-      "id":   产驹id（profile.html?horse=id 跳转用）,
-      "h":    馬名（日文名，显示用；空则回退 出走馬名/欧字馬名）,
-      "hc":   中文名（香港馬名 → 自译馬名，明细「切换马名」用；两者皆无=空串，前端回退 h）,
-      "r":    レース名（含格级尾缀，如 札幌2歳S(GIII)）,
-      "g":    格（GI/GII/GIII/L/OP/JpnI-3/新馬/未勝利/N勝クラス/''，空串=无徽章）,
-      "v":    場名,
-      "R":    R 番号（int/str 原样，海外部分为 str；缺失=空串）,
-      "hs":   発走（"HH:MM"/''，明细同日発走排序用）,
-      "dist": 距離（m，int；缺失=空串）,
-      "s":    芝ダ（芝/ダ/障害/AW）,
-      "p":    着顺（int 1-18；未完走=原样字符串 中止/取消/除外/失格）,
-      "pr":   赏金（円，int；該马该场 賞金 空/非数=0）,
-      "vt":   venue_type（中央/地方/海外 —— 前端 JRA/NAR/海外 场地范围筛选用）,
-      "bk":   馬場状态（良/稍重/重/不良/''，明细表用）,
-      "ki":   斤量（int/str 原样，海外可为 "120lb"；'' 缺失）,
-      "nk":   人気（int/''，明细表人气徽章用）,
-      "tm":   タイム（字符串，'' 缺失）,
-      "bw":   馬体重（int/''）,
-      "dz":   増減（"+2" 等/''）,
-      "jk":   騎手,
-      "tr":   調教師
-    }
-  ]
-}
-
-接入：run_update.py 各数据策略（basic/races/horse/races-force/ledger/ci）末尾自动重算；
-内容签名比对，无变化跳过写入（避免 --ci 每轮空 diff 提交，同 build_timeline.py 约定）。
-
-用法:  python scripts/datechart/build_datechart.py
+产物字段契约见 data/SCHEMA.md（6a 搬家）；页面只做渲染，聚合口径全在前端。
 """
 import datetime
 import io
