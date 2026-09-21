@@ -38,6 +38,20 @@
       <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/timeline.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">🧭</span>时间线
       </div>
+
+      <!-- 「编辑」分组：默认**完全不进 DOM**（template 不渲染），仅当外壳 URL 带 ?edit=1 时由下方脚本注入
+           —— 公网访客看不到入口（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案，D6 编辑动作只此一处）。
+           data-href 不含 query：iframe load 按 pathname 后缀匹配高亮，编辑页内部切 tab 也能保持高亮；
+           data-url 才是真正要加载的地址（带 ?tab= 直达对应段）。 -->
+      <template id="editNav">
+        <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">编辑</div>
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-url="pages/edit.html?tab=fields" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">✎</span>基本信息编辑
+        </div>
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-url="pages/edit.html?tab=timeline" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">⧗</span>时间线编辑
+        </div>
+      </template>
     </nav>
     <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">云迹 · 数据仅供分享交流</div>
   </aside>
@@ -62,6 +76,11 @@
 </div>
 
 <script>
+var nav=document.querySelector("nav");
+/* 「编辑」分组：仅外壳 URL 带 ?edit=1 时把 template 注入导航（默认一行 DOM 都不产生 → 公网访客看不到入口）。
+   注入必须在收集 items 之前，两条编辑项才与既有五项同一套点击/高亮逻辑。 */
+var editTpl=document.getElementById("editNav");
+if(editTpl && new URLSearchParams(location.search).get("edit")==="1") nav.appendChild(editTpl.content.cloneNode(true));
 var items=[].slice.call(document.querySelectorAll('.nav-item'));
 var sidebar=document.getElementById('sidebar');
 var backdrop=document.getElementById('backdrop');
@@ -76,20 +95,28 @@ menuBtn.addEventListener('click',function(){
   backdrop.dataset.show='true';
 });
 backdrop.addEventListener('click',closeDrawer);
-function go(href){
+var active=null;      /* 当前点亮的 nav-item（两条编辑项 data-href 相同，靠它区分用户点的是哪一条） */
+function light(it){
+  items.forEach(function(x){ x.dataset.on=(x===it)?'true':'false'; });
+  if(it) active=it;
+}
+function go(href,it){
   document.getElementById('frame').src=href;
-  items.forEach(function(it){it.dataset.on=(it.dataset.href===href)?'true':'false';});
+  light(it);
   closeDrawer();
 }
-items.forEach(function(it){it.addEventListener('click',function(){go(it.dataset.href);});});
-/* 内容 iframe 内部跳转（如 比赛记录 → 基本信息）后，同步侧边栏高亮与当前页面一致 */
+items.forEach(function(it){
+  it.addEventListener('click',function(){ go(it.dataset.url||it.dataset.href,it); });   /* data-url = 带 ?tab= 的真实地址；既有五项没有它 → 退回 data-href */
+});
+/* 内容 iframe 内部跳转（如 比赛记录 → 基本信息）后，同步侧边栏高亮与当前页面一致。
+   匹配只看 data-href（不含 query）→ 编辑页在 iframe 内切 tab 仍高亮；两条编辑项同为 edit.html 时
+   优先保留用户刚点的那条，避免一次加载点亮两项。谁都不匹配 → 全部熄灭（与改造前一致）。 */
 document.getElementById('frame').addEventListener('load',function(){
   var path='';
   try{ path=this.contentWindow.location.pathname||''; }catch(e){}
   if(!path) return;
-  items.forEach(function(it){
-    it.dataset.on=(path.slice(-it.dataset.href.length)===it.dataset.href)?'true':'false';
-  });
+  var hit=items.filter(function(it){ return path.slice(-it.dataset.href.length)===it.dataset.href; });
+  light(hit.length ? (hit.indexOf(active)>=0?active:hit[0]) : null);
 });
 </script>
 </body>

@@ -1,0 +1,17 @@
+# Cloudflare Pages 缓存策略（构建经 front/public/ 原样拷入 dist/ 根）
+# 依据与完整论证：tests/font-cand/ANALYSIS.md §5 · tests/font-cand/_headers.draft
+
+# Vite 内容哈希产物：一年 immutable（字体/CSS）——内容变则文件名变，老 URL 不会错误命中
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 数据：同 URL 每日换内容 → 5 分钟短新鲜期 + 后台回源
+/data/*
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+
+# 未哈希共享 JS（?v= 手工 busting）与 HTML：保持协商缓存
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate

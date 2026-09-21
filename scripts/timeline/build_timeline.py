@@ -2,77 +2,7 @@
 # -*- coding: utf-8 -*-
 """时间线事件预计算：读 data/basic.json + data/races/*.json → data/timeline.json
 
-规则（自 front/pages/timeline.html 旧 JS 引擎逐条移植，事件语义不变；2026-09-18 标签文案统一「首胜」措辞）：
-  1.  级别首胜       —— OP/L/G3/G2/G1/Jpn1/Jpn2/Jpn3 每个级别的产驹史首胜，全局只出现一次
-                        （2026-09 确认：级别首胜为全局口径，不再按马；标签「G2首胜」等）
-  1b. 世代新马首胜 —— 每个世代（=生年/届）最早的新马战一着，一代只此一条（标签「XXXX年产新马首胜」）
-  2.  重赏胜利       —— 所有重赏一着都记录；序数为产驹史全局口径（跨马按日期累计，2026-09 确认）：
-                        「重赏首胜 / 重赏第N胜」+ 该级别「G2第N胜」（第1胜=级别首胜，不重复挂）+ 海外全局「海外重赏首胜 / 海外重赏第N胜」；
-                        马内不再记同级别序数（G2首胜 等级别首胜仍按马）
-  3.  世代重赏首胜   —— 每届产驹在 JRA 中央的首场重赏胜利，一代只此一条（标签「XXXX年产重赏首胜」）
-  4.  父子制覇       —— 产驹赢下コントレイル（飞机云）赢过的重赏（常量内置，
-                        レース名去格级括号尾缀后精确匹配）
-  5.  受赏           —— basic.json 受賞歴（预留字段，兼容对象/字符串）
-一场比赛 = 一条事件（绝不按标签拆行），该场触发的所有里程碑以标签并列；节点类别取
-最高优先级标签（sire > gen > first > graded > award）。
-
-事件按日期升序输出；同日按発走升序（缺失视为最大），同日同発走按着順降序
-（= 前端倒序展示后：最新在顶、同日发走晚者在顶、同场 1着 在上未完走殿后，同 races.html 模块 33）。
-前端 front/pages/timeline.html 只做渲染，不再实时计算。
-
-═══ data/timeline.json 字段模板（产物，前端只读；人工节点编辑 data/timeline_manual.json）═══
-{
-  "meta": {
-    "generated_at": "产物生成时间(ISO)，仅标识新鲜度；内容无变化时连文件都不重写",
-    "source":       "数据来源说明",
-    "stats": {
-      "events":      总事件数（含人工节点），
-      "horses":      覆盖产驹数（不含人工节点——它们不挂马），
-      "graded_wins": 重赏一着事件数，
-      "sire_wins":   父子制覇事件数
-    }
-  },
-  "events": [   // 按日期升序；同日按発走升序（缺失视为最大）→ 前端倒序后同日发走晚者在顶；
-                // 同日同発走（同场两产驹均触发）按着順降序（1着显示在上）；受赏/人工节点按発走缺失处理（同日置顶）
-    {
-      "date":  "YYYY-MM-DD —— 排序与年份分组依据（缺失排最后）",
-      "type":  "race（比赛胜利）| award（受赏）| manual（人工节点）",
-      "node":  "轴上圆点颜色类别：sire红 / gen橙 / first青绿 / graded深蓝 / award金 / manual灰；"
-               "自动事件 = 本事件最高优先级标签的类别（sire>gen>first>graded>award），manual 固定 manual",
-      "horse": { "id": 产驹id（profile 跳转用）, "name": 馬名, "cn": 〈港译/自译〉 },
-               // race/award 才有；manual 无此键
-      "photo": "图源 URL/路径：race.photo 优先 → 回退马照片；manual 可自带；空串=浅灰占位",
-      "tags":  [ { "cat": "标签类别色（同 node 取值）", "label": "徽章文字", "tip": "可选：悬停提示",
-                   "crown": true —— 可选：首胜标签（label 以「首胜」结尾）前端在右上角画斜置小皇冠 } ],
-
-      // ── type=race 专属 ──
-      "race": {
-        "name":   "赛事名（已剥掉「徽章代劳」的格级括号尾缀：テレビ東京杯青葉賞(GII) → テレビ東京杯青葉賞，
-                   口径同 race-rows.js raceNameText —— 尾缀与 格 相等且该格有徽章才剥，否则 (1勝クラス) 等原样保留）",
-        "grade":  "原始格（GII/JpnI/L/OP…，新马战为 新馬）",
-        "glabel": "徽章显示字（G2/G3/L…，无徽章格为空）",
-        "gbadge": "徽章 css 类（g1/g2/g3/gl/gop）",
-        "meta":   "「東京11R · 芝2400m · 良」场地一行",
-        "time":   "タイム（缺失=—）",
-        "agari":  "上り（缺失=—）",
-        "pop":    "人気（如 4番；缺失=—）",
-        "team":   "「騎手 武豊 · 57kg ｜ 調教師 大久保龍志」单串（前端按 ｜ 拆为一人一行；缺失整行不渲染）"
-      },
-
-      // ── type=award 专属 ──
-      "award": { "賞名": 奖项名, "cn": "可选中文名", "備考": "可选备注" },
-
-      // ── type=manual 专属（来自 data/timeline_manual.json，重算永不覆盖，只参与排序）──
-      "title":  "节点标题（必填）",
-      "cn":     "可选：中文副题",
-      "note":   "可选：一行补充说明",
-      "link":   "可选：点击标题跳转的 URL",
-      "manual": true
-    }
-  ]
-}
-
-用法:  python scripts/timeline/build_timeline.py
+事件生成规则与产物字段契约见 data/SCHEMA.md（本节原为 1-76 行文件头，6a 搬过去）。
 """
 import datetime
 import json
@@ -97,6 +27,10 @@ GBADGE = {"GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop",
           "JpnI": "g1", "JpnII": "g2", "JpnIII": "g3"}
 GRADED = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}          # 重赏判定
 NODE_PRIO = {"sire": 0, "gen": 1, "first": 2, "graded": 3, "award": 4}  # 节点取色优先级（小者优先）
+# 人工节点 tags[].cat 白名单（D9 六色，允许自选）：与自动节点同源 = NODE_PRIO 五类 + manual。
+# 取值即前端 timeline.html 的 .tl-node / .tl-tag 类名（那页只读参考，改色需同步），
+# 同 scripts/edit_server.py::TL_CATS 与 front/public/editor.js::TL_CATS 下拉。
+MANUAL_CATS = frozenset(NODE_PRIO) | {"manual"}
 
 # ---- 父子制覇常量：コントレイル（飞机云）生涯重赏一着 ----
 # 来源：https://db.netkeiba.com/horse/result/2017101835/（成绩页，EUC-JP）
@@ -325,9 +259,18 @@ def to_render_event(e):
 
 def to_manual_event(e):
     """人工节点（data/timeline_manual.json）→ 渲染事件。
-    用户字段（date/title/cn/note/link/photo/tags.label）原样保留，仅补 type/node/manual 标记；
+    用户字段（date/title/cn/note/link/photo/tags.label/tags.tip）原样保留，仅补 type/node/manual 标记；
+    tags[].cat 命中白名单 MANUAL_CATS（D9 六色，人工可自选）则透传，缺失/非法回退 manual；
     重算永不覆盖 timeline_manual.json 本身，本产物只负责把人工节点合并进合适的时间位置。"""
-    tags = [{"cat": "manual", "label": str(t["label"])} for t in (e.get("tags") or [])
+    def cat_of(t):
+        c = t.get("cat")
+        return c if isinstance(c, str) and c in MANUAL_CATS else "manual"
+    def tag_out(t):
+        o = {"cat": cat_of(t), "label": str(t["label"])}
+        if t.get("tip"):
+            o["tip"] = str(t["tip"])
+        return o
+    tags = [tag_out(t) for t in (e.get("tags") or [])
             if isinstance(t, dict) and t.get("label")]
     ev = {
         "date": str(e.get("date") or ""),
@@ -393,7 +336,7 @@ def main():
         "events": len(events),
         "horses": len({e["horse"]["id"] for e in events if e.get("horse")}),   # 人工节点不挂马，不计入
         "graded_wins": sum(1 for e in events if e["type"] == "race" and e["race"]["grade"] in GRADED),
-        "sire_wins": sum(1 for e in events if any(t["cat"] == "sire" for t in e["tags"])),
+        "sire_wins": sum(1 for e in events if e["type"] == "race" and any(t["cat"] == "sire" for t in e["tags"])),   # 人工节点不计（同 graded_wins 口径）
     }
     payload = {
         "meta": {

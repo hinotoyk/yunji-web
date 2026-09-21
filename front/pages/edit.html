@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编辑 · 云迹</title>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body class="bg-background text-foreground antialiased">
+
+<!-- 定稿骨架（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案）：左=常驻马匹搜索列（cand2）/ 中=**profile 台账式表单**
+     （左照片位 + 右字段行台账，行内编辑 + 备注 + 按此值保存；替换原 cand3 卡堆）/ 右=保存清单 + 变更摘要 + 保存条。
+     两段（字段+图片 / 人工节点）各可折叠，?tab=fields|timeline 直达并只展开目标段。MB 单断点 max-md: = 照片位在上、
+     字段行在下单列 + 吸底保存条。组件类见 theme.css .yj-ed-* -->
+<div class="mx-auto grid h-screen w-full max-w-[1480px] grid-cols-[286px_minmax(0,1fr)_336px] max-md:h-auto max-md:block max-md:max-w-none max-md:pb-[116px]">
+
+  <!-- 左：常驻 277 匹可检索列表（复用 YJ.selector 常驻模式，与资料页同一出处；MB 退回弹层下拉） -->
+  <aside class="flex h-full min-h-0 flex-col border-r border-border bg-card max-md:h-auto max-md:min-h-0 max-md:border-b max-md:border-r-0">
+    <div class="flex flex-none items-center gap-2 border-b border-border bg-muted/30 px-3.5 py-3">
+      <span class="yj-ed-mk">雲</span>
+      <span class="text-[12.5px] font-bold tracking-[.3px] text-secondary-foreground">云迹编辑台</span>
+      <span class="yj-ed-lbl ml-auto">EDIT</span>
+    </div>
+    <div id="selector" class="min-h-0 flex-1 p-2.5 max-md:h-auto max-md:flex-none"></div>
+  </aside>
+
+  <!-- 中：报头（一马一屏）+ 台账式表单（照片位 + 字段行）+ 人工节点 -->
+  <main class="flex h-full min-h-0 flex-col max-md:h-auto max-md:min-h-0">
+    <header id="mast" class="yj-ed-mast"></header>
+
+    <!-- edit_server 未在线时的降级提示（YJ.editor 控制显隐） -->
+    <div id="banner" class="hidden"></div>
+
+    <div id="stage" class="yj-pane min-h-0 flex-1 overflow-y-auto px-6 py-5 max-md:h-auto max-md:overflow-visible max-md:px-3.5 max-md:py-4">
+
+      <!-- 段一 · 字段 + 图片（一张台账：左照片位 / 右五个可改字段行，行内编辑） -->
+      <section id="sec-fields" class="yj-ed-sec" data-open="true">
+        <button type="button" class="sec-title yj-ed-sechead -mt-1" data-sechead="fields">字段 · FIELDS<span class="ml-auto text-[10.5px] font-normal normal-case tracking-normal text-muted-foreground">五个人工可改字段 · 行内编辑</span><span class="yj-ed-caret flex-none text-[11px] text-muted-foreground">▾</span></button>
+        <div class="yj-ed-secbody">
+          <div class="flex items-start gap-5 max-md:flex-col max-md:gap-4">
+            <!-- M2b · 图片（overrides[id].photo）：照片位 + 其下缩略图行；点图位 = 上传或粘外链 -->
+            <div id="photos" class="w-[268px] flex-none max-md:w-full"><div class="hint-empty">先选匹马再管理图片。</div></div>
+            <div id="form" class="min-w-0 flex-1 max-md:w-full"><div class="hint-empty">先选匹马再编辑。</div></div>
+          </div>
+          <p class="mt-3 text-[11.5px] leading-[1.7] text-muted-foreground">
+            图片入库前先在本机压缩（最大边 1280px 内 + webp 优先，编不出才回 jpeg，目标 ≤100KB）；
+            外链同样由<b class="text-secondary-foreground">浏览器自己</b>拉取后重压本地化——被防盗链拒掉就直接报错，
+            <b class="text-secondary-foreground">不降级存外链</b>（服务端从不访问外网，D8）。
+            文件名由服务端按图片魔数生成 <code class="rounded bg-muted px-1.5 py-0.5">&lt;id&gt;-&lt;n&gt;.&lt;ext&gt;</code>，不信客户端文件名。
+            删除只是从数组里移出（盘上文件保留），拖拽缩略图可调顺序，清空后保存即写入 <code class="rounded bg-muted px-1.5 py-0.5">photo: []</code>（人工判定「确无图片」）。
+          </p>
+        </div>
+      </section>
+
+      <!-- M2c · 时间线人工节点（data/timeline_manual.json，全站一份，与选中的马无关） -->
+      <section id="sec-timeline" class="yj-ed-sec" data-open="true">
+        <button type="button" class="sec-title yj-ed-sechead" data-sechead="timeline">人工节点 · TIMELINE<span class="ml-auto text-[10.5px] font-normal normal-case tracking-normal text-muted-foreground">timeline_manual.json · events[] · 全站一份</span><span class="yj-ed-caret flex-none text-[11px] text-muted-foreground">▾</span></button>
+        <div class="yj-ed-secbody">
+          <div class="card overflow-hidden">
+            <div id="tl"><div class="hint-empty">时间线表加载中…</div></div>
+          </div>
+          <p class="mt-3 text-[11.5px] leading-[1.7] text-muted-foreground">
+            字段严格按 <code class="rounded bg-muted px-1.5 py-0.5">scripts/timeline/build_timeline.py</code> 文件头契约：
+            <b class="text-secondary-foreground">date / title 必填</b>，cn / note / link / photo / tags[].label / tags[].cat 可选；
+            标签六色类别（D9）取自时间线页现有 tag 配色。保存只写这张人工表，
+            <b class="text-secondary-foreground">不自动重算产物</b>（§4.5）——要手动跑
+            <code class="rounded bg-muted px-1.5 py-0.5">python scripts/timeline/build_timeline.py</code> 节点才会出现在时间线页。
+          </p>
+        </div>
+      </section>
+
+      <p class="mt-3 text-[11.5px] leading-[1.7] text-muted-foreground">
+        本页只写人工表 <code class="rounded bg-muted px-1.5 py-0.5">data/manual_overrides.json</code>（官方抓取值永远不手改）；
+        保存后由 edit_server 跑 merge 并同步 <code class="rounded bg-muted px-1.5 py-0.5">dist/data/</code>，刷新资料页即见新值。
+        「恢复官方值」= 删掉该字段键；<code class="rounded bg-muted px-1.5 py-0.5">_orig</code> 记录首次人工保存前的官方值，仅本页对照用、不参与合并。
+        <b class="text-secondary-foreground">注意</b>：merge 只「套人工表」、不存旧抓取值，所以恢复后该字段仍显示最后一次人工值，
+        要等下一次抓取（<code class="rounded bg-muted px-1.5 py-0.5">--basic</code> / CI 的 fetch_detail）才回到官方值——
+        恢复只是「不再强制」，不是「立刻还原」。
+        <b class="text-destructive">隐私提示</b>：这张表（含编辑备注 <code class="rounded bg-muted px-1.5 py-0.5">_note</code>
+        与快照 <code class="rounded bg-muted px-1.5 py-0.5">_orig</code>）会随构建进 <code class="rounded bg-muted px-1.5 py-0.5">dist/data/</code>
+        公开到公网（GitHub Pages）——备注只写业务理由，别写不想公开的信息。
+      </p>
+    </div>
+  </main>
+
+  <!-- 右：保存清单（跨马）+ 本匹变更摘要 + 保存管道（MB 由 savebar 变吸底条） -->
+  <aside class="flex h-full min-h-0 flex-col border-l border-border bg-card max-md:h-auto max-md:min-h-0 max-md:border-l-0 max-md:border-t">
+    <div class="flex-none border-b border-border bg-muted/30 px-4 py-3 max-md:px-3.5">
+      <div class="flex items-baseline gap-2">
+        <span class="text-[12.5px] font-bold text-secondary-foreground">保存清单</span>
+        <span id="count" class="ml-auto text-[10.5px] font-semibold tabular-nums text-muted-foreground"></span>
+      </div>
+      <p class="mt-1 text-[10.5px] leading-[1.5] text-muted-foreground">
+        人工值写 <code class="rounded bg-muted px-1 py-[1px]">data/manual_overrides.json</code>，保存后由 merge 立即生效
+      </p>
+    </div>
+    <div class="yj-pane min-h-0 flex-1 overflow-y-auto max-md:h-auto max-md:flex-none max-md:max-h-[46vh] max-md:overflow-visible">
+      <div id="pins"><div class="hint-empty">人工表读取中…</div></div>
+      <div id="preview" class="border-t border-border bg-muted/20 px-4 py-3 max-md:px-3.5"></div>
+    </div>
+    <div id="savebar" class="flex-none border-t border-border bg-muted/25 px-4 py-3 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-50 max-md:bg-background/95 max-md:px-3.5 max-md:pb-[calc(12px+env(safe-area-inset-bottom))] max-md:shadow-[0_-2px_14px_rgba(0,0,0,.07)] max-md:backdrop-blur">
+      <div id="summary"><div class="yj-ed-lbl">变更摘要 · 本匹</div></div>
+      <div id="report" class="mt-2 max-md:max-h-[76px] max-md:overflow-y-auto"></div>
+      <div class="mt-2.5 flex flex-wrap items-center gap-2">
+        <button id="save" class="yj-ed-op yj-ed-op--primary h-8 px-3.5 text-[12.5px] font-bold" type="button" disabled>保存并跑管道</button>
+        <button id="reset" class="yj-ed-op h-8 px-3" type="button">放弃修改</button>
+        <span id="dirtyTip" class="text-[11.5px] font-semibold text-destructive"></span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script src="../data-config.js"></script>
+<script src="../yj-util.js?v=2"></script>
+<script src="../i18n.js"></script>
+<script src="../device.js"></script>
+<script src="../selector.js?v=6"></script>
+<script src="../editor.js?v=4"></script>
+<script>
+YJ.editor.init({
+  selector: "selector", banner: "banner", form: "form", pins: "pins",
+  report: "report", save: "save", reset: "reset", count: "count", dirtyTip: "dirtyTip",
+  photos: "photos", tl: "tl", mast: "mast", summary: "summary", preview: "preview"
+});
+</script>
+</body>
+</html>

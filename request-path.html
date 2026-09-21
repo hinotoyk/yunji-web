@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>云迹数据流 · 抓取流水线路径图</title>
+<title>云迹数据流 · 后端全流程路径图</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -26,7 +26,7 @@ header{margin-bottom:20px}
 .kicker{font-size:11px;letter-spacing:4px;color:var(--amber);font-weight:600;text-transform:uppercase}
 h1{font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;letter-spacing:.5px;margin-top:6px}
 h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:10px}
-.sub{margin-top:8px;color:var(--muted);font-size:13px;max-width:78ch}
+.sub{margin-top:8px;color:var(--muted);font-size:13px;max-width:86ch}
 .sub b{color:var(--ink)}
 
 .ctl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:22px 0 6px}
@@ -36,6 +36,9 @@ h1 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background
 .seg:hover{color:var(--ink)}
 .seg.on{background:var(--green-soft);border-color:var(--green-line);color:var(--green-deep);font-weight:700}
 .seg.on.s2{background:var(--steel-soft);border-color:var(--steel-line);color:var(--steel-deep)}
+.seg.on.s3{background:var(--amber-soft);border-color:var(--amber-line);color:var(--amber-deep)}
+.seg.on.s4{background:var(--wine-soft);border-color:var(--wine-line);color:var(--wine)}
+.seg.on.s5{background:#eef1ea;border-color:#d9dfd2;color:#5f6757}
 .scen-desc{margin:10px 2px 0;font-size:12.5px;color:var(--muted)}
 
 .legend{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0 14px;font-size:12px;color:var(--muted)}
@@ -109,8 +112,8 @@ svg#graph{display:block}
 
 <header>
   <div class="kicker">Cloud Tracks · Data Pipeline</div>
-  <h1><span class="dot"></span>云迹「数据流水线」路径图</h1>
-  <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>，展示从建档到产出的完整抓取流水线。点击任一节点看它抓什么、怎么处理、产出哪些字段；切换下方<b>视图</b>，只点亮对应流水线（其余淡出）。</p>
+  <h1><span class="dot"></span>云迹「后端全流程」路径图</h1>
+  <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>：建档 → 基础 ∥ 竞赛 → 预计算×3 → <b>五门禁检查</b> → <b>压缩（字体子集 / 构建期 JSON minify）</b> → <b>CI（update-data.yml → deploy.yml → Pages）</b>，外加 <b>编辑台本机回写</b> 与 <b>_shared 中立层 / 人工表</b>。点击任一节点或连线看它抓什么、何时触发、产出什么；顶部切换视图点亮对应子链路。</p>
 </header>
 
 <div class="ctl">
@@ -119,22 +122,24 @@ svg#graph{display:block}
     <button class="seg on s1" data-s="1">① 全流程</button>
     <button class="seg s2" data-s="2">② 基础部分</button>
     <button class="seg s3" data-s="3">③ 竞赛部分</button>
+    <button class="seg s4" data-s="4">④ 检查·压缩·CI</button>
+    <button class="seg s5" data-s="5">⑤ 编辑回写</button>
   </div>
 </div>
 <div class="scen-desc" id="scenDesc"></div>
 
 <div class="legend">
-  <span class="lg"><span class="sw jb"></span><b>JBIS</b> 建档 / 血統</span>
+  <span class="lg"><span class="sw jb"></span><b>JBIS</b> 建档 / 血統 · 编辑服务（本机）</span>
   <span class="lg"><span class="sw nk"></span><b>netkeiba</b> 列表 / 详情 / 成绩</span>
-  <span class="lg"><span class="sw sp"></span><b>SP 页</b> race/nar.netkeiba.com（db 域兜底）</span>
-  <span class="lg"><span class="sw sd"></span><b>studbook / 台账</b> 意味・海外</span>
-  <span class="lg"><span class="sw mg"></span><b>合并 / 预计算 / 编排产物</b></span>
-  <span class="lg"><span class="dash"></span><b>条件触发</b>（虚线 · 满足条件才发请求）</span>
-  <span class="lg" style="margin-left:auto"><b>实线</b>=环节必发 · <b>点击节点/连线</b>看触发条件</span>
+  <span class="lg"><span class="sw sp"></span><b>SP 比赛页</b> · 压缩 / 构建</span>
+  <span class="lg"><span class="sw sd"></span><b>studbook / 台账 / 人工表</b></span>
+  <span class="lg"><span class="sw mg"></span><b>合并 / 预计算 / 检查 / CI / 产物</b></span>
+  <span class="lg"><span class="dash"></span><b>条件触发</b>（虚线 · 满足条件才执行）</span>
+  <span class="lg" style="margin-left:auto"><b>实线</b>=环节必经 · <b>点击节点/连线</b>看触发条件</span>
 </div>
 
 <div class="graph-card">
-  <svg id="graph" width="1200" height="1080" role="img" aria-label="云迹数据流水线路径图"></svg>
+  <svg id="graph" width="1200" height="1348" role="img" aria-label="云迹后端全流程路径图"></svg>
 </div>
 
 <div class="detail-panel" id="detailPanel" hidden>
@@ -159,11 +164,12 @@ svg#graph{display:block}
 
 <div class="foot">
   <span>统一入口</span>
-  <span class="b">run_update.py --init / --basic / --races / --horse / --ci …</span>
-  <span class="b">run_full_test.py</span>
-  <span class="b">scripts/basic/run_all.py</span>
-  <span class="b">scripts/races/run_all.py</span>
-  <span class="b">node scripts/datechart/verify_datechart.cjs</span>
+  <span class="b">run_update.py --ci / --basic / --races / --check / --horse / --init</span>
+  <span class="b">python scripts/edit_server.py（本机 :8090）</span>
+  <span class="b">npm run build（gen-font + copy-data）</span>
+  <span class="b">python scripts/check_data.py</span>
+  <span class="b">node scripts/{races,stats,datechart}/verify_*.cjs</span>
+  <span class="b">.github/workflows/update-data.yml → deploy.yml</span>
 </div>
 
 </div>
@@ -171,175 +177,275 @@ svg#graph{display:block}
 <script>
 "use strict";
 /* ────────────────────────────────────────────────────────────
-   数据模型：节点 = 脚本 / 数据源；边 = 数据流向（箭头）
-   c: nk=netkeiba绿 / jb=JBIS钢蓝 / sd=studbook&台账琥珀 / sp=SP域酒红 / mg=合并&编排墨
-   scen: 该节点/边在哪个视图点亮 (1全流程 2基础 3竞赛)
-   布局：顶部入口/建档全宽 → 左右两列（基础 / 竞赛）→ 预计算两栏 → 底部校验/产物全宽。
+   数据模型：节点 = 脚本 / 数据源 / 环节；边 = 数据流向（箭头）
+   c: nk=netkeiba绿 / jb=JBIS钢蓝·编辑服务 / sd=studbook&台账&人工表琥珀
+      sp=SP域&压缩构建酒红 / mg=合并&检查&CI&产物墨
+   scen: 该节点/边在哪个视图点亮 (1全流程 2基础 3竞赛 4检查压缩CI 5编辑回写)
+   布局：入口/共享层/建档全宽 → 左右两列（基础/竞赛）→ 预计算×3 →
+         检查（五门禁）→ 压缩 → CI → 产物（data/ · dist/）→ 编辑回写（写侧）。
    ──────────────────────────────────────────────────────────── */
-const W=1200, H=1080, NH=60;
+const W=1200, H=1348, NH=60;
 const C={nk:'#3f8f78',jb:'#4a6fa5',sd:'#c98a3d',sp:'#8a5a6f',mg:'#34302a'};
 const COL={L:70, LW:470, R:660, RW:470};   // left/right column x + width
 
 const NODES={
   // 0 统一入口（全宽）
-  g0:{x:70,y:40,w:1060,c:'mg',scen:[1,2,3],nm:'run_update.py / run_full_test.py',
-      url:'统一更新入口 · 9 种策略互斥；输出进 test-logs/*.log',
-      fn:'init / basic / races / horse / races-force / check / since / ledger / ci',tag:'ENTRY · 编排',
-      out:'按策略调度下方各环节；数据策略末尾固定追加 时间线+日期图 预计算（--ci 需日期图断言通过才 git 提交 data/）',
-      cond:'无条件（编排入口）：按所选策略调度下方环节，策略决定哪些接口会被触发',
-      role:'日常与 GitHub Actions 的调用入口。--init 复用 run_full_test.py 从 0 全量；其余按策略串起 基础/竞赛/预计算/校验。'},
+  g0:{x:70,y:40,w:1060,c:'mg',scen:[1,2,3,4],nm:'run_update.py · 统一更新入口',
+      url:'统一更新入口 · 8 策略互斥 + --year/--since/--fix 修饰；日志 test-logs/*.log',
+      fn:'init / basic / races / horse / races-force / check / ledger / ci',tag:'ENTRY · 编排',
+      out:'按策略调度各环节；数据策略末尾固定追加 时间线+日期图+统计 预计算；--check/--ci 再跑校验+断言（不过不提交）',
+      cond:'无条件（编排入口）：策略决定哪些环节与接口被触发',
+      role:'日常与 GitHub Actions（update-data.yml）的调用入口。--init 复用 run_full_test.py 从 0 全量；--ci = 基本增量 + 比赛增量 + 校验 + 日期图/统计断言 + git 提交（全部通过才提交）。⚠ --init 删空 data/、--races-force 全量覆盖、--ci 会 commit。'},
+  // S 共享层（全宽）
+  g05:{x:70,y:124,w:1060,c:'mg',scen:[1,2,3],nm:'scripts/_shared/ · 中立共享层',
+      url:'net.py · paths.py · basic_io.py · manual.py · text.py（_shared 永不 import 管线）',
+      fn:'fetch 引擎 / BASIC_FIELDS / 缓存四件套 / apply_overrides / norm',tag:'SHARED · 中立层',
+      out:'两条管线共用引擎与契约；差异（限速表/日志前缀/缓存目录）由各 common.py 形参注入',
+      cond:'无条件（被 import 的库层，本身无网络请求）',
+      role:'抓取引擎唯一出处：重试 + 按域限速带 0.8~1.2 抖动 + fetch_log.csv 风控日志；basic_io 的 31 键模板与列序单一出处 + 缓存四件套（merge 后删，--keep 保留）；manual.apply_overrides（_ 前缀键 / None/"" 跳过、空值=解除钉住）供两管线收尾统一套用（BUG-1 修复）。接入 = sys.path bootstrap，直跑脚本零改动。'},
   // 1 建档（全宽）
-  g1:{x:70,y:130,w:1060,c:'jb',scen:[1,2,3],nm:'build_registry.py · 建档',
+  g1:{x:70,y:208,w:1060,c:'jb',scen:[1,2,3],nm:'build_registry.py · 建档',
       url:'www.jbis.or.jp/horse/{sid}/sire/progeny/?year={y}&page={n}',
       fn:'parse_progeny_page()',tag:'LOCATE · 建档',
       out:'jbis_id, 生年, 馬名, 母名 → basic.json（唯一性=(母名,生年)）',
       cond:'仅 --basic(--year 新增对账) / --init / --ci 触发；--races/--horse/--ledger/--since 不建档（basic.json 已就绪）',
       role:'从 JBIS 産駒一覧拉取コントレイル子嗣建档，分配自增业务主键 id，后续全部按 id 关联。'},
   // 2 基础部分（左列）
-  b1:{x:COL.L,y:260,w:COL.LW,c:'jb',scen:[1,2],nm:'fetch_pedigree.py · 血統',
+  b1:{x:COL.L,y:292,w:COL.LW,c:'jb',scen:[1,2],nm:'fetch_pedigree.py · 血統',
       url:'www.jbis.or.jp/horse/{jbis_id}/pedigree/',
       fn:'parse_pedigree()',tag:'BASIC · 并发①',
       out:'data/pedigree/{id}.json（父/母 5 代 + fno + cross）',
       cond:'增量补缺：只抓 无 pedigree_file 或文件缺失 的马；--force 全量重抓',
       role:'按 id 抓 JBIS 血統页，写血統文件并回填 pedigree_file。与 nk_id / studbook 真并行。'},
-  b2:{x:COL.L,y:340,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_nk_id.py · netkeiba 列表',
+  b2:{x:COL.L,y:372,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_nk_id.py · netkeiba 列表',
       url:'db.netkeiba.com/horse/list.html?sire_id={sid}&limit=100&page={n}',
       fn:'fetch_list_all() → (母名,生年) 匹配',tag:'BASIC · 并发②',
       out:'nk_id → basic.json；另取列表页 総賞金(万円) 列 → 総賞金',
       cond:'增量补缺：只查 缺 nk_id 的马；--force 全量重查（按生年翻列表页）',
       role:'翻遍 netkeiba 列表全部分页，只收集指定生年（默认 2023/2024）的马，按 (母名,生年) 匹配回写 nk_id，并顺带抓取列表页的 総賞金(万円)（中央+地方总赏金）。'},
-  b3:{x:COL.L,y:420,w:COL.LW,c:'sd',scen:[1,2],nm:'fetch_studbook.py · 意味・由来',
+  b3:{x:COL.L,y:452,w:COL.LW,c:'sd',scen:[1,2],nm:'fetch_studbook.py · 意味・由来',
       url:'www.studbook.jp/users/ja/SearchBameiList → Honba?sid=',
       fn:'get_hid() → get_progeny_paged() → get_honba_meaning()',tag:'BASIC · 并发③',
       out:'馬名意味 → basic.json',
       cond:'增量补缺：只抓 无馬名意味 的马；--force 全量重抓',
       role:'studbook 独立链路：搜父名定位 hid，按生年翻产驹，再读每匹 Honba 的「意味・由来」，按馬名匹配回填。'},
-  b4:{x:COL.L,y:500,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_detail.py · netkeiba 详情',
+  b4:{x:COL.L,y:532,w:COL.LW,c:'nk',scen:[1,2],nm:'fetch_detail.py · netkeiba 详情',
       url:'db.netkeiba.com/horse/{nk_id}/（EUC-JP）',
       fn:'parse_detail()',tag:'BASIC · 阶段2',
       out:'登録状態,性別,毛色,馬齢,生年月日,産地,馬主,調教師,生産牧場,通算成績,獲得賞金(中央),獲得賞金(地方),欧字馬名,セリ取引価格',
       cond:'只抓 nk_id 就绪 且 缺关键字段（通算成績/生年月日 非空则跳过）的马；--force 强制',
       role:'逻辑上依赖 nk_id 就绪，放第二阶段。已有关键字段则跳过（增量）。'},
-  b5:{x:COL.L,y:580,w:COL.LW,c:'mg',scen:[1,2],nm:'merge_basic.py · 合并',
+  b5:{x:COL.L,y:612,w:COL.LW,c:'mg',scen:[1,2,5],nm:'merge_basic.py · 合并',
       url:'读 _tmp/{pedigree,nk_id,studbook,detail}.json',
-      fn:'apply() 按 id 回填字段 + 字段重排',tag:'BASIC · MERGE',
-      out:'回写 basic.json → 删缓存',
-      cond:'无条件：--basic/--init/--ci 的基础环节每次运行都执行合并（合并后删缓存）',
-      role:'把并发三件套 + 详情的独立缓存统一合并进 basic.json，并按标准字段顺序重排。'},
-  b6:{x:COL.L,y:660,w:COL.LW,c:'mg',scen:[1,2,3],nm:'basic.json · 共享数据源',
+      fn:'apply() 按 id 回填 + 重排 + apply_overrides',tag:'BASIC · MERGE',
+      out:'回写 basic.json → 删缓存；写回前套 _shared/manual.apply_overrides（人工值最后写入 = 最高优先级）',
+      cond:'无条件：--basic/--init/--ci 的基础环节每次运行都执行合并（合并后删缓存；--keep 保留）',
+      role:'把并发三件套 + 详情的独立缓存统一合并进 basic.json 并按标准字段顺序重排；写回前套 apply_overrides——两管线收尾都套人工表是 BUG-1 修复（此前只跑 --basic 会把人工 馬主/調教師/登録状態 整片覆盖）。编辑台保存也经子进程跑本脚本（--keep）。'},
+  b6:{x:COL.L,y:692,w:COL.LW,c:'mg',scen:[1,2,3,4],nm:'basic.json · 共享数据源',
       url:'data/basic.json（basic/v1 schema）',
       fn:'load_basic() / save_basic()',tag:'DATA · 中枢',
       out:'horses[]（每匹含 id/nk_id/jbis_id/馬名/母名/生年/血統/詳情…）',
-      cond:'无条件（数据中枢，无网络请求）：建档与基础合并写它；竞赛与校验读它',
-      role:'基础部分产物，也是竞赛部分、预计算与校验的输入源。建档与基础合并都写它。'},
+      cond:'无条件（数据中枢，无网络请求）：建档与基础合并写它；竞赛 / 预计算 / 校验 / 断言 / 字体语料 读它',
+      role:'基础部分产物，也是竞赛部分、预计算×3、五门禁断言与构建期字体子集语料的输入源。建档与基础合并都写它。'},
   // 3 竞赛部分（右列）
-  c1:{x:COL.R,y:260,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_detail.py · 详情判变',
+  c1:{x:COL.R,y:292,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_detail.py · 详情判变',
       url:'db.netkeiba.com/horse/{nk_id}/（EUC-JP）',
       fn:'parse_detail() + 通算成績判变',tag:'RACES · ①',
       out:'detail.json（登録状態/性別/…/獲得賞金(中央)/獲得賞金(地方)/…）+ changed.json',
       cond:'每次竞赛环节对全部有 nk_id 的马抓详情判变（--races/--ci；--horse 定向只抓指定 id）；--since 轻量模式跳过本环',
       role:'对全部有 nk_id 的马抓详情，解析中央与地方的獲得賞金；通算成績空白折叠后精确比较，有变化才标记为成绩增量目标。'},
-  c2:{x:COL.R,y:340,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_races.py · 成绩增量',
+  c2:{x:COL.R,y:372,w:COL.RW,c:'nk',scen:[1,3],nm:'fetch_races.py · 成绩增量',
       url:'db.netkeiba.com/horse/result/{nk_id}/ + SP 比赛页 race|nar.netkeiba.com（db.netkeiba.com/race/{rid}/ 兜底）+ 调教师/骑手页',
-      fn:'parse_races() → to_contract_b() + enrich_from_sp() + resolve_trainer()',tag:'RACES · ②',
-      out:'races.json（新增逐场记录，含 race_id/jockey_id/馬番/調教師/trainer_id/本賞金/発走/コース）+ trainers.json（调教师正式名映射）',
-      cond:'目标马 = 判变 ∪ 无 races 文件 ∪ 数据缺失（--horse/--since 定向、--force 全量）；只对「新增记录」按 race_id 补抓 SP 页（同场多马共享页缓存）→ 本轮无新增记录则零 SP 请求',
-      role:'只抓 判变 / 无文件 / 数据缺失 的马；与已有文件按比赛键去重。每条新增记录按 race_id 抓一次 SP 比赛结果页（中央/海外 race.netkeiba.com、地方 nar.netkeiba.com，同场多马共享页缓存）回填：発走+コース表记（RaceData01，`12:40発走 / 芝2000m (右 A)` → 発走=12:40、コース=右A）/格（Icon_GradeType）/条件（RaceData02）/厩舎列 → 調教師(+调教师_id)/本賞金阶梯（1~5着，収得計算取 1/2着）；部分地方场 SP 页厩舎只有文字没有链接 → 兜底抓 db.netkeiba.com/race/{rid}/（EUC-JP）按馬名定位行取 trainer_id；厩舎名可能截断（手塚久 vs 手塚貴久），再按 trainer_id 抓调教师页 db.netkeiba.com/trainer/result/recent/{id}/ 的 <title> 取正式全名建映射；骑手页 db.netkeiba.com/jockey/result/recent/{id}/ 按同法建骑手正式名映射。'},
-  c4:{x:COL.R,y:420,w:COL.RW,c:'sd',scen:[1,3],nm:'fetch_ledger.py · 台账海外',
-      url:'docs.google.com/spreadsheets/…/export?format=csv（比赛台账）',
-      fn:'fetch_rows() → coerce_record() → 按馬名匹配',tag:'RACES · ③',
-      out:'ledger.json（新增海外记录，調教師=台账 管理調教師 值）',
-      cond:'每次竞赛环节（或 --ledger 单独跑）拉台账 CSV，但只保留 海外场 且 按馬名匹配得上 的新增记录',
-      role:'拉取 Google Sheets 比赛台账 CSV，只保留海外场（venue_type=海外），按馬名匹配 basic.json 的马，与既有记录去重后补进逐场履历。海外 調教師 直接取台账 管理調教師 值。'},
-  c5:{x:COL.R,y:500,w:COL.RW,c:'mg',scen:[1,3],nm:'merge_races.py · 合并',
-      url:'读 _tmp/{detail,changed,races,ledger,trainers,failures}.json',
-      fn:'merge() + compute_shutoku / compute_shutoku_jpn',tag:'RACES · ④',
-      out:'data/races/{id}.json + 収得賞金 + 回填 basic.json → 删缓存',
-      cond:'无条件：--races/--horse/--ledger/--ci 的竞赛合并环节每次运行都执行（有任一缓存即合并）',
-      role:'详情字段回填；新增成绩/台账记录按键去重并入 races 文件（本賞金已在成绩环节解析）；台账海外记录与调教师映射比对、一致才附 调教师_id（不一致直接用台账值）；由合并后完整履历统一计算 収得賞金（纯规则）。'},
-  c6:{x:COL.R,y:580,w:COL.RW,c:'mg',scen:[1,3],nm:'races 文件 + 収得賞金',
-      url:'data/races/{id}.json · basic.json 的 収得賞金/races_file',
-      fn:'racelib：compute_shutoku（中央） / compute_shutoku_jpn（地方）',tag:'DATA · 产物',
-      out:'每匹逐场履历 + 収得賞金（平地/障害/Jpn）',
-      cond:'无条件（产物，无网络请求）：合并环节产出 races 文件并回填収得賞金',
-      role:'竞赛产物：逐场成绩文件 + 収得賞金。中央収得仅重赏 1/2着按本賞金×50%，非重赏 1着固定额；地方 Jpn 重赏按档位规则。races 文件同时是 时间线/日期图 预计算的输入源。'},
-  // 3.5 预计算（左右两栏 · 无网络）
-  p1:{x:COL.L,y:748,w:COL.LW,c:'mg',scen:[1,2,3],nm:'build_timeline.py · 时间线事件预计算',
+      fn:'parse_result() + SP 页回填（格/条件/調教師/本賞金）',tag:'RACES · ②',
+      out:'data/races/{id}.json 增量记录 + 中间缓存',
+      cond:'判变马 ∪ 无 races 文件 ∪ 数据缺失 才抓；--since 天数窗 / --horse 定向 / --races-force 全量',
+      role:'增量核心：SP 比赛页一次回填 出走条件/格/調教師/本賞金，避免二次请求；赛型细分（新馬/未勝利/OP…）与着顺三态口径在此归一。'},
+  c4:{x:COL.R,y:452,w:COL.RW,c:'sd',scen:[1,3],nm:'fetch_ledger.py · 台账海外',
+      url:'www.jbis.or.jp/race/data/ledger.csv（人工维护台账）',
+      fn:'parse_ledger() + 按馬名匹配 basic',tag:'RACES · ③',
+      out:'海外重赏记录（年/競走名/着順/頭数/距離/馬場）',
+      cond:'台账有新增海外记录 且 馬名能匹配上 basic.json 才并入',
+      role:'读人工维护的海外台账 CSV，按馬名匹配 basic 的马，把海外重赏记录并入该马的 races 数据。'},
+  c5:{x:COL.R,y:532,w:COL.RW,c:'mg',scen:[1,3],nm:'merge_races.py · 合并',
+      url:'读 _tmp/{detail,result,ledger}.json',
+      fn:'派生 races 记录 + racelib 収得 + apply_overrides',tag:'RACES · MERGE',
+      out:'data/races/{id}.json + 収得賞金 + 回填 basic.json → 删缓存；全部派生之后最后套 apply_overrides（人工值优先级最高）',
+      cond:'无条件：--races/--init/--ci 的竞赛环节每次运行都执行合并（合并后删缓存；--keep 保留）',
+      role:'把成绩增量 + 台账海外的新记录派生成 races 文件并合并；収得賞金由 merge 后的完整履历经 racelib 统一计算；收尾 apply_overrides 与 merge_basic 同口径（BUG-1 修复双端落位）。'},
+  c6:{x:COL.R,y:612,w:COL.RW,c:'mg',scen:[1,3,4],nm:'data/races/ · 比赛数据产物',
+      url:'data/races/{id}.json（内容无变化跳过写入，防 CI 空 diff）',
+      fn:'race 记录（着顺/賞金/条件…）+ basic 収得回写',tag:'RACES · 产物',
+      out:'races/*.json（竞赛文件）+ basic.json 収得欄',
+      cond:'无条件：merge_races 产出；verify_result 对 data/races 全量做着顺三态对账（741=734 完赛 + 1 未完赛 + 6 未出走）',
+      role:'竞赛部分最终产物；预计算×3 与四段断言的输入源之一。'},
+  rl:{x:COL.R,y:692,w:COL.RW,c:'mg',scen:[1,3],nm:'racelib.py · 収得賞金规则库',
+      url:'scripts/races/racelib.py（纯本地计算，无网络）',
+      fn:'compute_shutoku / compute_shutoku_jpn',tag:'RACES · 规则库',
+      out:'収得賞金（平地/障害/Jpn）由合并后完整履历统一计算',
+      cond:'无条件：merge_races 合并环节内部调用',
+      role:'中央：重赏 1/2 着本賞金 ×50%、非重赏 1 着固定额；地方 Jpn 重赏按档位规则。纯规则计算，随时可离线复算。'},
+  // 4 预计算×3（三栏）
+  p1:{x:70,y:772,w:340,c:'mg',scen:[1,2,3],nm:'build_timeline.py · 时间线',
       url:'读 basic.json + races/*.json → data/timeline.json',
-      fn:'build_events() → to_render_event() + 合并人工节点',tag:'PRE · 预计算',
-      out:'data/timeline.json（渲染就绪事件：级别初胜/世代首个/重赏序数/父子制覇/受赏）',
-      cond:'数据策略（--basic/--races/--horse/--races-force/--ledger/--ci）末尾自动重算；--init 与 --check 不含本环；内容无变化跳过写入（防 --ci 空 diff 提交）',
-      role:'把时间线页（timeline.html）的里程碑计算从 JS 前移到后端：一着事件逐条打标签（取色优先级 sire>gen>first>graded>award），并合并 data/timeline_manual.json 人工节点，前端只渲染不再实时计算。'},
-  p2:{x:COL.R,y:748,w:450,c:'mg',scen:[1,2,3],nm:'build_datechart.py · 日期图数据预计算',
+      fn:'事件聚合 + 人工节点合并',tag:'PRE · 预计算',
+      out:'data/timeline.json（tags[].cat 六色透传 + tip；sire_wins 仅 type==race 计入）',
+      cond:'数据策略末尾自动重算；内容无变化跳过写入；timeline_manual.json 人工节点一并合并（cat 六色白名单）',
+      role:'时间线页（timeline.html）只渲染该预计算产物。人工节点来自 timeline_manual.json（编辑台写）；不自动重算，改人工表后需手动跑本脚本。'},
+  p2:{x:430,y:772,w:340,c:'mg',scen:[1,2,3],nm:'build_datechart.py · 日期图',
       url:'读 basic.json + races/*.json → data/datechart.json',
-      fn:'build_runs() 字段抽取 + 类型归一 + 排序（不聚合）',tag:'PRE · 预计算',
-      out:'data/datechart.json（渲染就绪 runs[]：日付/格/着顺/賞金/场地等逐场字段）',
-      cond:'数据策略（--basic/--races/--horse/--races-force/--ledger/--ci）末尾自动重算；--init 与 --check 不含本环（--check 只跑 node 断言）；内容无变化跳过写入',
-      role:'日期图页（datechart.html）只做渲染：进板数 6 段、🏆 计数、赏金合计等全部由前端在 runs[] 上聚合，保证单一事实源（data/races）与页面零换算。'},
-  // 5 校验（全宽）
-  d1:{x:70,y:884,w:1060,c:'mg',scen:[1,2,3],nm:'check_data.py · 数据校验',
+      fn:'date 轴聚合',tag:'PRE · 预计算',
+      out:'data/datechart.json（datechart.html 数据源）',
+      cond:'数据策略末尾自动重算；内容无变化跳过写入（防 CI 空 diff）',
+      role:'日期图页（datechart.html）只渲染该预计算产物；verify_datechart.cjs 对其做产物契约/源对账/页面冒烟断言。'},
+  p3:{x:790,y:772,w:340,c:'mg',scen:[1,2,3,4],nm:'build_stats.py · 统计预计算',
+      url:'读 basic.json + races/*.json → data/stats.json',
+      fn:'统计总览字段预聚合',tag:'PRE · 预计算',
+      out:'data/stats.json（stats.html 数据源）',
+      cond:'数据策略末尾自动重算（同时间线/日期图）；内容无变化跳过写入',
+      role:'统计总览页（stats.html）的数据预计算产物；verify_stats.cjs 对其做产物契约/源对账/页面冒烟断言（--check/--ci 内置）。'},
+  // 5 检查（两栏）
+  d1:{x:70,y:864,w:515,c:'mg',scen:[1,4],nm:'check_data.py · 数据一致性校验',
       url:'读 basic.json + data/pedigree/* + data/races/*',
-      fn:'引用完整性 + 通算战数 vs 文件出赛数 + 重复检测 + 填充统计',tag:'CHECK',
+      fn:'引用完整性 / 通算战数对账 / 重复检测',tag:'CHECK · 门禁①',
       out:'check_report.md（--fix 自动补跑对应环节 + 清理跨来源重复）',
-      cond:'仅 --check / --ci 触发（--init 完整测试流程不含校验）；日常 --races/--basic 不跑；--check/--ci 另跑四段断言（node），--ci 断言不过不提交',
-      role:'校验引用文件存在、比赛数据是否缺（通算战数>文件出赛）、重复比赛记录，并统计字段填充。--fix 可自动补跑血統/nk_id/成绩并清理重复；四段断言（scripts/*/verify_*.cjs）另校验产物契约/源对账/页面冒烟。'},
-  // 6 产物（全宽）
-  e1:{x:70,y:976,w:1060,c:'mg',scen:[1,2,3],nm:'前端数据产物',
-      url:'data/basic.json · data/races/{id}.json · data/pedigree/{id}.json · data/timeline.json · data/datechart.json · data/photos/ · data/fetch_log.csv',
-      fn:'front/ 前端经 YJ_DATA.url() 读取渲染',tag:'OUTPUT',
-      out:'页面数据源 + 时间线/日期图预计算产物 + 相册图 + 风控观测日志',
-      cond:'部署时触发（push main → deploy.yml 自动 npm run build）；本地预览直接读 data/ 实时',
-      role:'全部数据落 data/ 下；front/（Vite 多页 + Tailwind）统一经 front/public/data-config.js 的 YJ_DATA.url() 引用数据，timeline.html / datechart.html 只渲染后端预计算产物；fetch_log.csv 记录每次请求的域名/状态/耗时用于风控调优。'},
+      cond:'仅 --check / --ci 触发（--init 不含校验；日常 --basic/--races 不跑）',
+      role:'门禁第一段：校验引用文件存在、比赛数据缺（通算战数 > 文件出赛）、重复比赛记录，并统计字段填充，写 check_report.md。--fix 可自动补跑血統/nk_id/成绩并清理重复。'},
+  d2:{x:615,y:864,w:515,c:'mg',scen:[1,4],nm:'verify_*.cjs · 四段 node 断言',
+      url:'races/verify_result.cjs · races/verify_drill.cjs · stats/verify_stats.cjs · datechart/verify_datechart.cjs',
+      fn:'result · drill · stats · datechart',tag:'CHECK · 门禁②~⑤',
+      out:'全 EXIT=0 才算过；--ci 断言失败 → 跳过 git 提交',
+      cond:'--check/--ci 内置 日期图+统计 两段；verify_result / verify_drill 为手动门禁（改动管线后必跑）',
+      role:'断言产物契约、源数据对账与页面冒烟：verify_result 着顺三态口径（741=734+1+6）；verify_drill 统计矩阵行 → races.html?f= 下钻全链路；verify_stats/verify_datechart 产物契约 + 源对账 + 页面冒烟。'},
+  // 6 压缩（两栏）
+  f1:{x:70,y:956,w:515,c:'sp',scen:[4],nm:'gen-font.mjs + subset_font.py · 字体子集压缩',
+      url:'front/scripts/gen-font.mjs（vite buildStart 调用）+ pyftsubset',
+      fn:'语料现算 → sha256 幂等 → woff2 单片',tag:'COMPRESS · 字体',
+      out:'noto-sc-subset.woff2（587KB / 1965 字 / 2641 字形，替换旧 101 片 4.51MB）+ 覆盖 noto-sc.css',
+      cond:'npm run build 每次现算（字符集没变 sha256 跳过）；CI update-data 数据跑完 --force 重算；缺 python/fontTools 环境 fail-soft 沿用已提交产物并告警（YJ_FONT_STRICT=1 严格）',
+      role:'字体瘦身方案 b：每页字体请求 31~66 → 1~2。CI 字体步先从 google/fonts 拉源字体，拉取失败只告警跳过（不卡死每日数据更新）；产物随 data/ 一起被 CI 提交，deploy 构建只消费已提交产物。'},
+  f2:{x:615,y:956,w:515,c:'sp',scen:[4],nm:'vite build · 构建期压缩（copy-data）',
+      url:'front/vite.config.js · copy-data 插件（closeBundle）',
+      fn:'data/ → dist/data：json minify',tag:'COMPRESS · 构建',
+      out:'dist/data JSON minify −1.25MB；COPY_DATA=skip 可跳过复制',
+      cond:'npm run build 每次执行；跳 _tmp/ 与 *.md/*.csv；编辑台保存后由 edit_server step_sync 以同口径增量 minify（不经 build）',
+      role:'dist 自包含数据副本的压缩口径唯一出处；与 edit_server 的 step_sync 严格同口径（JSON.parse→stringify 等价），保证编辑保存后 dist 体积不回退 pretty 格式。'},
+  // 7 CI（两栏）
+  ci1:{x:70,y:1048,w:515,c:'mg',scen:[4],nm:'update-data.yml · 数据 CI',
+      url:'.github/workflows/update-data.yml（cron 22:00 UTC = 北京 06:00 + 手动 8 策略）',
+      fn:'run_update --ci → 字体步 → git',tag:'CI · 数据',
+      out:'data/ 与字体产物有变化才 commit+push（断言不过不提交）；test-logs 上传 artifact',
+      cond:'定时/手动触发；调度 g0 run_update.py --ci（主链见视图①）；⚠ --init 删空 data/、--races-force 全量（慎选）',
+      role:'pip 装依赖 → run_update.py --ci（校验 + 日期图/统计断言全过才提交）→ 字体步：curl 拉 google/fonts 源字体 → gen-font --force，拉取失败只告警跳过（fail-soft）→ git add data/ + noto-sc 字体两件 → commit+push。push main 再触发 deploy.yml。'},
+  ci2:{x:615,y:1048,w:515,c:'mg',scen:[4],nm:'deploy.yml · Pages 部署',
+      url:'.github/workflows/deploy.yml（push main / 手动触发）',
+      fn:'npm ci + build → Pages',tag:'CI · 部署',
+      out:'发布站点根（dist/ 自包含 dist/data/ + _headers）',
+      cond:'update-data push main 后自动触发；本地 push main 同样触发',
+      role:'GitHub Pages 部署：setup-node 22 → npm ci + npm run build（gen-font 缺 python 时 fail-soft 沿用已提交字体产物）→ upload-pages-artifact(./) → deploy-pages。站点根 = 仓库根；front/public/_headers 随构建进 dist 根（注：_headers 仅 Cloudflare Pages 消费，GH Pages 当前忽略）。'},
+  // 8 产物（两栏）
+  e1:{x:70,y:1140,w:515,c:'mg',scen:[1,2,3,4,5],nm:'data/ · 源数据全家福',
+      url:'basic.json · races/{id}.json ×276 · pedigree/{id}.json ×277 · timeline/datechart/stats.json · photos/',
+      fn:'YJ_DATA.url() 读取 · git add data/',tag:'OUTPUT · 源',
+      out:'页面数据源 + 3 份预计算产物 + 相册图 + fetch_log.csv 风控日志',
+      cond:'数据策略产出；编辑台可回写其中两张人工表与 photos/；fetch_log.csv 记录每次请求的域名/状态/耗时（风控调优，不进 dist/仓库）',
+      role:'全部数据落 data/（git 追踪，CI 有变化才提交）。timeline/datechart/stats 只渲染预计算产物；_tmp 缓存与 *.md/*.csv 不进 dist、不进仓库（.gitignore 含 data/_tmp/）。'},
+  e2:{x:615,y:1140,w:515,c:'mg',scen:[1,4,5],nm:'dist/ · 自包含构建产物',
+      url:'dist/{index,pages/*}.html · assets/*哈希 · data/ minify 副本 · _headers',
+      fn:'gen-font + copy-data → Pages',tag:'OUTPUT · 产物',
+      out:'整站 3.76MB（原 ~10MB）：字体单片 587KB、数据 minify 副本、_headers 缓存策略',
+      cond:'npm run build 产出；push main 由 deploy.yml 自动构建发布；编辑保存后 dist/data 由 step_sync 直接镜像（不必整构建）',
+      role:'部署产物目录（gitignored，CI 每次重建）。_headers 定义 /assets/* 一年 immutable（内容哈希安全）与 /data/* 5min SWR——仅 Cloudflare Pages 消费，GitHub Pages 当前忽略（无害保留）。'},
+  // E 编辑回写（写侧，三栏）
+  ed1:{x:70,y:1232,w:340,c:'jb',scen:[5],nm:'edit.html + editor.js · 编辑台',
+      url:'front/pages/edit.html（独立页，不在外壳 iframe 内）',
+      fn:'五字段行内编辑 + 图片管理',tag:'EDIT · 写侧',
+      out:'POST /file（人工表）· POST /photo（已压缩图片）· GET /healthz 探测',
+      cond:'本机启动 edit_server 后可用；未启动则红条降级、全表单禁用',
+      role:'侧栏「编辑」分组 ?edit=1 控显隐；浏览器先把外链图 canvas 重压 ≤100KB（webp 优先）再上传，防盗链拒即报错、不存外链；保存成功回调清 basic 共享缓存（init+save 双清，跨标签页 1h TTL）。'},
+  ed2:{x:430,y:1232,w:340,c:'jb',scen:[5],nm:'edit_server.py · 本机编辑服务',
+      url:'127.0.0.1:8090（静态 + API 单端口）',
+      fn:'白名单 / 校验 / 备份 / 同步',tag:'EDIT · 服务',
+      out:'写人工表（.bak 备份进 data/_tmp）→ merge_basic --keep → step_sync 镜像 dist/data',
+      cond:'仅本机：Host 校验（防 DNS rebinding）+ CORS 仅对 127.0.0.1/localhost 回显；POST /file 只收白名单两张表',
+      role:'写侧安全边界：prepare_overrides（_note 必填 / _orig 首钉快照 / 空值=解除）、prepare_timeline（tags[].cat 六色白名单、伪协议拒）、atomic_write + 备份、魔数验图（SVG 拒）、服务端生成 <id>-<n>.<ext>、5MB 上限。时间线人工表不自动重算（需手动跑 build_timeline.py）。'},
+  m1:{x:790,y:1232,w:340,c:'sd',scen:[1,5],nm:'data/ 人工表（人只碰这两张）',
+      url:'data/manual_overrides.json · data/timeline_manual.json',
+      fn:'_ 前缀键脚本一律跳过',tag:'MANUAL · 人工',
+      out:'merge_basic 写回前 / merge_races 全部派生后 各套一次 apply_overrides（人工值优先级最高，不被 CI 抓取覆盖）',
+      cond:'人手编辑（编辑台或直接改文件）；随 data/ 进仓库与 dist 公网（_readme 自述：别写私人笔记）',
+      role:'人工钉住字段与人工时间节点。_note=编辑备注（编辑台必填）、_orig=首钉时官方值快照。BUG-1 修复后两管线收尾都套本表（此前只跑 --basic 会整片覆盖人工值）。⚠ 本表公网可读，编辑台已明示。'},
 };
 // 统一 height
 Object.keys(NODES).forEach(k=>{ if(!NODES[k].h) NODES[k].h=NH; });
 
-/* 每条边：from=源节点哪侧(L/R/B)，via=正交拐点(绝对坐标)，to=进目标哪侧(L/R/T) */
+/* 每条边：from=源节点哪侧(L/R/B/T)，via=正交拐点(绝对坐标)，to=进目标哪侧(L/R/T/B)
+   lx/ly 可选：覆盖默认连线标签位置（默认取路径中点） */
 const EDGES=[
-  // 入口 → 建档
-  {s:'g0',t:'g1',l:'--basic / --init / --ci → 建档',cond:'仅 --basic(--year)/--init/--ci 带建档环节',scen:[1,2,3], from:'B', via:[], to:'T'},
+  // 入口 → 共享层 → 建档
+  {s:'g0',t:'g05',l:'统一调度 · 全部抓取经 _shared 引擎',cond:null,scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:118},
+  {s:'g05',t:'g1',l:'sys.path bootstrap · 两管线 import（彼此零 import）',cond:'两管线各自 import _shared；_shared 永不 import 管线',scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:200},
   // 建档 → 基础并发三件套
-  {s:'g1',t:'b1',l:'建档 → 抓血統',cond:'只补缺：无血統文件 / --init 全量',scen:[1,2], from:'L', via:[[24,160],[24,290]], to:'L'},
-  {s:'g1',t:'b2',l:'建档 → 找 nk_id',cond:'只补缺：缺 nk_id / --init 全量',scen:[1,2], from:'L', via:[[24,160],[24,370]], to:'L'},
-  {s:'g1',t:'b3',l:'建档 → 抓意味',cond:'只补缺：无馬名意味 / --init 全量',scen:[1,2], from:'L', via:[[24,160],[24,450]], to:'L'},
+  {s:'g1',t:'b1',l:'建档 → 抓血統',cond:'只补缺：无血統文件 / --init 全量',scen:[1,2],from:'L',via:[[24,238],[24,322]],to:'L',lx:130,ly:286},
+  {s:'g1',t:'b2',l:'建档 → 找 nk_id',cond:'只补缺：缺 nk_id / --init 全量',scen:[1,2],from:'L',via:[[24,238],[24,402]],to:'L',lx:130,ly:368},
+  {s:'g1',t:'b3',l:'建档 → 抓意味',cond:'只补缺：无馬名意味 / --init 全量',scen:[1,2],from:'L',via:[[24,238],[24,482]],to:'L',lx:130,ly:448},
   // 建档 → 竞赛入口（basic 已建好）
-  {s:'g1',t:'c1',l:'--races 直接进竞赛',cond:'basic.json 已就绪，跳过建档直接跑 --races/--ci',scen:[1,3], from:'R', via:[[1130,160],[1130,290]], to:'R'},
+  {s:'g1',t:'c1',l:'--races 直接进竞赛',cond:'basic.json 已就绪，跳过建档直接跑 --races/--ci',scen:[1,3],from:'R',via:[[1148,238],[1148,322]],to:'R',lx:1120,ly:286},
   // 基础：并发三件套 → merge_basic
-  {s:'b2',t:'b4',l:'nk_id 就绪 → 详情',cond:'nk_id 就绪 且 缺关键字段（通算成績/生年月日 非空则跳过）',scen:[1,2], from:'R', via:[[595,370],[595,530]], to:'R'},
-  {s:'b1',t:'b5',l:'血統 → merge',cond:'有血統缓存（b1 实际抓到）',scen:[1,2], from:'B', via:[[305,330],[50,330],[50,610]], to:'L'},
-  {s:'b3',t:'b5',l:'意味 → merge',cond:'有 studbook 缓存（b3 实际抓到）',scen:[1,2], from:'R', via:[[570,450],[570,610]], to:'R'},
-  {s:'b4',t:'b5',l:'详情 → merge',cond:'有详情缓存（b4 实际抓到）',scen:[1,2], from:'B', via:[], to:'T'},
+  {s:'b2',t:'b4',l:'nk_id 就绪 → 详情',cond:'nk_id 就绪 且 缺关键字段（通算成績/生年月日 非空则跳过）',scen:[1,2],from:'R',via:[[590,402],[590,562]],to:'R',lx:600,ly:484},
+  {s:'b1',t:'b5',l:'血統 → merge',cond:'有血統缓存（b1 实际抓到）',scen:[1,2],from:'B',via:[[305,364],[46,364],[46,642]],to:'L',lx:48,ly:358},
+  {s:'b3',t:'b5',l:'意味 → merge',cond:'有 studbook 缓存（b3 实际抓到）',scen:[1,2],from:'R',via:[[570,482],[570,642]],to:'R'},
+  {s:'b4',t:'b5',l:'详情 → merge',cond:'有详情缓存（b4 实际抓到）',scen:[1,2],from:'B',via:[],to:'T',lx:395,ly:608},
   // merge_basic → basic.json
-  {s:'b5',t:'b6',l:'合并 → 写回 basic.json',cond:null,scen:[1,2], from:'B', via:[], to:'T'},
+  {s:'b5',t:'b6',l:'合并 → 写回 basic.json',cond:null,scen:[1,2],from:'B',via:[],to:'T',lx:390,ly:688},
   // basic.json → 竞赛流水线（读中枢）
-  {s:'b6',t:'c1',l:'读 basic.json（id/nk_id）',cond:'竞赛环节启动 且 存在有 nk_id 的马',scen:[1,3], from:'R', via:[[630,690],[630,290]], to:'L'},
-  {s:'b6',t:'c4',l:'台账按馬名匹配 basic',cond:'台账有新增海外记录 且 匹配上馬名',scen:[1,3], from:'R', via:[[630,690],[630,450]], to:'L'},
+  {s:'b6',t:'c1',l:null,cond:'竞赛环节启动 且 存在有 nk_id 的马',scen:[1,3],from:'R',via:[[612,722],[612,322]],to:'L'},
   // 竞赛流水线
-  {s:'c1',t:'c2',l:'判变马 → 成绩增量',cond:'判变马 ∪ 无 races 文件 ∪ 数据缺失；--horse/--since/--force 定向或全量',scen:[1,3], from:'B', via:[], to:'T'},
-  {s:'c2',t:'c5',l:'新增成绩 → merge',cond:'有新增成绩记录（其 SP 页已回填 格/条件/厩舎→調教師/本賞金）',scen:[1,3], from:'R', via:[[1148,370],[1148,530]], to:'R'},
-  {s:'c4',t:'c5',l:'海外记录 → merge',cond:'台账有新增海外记录',scen:[1,3], from:'B', via:[], to:'T'},
-  // merge_races → 产物
-  {s:'c5',t:'c6',l:'合并 → races 文件 + 収得',cond:null,scen:[1,3], from:'B', via:[], to:'T'},
-  // 预计算（读两侧中枢 · 无网络）
-  {s:'b6',t:'p1',l:'basic.json → 时间线',cond:null,scen:[1,2,3], from:'B', via:[], to:'T'},
-  {s:'c6',t:'p1',l:'races/*.json → 时间线',cond:null,scen:[1,2,3], from:'L', via:[[610,610],[610,778]], to:'R'},
-  {s:'b6',t:'p2',l:'basic.json → 日期图',cond:null,scen:[1,2,3], from:'R', via:[[590,690],[590,778]], to:'L'},
-  {s:'c6',t:'p2',l:'races/*.json → 日期图',cond:null,scen:[1,2,3], from:'B', via:[[895,730],[885,730]], to:'T'},
-  // 校验 / 产物（读两侧）
-  {s:'b6',t:'d1',l:'校验 basic',cond:'仅 --check / --ci 触发',scen:[1,2,3], from:'L', via:[[24,720],[24,914]], to:'L'},
-  {s:'c6',t:'d1',l:'校验 races',cond:'仅 --check / --ci 触发',scen:[1,3], from:'R', via:[[1130,700],[1130,914]], to:'R'},
-  {s:'d1',t:'e1',l:'数据就绪 → 前端产物',cond:'部署/构建时（deploy.yml 自动 npm run build）',scen:[1,2,3], from:'B', via:[], to:'T'},
+  {s:'c1',t:'c2',l:'判变 → 成绩增量',cond:'判变马 ∪ 无 races 文件 ∪ 数据缺失；--horse/--since/--force 定向或全量',scen:[1,3],from:'B',via:[],to:'T',lx:1060,ly:364},
+  {s:'c2',t:'c5',l:'成绩 → merge',cond:'有新增成绩记录（其 SP 页已回填 格/条件/厩舎→調教師/本賞金）',scen:[1,3],from:'R',via:[[1148,402],[1148,562]],to:'R',lx:1060,ly:448},
+  {s:'c4',t:'c5',l:'台账海外 → merge',cond:'台账有新增海外记录',scen:[1,3],from:'B',via:[],to:'T',lx:1060,ly:524},
+  // merge_races → 产物 + 规则库
+  {s:'c5',t:'c6',l:'合并 → races 文件 + 収得',cond:null,scen:[1,3],from:'B',via:[],to:'T',lx:700,ly:604},
+  {s:'c5',t:'rl',l:'収得計算（racelib）',cond:'无条件：merge_races 合并环节内部调用',scen:[1,3],from:'R',via:[[1165,562],[1165,722]],to:'R',lx:1060,ly:604},
+  // 预计算×3（读两侧中枢 · 无网络）
+  {s:'b6',t:'p1',l:null,cond:null,scen:[1,2,3],from:'B',via:[[305,764],[240,764]],to:'T'},
+  {s:'c6',t:'p1',l:null,cond:null,scen:[1,2,3],from:'L',via:[[618,642],[618,758],[240,758]],to:'T'},
+  {s:'c6',t:'p2',l:'→ 日期图',cond:null,scen:[1,2,3],from:'L',via:[[632,642],[632,764],[600,764]],to:'T',lx:600,ly:756},
+  {s:'c6',t:'p3',l:'→ 统计（stats.json）',cond:null,scen:[1,2,3],from:'L',via:[[646,642],[646,766],[960,766]],to:'T',lx:800,ly:762},
+  // 检查：五门禁（读两侧产物）
+  {s:'b6',t:'d1',l:'--check / --ci 校验',cond:'仅 --check / --ci 触发（--init 不含；日常 --basic/--races 不跑）',scen:[1,4],from:'L',via:[[34,722],[34,894]],to:'L',lx:130,ly:858},
+  {s:'c6',t:'d2',l:'断言读 races 产物',cond:'verify_result 读 data/races 全量（着顺三态口径）',scen:[1,4],from:'R',via:[[1178,642],[1178,894]],to:'R',lx:1070,ly:858},
+  {s:'d1',t:'d2',l:'--ci 串行：校验 → 断言（不过不提交）',cond:'--ci：check_data 过 → 日期图/统计断言过 → 才 git 提交',scen:[1,4],from:'R',via:[],to:'L',lx:600,ly:950},
+  {s:'p3',t:'d2',l:'统计断言（verify_stats）',cond:'--check/--ci 内置',scen:[1,4],from:'B',via:[[960,848],[872,848]],to:'T',lx:916,ly:858},
+  // 压缩：语料/数据 → 字体子集 & dist 压缩
+  {s:'e1',t:'f1',l:'语料 = data/**/*.json ∪ front 文本',cond:'npm run build（buildStart 现算）；CI update-data 字体步 --force',scen:[4],from:'L',via:[[52,1170],[52,986]],to:'L',lx:180,ly:1044},
+  {s:'e1',t:'f2',l:'copy-data：data/ → dist/data（minify）',cond:'npm run build（closeBundle）；编辑保存后由 step_sync 同口径增量',scen:[4],from:'R',via:[[596,1170],[596,986]],to:'L',lx:760,ly:1044},
+  {s:'ci1',t:'f1',l:'CI 字体步 gen-font --force（失败跳过）',cond:'update-data.yml：数据跑完后重生成字体子集并随 CI 提交',scen:[4],from:'T',via:[],to:'B',lx:480,ly:1044},
+  {s:'ci2',t:'f2',l:'deploy.yml 触发 npm build',cond:'push main / 手动 → npm ci + npm run build',scen:[4],from:'T',via:[],to:'B',lx:1010,ly:1044},
+  {s:'f2',t:'e2',l:'构建产物 → dist/',cond:'gen-font（buildStart）+ copy-data（closeBundle）+ Tailwind 编译',scen:[4],from:'R',via:[[1148,986],[1148,1170]],to:'R',lx:1090,ly:1134},
+  {s:'ci2',t:'e2',l:'deploy-pages 发布',cond:'upload-pages-artifact(./) → deploy-pages',scen:[4],from:'B',via:[],to:'T',lx:940,ly:1136},
+  // 编辑回写（本机写侧）
+  {s:'ed1',t:'ed2',l:'本机 :8090',cond:'编辑台探测 /healthz；未启动则红条降级、全表单禁用',scen:[5],from:'R',via:[],to:'L',lx:420,ly:1224},
+  {s:'ed2',t:'m1',l:'POST /file 白名单两张表（.bak 备份）',cond:'prepare_overrides：_note 必填/_orig 首钉/空值=解除；prepare_timeline：cat 六色白名单、伪协议拒',scen:[5],from:'B',via:[[600,1312],[960,1312]],to:'B',lx:830,ly:1306},
+  {s:'ed2',t:'e1',l:'POST /photo：魔数验图 → data/photos/',cond:'浏览器已 canvas 重压 ≤100KB；SVG 拒、5MB 上限、服务端命名',scen:[5],from:'B',via:[[600,1312],[327,1312]],to:'B',lx:450,ly:1306},
+  {s:'ed2',t:'b5',l:'子进程 merge_basic --keep → 保存即生效',cond:'保存管道：写表 → merge → step_sync 镜像 dist/data',scen:[5],from:'B',via:[[600,1312],[10,1312],[10,642]],to:'L',lx:280,ly:1332},
+  {s:'ed2',t:'e2',l:'step_sync 同口径 minify → dist/data',cond:'改动文件 mtime 增量镜像；.json 同口径 minify；跳 _tmp/.bak/.md/.csv',scen:[5],from:'R',via:[[782,1262],[782,1208],[872,1208]],to:'B',lx:826,ly:1222},
+  {s:'b6',t:'e1',l:'产物聚合',cond:'数据策略产出；编辑台可回写人工表与 photos',scen:[1,2,3],from:'L',via:[[66,722],[66,1170]],to:'L'},
+  {s:'m1',t:'c5',l:'apply_overrides 派生后套用',cond:'merge_races 全部派生后套人工表（BUG-1 修复双端落位）',scen:[1,5],from:'R',via:[[1192,1262],[1192,562]],to:'R',lx:1060,ly:950},
 ];
 
 const SCEN_DESC={
-  1:'全流程：建档 → 基础并发（血統/nk_id/意味 ∥）+ 详情 → basic.json → 竞赛（判变→成绩增量[含格/条件/調教師/本賞金]→台账）→ 时间线/日期图预计算 → 校验 → 产物。',
-  2:'基础部分（scripts/basic/）：建档 → 并发三件套 + 详情 → merge_basic → basic.json → 时间线/日期图预计算。',
-  3:'竞赛部分（scripts/races/）：读 basic.json → 详情判变 → 成绩增量（SP 页一次回填 格/条件/調教師/本賞金）→ 台账海外 → merge_races → races 文件 + 収得賞金 → 时间线/日期图预计算。',
+  1:'全流程：建档 → _shared 中立层 → 基础并发（血統/nk_id/意味 ∥ + 详情）→ basic.json → 竞赛（判变 → 成绩增量 → 台账 → racelib 収得）→ 人工表 apply_overrides 双端套用 → 预计算×3（时间线/日期图/统计）→ 五门禁 → 压缩（字体子集 / JSON minify）→ CI（update-data → deploy → dist/）；编辑台本机回写见视图⑤。',
+  2:'基础部分（scripts/basic/）：建档 → 并发三件套 + 详情 → merge_basic（写回前套 apply_overrides = BUG-1 修复）→ basic.json → 预计算×3。',
+  3:'竞赛部分（scripts/races/）：读 basic.json → 详情判变 → 成绩增量（SP 页回填 格/条件/調教師/本賞金）→ 台账海外 → merge_races（racelib 収得 + 全部派生后套 apply_overrides）→ races 文件 → 预计算×3。',
+  4:'检查·压缩·CI：五门禁（check_data.py 引用/对账/重复 → verify_result·drill·stats·datechart 四段 node 断言）→ 字体子集（woff2 单片 587KB，CI --force、拉取失败 fail-soft）→ copy-data JSON minify（dist/data −1.25MB）→ update-data.yml（断言全过才 commit+push data/+字体）→ deploy.yml（npm ci + build → GitHub Pages；_headers 仅 CF Pages 消费）。',
+  5:'编辑回写（本机 :8090 写侧）：edit.html/editor.js → edit_server.py（Host 校验 + CORS 仅本机 + 白名单两张表 + 魔数验图 + .bak 备份）→ 人工表 → 子进程 merge_basic --keep → step_sync 同口径 minify 进 dist/data；跨标签页共享缓存各 1h TTL（bus.js 既定）。',
 };
 const REQ={
   1:['JBIS 産駒一覧(建档)','JBIS 血統','netkeiba 列表(nk_id)','studbook 意味','netkeiba 详情','netkeiba 成绩','SP 比赛页(race/nar.netkeiba.com)','db 比赛页兜底(db.netkeiba.com/race/{rid})','调教师页(正式名)','骑手页(正式名)','台账 CSV(海外)'],
   2:['JBIS 産駒一覧(建档)','JBIS 血統','netkeiba 列表(nk_id)','studbook 意味','netkeiba 详情'],
   3:['netkeiba 详情(判变)','netkeiba 成绩','SP 比赛页(race/nar.netkeiba.com)','db 比赛页兜底(db.netkeiba.com/race/{rid})','调教师页(正式名)','骑手页(正式名)','台账 CSV(海外)'],
+  4:[],
+  5:['本机 GET /healthz（编辑台在线探测）','本机 POST /file（白名单写两张人工表）','本机 POST /photo（收 canvas 重压后 ≤100KB 图片）','浏览器拉外链图片→重压本地化（防盗链拒即报错）'],
 };
 let scen=1;
 const svg=document.getElementById('graph');
@@ -370,12 +476,16 @@ function buildPath(e){
 /* ── stage band labels ── */
 const STAGE_BANDS=[
   {y:24,  t:'0 · 统一入口 ENTRY'},
-  {y:114, t:'1 · 建档 LOCATE'},
-  {y:240, t:'2 · 基础部分 BASIC（scripts/basic/ · 并发∥）'},
-  {y:240, t:'3 · 竞赛部分 RACES（scripts/races/ · 线性）', x:COL.R+6},
-  {y:732, t:'4 · 预计算 PRECOMPUTE'},
-  {y:864, t:'5 · 校验 CHECK'},
-  {y:956, t:'6 · 产物 OUTPUT'},
+  {y:120, t:'S · 共享层 SHARED（scripts/_shared/ · 中立层）'},
+  {y:196, t:'1 · 建档 LOCATE'},
+  {y:272, t:'2 · 基础部分 BASIC（scripts/basic/ · 并发 ∥）'},
+  {y:288, t:'3 · 竞赛部分 RACES（线性）', x:COL.R+6},
+  {y:758, t:'4 · 预计算 PRECOMPUTE ×3'},
+  {y:860, t:'5 · 检查 CHECK（五门禁）'},
+  {y:942, t:'6 · 压缩 COMPRESS'},
+  {y:1034,t:'7 · CI · DEPLOY'},
+  {y:1126,t:'8 · 产物 OUTPUT（data/ · dist/）'},
+  {y:1218,t:'E · 编辑回写 EDIT（写侧 :8090）'},
 ];
 STAGE_BANDS.forEach(b=>{
   const t=el('text',{x:b.x||24,y:b.y,'class':'stage-tag',fill:'#b3ab9a','font-size':13});
@@ -405,14 +515,16 @@ EDGES.forEach(e=>{
   const ang=Math.atan2(end[1]-prev[1], end[0]-prev[0]);
   const arr=el('path',{'class':'arr',stroke:'#ddd5c4','stroke-width':2,'d':arrPath(end[0],end[1],ang)});
   g.appendChild(arr);
-  let mid;
-  if(pts.length>=2){
-    const p1=pts[Math.floor((pts.length-1)/2)], p2=pts[Math.ceil((pts.length-1)/2)];
-    mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
-  } else { mid=[end[0],end[1]]; }
-  const lblX=mid[0], lblY=mid[1]-6;
-  const t=el('text',{x:lblX,y:lblY,'text-anchor':'middle','class':'lbl'}); t.textContent=e.l;
-  g.appendChild(t);
+  if(e.l){
+    let mid;
+    if(pts.length>=2){
+      const p1=pts[Math.floor((pts.length-1)/2)], p2=pts[Math.ceil((pts.length-1)/2)];
+      mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
+    } else { mid=[end[0],end[1]]; }
+    const lblX=e.lx!==undefined?e.lx:mid[0], lblY=e.ly!==undefined?e.ly:mid[1]-6;
+    const t=el('text',{x:lblX,y:lblY,'text-anchor':'middle','class':'lbl'}); t.textContent=e.l;
+    g.appendChild(t);
+  }
   edgeEls[e.s+'→'+e.t]=g;
   g.style.cursor='pointer';
   g.addEventListener('click',()=>selectEdge(e));
@@ -422,8 +534,9 @@ EDGES.forEach(e=>{
   });
   g.addEventListener('mouseleave',()=>{
     const on=e.scen.includes(scen);
-    g.querySelector('.lbl').setAttribute('fill',on?'#5f6757':'#b3ab9a');
-    g.querySelector('.lbl').setAttribute('font-weight',on?'600':'400');
+    const l=g.querySelector('.lbl'); if(!l)return;
+    l.setAttribute('fill',on?'#5f6757':'#b3ab9a');
+    l.setAttribute('font-weight',on?'600':'400');
   });
 });
 
@@ -464,14 +577,17 @@ function applyScen(){
     p.setAttribute('stroke-width',on?'2.6':'2');
     g.querySelector('.arr').setAttribute('stroke',on?'#6f7a66':'#ddd5c4');
     const l=g.querySelector('.lbl');
-    l.setAttribute('fill',on?'#5f6757':'#b3ab9a');
-    l.setAttribute('font-weight',on?'600':'400');
+    if(l){
+      l.setAttribute('fill',on?'#5f6757':'#b3ab9a');
+      l.setAttribute('font-weight',on?'600':'400');
+    }
   });
   document.getElementById('scenDesc').innerHTML='当前：<b>视图 '+sc+'</b> — '+SCEN_DESC[sc];
-  const list=REQ[sc];
+  const list=REQ[sc]||[];
   document.getElementById('reqTotal').innerHTML=list.length+'<small> 类请求</small>';
-  document.getElementById('reqList').innerHTML=list.map((x,i)=>
-    `<span class="req-i"><span class="c">${String(i+1).padStart(2,'0')}</span>${x}</span>`).join('');
+  document.getElementById('reqList').innerHTML=list.length?list.map((x,i)=>
+    `<span class="req-i"><span class="c">${String(i+1).padStart(2,'0')}</span>${x}</span>`).join('')
+    :'<span class="req-i">本视图零外网请求 —— 校验 / 断言 / 字体子集 / JSON minify / 构建 / 发布全部本地完成</span>';
   const panel=document.getElementById('detailPanel');
   if(!panel.hidden){
     if(panel.dataset.e){ const ee=EDGES.find(x=>x.s+'→'+x.t===panel.dataset.e); if(ee)selectEdge(ee,true); }
@@ -493,8 +609,8 @@ function select(nid,noScroll){
     ['URL',n.url,'plain',false],
     ['处理',n.fn,'plain',false],
     ['产出字段',n.out,'plain',false],
-    ['触发条件',n.cond||'无条件：所属环节运行时必发',n.cond?'plain':'muted',!!n.cond],
-    ['覆盖视图','1 全流程 · 2 基础 · 3 竞赛','plain',false],
+    ['触发条件',n.cond||'无条件：所属环节运行时必经',n.cond?'plain':'muted',!!n.cond],
+    ['覆盖视图','1 全流程 · 2 基础 · 3 竞赛 · 4 检查压缩CI · 5 编辑回写','plain',false],
     ['本视图',on?'会参与此节点':'不参与此节点','plain',on],
   ];
   document.getElementById('dpBody').innerHTML=
@@ -513,18 +629,18 @@ function selectEdge(e,noScroll){
   num.className='dp-num mg';
   num.textContent=e.cond?'≠':'→';
   document.getElementById('dpTitle').textContent=s.nm+'  →  '+t.nm;
-  document.getElementById('dpSub').textContent=e.l;
+  document.getElementById('dpSub').textContent=e.l||'（数据流）';
   const on=e.scen.includes(scen);
   const rows=[
     ['起点',s.nm,'plain',false],
     ['终点',t.nm,'plain',false],
-    ['触发条件',e.cond||'无条件：所属环节运行时必发',e.cond?'plain':'muted',!!e.cond],
-    ['覆盖视图','1 全流程 · 2 基础 · 3 竞赛','plain',false],
+    ['触发条件',e.cond||'无条件：所属环节运行时必经',e.cond?'plain':'muted',!!e.cond],
+    ['覆盖视图','1 全流程 · 2 基础 · 3 竞赛 · 4 检查压缩CI · 5 编辑回写','plain',false],
     ['本视图',on?'此流向会点亮':'此流向不点亮','plain',on],
   ];
   document.getElementById('dpBody').innerHTML=
     rows.map(([k,v,cls,tk])=>`<div class="dp-row"><div class="k">${k}</div><div class="v ${cls}">${tk?'<span class="tick">✔</span> ':''}${v}</div></div>`).join('')+
-    `<div class="dp-foot"><b>说明</b>　虚线 = 条件触发（满足条件才发请求）；实线 = 所属环节运行时必发。点开两端节点可看更细的接口触发条件。</div>`;
+    `<div class="dp-foot"><b>说明</b>　虚线 = 条件触发（满足条件才执行）；实线 = 所属环节运行时必经。点开两端节点可看更细的接口触发条件。</div>`;
   panel.hidden=false;
   if(!noScroll)panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }

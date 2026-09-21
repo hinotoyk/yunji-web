@@ -8,12 +8,7 @@
  *   YJ.bus.broadcast(3);
  *   YJ.bus.onChange(function(id){ ... });   // 返回取消函数
  *
- * ⚠ 为什么是 sessionStorage 而不是 localStorage（实测踩过的坑）：
- *   localStorage 同源全局共享，且 setItem 会在**其它标签页**触发 storage 事件 ——
- *   同时打开 profile.html?horse=35 与 ?horse=47 时，后开那页的广播会把先开那页的
- *   内嵌比赛记录整个顶掉（页面头部还是 35 的马，下面比赛记录已变成 47 的）。
- *   sessionStorage 按标签页隔离，同源父子 iframe 与同标签页内的页面跳转照样互通，
- *   正好是本模块要的联动范围（跨标签页互不干扰，也不随浏览器重启残留）。
+ * ⚠ 载体必须是 sessionStorage 而非 localStorage（后者同源全局共享，会在别的标签页触发 storage 事件把内嵌比赛记录串掉）：完整根因与实测见 `front/UI优化记录.md` §62。
  */
 window.YJ = window.YJ || {};
 YJ.bus = (function () {

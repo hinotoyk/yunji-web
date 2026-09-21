@@ -1,43 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""成绩页增量抓取（竞赛流水线第 2 环）。
+"""成绩页增量抓取（竞赛流水线第 2 环）：netkeiba 成绩页 → _tmp/races/races.json。
 
-目标马（满足任一即抓）：
-  - 判变马（_tmp/changed.json，通算成績 有变化）
-  - 尚无 races 文件的马（首次初始化，全量补齐；含上次抓取失败没建文件的）
-  - 数据缺失的马（已有文件，但 中央+地方 实际出赛数 < 通算成績 应有战数 → 补拉）
-  - --force 时全部有 nk_id 的马
-只对目标马抓 netkeiba 成绩页（db.netkeiba.com/horse/result/{nk_id}/，EUC-JP），
+目标马（满足任一即抓）：判变马（_tmp/changed.json，通算成績有变化）∪ 尚无 races 文件（首次初始化，
+含上次抓取失败没建文件的）∪ 数据缺失（已有文件但实际出赛数 < 通算成績应有战数）∪ --force 全部有 nk_id 的马。
+  「数据缺失」判变是核心兜底：通算成績字符串没变、但出赛数对不上（落了空文件 / 只并入了台账海外记录）
+  也会自动补拉，不会出现「永远拉不到成绩」。
 解析逐场记录 → 与已有 races 文件按比赛键去重 → 只把**新增记录**写缓存：
-  - _tmp/races.json      {id: [新增记录...]}（首次运行时即全部记录）
-  - _tmp/failures.json   {id: 错误信息}（追加）
-  - _tmp/trainers.json   {trainer_id: 调教师正式名}（SP 页厩舎名可能截断，按 id 抓调教师页归一）
-  - _tmp/jockeys.json    {jockey_id: 骑手正式名}（成绩页骑手列是简名，按 id 抓骑手页归一；
-                          运行时先读该缓存作初始映射，可跳过已抓过的骑手页）
+  races.json（新增，首次运行时即全部）· failures.json（错误，追加）·
+  trainers.json / jockeys.json（SP 页厩舎名可能截断、成绩页骑手列是简名 → 按 id 抓人物页归一正式名；
+  jockeys 运行时先读作初始映射，可跳过已抓过的骑手页）
+每条新增记录再抓一次 SP 比赛结果页（同场多马共享页缓存）一次性回填 格/条件、厩舎→調教師(+trainer_id)、
+本賞金、発走 + コース表记、性/年齢（成绩页无「性齢」列，故只能从 SP 页取）。
+增量只增不覆盖；--force 时对已有记录回填缺失字段并另写 races_full.json（整体替换用）。
+未出赛/结构异常 → 空列表缓存（标记已检查，不阻塞后续环节）；详情字段由 merge_races 统一回填 basic.json。
 
-每条**新增记录**再抓一次 SP 比赛结果页（race/nar.netkeiba.com，同场多马共享页缓存），
-一次性回填：格/条件（Icon + RaceData02）、厩舎→調教師（+ trainer_id）、本賞金（重赏 1/2着）、
-発走（RaceData01 的 `12:40発走`）+ コース表记（`(右 A)`/`(左 外 A)` 归一为 右A/左外A）、
-性/年齢（结果表「性齢」列 `セ3` 拆分；**成绩页没这一列**，故只能从 SP 页取，セン 归一为 セ 与台账同口径）。
-骑手名 = 成绩页「骑手」列 + 按 jockey_id 抓骑手页 <title> 归一正式全名（成绩页列是简名）。
-本賞金不再单独 fetch_prize 环节（同一 URL 已在成绩增量时抓到）。
-
-说明：
-  - 已有记录一律不动（增量只增不覆盖）；--force 时对已有记录回填缺失字段
-    （調教師/trainer_id/馬番/骑手名/発走/コース/性/年齢，SP 页/骑手页补拉）；比赛键 = race_id，无 race_id 用 (日付,場名,R)。
-  - 「数据缺失」判变是核心兜底：即使通算成績 字符串没变化，只要文件出赛数对不上
-    通算战数（如上次抓取失败落了空文件、或只并入了台账海外记录），也会自动补拉，
-    不会出现「永远拉不到成绩」。
-  - 未出赛/结构异常 → 空列表缓存，不阻塞后续环节；下轮按完整性再校验。
-  - 详情字段（通算成績 等）由 merge_races 统一回填 basic.json。
-
-用法:
-    python fetch_races.py [--limit N] [--force]
+字段口径见 data/SCHEMA.md §2，流程与限速见 scripts/races/README.md。
+用法: python fetch_races.py [--limit N] [--force] [--id 1,2] [--since N]
 """
 import argparse
+import json
 import re
 import sys
 import time
+from datetime import date, timedelta
 
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
 import common  # noqa: E402
@@ -49,10 +35,11 @@ STATE_MAP = {"稍": "稍重", "不": "不良"}
 # 通算成績 如 '5戦1勝 [ 1-0-0-4 ]'，战数 = 主口径(中央+地方)出赛数
 START_RE = re.compile(r"(\d+)戦")
 
-# 本賞金阶梯（SP 比赛结果页，同一 URL 已有格/条件/厩舎，一并解析）
-# 中央/海外 SP 页：`本賞金:4100,1600,1000,620,410万円`（1着~5着，付加賞-free）
+# 本賞金阶梯 / 賞金列都是「万円」记法 → 统一换算成円（1万円 = 10000 円）
+MAN_TO_YEN = 10000
+# 中央/海外 SP 页：`本賞金:4100,1600,1000,620,410万円`（1着~5着）
 HONSHO_RE = re.compile(r"本賞金:([\d,]+(?:,[\d,]+)*)万円")
-# 地方 NAR SP 页：`本賞金:10000.0、3500.0、2000.0、1000.0、500.0万円`（十进制浮点、顿号分隔）
+# 地方 NAR SP 页：`本賞金:10000.0、3500.0、2000.0万円`（十进制浮点、顿号分隔）
 NAR_HONSHO_RE = re.compile(r"本賞金:([\d.,]+(?:[、,][\d.,]+)*)万円")
 
 
@@ -62,7 +49,7 @@ def parse_honsho(html):
     if not m:
         return None
     try:
-        return [int(x.replace(",", "")) * 10000 for x in m.group(1).split(",")]
+        return [int(x.replace(",", "")) * MAN_TO_YEN for x in m.group(1).split(",")]
     except (ValueError, TypeError):
         return None
 
@@ -77,7 +64,7 @@ def parse_honsho_nar(html):
         for x in re.split(r"[、,]", m.group(1)):
             x = x.strip()
             if x:
-                vals.append(int(float(x) * 10000))
+                vals.append(int(float(x) * MAN_TO_YEN))
         return vals or None
     except (ValueError, TypeError):
         return None
@@ -135,9 +122,10 @@ def parse_races(html):
         return m.group(1) if m else ""
 
     out = []
+    last_col = max(idx.values())        # 表头最后一列下标：td 数不够的行取不到值 → 跳过
     for tr in tbl.find_all("tr"):
         tds = tr.find_all("td")
-        if len(tds) <= max(idx.values()):
+        if len(tds) <= last_col:
             continue
         c = lambda n: tds[idx[n]].get_text(" ", strip=True)  # noqa: E731
         m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", c("日付"))
@@ -181,16 +169,13 @@ def parse_races(html):
 def to_contract_b(rec, horse_name):
     """成绩页原始记录 → 规范记录（赏金 万円→円；着順 文本→int/DNF；附 格/条件/venue_type/race_id）。"""
     grade, cond = racelib.race_meta_from_name(rec.get("レース名", ""))
-    state = STATE_MAP.get((rec.get("状態") or "").strip(), (rec.get("状態") or "").strip())
+    state_raw = (rec.get("状態") or "").strip()
+    state = STATE_MAP.get(state_raw, state_raw)
     result = racelib.normalize_result(rec.get("着順", ""))
-    prize_raw = rec.get("賞金")
-    if prize_raw in ("", None):
+    try:
+        prize_yen = int(float(str(rec.get("賞金")).replace(",", "")) * MAN_TO_YEN)
+    except (ValueError, TypeError):      # 空串 / None / 非数字 → 无赏金
         prize_yen = ""
-    else:
-        try:
-            prize_yen = int(float(str(prize_raw).replace(",", "")) * 10000)
-        except (ValueError, TypeError):
-            prize_yen = ""
     return {
         "日付": rec.get("日付", ""), "発走": "", "出走馬名": horse_name,
         "性": "", "年齢": "",        # 由 enrich_from_sp 拆 SP 结果页「性齢」列回填（成绩页无此列）
@@ -221,14 +206,11 @@ def enrich_from_sp(cb, sp_html):
     name = cb.get("レース名", "")
     venue = cb.get("venue_type", "")
 
-    def fallback_meta():
+    if not sp_html:       # 无页面/抓取失败 → 名字解析兜底，発走/コース 留空，不阻塞入库
         cb["格"] = racelib.race_grade_resolve(None, name, venue)
         cb["条件"] = racelib.race_meta_from_name(name)[1]
         cb["発走"] = ""
         cb["コース"] = ""
-
-    if not sp_html:
-        fallback_meta()
         return
     soup = common.BeautifulSoup(sp_html, "lxml")
     icon_m = re.search(r"Icon_GradeType(\d+)", sp_html)
@@ -441,6 +423,12 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
     return changed
 
 
+def load_existing(id_s):
+    """已有 races 文件 → 记录列表；无文件 → None（区分「空文件 = 已检查无成绩」与「从未抓过」）。"""
+    p = common.RACES_DATA_DIR / f"{id_s}.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+
 def main():
     ap = argparse.ArgumentParser(description="成绩页增量抓取")
     ap.add_argument("--limit", type=int, default=0, help="调试：只处理前 n 匹")
@@ -450,16 +438,11 @@ def main():
                     help="时段：只处理 races 文件最新日付在最近 N 天内的马 + 无文件马（轻量模式，不依赖判变）")
     args = ap.parse_args()
 
-    data = common.load_basic()
-    horses = data["horses"]
-    by_id = {str(h["id"]): h for h in horses}
+    horses = common.load_basic()["horses"]
 
-    want_ids = None
-    if args.id:
-        want_ids = {str(x) for x in args.id.split(",") if x.strip()}
+    want_ids = {str(x) for x in args.id.split(",") if x.strip()} if args.id else None
 
     if args.since:
-        from datetime import date, timedelta
         cutoff = date.today() - timedelta(days=args.since)
         # 轻量模式：不依赖判变缓存，直接按「最近 N 天出赛 + 无文件」驱动
         recent, no_file = [], []
@@ -468,57 +451,41 @@ def main():
                 continue
             if want_ids is not None and str(h["id"]) not in want_ids:
                 continue
-            p = common.RACES_DATA_DIR / f"{h['id']}.json"
-            if not p.exists():
+            recs = load_existing(h["id"])
+            if recs is None:
                 no_file.append(h)
                 continue
-            import json
-            recs = json.loads(p.read_text(encoding="utf-8"))
             if recs and (recs[0].get("日付") or "") >= str(cutoff):   # 文件按日付倒序，首条即最新
                 recent.append(h)
         targets = {str(h["id"]): h for h in no_file + recent}
-        if args.limit:
-            targets = dict(list(targets.items())[:args.limit])
-        print(f"✔ 成绩页目标 {len(targets)} 匹"
-              f"（时段 {args.since} 天内出赛 {len(recent)} · 无文件 {len(no_file)}）")
-        return _fetch(targets, args.force)
+        note = f"时段 {args.since} 天内出赛 {len(recent)} · 无文件 {len(no_file)}"
+    else:
+        changed = common.read_cache("changed") or {}      # {id: {"旧","新"}}
+        targets = {}
+        n_no_file = n_incomplete = 0
+        for h in horses:                                  # 单趟：是否缺数据 + 是否入目标 一起判
+            if not h.get("nk_id"):
+                continue
+            id_s = str(h["id"])
+            if want_ids is not None and id_s not in want_ids:
+                continue
+            recs = load_existing(id_s)
+            missing = recs is None or actual_starts(recs) < expected_starts(h)
+            if recs is None:
+                n_no_file += 1                             # 首次初始化（含上次抓取失败没建文件的）
+            elif missing:
+                n_incomplete += 1                          # 已有文件但出赛记录不足 → 数据缺失补拉
+            if args.force or missing or id_s in changed:
+                targets[id_s] = h
+        note = f"判变 {len(changed)} · 无文件 {n_no_file} · 数据缺失 {n_incomplete} · force={args.force}"
 
-    changed = common.read_cache("changed") or {}      # {id: {"旧","新"}}
-    no_file, incomplete = [], []
-    for h in horses:
-        if not h.get("nk_id"):
-            continue
-        if want_ids is not None and str(h["id"]) not in want_ids:
-            continue
-        p = common.RACES_DATA_DIR / f"{h['id']}.json"
-        if not p.exists():
-            no_file.append(h)                          # 首次初始化（含上次抓取失败没建文件的）
-        else:
-            import json
-            recs = json.loads(p.read_text(encoding="utf-8"))
-            if actual_starts(recs) < expected_starts(h):
-                incomplete.append(h)                   # 已有文件但出赛记录不足 → 数据缺失补拉
-    incomplete_ids = {str(x["id"]) for x in incomplete}
-    no_file_ids = {str(x["id"]) for x in no_file}
-    targets = {}
-    for h in horses:
-        if not h.get("nk_id"):
-            continue
-        id_s = str(h["id"])
-        if want_ids is not None and id_s not in want_ids:
-            continue
-        if args.force or id_s in changed or id_s in no_file_ids or id_s in incomplete_ids:
-            targets[id_s] = h
     if args.limit:
         targets = dict(list(targets.items())[:args.limit])
-
-    print(f"✔ 成绩页目标 {len(targets)} 匹"
-          f"（判变 {len(changed)} · 无文件 {len(no_file)} · 数据缺失 {len(incomplete)} · force={args.force}）")
+    print(f"✔ 成绩页目标 {len(targets)} 匹（{note}）")
     return _fetch(targets, args.force)
 
 
 def _fetch(targets, force=False):
-
     races = {}
     races_full = {}      # force：id -> 全部记录（已有记录回填后 + 新增），merge 整体替换
     failures = common.read_cache("failures") or {}
@@ -530,14 +497,10 @@ def _fetch(targets, force=False):
         url = common.NK_RESULT_URL.format(nk_id=nk)
         try:
             raw = parse_races(common.fetch(url, encoding="euc-jp"))
-            recs = []
+            recs = load_existing(id_s) or []
             exist_keys = set()
-            p = common.RACES_DATA_DIR / f"{id_s}.json"
-            if p.exists():
-                import json
-                recs = json.loads(p.read_text(encoding="utf-8"))
-                for r in recs:
-                    exist_keys |= common.record_keys(r)
+            for r in recs:
+                exist_keys |= common.record_keys(r)
             # 双键去重（race_id OR 馬名+日付）：netkeiba 同源按 race_id，跨源（台账先入库的海外场）按馬名+日付
             new = []
             n_backfill = 0

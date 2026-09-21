@@ -37,14 +37,72 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
+<script src="../loading.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=5"></script>
+<script src="../selector.js?v=6"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js"></script>
 <script>
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
+
+/* ── 钉住标记（OPTIMIZATION_PLAN §4.4 末条 + §4.6）───────────────────────────────
+ * 人工表 data/manual_overrides.json 只读探测：哪匹马的哪个字段是人钉的值。与 basic.json
+ * 并行拉；拿不到（404 / 离线 / 结构不合法）静默按「无钉住」处理 → 页面 DOM 与接线前完全一致。
+ * 浏览页只做两件事：行尾一枚 📌 + 点击跳 edit.html?id=<id> 定位该马；
+ * 解除/改钉等编辑动作全部收在编辑页（D6），这里不放按钮。 */
+var PINS = {};            /* overrides 本体；'_' 前缀键（_readme/_examples/_note/_orig）一律无视 */
+var currentH = null;      /* 当前渲染的马：钉住表晚于详情到达时用它补渲染一次 */
+/* 基本信息行 → 人工表里能命中的字段名（性別行同时认后端逐场派生的 性別_当前；photo = 头像区） */
+var PIN_ROW = {
+  "photo": ["photo"],
+  "性別": ["性別", "性別_当前"],
+  "登録状態": ["登録状態"],
+  "毛色": ["毛色"],
+  "馬主": ["馬主"],
+  "調教師": ["調教師"]
+};
+/* 标记样式只用既有 utility 类（theme.css 归后续阶段所有，本次不新增类） */
+var PIN_CLS = "flex-none cursor-pointer rounded-full border border-transparent px-1 text-[11px] leading-[1.5] opacity-60 transition hover:border-primary/40 hover:opacity-100";
+var PIN_CLS_ABS = "absolute left-2.5 top-2.5 z-10 cursor-pointer rounded-full border border-black/10 bg-white/85 px-1 text-[11px] leading-[1.5] opacity-80 shadow-sm transition hover:opacity-100";
+
+function pinEntry(id){
+  var e = PINS[String(id)];
+  return (e && typeof e === "object" && !Array.isArray(e)) ? e : null;
+}
+/* 该行命中的钉住字段（无 → ""）。认「键存在」而非「值非空」：留空也是钉住的一种（解除 = 删键）。 */
+function pinField(id, rowKey){
+  var e = pinEntry(id);
+  if (!e) return "";
+  var fs = PIN_ROW[rowKey] || [];
+  for (var i = 0; i < fs.length; i++) {
+    if (fs[i].charAt(0) !== "_" && Object.prototype.hasOwnProperty.call(e, fs[i])) return fs[i];
+  }
+  return "";
+}
+function hasPin(id){
+  for (var k in PIN_ROW) { if (pinField(id, k)) return true; }
+  return false;
+}
+function pinMark(id, rowKey, cls){
+  var f = pinField(id, rowKey);
+  if (!f) return "";
+  var v = pinEntry(id)[f];
+  var shown = (v && typeof v === "object") ? (Array.isArray(v) ? v.length + " 张" : "（复合值）")
+    : (v === "" ? "（空）" : String(v));
+  return '<button type="button" class="' + cls + '" data-edit="' + esc(id) + '" title="' +
+    esc("人工保存值 · " + YJ.i18n.t(f) + "（" + f + "）：" + shown + " · 点击到编辑页核对/恢复官方值") + '">📌</button>';
+}
+function loadPins(){
+  fetch(YJ_DATA.url("manual_overrides.json"), { cache: "no-store" }).then(function(r){
+    return r.ok ? r.json() : null;
+  }).then(function(o){
+    if (o && typeof o === "object" && !Array.isArray(o)) PINS = o;
+    /* 表比详情晚到（basic.json 命中共享缓存 → 秒选）：当前马确有钉住才补渲染一次，否则零动作 */
+    if (currentH && hasPin(currentH.id) && !document.querySelector("[data-edit]")) render(currentH);
+  }, function(){ /* 取不到 = 无钉住，静默降级 */ });
+}
 
 /* 性别徽章（沿用搜索列表的配色语言：牡/牝/セン 原生显示） */
 function sexBadge(v){
@@ -84,22 +142,29 @@ function fitFrames(){
 /* 头像：photo 兼容 数组/网络/本地；多图 → 相册：点击左/右切换，悬停提示
  * 照片区为弹性大区域（flex-1 撑满剩余宽度）；照片完整展示（object-contain + max 约束，
  * 不拉伸不裁切），铺满宽度/高度中取最大适配，放不下/不够大时居中 */
-function avatarHTML(photo){
+function avatarHTML(photo, id){
   var list=[];
   if(Array.isArray(photo)) list=photo.slice();
   else if(typeof photo==="string" && photo) list=[photo];
   list=list.filter(function(p){return p;});
   var wrap='relative flex min-h-[340px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 max-md:h-[240px] max-md:min-h-0 max-md:flex-none max-md:w-full';
-  if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span></div>';
+  /* photo 被人工钉住 → 角上一枚标记（贴左上，右上被多图计数徽标占了）；无钉住时 pinMark 出空串，DOM 一字不改 */
+  var mark = id==null ? "" : pinMark(id, "photo", PIN_CLS_ABS);
+  if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span>'+mark+'</div>';
   list=list.map(function(p){ return (String(p).indexOf("data/")===0) ? YJ_DATA.url(p) : p; });
+  /* 图片标记统一走 YJ.ui.img：loading=lazy + decoding=async + 写死占位尺寸（防 CLS）。
+   * 占位盒由上面的 wrap（min-h-[340px] / mb 240px）承担，width/height 给的是库内实拍比例 1108×1477，
+   * 让浏览器在解码前就定好比例；object-contain + absolute inset-0 再由 CSS 覆盖实际渲染尺寸。 */
   if(list.length===1){
-    return '<div class="'+wrap+'"><img src="'+esc(list[0])+'" alt="头像" class="absolute inset-0 h-full w-full object-contain" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"></div>';
+    return '<div class="'+wrap+'">'+YJ.ui.img({src:list[0], cls:'absolute inset-0 h-full w-full object-contain', w:1108, h:1477,
+      attrs:'alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"'})+mark+'</div>';
   }
   return '<div class="'+wrap+' group" data-photos="'+esc(list.join("|"))+'">'+
-    '<img class="pav-img absolute inset-0 h-full w-full object-contain" src="'+esc(list[0])+'" alt="头像" onerror="this.style.display=\'none\'">'+
+    YJ.ui.img({src:list[0], cls:'pav-img absolute inset-0 h-full w-full object-contain', w:1108, h:1477, alt:'头像', attrs:'onerror="this.style.display=\'none\'"'})+
     '<button type="button" class="pav-nav pav-prev absolute top-1/2 left-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="上一张">‹</button>'+
     '<button type="button" class="pav-nav pav-next absolute top-1/2 right-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="下一张">›</button>'+
     '<div class="pav-count absolute top-2.5 right-3 rounded-full border border-black/15 bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums tracking-[.5px] text-foreground/75 shadow-md backdrop-blur-sm">1/'+list.length+'</div>'+
+    mark+
   '</div>';
 }
 
@@ -111,12 +176,27 @@ function avatarBind(){
   var img=el.querySelector(".pav-img");
   var count=el.querySelector(".pav-count");
   var idx=0;
+  /* 相邻一张预加载（§5.3.2）：头像已改 loading=lazy，切换时不该再等一次网络往返；
+   * 同一 src 只预拉一次（seen 去重），环形序列 = 下一张 + 上一张 */
+  var seen={};
+  function preload(n){
+    var src=photos[((n%photos.length)+photos.length)%photos.length];
+    if(!src || seen[src]) return;
+    seen[src]=1;
+    var im=new Image();
+    im.decoding="async";
+    im.src=src;
+  }
   function show(n){
     idx=(n+photos.length)%photos.length;
     img.src=photos[idx];
+    if(!img.decoding) img.decoding="async";
     count.textContent=(idx+1)+"/"+photos.length;
+    preload(idx+1); preload(idx-1);
   }
+  preload(1); preload(photos.length-1);   /* 首图已在外层懒加载，先把两端挂上 */
   el.addEventListener("click",function(e){
+    if(e.target && e.target.closest && e.target.closest("[data-edit]")) return;   /* 点钉住标记 = 跳编辑页，不算切图 */
     var rect=el.getBoundingClientRect();
     if(e.clientX-rect.left < rect.width/2) show(idx-1); else show(idx+1);
   });
@@ -187,6 +267,7 @@ function renderOverview(hs){
 }
 
 function render(h){
+  currentH = h;                 /* 钉住表晚于详情到达时按它补渲染（见 loadPins） */
   var t=YJ.i18n.t;
   var title = h.自译馬名 || h.欧字馬名 || YJ.util.splitName(h.馬名).name || YJ.util.fallbackName(h);
 
@@ -226,8 +307,8 @@ function render(h){
   var nameHeader='<div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>';
 
   /* ── 上段整体：照片（左，铺满占大） + 基本信息 + 血统（右，窄列，成为一体）── */
-  var fi=function(k,v){
-    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span></div>';
+  var fi=function(k,v,field){
+    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+(field?pinMark(h.id,field,PIN_CLS):'')+'</div>';
   };
   var stBadge=h.登録状態 ? (h.登録状態==="現役"
     ? '<span class="inline-flex items-center rounded-full bg-accent px-2 py-[2px] text-[11.5px] font-semibold text-accent-foreground">现役</span>'
@@ -236,14 +317,14 @@ function render(h){
   /* 当前性别（YJ.util.sexOf：后端 性別_当前 优先，回退官方 性別）。官方 性別 是「登录性别」，
    * 无 JRA 登录的海外马去势后 netkeiba/JBIS 都不回写，逐场记录才是当期事实 → 只展示当期值。 */
   var info='<div class="grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border">'+
-    fi(t("性別"), sexBadge(sexOf(h)))+
+    fi(t("性別"), sexBadge(sexOf(h)), "性別")+
     fi(t("生年月日"), esc(h.生年月日||"—"))+
-    fi(t("登録状態"), stBadge)+
-    fi(t("毛色"), esc(YJ.i18n.e("毛色",h.毛色)||"—"))+
+    fi(t("登録状態"), stBadge, "登録状態")+
+    fi(t("毛色"), esc(YJ.i18n.e("毛色",h.毛色)||"—"), "毛色")+
     fi(t("馬齢"), esc(h.馬齢||"—"))+
     fi(t("産地"), esc(h.産地||"—"))+
-    fi(t("馬主"), esc(h.馬主||"—"))+
-    fi(t("調教師"), esc(h.調教師||"—"))+
+    fi(t("馬主"), esc(h.馬主||"—"), "馬主")+
+    fi(t("調教師"), esc(h.調教師||"—"), "調教師")+
     fi(t("生産牧場"), esc(h.生産牧場||"—"))+
     fi(t("セリ取引価格"), esc(h.セリ取引価格||"—"))+
   '</div>';
@@ -255,7 +336,7 @@ function render(h){
    * 容器等高由 items-stretch 保证，总高度以基本资料表为基准；
    * mb 端退回单列纵向 max-md:flex-col。 */
   var basicBlock='<div class="mt-6 flex items-stretch gap-6 max-md:flex-col max-md:gap-4">'+
-    avatarHTML(h.photo)+
+    avatarHTML(h.photo, h.id)+
     '<div class="min-w-0 flex-1">'+info+'</div>'+
     '<div class="min-w-0 flex-1">'+pedBlock+'</div></div>';
 
@@ -345,6 +426,15 @@ function render(h){
   /* iframe 高度自适应（与嵌入内容融为一体，避免空白框） */
   fitFrames();
 }
+
+/* 标记点击 → 跳编辑页并定位该马。profile 本身跑在外壳内容 iframe 里，改 location 即在原框内换页；
+ * 事件委托挂 #body（该元素跨渲染常驻，innerHTML 换掉也不用重挂），且无标记时零开销 */
+document.getElementById("body").addEventListener("click", function(e){
+  var b = e.target && e.target.closest ? e.target.closest("[data-edit]") : null;
+  if (!b) return;
+  location.href = "edit.html?id=" + encodeURIComponent(b.getAttribute("data-edit"));
+});
+loadPins();   /* 与 basic.json 并行探测人工表（拿不到 = 无钉住，静默） */
 
 YJ.selector.init({
   el: document.getElementById("selector"),

@@ -100,7 +100,7 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js?v=1"></script>
-<script src="../selector.js?v=5"></script>
+<script src="../selector.js?v=6"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script>
@@ -120,11 +120,6 @@ var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 
  * 表头 / PC 单元格 / mb 卡片项 / 列宽最小宽 全部同源 → 改列、改徽章、改格式只改 race-rows.js。
  * 下方薄别名只为保持本页既有调用点不变（数据键即原始日文键，无需适配）。 */
 var RR = YJ.raceRows;
-var G = RR.G, GLABEL = RR.GLABEL;
-var gradeBadge = RR.gradeBadge, placeBadge = RR.placeBadge;
-var ninkiBadge = RR.ninkiBadge, ninkiMbCls = RR.ninkiMbCls;
-var raceNameText = RR.raceNameText, venueR = RR.venueR;
-function weightHTML(r){ return RR.weightOf(r); }
 function embedTableHTML(rows){ return RR.embedTableHTML(rows); }
 function rowEmbedHTML(r){ return RR.rowEmbedHTML(r); }
 function rowEmbedMbHTML(r){ return RR.rowEmbedMbHTML(r); }
@@ -149,7 +144,11 @@ function resultCode(n){
  * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
  * 内嵌单马表（renderHorse 加载后）与独立跨马表（renderResults）共用；
  * PC 表与 mb 卡片渲染同一份有序列表，一份排序四处（内嵌/独立 × pc/mb）同时生效。
- * 完全同键（跨马表里同一场比赛的多匹马）返回 0，走稳定排序保持加载顺序。 */
+ * ★ 末位比较键（UI优化记录 §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
+ *   稳定排序只能保持「并入顺序」，而全库 276 个文件是 16 并发逐个 push 进 entries 的（顺序 = 到达时序）
+ *   → 最终行序不唯一（实测同键组 135 个 / 298 行）。故同键后一律按数据字段定序：
+ *   着顺升序（未完走殿后，与日期统计明细同口径）→ race_id（不同场次不交错）→ 馬番升序 → 馬名。
+ *   只用行上的字段、不引比较器之外的上下文（如马 id），两条调用路径同一语义。 */
 function raceCmp(a, b){
   var da=String(a.日付||""), db=String(b.日付||"");
   if(da!==db) return da<db?1:-1;              /* 日期降序 */
@@ -159,7 +158,19 @@ function raceCmp(a, b){
     if(!tb) return 1;
     return ta<tb?1:-1;                         /* 発走降序（大→小） */
   }
-  return 0;
+  return raceTieCmp(a, b);                     /* 完全同键 → 末位键给出唯一行序 */
+}
+/* 着顺值：数字着顺即本身；中止/失格/取消/除外（非数字）统一殿后 */
+function placeVal(r){ return typeof r.結果 === "number" ? r.結果 : 99; }
+/* 馬番值：缺失/非数字排同场最后 */
+function banVal(r){ var v=r.馬番, n=(v===""||v==null)?NaN:+v; return isNaN(n)?999:n; }
+function raceTieCmp(a, b){
+  var p=placeVal(a)-placeVal(b); if(p) return p;
+  var ra=String(a.race_id||""), rb=String(b.race_id||"");
+  if(ra!==rb) return ra<rb?-1:1;
+  var q=banVal(a)-banVal(b); if(q) return q;
+  var na=String(a.出走馬名||""), nb=String(b.出走馬名||"");
+  return na===nb?0:(na<nb?-1:1);
 }
 
 /* ===== 单马 22 列独立表 / 22 列 mb 卡片：已随「全库跨马查询」上线而失效（renderRaces 只在
@@ -202,8 +213,8 @@ function renderHorse(id){
     });
   };
   if (h) { renderR(h); return; }
-  fetch(YJ_DATA.url('basic.json')).then(function(r){return r.json();}).then(function(d){
-    var arr = Array.isArray(d)?d:(d.horses||[]);
+  /* 马匹信息走 YJ.selector.loadHorses（路 D 共享缓存：与 profile 父页面 / 本页独立模式同一份，不再各拉 328KB） */
+  YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(arr){
     renderR(arr.find(function(x){return x.id===id;}));
   }).catch(function(){ renderR(null); });
 }
@@ -236,11 +247,12 @@ var LIB = null;   /* {horses:[], entries:[{h,r}]} */
 /* 已选维度：每个维度是数组，同维度多选=OR，跨维度=AND；空数组=不限
  * year=比赛年份（按比赛日付），byear=出生年份（按马 h.生年），两套独立可叠加 */
 var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[], horse:[],
-            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[] };
+            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[], weight:[], breeder:[], owner:[] };
 var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear",
-                "turn","ninki","sex","trainer","jockey","mps"];
+                "turn","ninki","sex","trainer","jockey","mps","weight","breeder","owner"];
 /* ?f=key:value,key2:value2 下钻（统计总览矩阵行 → 独立模式预置筛选）
- * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps）；
+ * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps/
+ * weight=当日馬体重档（与 build_stats.py weight_bin 同口径）/breeder=生産牧場现值/owner=馬主现值）；
  * 无效维度或值在应用时由 validFilterValue 静默丢弃。 */
 var URL_F = (function(){
   var m=location.search.match(/[?&]f=([^&]+)/);
@@ -283,6 +295,17 @@ function ninkiBucket(n){
   n=+n; if(!n||n<1||n>18) return "";
   return String(n);
 }
+/* 体重档（与统计页/build_stats.py weight_bin 同口径：400-550 每 10kg 一档，550 归 540-550；空/非数不入桶） */
+function weightBin(w){
+  if(w===""||w==null) return "";
+  var n=Math.round(+w);
+  if(!isFinite(n)) return "";
+  if(n<400) return "<400";
+  if(n>550) return ">550";
+  var lo=Math.floor(n/10)*10; if(lo>=550) lo=540;
+  return lo+"-"+(lo+10);
+}
+var WEIGHT_BINS = (function(){ var a=["<400"]; for(var i=400;i<550;i+=10) a.push(i+"-"+(i+10)); a.push(">550"); return a; })();
 var NINKI_OPTS = Array.apply(null,Array(18)).map(function(_,i){
   var n=i+1;
   return {v:String(n), l:n+"人気", tip:n===1?"单胜人气第1":null};
@@ -381,6 +404,9 @@ function entryVal(en,key){
   if(key==="trainer") return r.調教師||"";
   if(key==="jockey") return r.騎手||"";
   if(key==="mps") return (en.h&&en.h.母父)||"";   /* 母父 = 血统图「母亲的父亲」（basic.json 母父字段） */
+  if(key==="weight") return weightBin(r.馬体重);   /* 当日 馬体重 档（同统计页口径） */
+  if(key==="breeder") return String((en.h&&en.h.生産牧場)||"").trim();   /* 生产牧场（basic 现值，马属性） */
+  if(key==="owner") return String((en.h&&en.h.馬主)||"").trim();         /* 马主（basic 现值，马属性） */
   return "";
 }
 
@@ -420,6 +446,7 @@ function validFilterValue(k,v){
   else if(k==="turn") list=["右","左"];
   else if(k==="ninki") list=NINKI_OPTS.map(function(o){return o.v;});
   else if(k==="sex") list=["牡","牝","セン"];
+  else if(k==="weight") list=WEIGHT_BINS;
   else if(k==="year"||k==="byear") return /^\d{4}$/.test(v);
   else if(k==="horse") return LIB.horses.some(function(h){ return String(h.id)===v; });
   else return LIB.entries.some(function(en){ return entryVal(en,k)===v; });
@@ -483,9 +510,9 @@ function renderFilters(){
       '<div class="f-csel" id="fHorseSel"></div>'+
     '</div></div>';
 
-  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行）：「A-B」= 一行两列；无 - = 独占一行（wide）
+  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行，2026-09 增 生产牧场/马主/体重 三个搜索下拉）：「A-B」= 一行两列；无 - = 独占一行（wide）
    * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
-   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 */
+   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 / 生产牧场-马主 / 体重 */
   el.innerHTML=
     '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
     (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
@@ -509,8 +536,11 @@ function renderFilters(){
       selRow("mps",false)+
       selRow("jockey",false)+
       selRow("trainer",false)+
+      selRow("breeder",false)+
+      selRow("owner",false)+
+      selRow("weight",false)+
     '</div></div>';
-  /* 筛选条重建后重新挂载搜索下拉：出走马 + 人气/母父/骑手/调教师（均 selector.js compact+multi） */
+  /* 筛选条重建后重新挂载搜索下拉：出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重（均 selector.js compact+multi） */
   initHorseSel();
   initDimSels();
 }
@@ -642,7 +672,7 @@ function renderResults(){
   var summary='<div class="mb-3 flex flex-wrap items-baseline gap-2 text-[13px] text-secondary-foreground">'+
     '共 <b class="text-[16px] text-primary">'+total+'</b> 场 · <b class="text-[16px] text-primary">'+nH+'</b> 匹'+
     (pages>1?'<span class="text-[11.5px] text-muted-foreground">当前第 '+PG.page+' 页 · 显示 '+list.length+' 条</span>':"")+
-    (isMb()?'<button type="button" class="yj-name-toggle ml-auto self-center" data-tip="'+esc(NAME_TIP)+'">出走马 <span class="yj-name-ico">⇄</span></button>':"")+
+    (isMb()?RR.nameToggleHTML("出走马", NAME_TIP, "ml-auto self-center"):"")+
     '</div>';
   var empty='<div class="rounded-[10px] border border-border bg-card px-5 py-[48px] text-center text-[13px] text-muted-foreground">没有符合条件的比赛记录</div>';
   var listHtml;
@@ -798,8 +828,10 @@ function addHorse(id){
 }
 
 /* ===== 人气/母父/骑手/调教师筛选：与出走马同款 selector（items 模式） ===== */
-/* fix=true（人气）：候选 1→18 固定升序、显示文本加「人気」；其余按出赛数降序 */
-var DIM_SEL=[{k:"ninki",l:"人气",fix:true},{k:"mps",l:"母父"},{k:"jockey",l:"骑手"},{k:"trainer",l:"调教师"}];
+/* fix=true（人气）：候选 1→18 固定升序、显示文本加「人気」；
+ * wbin=true（体重）：候选按 WEIGHT_BINS 档位升序（<400→400-410…540-550→>550）；其余按出赛数降序 */
+var DIM_SEL=[{k:"ninki",l:"人气",fix:true},{k:"mps",l:"母父"},{k:"jockey",l:"骑手"},{k:"trainer",l:"调教师"},
+             {k:"breeder",l:"生产牧场"},{k:"owner",l:"马主"},{k:"weight",l:"体重",wbin:true}];
 function dimCfg(key){
   for(var i=0;i<DIM_SEL.length;i++){ if(DIM_SEL[i].k===key) return DIM_SEL[i]; }
   return {k:key,l:key};
@@ -823,6 +855,7 @@ function initDimSels(){
     if(!el || !LIB) return;
     var opts=dimCounts(d.k);
     if(d.fix) opts.sort(function(a,b){ return (+a.v)-(+b.v); });   /* 人气 1→18 固定升序 */
+    else if(d.wbin) opts.sort(function(a,b){ return WEIGHT_BINS.indexOf(a.v)-WEIGHT_BINS.indexOf(b.v); });   /* 体重 <400→…→>550 档位升序 */
     var items=opts.map(function(o){ return {v:o.v, l:d.fix?o.v+"人気":o.v, n:o.n}; });
     YJ.selector.init({
       el: el,

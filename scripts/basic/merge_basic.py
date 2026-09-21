@@ -123,11 +123,8 @@ def main():
             h["母父"] = v
             n_mps += 1
 
-    # 按标准字段顺序重排（模板见 build_registry.BASIC_TEMPLATE，此处固定顺序）
-    ORDER = ["id", "nk_id", "jbis_id", "馬名", "欧字馬名", "香港馬名", "自译馬名", "母名", "母父", "生年", "馬名意味",
-             "登録状態", "性別", "毛色", "馬齢", "生年月日", "産地", "馬主", "調教師",
-             "生産牧場", "通算成績", "獲得賞金 (中央)", "獲得賞金 (地方)", "総賞金", "収得賞金", "セリ取引価格", "photo", "races_file",
-             "pedigree_file"]
+    # 按标准字段顺序重排（列序单一出处：_shared/basic_io.BASIC_FIELDS → common.BASIC_ORDER）
+    ORDER = common.BASIC_ORDER
     LEGACY_DROP = {"獲得賞金", "獲得賞金地方"}   # 旧字段名（已改名为 獲得賞金 (中央)/(地方)），丢弃
     for h in horses:
         extra = {k: v for k, v in h.items() if k not in ORDER and k not in LEGACY_DROP}
@@ -135,6 +132,13 @@ def main():
         reordered.update(extra)          # 模板外的新字段（如后续竞赛字段）保留在末尾
         h.clear()
         h.update(reordered)
+
+    # 人工维护表（data/manual_overrides.json）：重排后、写回前套用，人工值优先于抓取值
+    overrides = common.load_overrides()
+    n_ov = 0
+    for h in horses:
+        if common.apply_overrides(h, overrides):
+            n_ov += 1
 
     common.save_basic(data)
     print(f"✔ 已合并写回 basic.json：")
@@ -145,6 +149,7 @@ def main():
     print(f"   - 総賞金:        {n_total}")
     print(f"   - 详情字段:      {n_det}")
     print(f"   - 母父(血统图):  {n_mps}")
+    print(f"   - 人工维护覆盖:  {n_ov} 匹")
 
     if not args.keep:
         common.clean_cache_all()

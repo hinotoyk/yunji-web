@@ -19,7 +19,7 @@
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
-<script src="../selector.js?v=5"></script>
+<script src="../selector.js?v=6"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../pedigree.js"></script>
 <script>
@@ -80,8 +80,9 @@ function renderHorse(id){
   var list = (YJ.selector.getHorses ? YJ.selector.getHorses() : []) || [];
   var h = list.find(function(x){return x.id===id;});
   if (h) { renderPedigree(h); return; }
-  fetch(YJ_DATA.url('basic.json')).then(function(r){return r.json();}).then(function(d){
-    var arr = Array.isArray(d)?d:(d.horses||[]);
+  /* 马匹信息走 YJ.selector.loadHorses：与 profile 父页面共用同一份内存/sessionStorage 缓存（路 D），
+   * 不再自己裸 fetch 一次 328KB 的 basic.json */
+  YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(arr){
     renderPedigree(arr.find(function(x){return x.id===id;}) || {id:id});
   }).catch(function(){ renderPedigree({id:id}); });
 }

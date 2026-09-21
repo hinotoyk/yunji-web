@@ -24,40 +24,9 @@ import common
 
 YEARS_DEFAULT = ["2023", "2024"]
 
-ROMAN_FULL = {"Ⅰ": "I", "Ⅱ": "II", "Ⅲ": "III", "Ⅳ": "IV", "Ⅴ": "V",
-              "Ⅵ": "VI", "Ⅶ": "VII", "Ⅷ": "VIII", "Ⅸ": "IX", "Ⅹ": "X"}
-
-# 标准字段模板（建档即初始化，默认 ""）：后续各并发脚本按 id 回填。
-BASIC_TEMPLATE = {
-    "id": None,
-    "nk_id": "",
-    "jbis_id": "",
-    "馬名": "",
-    "欧字馬名": "",
-    "香港馬名": "",
-    "自译馬名": "",
-    "母名": "",
-    "生年": "",
-    "馬名意味": "",
-    "登録状態": "",
-    "性別": "",
-    "性別_当前": "",   # 当前性别：merge_races 依逐场记录派生（海外去赛马等官方 性別 停在登录值），空=与登录值一致
-    "毛色": "",
-    "生年月日": "",
-    "産地": "",
-    "馬主": "",
-    "調教師": "",
-    "生産牧場": "",
-    "通算成績": "",
-    "通算成績_逐场": {},   # 逐场全量派生（merge_races 3d）：出走/1着/2着/3着/着外/未完走/未出走，全站展示源
-    "獲得賞金 (中央)": "",
-    "獲得賞金 (地方)": "",
-    "総賞金": "",
-    "セリ取引価格": "",
-    "photo": "",
-    "races_file": "",
-    "pedigree_file": "",
-}
+# 标准字段模板（建档即初始化，默认 ""）：单一出处 _shared/basic_io.BASIC_FIELDS → common.BASIC_TEMPLATE。
+BASIC_TEMPLATE = common.BASIC_TEMPLATE
+ROMAN_FULL = common.ROMAN_FULL
 
 
 def clean_mare(name):
