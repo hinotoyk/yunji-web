@@ -77,10 +77,10 @@ global.fetch = url => {
   return Promise.resolve({ ok: true, json() { return Promise.resolve(JSON.parse(txt)); } });
 };
 
-/* 下钻 URL：覆盖全部新维度 + 2 个无效值（grade:ZZZ / track:不存在）+ 一个枚举外值（sex:未知） */
+/* 下钻 URL：覆盖全部新维度 + 2 个无效值（grade:ZZZ / track:不存在）+ 一个枚举外值（sex:未知）+ 无效体重（weight:ABC） */
 const DRILL_F = ["surface:ダ", "venue:中央", "dist:中距离", "cond:良", "turn:右", "ninki:1",
   "sex:牝", "grade:2勝クラス", "trainer:矢作芳人", "jockey:武豊", "result:一着", "byear:2024",
-  "grade:ZZZ", "track:不存在", "sex:未知"].join(",");
+  "weight:470-480", "grade:ZZZ", "track:不存在", "sex:未知", "weight:ABC"].join(",");
 global.location = { search: "?f=" + encodeURIComponent(DRILL_F), href: "" };
 global.YJ = {
   i18n: { t: k => k, e: (f, v) => v, g: (f, v) => v },
@@ -110,6 +110,16 @@ const ninkiOf = n => { if (n === "" || n == null) return ""; n = Number(n); if (
 const turnOf = c => { const s = String(c || ""); return s.slice(0, 1) === "右" ? "右" : s.slice(0, 1) === "左" ? "左" : ""; };
 const sexOf = s => (String(s || "").trim() === "セ" ? "セン" : String(s || "").trim());
 const sexOfH = h => sexOf((h || {}).性別_当前 || (h || {}).性別);   // 当前性别（同 races.html entryVal / YJ.util.sexOf）
+/* 体重档（同 build_stats.py weight_bin / races.html weightBin：400-550 每 10kg 一档，550 归 540-550） */
+const weightBinOf = w => {
+  if (w === "" || w == null) return "";
+  const n = Math.round(Number(w));
+  if (!isFinite(n)) return "";
+  if (n < 400) return "<400";
+  if (n > 550) return ">550";
+  const lo0 = Math.floor(n / 10) * 10, lo = lo0 >= 550 ? 540 : lo0;
+  return lo + "-" + (lo + 10);
+};
 const allEntries = [];
 for (const h of basic.horses) {
   if (!h.races_file) continue;
@@ -131,6 +141,7 @@ const match = en => {
   if (String(r.騎手 || "") !== "武豊") return false;
   if (r.結果 !== 1) return false;
   if (String(en.h.生年 || "").slice(0, 4) !== "2024") return false;
+  if (weightBinOf(en.r["馬体重"]) !== "470-480") return false;
   return true;
 };
 const expCount = allEntries.filter(match).length;
@@ -145,11 +156,13 @@ setTimeout(function () {
   ok(global.FLT.sex.length === 1 && global.FLT.sex[0] === "牝", "无效值丢弃：sex:未知 未入 FLT");
   ok(global.FLT.turn[0] === "右" && global.FLT.ninki[0] === "1" && global.FLT.trainer[0] === "矢作芳人" &&
      global.FLT.jockey[0] === "武豊" && global.FLT.dist[0] === "中距离" && global.FLT.cond[0] === "良" &&
-     global.FLT.result[0] === "一着" && global.FLT.byear[0] === "2024", "其余 8 个有效维度全部应用");
+     global.FLT.result[0] === "一着" && global.FLT.byear[0] === "2024" && global.FLT.weight[0] === "470-480",
+    "其余 9 个有效维度全部应用（含 weight:470-480）");
+  ok(!global.FLT.weight.includes("ABC"), "无效值丢弃：weight:ABC 未入 FLT");
 
   console.log("[B] matchEntry 命中数 == 源数据独立重算");
   const hit = global.LIB.entries.filter(en => global.matchEntry(en)).length;
-  ok(hit === expCount, "12 维 AND 命中 " + hit + " == 独立重算 " + expCount + "（均为 0，负例一致）");
+  ok(hit === expCount, "13 维 AND 命中 " + hit + " == 独立重算 " + expCount + "（均为 0，负例一致）");
   /* 单维正例：直接操纵页面 FLT（真实 matchEntry/entryVal 路径），覆盖全部新维度 */
   const countFor = (k, v) => {
     global.DIM_KEYS.forEach(kk => { global.FLT[kk] = []; });
@@ -170,7 +183,13 @@ setTimeout(function () {
   ok(countFor("jockey", "武豊") === rawJk && rawJk > 0, "jockey:武豊 命中 " + countFor("jockey", "武豊") + " == 源 " + rawJk);
   const rawMps = allEntries.filter(en => String(en.h["母父"] || "") === "キングカメハメハ").length;
   ok(countFor("mps", "キングカメハメハ") === rawMps && rawMps > 0, "mps:キングカメハメハ（母父新维度）命中 " + countFor("mps", "キングカメハメハ") + " == 源 " + rawMps);
-  /* 还原 12 维组合（供 [C] 继续） */
+  const rawW = allEntries.filter(en => weightBinOf(en.r["馬体重"]) === "470-480").length;
+  ok(countFor("weight", "470-480") === rawW && rawW > 0, "weight:470-480 命中 " + countFor("weight", "470-480") + " == 源 " + rawW);
+  const rawBr = allEntries.filter(en => String(en.h["生産牧場"] || "").trim() === "ノーザンファーム").length;
+  ok(countFor("breeder", "ノーザンファーム") === rawBr && rawBr > 0, "breeder:ノーザンファーム 命中 " + countFor("breeder", "ノーザンファーム") + " == 源 " + rawBr);
+  const rawOw = allEntries.filter(en => String(en.h["馬主"] || "").trim() === "サンデーレーシング").length;
+  ok(countFor("owner", "サンデーレーシング") === rawOw && rawOw > 0, "owner:サンデーレーシング 命中 " + countFor("owner", "サンデーレーシング") + " == 源 " + rawOw);
+  /* 还原全部预置维度组合（供 [C] 继续） */
   global.DIM_KEYS.forEach(kk => { global.FLT[kk] = []; });
   global.URL_F && global.DIM_KEYS.forEach(k => {
     const vals = global.URL_F[k];
@@ -203,6 +222,14 @@ setTimeout(function () {
   ok(f.includes('id="fDimSel_jockey"') && !!selOf("搜索骑手添加…"), "骑手 下拉挂载点 + 实例");
   ok(f.includes('id="fDimSel_mps"') && f.includes(">母父<") && !!selOf("搜索母父添加…"),
     "母父 下拉挂载点（统计页母父维度下钻落点）");
+  ok(f.includes('id="fDimSel_weight"') && f.includes('f-tag">470-480') && !!selOf("搜索体重添加…"),
+    "体重 下拉挂载点 + URL 预置 470-480 tag + 实例（统计页体重维度下钻落点）");
+  const wSel = selOf("搜索体重添加…");
+  const wIdx = v => ["<400"].concat(Array.from({ length: 15 }, (_, i) => (400 + i * 10) + "-" + (410 + i * 10))).concat([">550"]).indexOf(v);
+  ok(!!wSel && wSel.items.length >= 10 && wSel.items.every((it, i) => wIdx(it.v) >= 0 && (i === 0 || wIdx(it.v) > wIdx(wSel.items[i - 1].v))),
+    "体重候选档位升序：" + (wSel && wSel.items.map(it => it.v).join("→")) + "（空档不出现）");
+  ok(f.includes('id="fDimSel_breeder"') && !!selOf("搜索生产牧场添加…"), "生产牧场 下拉挂载点（统计页生产牧场维度下钻落点）");
+  ok(f.includes('id="fDimSel_owner"') && !!selOf("搜索马主添加…"), "马主 下拉挂载点（统计页马主维度下钻落点）");
   ok(f.includes("性别") && f.includes(">セン<"), "筛选行 性别（牡/牝/セン）");
   ok(f.includes("f-tag\">矢作芳人") || f.includes('data-fk="trainer"'), "调教师已选胶囊走 data-fk 委托");
   ok(f.includes("data-k=\"grade\" data-v=\"1勝クラス\"") && f.includes("data-v=\"3勝クラス\""), "级别新增 1胜/2胜/3胜 单级 chip");

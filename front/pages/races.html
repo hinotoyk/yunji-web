@@ -247,11 +247,12 @@ var LIB = null;   /* {horses:[], entries:[{h,r}]} */
 /* 已选维度：每个维度是数组，同维度多选=OR，跨维度=AND；空数组=不限
  * year=比赛年份（按比赛日付），byear=出生年份（按马 h.生年），两套独立可叠加 */
 var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[], horse:[],
-            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[] };
+            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[], weight:[], breeder:[], owner:[] };
 var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear",
-                "turn","ninki","sex","trainer","jockey","mps"];
+                "turn","ninki","sex","trainer","jockey","mps","weight","breeder","owner"];
 /* ?f=key:value,key2:value2 下钻（统计总览矩阵行 → 独立模式预置筛选）
- * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps）；
+ * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps/
+ * weight=当日馬体重档（与 build_stats.py weight_bin 同口径）/breeder=生産牧場现值/owner=馬主现值）；
  * 无效维度或值在应用时由 validFilterValue 静默丢弃。 */
 var URL_F = (function(){
   var m=location.search.match(/[?&]f=([^&]+)/);
@@ -294,6 +295,17 @@ function ninkiBucket(n){
   n=+n; if(!n||n<1||n>18) return "";
   return String(n);
 }
+/* 体重档（与统计页/build_stats.py weight_bin 同口径：400-550 每 10kg 一档，550 归 540-550；空/非数不入桶） */
+function weightBin(w){
+  if(w===""||w==null) return "";
+  var n=Math.round(+w);
+  if(!isFinite(n)) return "";
+  if(n<400) return "<400";
+  if(n>550) return ">550";
+  var lo=Math.floor(n/10)*10; if(lo>=550) lo=540;
+  return lo+"-"+(lo+10);
+}
+var WEIGHT_BINS = (function(){ var a=["<400"]; for(var i=400;i<550;i+=10) a.push(i+"-"+(i+10)); a.push(">550"); return a; })();
 var NINKI_OPTS = Array.apply(null,Array(18)).map(function(_,i){
   var n=i+1;
   return {v:String(n), l:n+"人気", tip:n===1?"单胜人气第1":null};
@@ -392,6 +404,9 @@ function entryVal(en,key){
   if(key==="trainer") return r.調教師||"";
   if(key==="jockey") return r.騎手||"";
   if(key==="mps") return (en.h&&en.h.母父)||"";   /* 母父 = 血统图「母亲的父亲」（basic.json 母父字段） */
+  if(key==="weight") return weightBin(r.馬体重);   /* 当日 馬体重 档（同统计页口径） */
+  if(key==="breeder") return String((en.h&&en.h.生産牧場)||"").trim();   /* 生产牧场（basic 现值，马属性） */
+  if(key==="owner") return String((en.h&&en.h.馬主)||"").trim();         /* 马主（basic 现值，马属性） */
   return "";
 }
 
@@ -431,6 +446,7 @@ function validFilterValue(k,v){
   else if(k==="turn") list=["右","左"];
   else if(k==="ninki") list=NINKI_OPTS.map(function(o){return o.v;});
   else if(k==="sex") list=["牡","牝","セン"];
+  else if(k==="weight") list=WEIGHT_BINS;
   else if(k==="year"||k==="byear") return /^\d{4}$/.test(v);
   else if(k==="horse") return LIB.horses.some(function(h){ return String(h.id)===v; });
   else return LIB.entries.some(function(en){ return entryVal(en,k)===v; });
@@ -494,9 +510,9 @@ function renderFilters(){
       '<div class="f-csel" id="fHorseSel"></div>'+
     '</div></div>';
 
-  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行）：「A-B」= 一行两列；无 - = 独占一行（wide）
+  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行，2026-09 增 生产牧场/马主/体重 三个搜索下拉）：「A-B」= 一行两列；无 - = 独占一行（wide）
    * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
-   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 */
+   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 / 生产牧场-马主 / 体重 */
   el.innerHTML=
     '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
     (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
@@ -520,8 +536,11 @@ function renderFilters(){
       selRow("mps",false)+
       selRow("jockey",false)+
       selRow("trainer",false)+
+      selRow("breeder",false)+
+      selRow("owner",false)+
+      selRow("weight",false)+
     '</div></div>';
-  /* 筛选条重建后重新挂载搜索下拉：出走马 + 人气/母父/骑手/调教师（均 selector.js compact+multi） */
+  /* 筛选条重建后重新挂载搜索下拉：出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重（均 selector.js compact+multi） */
   initHorseSel();
   initDimSels();
 }
@@ -809,8 +828,10 @@ function addHorse(id){
 }
 
 /* ===== 人气/母父/骑手/调教师筛选：与出走马同款 selector（items 模式） ===== */
-/* fix=true（人气）：候选 1→18 固定升序、显示文本加「人気」；其余按出赛数降序 */
-var DIM_SEL=[{k:"ninki",l:"人气",fix:true},{k:"mps",l:"母父"},{k:"jockey",l:"骑手"},{k:"trainer",l:"调教师"}];
+/* fix=true（人气）：候选 1→18 固定升序、显示文本加「人気」；
+ * wbin=true（体重）：候选按 WEIGHT_BINS 档位升序（<400→400-410…540-550→>550）；其余按出赛数降序 */
+var DIM_SEL=[{k:"ninki",l:"人气",fix:true},{k:"mps",l:"母父"},{k:"jockey",l:"骑手"},{k:"trainer",l:"调教师"},
+             {k:"breeder",l:"生产牧场"},{k:"owner",l:"马主"},{k:"weight",l:"体重",wbin:true}];
 function dimCfg(key){
   for(var i=0;i<DIM_SEL.length;i++){ if(DIM_SEL[i].k===key) return DIM_SEL[i]; }
   return {k:key,l:key};
@@ -834,6 +855,7 @@ function initDimSels(){
     if(!el || !LIB) return;
     var opts=dimCounts(d.k);
     if(d.fix) opts.sort(function(a,b){ return (+a.v)-(+b.v); });   /* 人气 1→18 固定升序 */
+    else if(d.wbin) opts.sort(function(a,b){ return WEIGHT_BINS.indexOf(a.v)-WEIGHT_BINS.indexOf(b.v); });   /* 体重 <400→…→>550 档位升序 */
     var items=opts.map(function(o){ return {v:o.v, l:d.fix?o.v+"人気":o.v, n:o.n}; });
     YJ.selector.init({
       el: el,

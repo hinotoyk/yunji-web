@@ -22,7 +22,8 @@ DATA = ROOT / "data"
 
 # 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径；L/OP 不计入）
 TROPHY_GRADES = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}
-DIM_KEYS = ["surf", "dist", "cond", "turn", "grade", "ninki", "sex", "track", "trainer", "jockey", "mps"]
+DIM_KEYS = ["surf", "dist", "cond", "turn", "grade", "ninki", "sex", "track", "trainer", "jockey", "mps",
+            "weight_m", "weight_f", "breeder", "owner"]   # 后四为 2026-09 增补：体重按性别拆两维（m=牡含セン / f=牝，当日馬体重档）；breeder/owner=basic 现值
 VENUE_KEYS = ["中央", "地方", "海外"]
 
 
@@ -111,6 +112,29 @@ def sex_key(s):
     return "セン" if s == "セ" else s
 
 
+# 产驹分布（马属性，全库口径，不进场地/年份切面）：体重 400-550 每 10kg 一档 + <400 / >550（550 归 540-550）
+WEIGHT_LO, WEIGHT_HI = 400, 550
+WEIGHT_BINS = ["<400"] + [f"{lo}-{lo + 10}" for lo in range(WEIGHT_LO, WEIGHT_HI, 10)] + [">550"]
+
+
+def weight_bin(w):
+    """馬体重 → 档位键；空/非数不入桶（档位标签即展示文案）。"""
+    if isinstance(w, bool):
+        return ""
+    try:
+        w = int(w)
+    except (TypeError, ValueError):
+        return ""
+    if w < WEIGHT_LO:
+        return "<400"
+    if w > WEIGHT_HI:
+        return ">550"
+    lo = (w // 10) * 10
+    if lo >= WEIGHT_HI:
+        lo = WEIGHT_HI - 10
+    return f"{lo}-{lo + 10}"
+
+
 _BIRTH_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日")
 
 
@@ -162,7 +186,7 @@ def bucket_dict(b):
 
 
 class Scope:
-    """一个统计切面：base + 十维分桶 + 月龄曲线 + 重赏明细（all / yYYYY / gYYYY 共用）。"""
+    """一个统计切面：base + 十五维分桶 + 月龄曲线 + 重赏明细（all / yYYYY / gYYYY 共用）。"""
 
     __slots__ = ("base", "prize", "dims", "curve", "trophies")
 
@@ -225,6 +249,7 @@ def main():
         gen = str(h.get("生年") or "").strip()
         gkey = "g" + gen if re.fullmatch(r"\d{4}", gen) else None   # 生产年切面
         sex = sex_key(h.get("性別_当前") or h.get("性別"))   # 当前性别（官方 性別 仅登录值）
+
         for r in arr:
             d = str(r.get("日付") or "")
             if not d:
@@ -255,7 +280,8 @@ def main():
             dates.append(d)
             horses_seen.add(h.get("id"))
 
-            # ── 十一维分桶（切面共用同一份桶键）──
+            # ── 十五维分桶（切面共用同一份桶键；空值不入桶）──
+            wb = weight_bin(r.get("馬体重"))   # 当日 馬体重 档（400-550 每 10kg 一档 + <400 / >550）
             dims = {
                 "surf": str(r.get("芝ダ") or ""),
                 "dist": dist_bucket(r.get("距離")),
@@ -268,6 +294,11 @@ def main():
                 "trainer": str(r.get("調教師") or ""),
                 "jockey": str(r.get("騎手") or ""),
                 "mps": str(h.get("母父") or ""),   # 母父 = 血统图「母亲的父亲」（basic.json 母父字段，merge_basic.py 从 pedigree.母[1][0] derive）
+                # 体重按性别拆两维（2026-09 用户定稿：牡页签含セン；空体重/空性别不入桶）
+                "weight_m": wb if sex in ("牡", "セン") else "",
+                "weight_f": wb if sex == "牝" else "",
+                "breeder": str(h.get("生産牧場") or "").strip(),   # 生产牧场（basic 现值，马属性）
+                "owner": str(h.get("馬主") or "").strip(),         # 马主（basic 现值，马属性）
             }
 
             # ── 月龄曲线键（生产年 × 逐月） ──
