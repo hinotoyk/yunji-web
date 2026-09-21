@@ -5,7 +5,9 @@
  * 所有页面 <link rel="stylesheet" href="theme.css"> 共享编译产物
  * ============================================================ */
 
-/* 字体必须置于所有规则之前 */
+/* 字体必须置于所有规则之前。
+   noto-sc.css = 构建期生成物（front/scripts/gen-font.mjs → 1 条 @font-face 指向按需全量子集），勿手改；
+   旧 101 片 Google 导出物已退役（tests/font-cand/ANALYSIS.md 方案 b，2026-09-20 定稿） */
 @import url('../assets/fonts/noto-sc.css');
 
 @tailwind base;
@@ -142,6 +144,82 @@
   .yj-name-toggle[data-tip]{position:relative}
   .yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
   .yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
+
+  /* ---------- 编辑台（只有 pages/edit.html + public/editor.js 用；骨架 = tests/edit-cand/cand3「駒札堆叠」
+   *            定稿 + cand2 的常驻马匹搜索列，OPTIMIZATION_PLAN §4.6） ----------
+   * 每个类名都以完整字面量出现在 edit.html 静态标记或 editor.js 的串里
+   * （tailwind content 已覆盖 pages 下的 html/js 与 public 下的 js），故放 @layer 不会被裁剪。
+   * 配色只用既有 token：primary 青绿 / chart3 橙（待保存）/ accent 浅青 / muted / destructive。不新增 hex。 */
+  .yj-ed-mk { @apply grid h-[22px] w-[22px] flex-none place-items-center rounded-md bg-primary text-[11.5px] font-bold text-primary-foreground; }
+  .yj-ed-lbl { @apply text-[10px] font-bold uppercase tracking-[1px] text-muted-foreground; }
+
+  /* 报头（一马一屏）：马名 + 状态条 + 副信息 */
+  .yj-ed-mast { @apply flex-none border-b border-border bg-accent/35 px-6 pb-3 pt-3.5 max-md:px-3.5; }
+  .yj-ed-seg5 { @apply min-w-0 flex-1 border-t-[3px] border-border pt-1.5; }
+  .yj-ed-seg5--pin { @apply border-primary; }
+  .yj-ed-seg5--dry { @apply border-chart3; }
+  .yj-ed-nav { @apply h-7 w-7 flex-none rounded-md border border-input bg-card text-[15px] leading-none text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40; }
+
+  /* 字段状态色（--pin 已存人工值=青绿 · --dry 待保存=橙）现由 .yj-ed-row--pin / --dry 承担（见下方台账块） */
+
+  /* 状态胶囊（卡头右侧、摘要与图片区共用） */
+  .yj-ed-state { @apply flex-none rounded-full bg-muted px-2 py-[2px] text-[10.5px] font-semibold text-muted-foreground; }
+  .yj-ed-state--pin { @apply bg-accent text-accent-foreground; }
+  .yj-ed-state--dry { @apply bg-chart3/15 text-chart3; }
+
+  /* 卡底「官方抓取值 / 保存前快照」对照：弱化字 + 划线表「已被人工值替代」 */
+  .yj-ed-official { @apply min-w-0 flex-1 text-[11.5px] leading-[1.45] text-muted-foreground; }
+  .yj-ed-official b { @apply font-semibold text-secondary-foreground; }
+  .yj-ed-struck { @apply text-muted-foreground line-through decoration-muted-foreground/60 decoration-1; }
+
+  /* 控件：文本/下拉、备注、枚举瓦片 */
+  .yj-ed-in { @apply h-[38px] w-full min-w-0 rounded-lg border border-input bg-card px-3 text-[14px] font-semibold text-foreground; }
+  .yj-ed-in:focus { @apply border-primary outline-none ring-2 ring-primary/20; }
+  .yj-ed-tile { @apply relative rounded-lg border border-input bg-card px-3 py-2 text-left transition-colors hover:border-primary; }
+  .yj-ed-tile[aria-pressed="true"] { @apply border-primary bg-accent ring-1 ring-inset ring-primary; }
+  .yj-ed-tile[aria-pressed="true"] b { @apply text-accent-foreground; }
+
+  /* 小按钮（卡底操作 / 图片区 / 时间线区同一套） */
+  .yj-ed-op { @apply inline-flex h-7 flex-none items-center rounded-md border border-input bg-card px-2.5 text-[11.5px] font-medium text-secondary-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40; }
+  .yj-ed-op--primary { @apply border-primary bg-primary text-primary-foreground hover:text-primary-foreground hover:opacity-90; }
+  .yj-ed-op--danger { @apply border-destructive/40 bg-card text-destructive hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive; }
+  .yj-ed-op--ghost { @apply border-dashed text-muted-foreground; }
+
+  /* 右栏保存清单的一条（跨马：马名 + 字段 + 新值←原值 + 备注） */
+  .yj-ed-entry { @apply relative border-b border-dashed border-border px-4 py-2.5 last:border-b-0 hover:bg-muted/40 max-md:px-3; }
+  .yj-ed-kv { @apply mr-1 inline-block rounded bg-muted px-1.5 py-[1px] text-[11px] text-secondary-foreground; }
+  .yj-ed-diff { @apply flex items-baseline gap-1.5 text-[11.5px] leading-[1.5]; }
+
+  /* ---------- 编辑台 · profile 台账式表单（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案） ----------
+   * 版式照 pages/profile.html 的基本资料表：label 左灰 + 值右黑 + 发丝分隔线（gap-px over bg-border）；
+   * 五个可改字段各一行，点「编辑」就地换控件。段标题可折叠（?tab= 直达时只展开目标段）。 */
+
+  /* 分段：字段+图片 / 人工节点 —— 收起时只留段标题（caret 字符由 editor.js 换） */
+  .yj-ed-sec { @apply scroll-mt-2; }
+  .yj-ed-sechead { @apply w-full cursor-pointer select-none text-left; }
+  .yj-ed-sec[data-open="false"] > .yj-ed-secbody { @apply hidden; }
+
+  /* 台账本体：一行一字段，行间发丝分隔（同 profile 的 grid gap-px + bg-border 手法） */
+  .yj-ed-ledger { @apply grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border; }
+  .yj-ed-row { @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 bg-card px-4 py-[9px] max-md:px-3; }
+  .yj-ed-row-k { @apply w-[86px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground max-md:w-[72px]; }
+  .yj-ed-row-v { @apply min-w-0 flex-1 text-[13.5px] font-medium text-foreground; }
+  /* 灰字对照：已保存行显「保存前官方值」（划线）/ 未保存行显官方抓取值 */
+  .yj-ed-row-orig { @apply min-w-0 flex-none text-[11px] leading-[1.4] text-muted-foreground; }
+  .yj-ed-row-acts { @apply flex flex-none items-center gap-1.5; }
+  /* 行内编辑区（点「编辑」后替换值区出现：控件 + 备注 + 按此值保存） */
+  .yj-ed-rowedit { @apply w-full min-w-0 border-t border-dashed border-border pt-2.5; }
+  /* 已保存 = 青绿底 · 待保存 = 橙底（与卡堆时期的 --pin / --dry 同语义） */
+  .yj-ed-row--pin { @apply bg-accent/55; }
+  .yj-ed-row--dry { @apply bg-chart3/[.07]; }
+
+  /* 值位徽章（現役/牡/牝… 枚举的只读形态）：配色由调用处补既有 token 类 */
+  .yj-ed-vbadge { @apply inline-flex flex-none items-center rounded-full px-2 py-[2px] text-[11.5px] font-semibold leading-[1.5]; }
+
+  /* 照片位（左列：有图显示图、无图占位 🐎）+ 其下缩略图行 */
+  .yj-ed-slot { @apply relative flex min-h-[190px] w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 transition-colors hover:border-primary max-md:min-h-[150px]; }
+  .yj-ed-slotimg { @apply absolute inset-0 h-full w-full object-contain; }
+  .yj-ed-thumb { @apply relative m-0 flex w-[104px] max-w-full flex-none flex-col overflow-hidden rounded-lg border border-border bg-muted/20; }
 }
 
 /* ---------- 等级徽章配色（.yj-g*）：必须置于 @layer 之外 ----------
@@ -176,3 +254,4 @@
 @media (prefers-reduced-motion:reduce){
   .yj-drop{animation:none}
 }
+
