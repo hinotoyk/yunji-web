@@ -59,7 +59,7 @@ jobs:
           node-version: 22
 
       - name: 安装依赖
-        run: pip install requests beautifulsoup4 lxml
+        run: pip install requests beautifulsoup4 lxml fonttools brotli
 
       - name: 组装策略参数
         id: args
@@ -87,11 +87,25 @@ jobs:
       - name: 运行更新
         run: python run_update.py ${{ steps.args.outputs.cmd }}
 
+      # 字体子集语料含 data/ 全部用字（新马名带新汉字）→ 数据更新后立刻重算产物，
+      # 随下方 commit 一并提交；deploy/CF 构建只消费已提交产物（gen-font 缺依赖时 fail-soft）。
+      # 源字体不落仓库：ubuntu runner 没有 C:/Windows/Fonts，从 google/fonts 官方仓库现拉。
+      - name: 重新生成字体子集（fail-soft）
+        run: |
+          mkdir -p front/assets/fonts/src
+          # 源字体在 google/fonts 上游：拉取失败只告警跳过、沿用仓库已提交产物，不得卡死每日数据更新（与 build 期 fail-soft 同定位）
+          if curl -fsSL --retry 2 -o front/assets/fonts/src/NotoSansSC-VF.ttf \
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf"; then
+            node front/scripts/gen-font.mjs --force
+          else
+            echo "::warning::源字体拉取失败，跳过字体子集重生成（沿用已提交产物，新汉字暂走系统字体回退）"
+          fi
+
       - name: 提交数据（有变化才提交）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ front/assets/fonts/noto-sc.css front/assets/fonts/noto-sc-subset.woff2
           if ! git diff --cached --quiet; then
             git commit -m "data: auto update $(date -u +%Y-%m-%dT%H:%MZ)"
             git push origin "HEAD:$GITHUB_REF_NAME"

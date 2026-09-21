@@ -8,8 +8,10 @@
 ```
 yunji-web-refactor/
 ├── scripts/
+│   ├── _shared/               # 中立共享层：net/paths/basic_io/manual/text（两管线共用，不认识管线）
+│   ├── README.md              # 管线总说明（怎么跑 / 设计原则 / 中立层边界）
 │   ├── basic/                 # 基础部分脚本（建档 + 基本信息，更新少）
-│   │   ├── common.py          #   共享：请求/限速/缓存（指向根 data/）
+│   │   ├── common.py          #   本管线常量 + 把限速表/缓存目录注进 _shared（指向根 data/）
 │   │   ├── build_registry.py  #   建档：JBIS 産駒一覧 → basic.json
 │   │   ├── fetch_pedigree.py  #   并发1：JBIS 血統
 │   │   ├── fetch_nk_id.py     #   并发2：netkeiba 列表 → nk_id
@@ -19,7 +21,7 @@ yunji-web-refactor/
 │   │   ├── run_all.py         #   基础编排
 │   │   └── README.md          #   基础部分说明
 │   └── races/                 # 竞赛部分脚本（逐场成绩 + 収得，更新频繁）
-│       ├── common.py          #   共享：请求/限速/缓存（独立副本，指向根 data/）
+│       ├── common.py          #   本管线常量 + 比赛记录键（其余走 _shared）
 │       ├── racelib.py         #   域规则：场地分类/格推导/収得賞金
 │       ├── fetch_detail.py    #   ① 详情更新 + 通算成績判变
 │       ├── fetch_races.py     #   ② 成绩页增量（SP 页一次回填 格/条件/調教師/本賞金）
@@ -44,9 +46,10 @@ yunji-web-refactor/
 
 ## 设计要点
 
-1. **脚本分开 · 数据统一**：`scripts/basic/` 与 `scripts/races/` 代码完全隔绝（各自独立
-   `common.py`，互不 import）；但**全部数据都落在根 `data/`**，两个部分共享同一个
-   `data/basic.json`，引用零跨目录。
+1. **脚本分开 · 数据统一**：`scripts/basic/` 与 `scripts/races/` 代码完全隔绝（各自 `common.py`，
+   **互不 import**，只共用中立层 `scripts/_shared` —— 中立层不认识管线，两管线取值不同的限速表/缓存目录
+   由各自 `common.py` 以形参注入）；但**全部数据都落在根 `data/`**，两个部分共享同一个
+   `data/basic.json`，引用零跨目录。管线说明见 `scripts/README.md`，字段契约见 `data/SCHEMA.md`。
 2. **引用口径 = 站点根相对**：basic.json 里的 `pedigree_file = "data/pedigree/{id}.json"`、
    `races_file = "data/races/{id}.json"`，`data/` 整体就是将来站点根的 `data/`，无需改写。
 3. **两条线性单链**（详见 request-path.html）：
@@ -97,5 +100,6 @@ python run_all.py --force                  # 成绩页全量重抓
 
 - **本目录** = 重构工作区，随便改；**原项目** `Z:\IdeaProjects\yunji-web` = 只读参考，严禁改动。
 - 参考底线：请求怎么发、结果怎么解析可以抄；业务流程怎么组织必须自己重新设计（线性化）。
-- 两个部分的 `common.py` 各自独立维护，不要互相 import（保持代码隔绝，仅数据层汇合）。
+- 两个部分的 `common.py` 不互相 import（保持代码隔绝，仅数据层汇合）；公共实现只在 `scripts/_shared` 一份，
+  改公共行为改中立层，改管线口径改各自 `common.py` 的注入表（详见 `scripts/README.md` §4）。
 - 缓存命名空间已按 `_tmp/basic/`、`_tmp/races/` 分开，两部分的 `detail.json` 等缓存不会互踩。

@@ -2141,3 +2141,120 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 **改法（一处配色 + 三个渲染点 + 三处口径）**：① `race-rows.js` 新增并导出 `CAREER_BG = ["#E0F5F4"].concat(PLACE_BG)` —— 首位「出走」用 primary 浅青绿（与 selector 日文名色块同值），后四段直接复用着顺三件套 → **`PLACE_BG` 的着顺四色语义不动**（着别分布条与图例继续用它，仍是完赛口径且已明注「完赛 X 场」）。② 渲染三处改五段：`datechart.bracketHTML` 改为接收值数组（不再写死 4 段循环）+ 新增 `careerVals(s) = [s.n].concat(s.br)`，KPI 大括号 / 日历格 / 年卡月卡同源生效；`stats.renderKpis` 的 `vals` 前置 `starts(b)`、配色改 `CBR = CAREER_BG`；`profile` RECORD 括号前置 `car.出走`。tooltip 旧称「进板数」→「通算战绩：出走:第1:第2:第3:第3名开外」，并去掉日历格/月卡 tooltip 与月卡信息行里与首段重复的「N 场」。③ 着外统一出走口径：`renderKpis` 末段、矩阵 `valOf("out")`（只管排序）+ `baseOut` + `rowOut`（显示与排序必须同源）、月龄明细表；页底口径说明补「着外=出走−前三（含未完赛）」。④ `race-rows.js` **首次加 `?v=1`**（3 页）：它现在导出 `CAREER_BG`，旧缓存会让括号渲染直接报错，不是可选加固。**数据侧零改动** —— `通算成績_逐场.出走` 早就有，netkeiba 官方 4 段字符串与 §60 的同口径对账读的是字段、不受展示格式影响。
 
 **验证**：`verify_datechart.cjs` 新增 `br5()`（= 出走 + `br4`），4 处括号比对改五段，「4 段之和 == 出走」升级为「**首段 == 出走 且 后四段之和 == 首段**」，配色断言加 `#E0F5F4` → **108/0**；`verify_stats.cjs` KPI 期望改 `[678-73-70-69-466]`、基准行着外 465 → **466**（正好差那 1 条 中止）→ **199/0**；`python run_update.py --check` 五步全绿；`npm run build` 后 dist 核对（3 页引 `race-rows.js?v=1`）。`:8090` 目检三页：datechart 2026年9月 KPI `[38-6-3-3-26]`、日历格 `[10-1-0-3-6]`、年卡月卡 `[48-1-3-3-41]` 全部自洽（截图 `tests/_shots/v65-datechart-bracket.png`）；stats KPI `[678-73-70-69-466]` 且矩阵每一行 出走 = 前三 + 着外（短 79=6+7+12+54 / 英 332 / 中 254）；profile 130 = `8战2胜 [8-2-1-0-5]`、50（含 中止）= `10战0胜 [10-0-0-1-9]`。**遗留观感**：datechart KPI 带与 profile RECORD 现在各有一处「出走写两遍」（独立 KPI + 括号首段 / `8战2胜` + `[8-…]`），要不要去掉前者等用户拍板。未 commit（等用户确认）。
+
+## 66. 字体方案 b 落地 · 101 片 Google 分片 → 构建期按需全量子集（1 片 589KB）
+
+**问题（阶段 0 探针 + `tests/font-cand/ANALYSIS.md` 定案）**：字体不是「切片太多」而是「下载字数太多 × 每字带 9 档字重」——`noto-sc.css` 101 条 `@font-face`（4,516,508B / 声明 15,605 码点）服务的全站渲染文本并集只有约 1,900 字，于是每页要命中 30–66 片、传 1.6–3.3MB。用户 2026-09-20 拍板走 (b)：**build 期现算语料 → 单片替换式进 dist**，(a) 量化否决、(c) 不采用。
+
+**改法（一个插件钩子 + 两个脚本 + 一处 CSS）**：① 接入方式 = `vite.config.js` 新增 `gen-font` 插件挂 **`buildStart`**（与 `copy-data` 的 `closeBundle` 同款内联插件写法，但必须提前：Vite 解析 `theme.css` 的 `url()` 时产物要在），`spawnSync(process.execPath, …/gen-font.mjs)`，**fail-soft**：非 0 只告警不炸构建（`YJ_FONT_STRICT=1` 才抛）。② `front/scripts/gen-font.mjs`（node）：**每次 build 现算**语料 = 项目根 `data/` 全部 `.json`（排除 `_tmp/`，与 copy-data 同口径，键+字符串值全取）∪ `index.html` ∪ `pages/*.html` ∪ `public/*.js`（i18n 字典在此）→ 当前 **1,967 字符**（ANALYSIS 的 1,902 是旧口径：本次另计入了外壳文案与 `edit.html`/`editor.js`）；字符集 sha256 前 16 位写进 `noto-sc.css` 的 `yj-font:` 标记行，**一致且产物在就跳过**（幂等，命中时 build 1.4s）；`FONT_GEN=skip|force`、`--check` 三个开关；生成后顺手清掉旁支遗留（换过容器格式留下的 1.2MB `.ttf` 实测被这样回收）。③ `front/scripts/subset_font.py`（fontTools API，同 `tests/font-cand/subset_probe*.py` 配方）：源字体 `C:/Windows/Fonts/NotoSansSC-VF.ttf` → 子集化（保留 GSUB/GPOS：`tabular-nums` 依赖 `tnum`，砍布局表省的 ~120KB 不值观感风险）→ `instantiateVariableFont` 把 `wght` 限到 **300–700**（站点实测字重只有 300/400/500/600/700，`.font-light` 在 profile 相册导航真的在用，故不取 ANALYSIS 的 400 下限）→ 按 woff2>woff>ttf 试写 → **断言「源字体有的码点必须全进产物 cmap」+ 产物回读复核**，漏字即 exit≠0。④ `assets/fonts/noto-sc.css` 由脚本生成、只剩 **1 条 `@font-face`**（`font-family:'Noto Sans SC'` 与 `tailwind.config.js` 字体栈同名，栈尾 `PingFang SC`/`Microsoft YaHei` 系统回退原样保留；`@font-face` 属字体资产声明，落在 `@layer` 之外，`theme.css` 只改了那条 `@import` 上方的注释、入口一字未动）。
+
+**订正 ANALYSIS 一处估算**：「wght 限 400–700 估 ≈480KB」是按体积线性内插的，真跑下来 300–700 = **602,688B**、与不限轴的 1,902 字符 VF（估 599KB）几乎持平——部分实例化只缩轴范围、不删 delta 组，只有钉死单字重（≈347KB）才真省，而那会丢掉 500/600/700 三档 → 视觉回归，不做。
+
+**旧 101 片（替换式，部署包只减不增）**：它们进 dist 的**唯一通道**就是 `theme.css` 那条 `@import`（`assets/` 不走 `public/` 拷贝链），所以「排除」= 删引用，无需 exclude 规则；文件按 AGENTS §1 归档到 `tests/_trash/font-101-slices/`（含 `noto-sc.css.orig`，gitignored、仅作 dev 回退参考，正式构建不再依赖）。
+
+**依赖缺口（待用户确认）**：本机 `fontTools 4.61.1` 在、`brotli`/`brotlicffi` 不在 → `--flavor=woff2` 直接 `ImportError: No module named brotli`。按约定不 pip install，改为**只在子进程 PYTHONPATH 上**挂 `front/scripts/brotli-shim/brotli.py`（ctypes 包 Git 自带 `libbrotlienc.dll`，仅实现 fontTools 用到的 `compress(mode=MODE_FONT)`/`decompress`），故本机仍能出**真 woff2**（`VERIFY=OK` 自证：回读解得 2,644 字形）。真包存在时脚本自动优先真包、shim 可直接删。正解仍是 `pip install brotli`（别的机器/CI 才能生成）。另：**`deploy.yml` 只有 node**，日更数据带来的新汉字在 CI 无法进子集 → 建议在 `update-data.yml`（有 python）提交 `data/` 前加一步 `node front/scripts/gen-font.mjs --force` 并连带提交 `front/assets/fonts/`。
+
+**验证**：`npm run build` ✓（跳过路径 1.4s / 冷启动含子集 16–18s）；dist 核对 —— `dist/assets/` 只剩 **2 个 woff2**（`noto-sc-subset-<hash>.woff2` 602,688B + Geist 29,400B，原 99 片 4.51MB），编译后 `theme-*.css` 里 `@font-face` **2 条**、`unicode-range` **0**、base64 内联字体 **0**（原被 `assetsInlineLimit` 内联的 3 小片一并消失），`grep k3kXo84 dist/pages/*.html dist/assets/*.css` **0 命中**，`du dist` 10M → **5.9M**。覆盖断言（独立复核产物 cmap）：`basic.json` 1,171 码点缺 **1** = `U+E02E`（私用区，藏在某匹马「馬名意味」里，源字体无、旧 101 片的 unicode-range 同样未声明 → 非回归），data 全量 CJK **1,104/1,104** 覆盖。`:8090`（服务 dist）headless Chrome 1400×900 冷缓存拍 `profile/stats/timeline/races(独立)` + `profile?horse=1`，netlog 计每页字体请求 **profile 36→1、races 66→1、stats 31→2、timeline 39→2**，字节 1.63–3.32MB → **0.60–0.63MB**；与 `tests/font-cand/shots/*_a.png` 逐像素比对 rowDiff 1.33–12%、px>16 0.14–1.5%（同字族同 VF，仅 AA/无 hinting 的边缘差，`races` 那 12% 是密集表格行里的字形轮廓），对照「系统栈」档 profile rowDiff **22.56%** → 尺寸全同、无重排、观感一致；`horse=1` 目检 青鹿毛/新ひだか町/大久保龍 (栗東)/ディープインパクト/黒鹿毛 等混排**无豆腐块**。`python scripts/check_data.py` **EXIT=0**（该脚本自身会重写 `data/check_report.md`）。未 commit（等用户确认）。
+
+## 67. 编辑台定稿换皮 · cand3 骨架 + cand2 常驻搜索列合并 + 全站编辑域用词常规化
+
+**问题（`OPTIMIZATION_PLAN.md` §4.6 的两条硬性口径）**：M2a/M2b/M2c 的 `edit.html` 当时是「一物一档 + 左栏总览」的功能性堆叠（2026-09-20 候选评审时用户没选它），要换成 **cand3「駒札堆叠」为骨架**（一马一屏报头 + 状态条 + 字段卡 + 右栏清单/变更摘要；MB 单列卡 + 吸底保存条）**并入 cand2 的常驻马匹搜索列**；同时用户可见文案禁用自造比喻——**钉住→保存、钉住理由→编辑备注、解除钉住→恢复官方值**。硬约束：功能逻辑一行不许坏（五字段/图片 canvas 压缩+拖拽/时间线 CRUD 都已验证），编辑页改动不得影响浏览页。
+
+**改法 · 结构合并（`pages/edit.html` 全量重写为三栏壳）**：① PC `grid h-screen grid-cols-[286px_minmax(0,1fr)_336px]` = 左**常驻 277 匹可检索列**（cand2）/ 中**报头 + 卡堆**（cand3）/ 右**保存清单 + 生效预览 + 保存条**（cand3 的 ledger），三栏各自 `overflow-y-auto`（复用既有 `.yj-pane` 细滚动条），整屏不出现「一屏只看到一匹马的头部」。② 报头 `#mast`（editor.js 现渲染）：数据源色点（edit_server 在线/离线）+ 马名大字 + 自译名/欧字名 + NK-ID·台账号 + 「在资料页核对」+ 上一匹/下一匹，下面就是**签名元素 5 段状态条**（`#mast .yj-ed-seg5` ×5，人工值=青绿顶边 / 待保存=橙 / 一致=灰），再一行 母名·母父·出生·産地·牧场·成绩。③ 卡堆：`FIELDS` 顺序按 cand3 的编辑优先级改为 **状態 →（毛色｜性別）→ 马主 → 调教师**，`span` 决定占宽（`col-span-2` / 半宽），一字段一卡 = 卡头（日文名 + 中文标签 + 状态胶囊）· 卡体（控件）· 卡底（生效值 + 保存前官方值/官方抓取值 + 操作按钮）；`登録状態` 采纳 cand3 的**枚举瓦片**（`aria-pressed` 上色，点一下写进与下拉同一套 `state.draft`）。④ 右栏：`#pins` 保存清单（跨马条目：马名可点跳转 + `#id` + 字段=值 chips + 备注 + 原值；**不放恢复按钮**，编辑动作仍全收在卡片区，D6 不破）→ `#preview` **生效预览**（cand2 的 after() 收进来：五格资料页读数 + 「人工/官方」来源标，顺带消掉长列空白）→ `#savebar`（变更摘要 + 三步管道报告 + 保存/放弃）。⑤ MB 单断点：`max-md:block` 单列卡堆，搜索列按 `YJ.device.isPc()` 退回弹层下拉（与资料页同一判定、不复制第二套列表），`#savebar` 用 `max-md:fixed … bottom-0` 变**吸底保存条**（摘要 + 报告 + 按钮，含 `env(safe-area-inset-bottom)`），壳层 `max-md:pb-[116px]` 预留高度。
+
+**改法 · 样式落法（AGENTS §2）**：可复用组件全部进 `theme.css` `@layer components` 的 **`.yj-ed-*` 28 个类**（mk/lbl/mast/seg5(+2)/nav/card(+2，含 ::after 左侧状态条)/hd/bd/foot/state(+2)/official/struck/in/area/tile/op(+3)/entry/kv/diff），editor.js 侧原来五串长 utility（`BTN/BTN_DIS/BTN_DANGER/INPUT/BADGE_*`）改成**只指向组件类名**的常量；一次性排布留在 HTML/JS 里用 utility。**不新增一处 hex**（状态色全走 `primary / chart3 / accent / muted / destructive`，卡底/报头的淡底用 `bg-accent/40` 这类 token+透明度）；每个类名都以完整字面量出现在 `pages/edit.html` 或 `public/editor.js`（content 两条 glob 都覆盖）→ 放 `@layer` 不被裁剪，构建后逐个 grep 核对 28/28 命中。
+
+**改法 · 功能零改动的边界**：`pinned/origOf/currentValue/isDirty/buildPayload/save/refresh` 与 M2b/M2c 全部逻辑一字未动，只动「皮与词」+ 三处必要接线：① `softRefreshRow()` 的宿主查找 `closest(".grid")` → **`closest("[data-row]")`**（新卡片根节点，行为等值：仍是只换这一张卡 + 还原光标）；② 新增 `navHorse()`（报头箭头 → `YJ.selector.select()` → 既有 `setHorse`，换马重置草稿的口径不变）与 `button[data-v]` 瓦片分支（并入原 `els.form` 点击委托）；③ 备注输入补 `renderSummary()/renderPreview()/保存按钮解锁`（原先只存 `state.note`，改完备注不点别的按钮就点不动保存）。**顺手修一处真坑**：编辑台开机先 `YJ.selector.clearBasicCache()`，`edit_server` 在线时再走一次带 cache-buster 的 `refresh(false)` —— 路 D 的 sessionStorage + 浏览器 HTTP 缓存会让「保存→merge 改完源表→重进本页」把**保存前的抓取值**端回来（浏览页是收益、编辑台是错的读数），实测截图里 馬主 生效值就复现了，故加这两步（只在编辑域，selector.js 与五个浏览页一字未动）。
+
+**改法 · 用词清扫（用户可见文案）**：`保存 / 待保存 / 已保存 / 待恢复官方值 / 按此值保存 / 恢复官方值 / 编辑备注 / 保存清单 / 变更摘要 / N 匹有人工值`。**命中数（按「钉」字逐行回原文件核过）**：`edit.html` 文案 **2 行 4 处**（另 1 行注释）；`editor.js` 原 **24 行含「钉住」= 字符串 19 行 + 注释 5 行**，另有 **3 行注释**含「已钉值/旧钉值 · 未钉过时 · 别人的钉」；`profile.html` 📌 tooltip **1 行**（`人工钉住 …点击到编辑页核对/解除` → `人工保存值 …点击到编辑页核对/恢复官方值`，该文件别的一行没碰）。内部键名与函数名（`overrides/_orig/_note`、`pinned()/pinIds()/pinsHTML()`、`data-lock/data-unpin`）与 `OPTIMIZATION_PLAN`/AGENTS 文档**全部原样**。**一处偏离需说明**：门禁要求 `grep -c 钉住 dist/editor.js = 0`，而 `dist/` 原样拷贝 public 下 JS（注释也进产物），故 editor.js 里那 **8 行含「钉」的注释**一并改了词（只换词、键名与逻辑不动）；profile.html 的注释、`scripts/edit_server.py`/`_shared/manual.py` 的中文注释按「文档/注释不动」保持原样。
+
+**验证**：`npm run build` ✓（theme 产物 41.23→51.92KB / gzip 8.77→10.00KB）；`grep -c 钉 dist/pages/edit.html` 与 `dist/editor.js` 均 **0**，28 个 `.yj-ed-*` 类逐个 grep **全在**编译后 CSS；`node --check editor.js` ✓；`python scripts/check_data.py` **EXIT=0**、`git status -s data/` 仅 `M check_report.md` + `?? SCHEMA.md`（真 data/ 零写入）。**沙箱端到端**（`tests/_w1e/setup.py` 先把 `scripts/ + data/ + dist/` 从真树重拷到 `tests/_m2a`——管道有状态、gate 非幂等，旧树里还留着上一轮的测试值；再预置 id 5/130 两条真形状人工值让首屏就含三态）+ `tests/_w1e/gate.py`（8099 + headless Chrome CDP，`driver-w1e.js` 全真实 DOM 事件、45 步全绿）：① **五字段保存流** = 瓦片点 `抹消` + 两个下拉 change + 两个文本 input → 状态条 5 段转橙 / 摘要「5 处待保存」→ 写编辑备注解锁 → 保存三步全绿 → 五卡转「已保存」、卡底改显划线 `_orig` 对照、清单收到第 3 匹、生效预览五格标「人工」→ 再点「恢复官方值」删掉 毛色 键并再存一次全绿；② **图片区拖拽** = 原生 `DragEvent` 换序 142-1/142-2 → 保存 → `photo` 数组按新序落表 + `_orig.photo` 记下官方顺序；③ **时间线新增** = 展开契约表单 + 六色类别下拉选 `sire` → 保存提示「未重算」→ 两击删除 → 再保存回 2 条。落盘对账：merge 后沙箱 `basic.json` 的马主/性別/登録状態/photo 全为新值且 `dist/data/` 同步，其他马的人工值未被覆盖（读-改-写），`.bak` 5 份。**console：PC 端零报错零警告、MB 端零报错**（`Page.addScriptToEvaluateOnNewDocument` 前插 onerror/unhandledrejection/console.error|warn 采集）。**另加降级形态冒烟** `tests/_w1e/offline.py`（普通静态服务 :8097 + `?port=9999` 让 `/healthz` 探测必失败）→ 7 项全绿：页面照常渲染并读 `dist/data` 只读副本、横幅写明「未启动 edit_server」且带「重试探测」、保存按钮锁死、报头转「离线」、卡堆五张照常、console 零报错，出图 `shot-1400-offline.png`。**浏览页回归口径**：`dist/profile.html` 里余下 12 处「钉」**全在注释**（用户可见串已换成 `人工保存值 … 核对/恢复官方值`），其余四页与 `theme.css` 既有类一字未动（新增块只在 `@layer components` 尾部）。截图 `tests/_w1e/shot-1400-{dirty,saved,clean,scroll}.png` + `shot-430-{top,dirty}.png`（MB 那条同时断言 `savebar` computed `position:fixed` 且贴视口底）。本次起的 8099 与 Chrome 已由 gate 自己收掉（现存 8099 是主线的 `tests/_w1a` node 探针服务，不是我的）。**未 commit（等用户确认）**。
+
+**遗留与偏离（不做的原因）**：① cand3 的 `_pinat`（每次保存的日期）与**每字段独立理由**没落地——现库 `_note` 是「整匹马一条」，跟着候选改契约就违背「功能一行不许坏」，故备注独立成一张卡放在卡堆末尾、清单里整条显示。② cand2 左栏每行的**五枚钉位点**小方点没做：要在 `selector.js` 的行模板里塞回调，会连带改到浏览页（profile 正在用同一组件），违背「编辑页改动不得影响浏览页」；跨马状态由右栏保存清单承担。③ MB 的常驻列表退弹层（见上，与资料页同判定），所以吸底条之上是「列表 → 卡堆 → 清单 → 预览」的单列流。
+
+## 68. 阶段 5 动效 · 像素门禁第二跳结案：`after vs base` 是跨构建对比，不是动效破的
+
+**结论先给**：**同构建内**动效落定态与无动效态逐像素相等（下详），站点代码一行未改（诊断期临时加的落定收口经消融证明对像素零贡献，已回滚）。上一轮报的「六页 4.31–9.49% 有差」混了两件事，都得拆开看：① 拿**旧构建的 base** 去比**新构建的 after** —— 跨构建本身不可比；② 旧构建内部 on-vs-off 确实整页翻，但那不是样式差异，是**字体子集决定的光栅路径双稳态**（同子集在当轮构建里已被新子集治好）。
+
+**根因（可复算的三条硬证据）**：① `gen-font` 挂 `buildStart`、语料含 `pages/*.html` 与 `public/*.js`（§66）→ **任何一次源码改动都会换字符集 → 重编子集 → 换 `noto-sc-subset-<hash>.woff2` 与 `theme-<hash>.css`**（实测三代产物 `h4Xp0dJF` 605,028B → `C1jPrexn` 606,304B → `CPLBC_rm` 605,116B；同一输入连跑两次 `gen-font.mjs` md5 不变、`--check` 现 EXIT=0 → 生成器本身是确定的，变的是输入语料）。VF 子集重编会重排**全部**字形的 delta 组，所以只加几个字也会动到所有已用字的轮廓编码。② 编译后 CSS 逐块 diff 两个构建，**唯一差别就是那条 `@font-face` 的 URL**；而子集一变，全站文字的抗锯齿路径整体翻转（同一片文字：一份是纯灰度边缘、另一份带次像素彩边——实测 `races` 里 R=G=B 的深色像素 17,012 → 2,833），于是 bbox 铺满整页、maxch 到 255、肉眼却看不出差别。③ **DOM/样式侧一律排除**：同构建两态逐元素取证（`dump.cjs`，深度 24、含 rect/文本/font-family/size/line-height/letterSpacing/weight/animationName/fill/transform/opacity/minWidth/img src+naturalSize）= stats 608 个元素**零差异**、profile/races 仅一处视口外行序（见文末），页面高度/盒子/字号全同 → 4.31–9.49% 全是「同样盒子同样字的不同光栅」，不是排版或内容变了。⇒ `base`（旧子集）对任何新构建（新子集）怎么拍都不为 0；而旧构建里 on-vs-off 的那一次翻转，也是同一条 AA 路径开关被动画引了一下——换子集后不再翻。
+
+**同构建内重做门禁（`tests/_motion/shot.cjs`，六页 1400×3000）**：`finOff`（`html[data-motion=off]`）vs `finOn`（动效全开、动画跑完落定）= **datechart / pedigree / races / stats 四页 IDENTICAL**；剩下两条已定性为**截图噪声**（同法复拍同一状态也复现，且量级不小于 on-vs-off）：`profile` 654px / 0.0156% / max26 = 右栏一条 308×11 卡片描边，两次 **OFF** 复拍（`offP2` vs `offP4`）之间同样差 654px / max26；`timeline` 38,927px / 0.9268% / max145 = 一张 `.tl-photo img`（239×168）的**清/糊两档解码态**，两次 **OFF** 复拍（`offP4` vs `offP5`）之间差 39,067px / max142。机制在 `YJ.ui.img()` 的 `loading=lazy + decoding=async` + 占位 297×210 与实际绘制 239×169 不等（Chrome 按绘制比例挑解码档），**跟动效无关、跟拍次有关**。console 六页两态**零报错**；`--early` 过渡帧抽查动画照旧在跑（`anims` profile18 / races15 / stats11 / datechart12 / timeline8，`.yj-in`=`yjFadeUp 0.32s`、stagger delay 0.264s、`.yj-cu`=`inline-block 46px right`、chip `transition 0.12s`）。
+
+**回滚掉的「假修法」**：曾按「`fill-mode:backwards` 落定后仍挂着已结束动画 → Chrome 保留合成层 → 文字换光栅路径」的猜测，在 `loading.js` 加过一处 `animationend` 委托摘类（`yj-in`/`yj-xin`，`.yj-st` 等最后起跑那条落定再摘容器类），落定 DOM 确实干净（`cls` 10 → 0–1）。**但消融实验否决了它**：把监听器关掉（残留在）在同一构建里再拍 on-vs-off = 六页里五页 IDENTICAL、只剩 `timeline` 那条解码噪声 → 摘类对像素**零贡献**，属多余 JS，故整块删除、`loading.js` 与交付态逐字节一致（`diff` 对 `tests/_motion/_pre/loading.js` 全等）。
+
+**给主线的两条口径**：① 以后动效门禁一律**同构建内 off-vs-on** 比（或先重拍一份当轮构建的 base），跨构建比必然被子集拽偏；② 想让「跨构建像素可比」成立，得把 §66 的**注释也算语料**这条收掉（子集对源码注释里的中文都敏感），或按 §66 遗留建议把产物 `front/assets/fonts/` 连子集一起入库/在 CI 里 `--force` 后回写。另记一笔与本跳无关的真问题：`races` 表在 y=3353（视口外）有**相邻两行先后互换**（一行马名换行 39px、一行 29px），on/off 两态各定一侧——等键排序 × 分批渲染时序耦合，像素看不见但顺序确实会变，留给 6b 收口时一起看。取证脚本与全部中间产物在 `tests/_motion/`（`shot.cjs` 新增 `--post=CSS` 截图前覆盖样式、`YJ_SETTLE`/`YJ_UD` 环境口、截图前 `img.decode()` 等待、探针多报 `dm`/`cls`；`dump.cjs` 是同构建两态的逐元素几何/字体/src 取证，实测两态 608 个元素零差异）。
+
+
+## 69. 阶段 6b 前端收口 + races 同键行序修复（§68 遗留那条）
+
+**结论先给**：races 全库表「同键行序随到达顺序变」已修（末位比较键），6b 收口做了「三处重复的马名切换按钮 HTML 归一 + 两页 §48 遗留死别名纯删除」；六页像素门禁 = 除 races 的 13 行改序带外全部与基准全等，同构建 on/off 六页里五页 IDENTICAL、只剩 timeline 那条已知解码噪声。字体子集语料字符集**一字未变**（1976 字 / hash `e9851e5a`）→ 本轮跨构建像素比对成立（§68 口径①的加强版）。
+
+**① races 同键行序 bug（根因与改法）**
+- 根因（可复算）：`raceCmp` 只比 `日付` + `発走`，同一场比赛的多匹产驹 = **完全同键返回 0** → 稳定排序只能保留「并入顺序」；而 `initLibrary` 是 16 并发 + 240ms 攒批的边到边并入（`entries.push` 顺序 = 文件到达顺序）→ 最终行序不唯一。全库实测同键组 **135 个 / 298 行**（其中 134 组同场、1 组跨场同発走），§68 抓到的 y≈3353 那对（`オプティミスタ` 29.1px ⇄ `オーロラトレイル` 39px）就是其一。
+- 改法：`raceCmp` 同键后接 `raceTieCmp` —— **着顺升序（非数字着顺=99 殿后）→ `race_id`（不同场次不交错）→ `馬番` 升序（缺失=999 殿后）→ `出走馬名`**。只用行上的字段，不引比较器之外的上下文（马 id / 数组下标），因此内嵌单马表（`hs.sort(raceCmp)`）与跨马表（`sort((a,b)=>raceCmp(a.r,b.r))`）两条调用路径同一语义；着顺在首也与 `datechart.html` 明细那份「同场按着顺升序（未完走 99 殿后）」的既有口径收敛（两份实现按 §48.5 只有 2 处，不做合并）。
+- 代价（要说清）：改序是**目的**不是事故——同键组内旧顺序本就随机。相对本机那一次基准到达顺序：全库改序 144/741 行、第 1 页 13 行 → races 截图出现 9 条差异带（y=1668…3561）。其余五页零变化。
+
+**② 6b 收口清单（等值搬移 / 纯删除，逐处使用计数）**
+- `public/race-rows.js` 新增 `nameToggleHTML(label, tip, cls)` = 马名语言切换按钮 HTML 单一出处。**3 处使用**：本模块 `theadHTML` 出走马列头（原逐字串的出处）+ `races.html` mb 汇总行 + `datechart.html` 明细标题行。产出逐字节不变（`cls` 空只留基类、`tip` 空则整个 `data-tip` 不出 = 列头老行为）。
+- `races.html` 删 5 行 / 9 个死别名：`G`·`GLABEL`·`gradeBadge`·`placeBadge`·`ninkiBadge`·`ninkiMbCls`·`raceNameText`·`venueR`·`weightHTML`（§48 行渲染下沉后页内调用点归零）。保留仍在用的 `embedTableHTML`/`rowEmbedHTML`/`rowEmbedMbHTML`（各 3 次）与 `RR`（19 次）。
+- `datechart.html` 删 1 行死别名 `var G = …, GLABEL = …`（页内 0 调用点；下面的 `GRADED` 用自己的字面量表）+ 指代落空的说明行。
+- **达标扫描**：三页内联脚本做了「同名同体函数 / 同体不同名 / 3·4·6 行滑窗（跨文件与同文件）/ 字面量 ≥14 字跨文件」四轮查重，**逐字重复的 ≥3 处段只剩上列 name-toggle 控件一种**（§48 那轮已把 esc/徽章/行渲染/格式化收干净）。
+
+**③ 按约定不动（≤2 处或有分叉）**：`manYen`（stats 箭头版 vs datechart 函数版，`1e4` vs `10000`，§48.2 反例）、`kpi()`（stats + datechart 两份，timeline 那份在域外）、`renderKpis()`、`scopeKey()`、`.seg` 按钮组（stats JS 生成 vs datechart 静态 HTML + setAttribute）、通算战绩五段括号（stats 内联 `st-brk` vs datechart `dc-brk` 带 title）、`.hint-empty` 空态（文案各异、且该类只在 stats 的 `<style>` 里有定义 → 另记一笔见⑤）、`未出走/未完走` 三态字面量（`resultMatches` 分支 vs `isNR` vs `resultCode` 三者口径不等价，`resultCode` 还挂 verify 对账）。races 内 `row/rowWide`、`f-tag` 胶囊两处同形也按「仅 2 处」不动。
+
+**④ 门禁（§68 方法，六页 1400×4000 视口含 y=3353）**
+- 构建确定性：同源码连跑两次 `npm run build`，`dist` 全量 md5 逐条相同（含 `theme-D30YyJmy.css` / `noto-sc-subset-CPLBC_rm.woff2` 文件名与内容不变）。
+- **同构建 on/off**（`tests/_motion/s6bPostOff` vs `s6bPostOn`）：datechart / pedigree / profile / **races** / stats 五页 IDENTICAL；timeline 38,927px / 0.6951% / max145 = §68 定性过的那条 `.tl-photo img` 解码态噪声（bbox 与量级都对得上）。
+- **跨构建 vs 改前基准**（`s6bBaseOff/On` vs `s6bPostOff/On`）：datechart / pedigree / stats 两态全等；profile 一次全等、一次 654px/max26（§68 记录的右栏卡片描边光栅噪声，同状态复拍即现）；timeline 同解码噪声；races 只有上列 13 行改序带。
+- **行序唯一性**：`tests/_s6b/fixture_test.cjs`（沙箱样本 `fixture_rows.json`，绝不写真实 `data/`）——同日付·同発走·同着顺两行 + 未完走/無馬番/無発走/跨场共 7 行，**5040 种输入顺序全排列 → 输出唯一** `FECBADG`；阴性对照跑改前实现 = 同样两行得到 2 种行序。`tests/_s6b/tiebreak.cjs` 用真实 741 行 + 5 种到达顺序：改前 4/4 漂移、改后 0/4。`tests/_s6b/keys.cjs` 记录候选末位键对比（race_id→馬番→馬名 161 行 / 着顺→race_id→馬番 144 行 / 只按馬名 6 行，三者都唯一，选中间那个的理由=与 datechart 口径收敛）。浏览器侧 `tests/_s6b/order.cjs`：PC 100 行 × 6 次冷加载（`--nocache`）逐行一致、mb 10 卡 × 2 次一致。
+- `node --check`：`race-rows.js` + 三页内联脚本全过；`scripts/check_data.py` EXIT=0（问题 0 项）；`verify_result.cjs` EXIT=0（741 = 完赛734+未完赛1+未出走6）；`verify_drill.cjs` EXIT=0（39/0）；`verify_datechart.cjs` EXIT=0（108 断言）。console 六页两态**零报错**（shot.cjs 汇总 ALL OK）。
+- 字体语料：`tests/_s6b/corpus_check.py`（按 gen-font 同口径算字符集，含注释）改动前后差集为空。
+
+**⑤ 遗留给主线（与本轮无关的既有问题）**
+- `scripts/stats/verify_stats.cjs` 的 [C] stats.html 页面冒烟**在本轮改动前就红**（换回改前 `race-rows.js` 复跑同样 6 条 FAIL + `els["aboutNote"]` TypeError）：stats 顶部 `YJ.ui.skeleton(...)` 无判空，而该 verify 的 stub 只给了 `YJ.i18n` → 页面脚本在 stub 里抛错、后续断言全落空。要么 stub 补 `YJ.ui`，要么照 races 的写法判空。本轮不在门禁清单内、也未动 stats.html，留给主线定夺。
+- `.hint-empty` 类只在 `stats.html` 的 `<style>` 里定义，`datechart.html` 三处用到它（现依赖别处兜着的观感）——属于样式归属问题，theme.css 独占单轨期间不动。
+- 取证与查重脚本全部在 `tests/_s6b/`（`order.cjs` 行序多次冷加载比对、`tiebreak.cjs` 全库到达顺序扰动、`keys.cjs` 末位键选型、`fixture_test.cjs` 全排列断言、`_pagecmp.cjs` 从页面源码取真实比较器、`dup_scan.py`/`dead_scan.py` 查重与死码、`corpus_check.py` 字体语料、`pre/` 改前快照）。
+
+## 70. 阶段 5 动效 + 阶段 3 呈现层回滚 · 用户 2026-09-21 拍板「动效全不要、加载态回到原文案」
+
+**结论先给**：§68/§7 的动效 A1~A5 与 §5.3 的 B1 骨架屏 / B2 边到边渐进 / B5 分批渲染**四项全部撤销**，页面回到「等数据齐了一次性渲染 + 写死加载文案」；保留 B3 共享缓存（1h TTL）、B4 图片 lazy+占位、B6 dist 侧 JSON minify、以及 §69 的 races 末位键 tie-break 与 6b 收口。**回滚不能用 `git revert`/整文件 checkout**——那会连带炸掉 tie-break、编辑台账（§67/#17）、字体子集（§66）、B3/B4/B6，故全部逐处删改。
+
+**① 撤了什么（四类）**
+- **动效**：`theme.css` 文末整段「阶段 5 动效系统」删除（motion token `--yj-ease/-dur-1~3/-lift/-press/-hover-shadow`、`html[data-motion="off"]` 总开关、`@keyframes yjFadeUp/yjFade`、`.yj-in/.yj-xin/.yj-st/.yj-cu` 与 nth-child 步进、`.card` 悬停抬起+阴影、编辑台按钮的过渡覆盖与 `:active scale`）；六页 HTML/JS 里挂 `yj-in`/`yj-st` 的全部摘掉；页内 `<style>` 里被 token 化的 `.seg/.st-tab/.filter-chip/.pg-btn/.dc-cell/.tl-card…` 恢复成改造前的 `.15s/.18s` 碎时长并删掉配套 `:active` 与 reduced-motion 分支；`YJ.ui.fade`/`countUp` 及各页调用点删除。**保留**：`theme.css` 原有的 `.yj-name-ico` 过渡、`@keyframes yjDropIn` + `.yj-drop` 及其 reduced-motion 兜底（改造前就有），以及 `.yj-ed-*` 组件自带的 `transition-colors`（属编辑体系）。
+- **B1 骨架屏**：`loading.js` 的 `skeleton/skeletonHTML/spinner/error(+HTML)` 与 `theme.css` 的 `.yj-skel/.yj-skel-list/.yj-spinner` + `@keyframes yjSkel/yjSpin` 删除；六页所有调用点恢复 `git show main:` 的原文案与失败分支（races「正在加载全库比赛数据…」+「比赛数据加载失败(…)」、datechart「正在加载…」、timeline「正在加载全库比赛数据…」、profile 无加载态 `#body` 初始空白、stats 仅失败分支写 `#kpis`、pedigree `pg-loading 加载中…`）。⚠ 措辞 bug（timeline 只 fetch `timeline.json` 却写「全库比赛数据」、profile 无加载态）随回滚**一并回到原样**，不再算本轮欠账。
+- **B2 边到边**：`initLibrary` 整块回填 main（删 `LIB_LOAD`/`frameTimer`/240ms 攒批刷帧/「已并入 x / N 个数据文件」进度条），`renderResults` 里为刷帧做的两处性能特化（复用上一帧容器宽、加载期只算最小档 `nTier`）也删干净，回到「两遍法量宽 + 完整 5 档选档」。**与 tie-break 的交织理清**：`raceCmp → raceTieCmp` 一行不动——行序不唯一的根因（16 并发下 `entries.push` 顺序=到达时序）在 main 的一次性渲染里同样存在，故「确定性行序」与「一次渲染」正交、二者共存；只把注释里「边到边并入」的措辞改成「16 并发逐个 push」。
+- **B5 分批**：stats 的 `matParts` 拆分 + `YJ.ui.batch` 回填为 main 的单一 `matHtml` 一次性渲染；datechart 明细的 `dBatch/stopBatch` + 双哨兵分批删除，恢复 `pc + mb` 一次 innerHTML（两处保留 §69 的 `RR.nameToggleHTML`，故按逐处删改而非整块回填）。
+
+**② loading.js 处置**：撤完只剩 `YJ.ui.img()`（B4 图片标记：`loading="lazy" + decoding="async" + width/height` 占位）→ **文件留着**，profile 头像与 timeline 图位两处调用点不动；`<script src="../loading.js">` 只留在 profile / timeline 两页（其余四页摘掉）。`scripts/stats/verify_stats.cjs` 的 stub 加载行留着（文件在 → `readFileSync` 不崩），只把注释里过时的 `YJ.ui.skeleton` 改成实情。
+
+**③ 门禁（产物 `tests/_w2b/`）**
+- **CSS 层**：`npm run build` ✓；`dist/assets/theme-*.css` 里 `--yj-ease`/`yjFadeUp`/`.yj-in`/`.yj-st`/`yj-skel`/`yj-spinner`/`data-motion`/`.card:hover` **全部 0 命中**，保留项 `yjDropIn`(2)/`.yj-name-ico` 过渡(1)/`.yj-ed-*` 37 个组件类（源 37 → 产物 37 全命中）在。
+- **像素回归**：六页 1400×3000 已拍（`tests/_w2b/r1400/`）+ races/stats/datechart 430×2400（`r430/`）。与 `tests/_motion/offP1/` 逐张比 = **4.31%~10.21% 差异，全在字形**——本轮删的是含中文的注释 → §66 语料变（1976→1964 字）→ 子集重编（`GosMymvd`）→ 全站 AA 光栅路径整体翻转，正是 §68 定性过、且明令「跨构建不可比」的那一条。故**改判据为逐元素几何+文本**（`dump.cjs`）：pedigree 两态逐元素全等；timeline 除「改前那份 dump 未记 `<svg>` 子节点、本轮同法多录 28 个 `path`/`circle`」（7 枚王冠 ×4，坐标逐个对得上 → 取证脚本口径差、非页面变化）外全部 0.5px 精度对齐、页面总高同为 3000；profile 也只剩下述那一条 3px；stats / datechart 现为「改前记录的超集」（改前那份是分批只落了前几批，`td` 40→232），差的 `script` 元素 6→5 = 摘掉的 loading.js 引用；races 元素总数 2439 不变、220 个键位移 = §69 tie-break 那 13 行改序带（保留项，预期内）。
+- **行为抽查**：races 全库 PC 表 100 行 × 3 次冷加载逐行 md5 相同（`ee8c2d6d2a5bf782`）= 一次渲染 + 行序稳定；六页 `dist` 静态串核对无 `yj-skel`、原文案齐；stats `tr`/datechart 明细一次成型、无 `yj-sentinel` 残留；profile 运行时 5 枚 📌 与 `yj-ov-big` 照常、timeline 图位 `<img loading="lazy" decoding="async" width="297" height="210">` 实测在（B4 未伤）。
+- **五门禁**：`check_data` / `verify_result`(741=734+1+6) / `verify_drill`(39/0) / `verify_stats`(199/0) / `verify_datechart`(108 断言) **全 EXIT=0**；`node --check` = `loading.js` + 七页内联脚本全过；`git status -s data/` 仅 `M check_report.md` + `?? SCHEMA.md`。
+- **未归因的一条**：profile 右栏血统卡片高 355→**352**（`iframe.pedframe` 329→326，页面其余元素零位移、总高不变）。已做对照实验排除字体：同一份本轮构建、只把子集 woff2 换成 §68 那一代再量一次 → 仍 326（临时目录与临时服务已清理，留下的证据是 `tests/_w2b/dump-oldfont.json` ↔ `dump-now.json` 两份几何记录；真 `dist/` 未被改过）。iframe 高度由 `fitFrames()` 取内层 `scrollHeight` 自适，而内层 DOM 出自 `public/pedigree.js`（与 main 全等）、容器类名只多一个无定义的死类 `pg-loading`（main 原样）→ 3px 归不了因到本轮任何一条删改，倾向判为「改前那份量取时点」差异，留主线复核。
+- 删改脚本按页留在 `tests/_w2b/p-<页>.cjs`（可复跑、每处替换都断言命中次数）。
+
+## 71. 复审收尾 · AUDIT_REPORT 复核后的修正轮（2026-09-21）
+
+复审（对照工作区逐项核验 AUDIT_REPORT.md）发现并落地四类修正，全部为补修/加固/等值改动，不触业务语义；收口 `npm run build` + 五门禁全 EXIT=0 + edit_server 沙箱冒烟 8/8。
+
+**① 功能补修**
+- **B3「保存即清」真正落地**：`editor.js` 的 `save()` 成功回调补 `YJ.selector.clearBasicCache()`。此前只在 `init()` 清（防「保存后重进本页」读旧值），保存后同标签页浏览页（外壳 iframe 共享 sessionStorage）仍命中保存前的 basic.json 最长 1h，且 overrides 表是 no-store 实取 → 「📌 标记新、字段值旧」自相矛盾。现 init+save 双清；跨标签页缓存按标签隔离是 bus.js 既定取舍，等 1h TTL（AUDIT_REPORT 遗留 #10）。
+- **timeline.html:90 加载文案**：§70 回滚把「正在加载全库比赛数据…」随原文案一并退回，本轮补修为「正在加载时间线数据…」（该页只 fetch timeline.json）。
+
+**② edit_server 加固**
+- `Host` 校验：非 `127.0.0.1/localhost` 一律 403（防 DNS rebinding——绑 127.0.0.1 只防局域网，不防浏览器当跳板）。
+- CORS 收紧：`*` → 仅对 `127.0.0.1/localhost` Origin 回显（编辑页与服务同源，公网 Origin 本就不该给 CORS）。
+- `step_sync` 的 `.json` 与 vite copy-data 同口径 minify：此前编辑保存后 dist/data 回退 pretty 格式，minify 收益在编辑后归零直到下次 build。
+- 沙箱冒烟：evil Host GET/POST → 403；公网 Origin 预检无 ACAO；本机 Origin 回显；POST /file 管道 + dist 副本单行 minify + .bak 落位 ✓。
+
+**③ 仓库卫生**
+- `.gitignore` 补 `data/_tmp/`：编辑备份 .bak（含 `_note`）此前不被忽略，首次本地保存 + 下次 CI `git add data/` 就会进公开仓库。
+- `update-data.yml` 字体步 fail-soft：curl 拉源字体失败只告警跳过、沿用已提交产物，不再卡死每日数据更新（与 build 期 fail-soft 同定位）。
+
+**④ 文档**
+- `scripts/README.md` 补「§6 编辑服务」；AUDIT_REPORT 数字校正 + 复审修订记录；OPTIMIZATION_PLAN 附录 races 计数 277→276。
+- `_note` 公开口径：主表自 main 起即随 dist 公开，edit.html 底部补「隐私提示」；sidecar 本地化（`data/_tmp/edit_meta/`）列为可选后续——搬迁要动白名单/双表读写/SCHEMA 契约，本轮不做。
+- `edit.html` 的 `editor.js?v=3`→`v=4`（手工 cache-busting 惯例）。
+

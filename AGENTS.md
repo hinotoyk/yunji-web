@@ -32,10 +32,10 @@
 
 ## 3. 数据与路径
 
-- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。
+- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `data/SCHEMA.md`**（生成脚本文件头只留一行指路），管线说明见 `scripts/README.md`。
 - 服务器服务**项目根**（如 `python -m http.server 8090 --directory 项目根`）或直接服务 `dist/` 均可（dist 已自包含数据副本），务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
-- 数据更新：`scripts/basic` 与 `scripts/races` 代码隔绝（各自 `common.py` 互不 import），数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `TESTING.md` §4.3）。
+- 数据更新：`scripts/basic` 与 `scripts/races` 代码隔绝（各自 `common.py` **互不 import**，但可共用中立层 `scripts/_shared`——中立层不得出现管线概念，管线差异用形参注入），数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `TESTING.md` §4.3）。
 
 ## 4. 已删除 / 不要复活
 

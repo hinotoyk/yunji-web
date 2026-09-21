@@ -52,7 +52,12 @@ front/
 │  ├─ bus.js             #   postMessage + localStorage 跨页联动
 │  ├─ selector.js        #   选马器（搜索+下拉，fetch basic.json 缓存）
 │  └─ pedigree.js        #   血统图渲染（简约 2 代 + 完整 5 代）
-├─ assets/fonts/         # 本地自托管字体（Noto Sans SC 分片 + Geist）
+├─ scripts/              # 构建期工具（非页面代码，Vite/Tailwind 不扫）
+│  ├─ gen-font.mjs       #   ★ 字体子集生成入口：现算语料 → 调 python → 写 assets/fonts/noto-sc.css
+│  ├─ subset_font.py     #   fontTools 子集化 + wght 轴裁剪 + 漏字断言（COVERAGE/VERIFY）
+│  └─ brotli-shim/       #   ctypes 包系统 libbrotlienc（本机没 pip 装 brotli 时才有 woff2 编码）
+├─ assets/fonts/         # 本地自托管字体：noto-sc-subset.woff2（1 片按需子集，构建期生成）+ noto-sc.css（生成）+ Geist
+│                        #   旧 101 片 Google 导出物已退役归档到 tests/_trash/font-101-slices/（不进 dist）
 └─ HANDOFF.md                # 设计决策与交接文档
 ```
 
@@ -83,6 +88,10 @@ dist 已自包含（数据在 `dist/data/`），服务项目根或直接服务 `
 ## 说明
 
 - **Tailwind 编译**：`pages/theme.css` 是唯一 Tailwind 输入，所有页面 `<link>` 它共享编译产物（`dist/assets/theme-*.css`）。新增页面不需要建样式文件，直接在 HTML 里用 utility 类即可；要抽公共组件则在 `theme.css` 的 `@layer components` 里用 `@apply` 封装。
+- **字体子集（构建期生成，方案 b · 2026-09-20 定稿）**：`vite.config.js` 的 `gen-font` 插件在 `buildStart` 跑 `scripts/gen-font.mjs`——**每次 build 现算**语料字符集（`data/` 全部 .json（排除 `_tmp/`）∪ `index.html`/`pages/*.html`/`public/*.js`，含 i18n 字典），字符集变了才调 `subset_font.py`（fontTools 子集化 + `wght` 轴限 300–700）重写 `assets/fonts/noto-sc.css` 与 `noto-sc-subset.woff2`（当前 1,965 字符 / 2,644 字形 / 589KB / 1 片，替换旧 101 片 4.5MB；每页字体请求 30–66 → 1~2）。语料不许写死：每天 CI 更新数据会带新汉字。
+  - 依赖：`python` + `fontTools` + 一个 brotli 编码器（`pip install brotli` 正解；本机没装，故子进程 PYTHONPATH 上临时挂 `scripts/brotli-shim`，它用 ctypes 包 Git 自带的 `libbrotlienc.dll`，不改环境）+ 源字体 `C:/Windows/Fonts/NotoSansSC-VF.ttf`（可用 `YJ_FONT_SRC` 覆盖）。
+  - **fail-soft**：Pages 的 `deploy.yml` 只有 node、没有 python → 打 WARN 并沿用仓库里已提交的 `noto-sc-subset.woff2`，构建不失败；此时新汉字由 body 字体栈尾（`PingFang SC`/`Microsoft YaHei`）兜住，不出豆腐块。本地要严格报错用 `YJ_FONT_STRICT=1`。
+  - 开关：`FONT_GEN=skip`（跳过检测，最快）/ `FONT_GEN=force`（字符集没变也重生成）；`node scripts/gen-font.mjs --check` 只看语料与是否需要重建、不写文件。
 - **共享 JS 在 public/**：因各子页是普通 `<script>`（非 module），放入 `front/public/` 由 Vite 原样拷贝到 `dist/` 根，页面用 `../i18n.js` 等相对路径引用。
 - **数据引用**：页面/JS 一律经 `YJ_DATA.url()`，构建后解析为 `../data/...`（相对 `dist/pages/`）指向 `dist/data/`；`scripts/` 更新数据后重新 `npm run build` 才会进 dist。
 - **探索/废案**：未定稿版本与废案统一放项目根 `tests/`（`_trash/` 为淘汰归档）。
