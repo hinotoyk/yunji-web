@@ -7,7 +7,7 @@
  * 漏字 = 新数据带来的汉字未进子集时，按 body 字体栈尾（Noto Sans CJK SC / PingFang SC / Microsoft YaHei）降级，不出豆腐块
  * 重算 = npm run build 自动（字符集变了才真跑子集化）；强制重算 FONT_GEN=force npm run build
  * ============================================================ */
-/* yj-font: v=2 hash=6ff2f3d438f302a6 chars=1969 in_src=1946 glyphs=2645 flavor=woff2 bytes=602060 wght=300-700 src=NotoSansSC-VF.ttf tool=fontTools4.66.0 at=2026-09-24T00:52:19Z */
+/* yj-font: v=2 hash=6ff2f3d438f302a6 chars=1969 in_src=1946 glyphs=2645 flavor=woff2 bytes=602848 wght=300-700 src=NotoSansSC-VF.ttf tool=fontTools4.66.0 at=2026-09-25T00:51:49Z */
 @font-face {
   font-family: 'Noto Sans SC';
   font-style: normal;
