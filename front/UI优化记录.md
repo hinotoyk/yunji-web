@@ -2322,4 +2322,43 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
   dist grep 核对：新文案/新图标全命中，「コントレイル产驹资料库」「时间线」展示位残留 0；
   高亮匹配走 `data-href` 路径后缀（§57 注释口径），改文案不影响 iframe 联动。
 
+## 75. 全站措辞终稿 · 「XXXX年产」→「XXXX年世代」（2026-09-28）
+
+用户终裁：世代标签格式由 §35.6 定下的「XXXX年产」再统一为「**XXXX年世代**」（历「届 → 年产 → 年世代」两轮，
+SCHEMA.md 规则头已补注）。纯措辞改动，聚合键/逻辑零变化（`g2023` 等切面键、`data-g`/`data-y` 值均不动）：
+
+- **统计页**（`front/pages/stats.html` 7 处）：生产年切面年份值 seg、世代切换 seg「2024年世代」、
+  曲线 tooltip、**图例「2023年世代胜率」（用户示例明示去掉「·」）**、峰值注解「2023年世代 胜率峰值 …」
+  （保留空格）、月龄明细表生产年列、页脚口径说明。tooltip/峰值注解的「 · 」为多字段分隔符，保留；
+  「颜色=产年」「生产年」等字段概念词不在改名范围。
+- **时间线产物链**：`scripts/timeline/build_timeline.py` 两处标签生成 → 重算 `data/timeline.json`
+  （2023年世代新马首胜 / 2023年世代重赏首胜 / 2024年世代新马首胜，6 条事件数不变；crown 逻辑按
+  「首胜」尾缀判定，不受影响）；契约 `data/SCHEMA.md` §4 标签格式同步（顺带清掉「生年/届」「每届产驹」
+  两处届字残留；`build_timeline.py` genBest/genShinba 注释同步改「年世代」措辞）。
+- **门禁**（`scripts/stats/verify_stats.cjs` 7 处断言改锁新措辞，含自然年模式负向断言
+  `!includes("年世代")`）+ `check_data.py` EXIT=0 + `npm run build` 后 dist grep：
+  「年世代」全命中、「年产」**0 残留**。`scripts/basic/fetch_studbook.py` 的「年产駒」为 netkeiba
+  源站术语，不改；`HANDOFF.md` 同。
+
+## 76. 通算战绩瘦身 · 五段 → 四段 [1着-2着-3着-着外]（2026-09-28）
+
+用户拍板（即 §65 验证遗留的「出走写两遍」观感）：通算战绩括号去掉首位「出走/总场数」段，全站统一为
+**[1着-2着-3着-着外] 四段**。纯展示层改动，**数据侧零改动**（`通算成績_逐场` 派生对象仍含 出走/未完走/未出走，
+着外仍按出走口径 = 出走−前三含未完走；check_data 同口径对账不受影响）：
+
+- **配色收口**：`race-rows.js` 删除 `CAREER_BG` 导出（首位出走浅青绿 #E0F5F4 不再进括号；
+  该色仍用于 selector 日文名色块、profile 出走强调色）→ 通算战绩四段直接复用 `PLACE_BG`。
+  三页 `race-rows.js?v=1 → ?v=2`（stats/races/datechart，手工 cache-busting 惯例）。
+- **渲染三处**：`stats.renderKpis` vals 去前置 `starts(b)`（页内无独立出走 KPI，总场数可查倾向矩阵
+  「出走」列）；`datechart.careerVals` 改回 `s.br`（该页本有独立「出走」KPI，正好消掉重复）；
+  `profile` RECORD 括号去 `car.出走` 前缀（「x战x胜」主数字已含总场数）。datechart 格 tooltip
+  与日历格/月卡 tooltip 同步少一段。
+- **门禁**：`verify_datechart.cjs` 删 `br5()` 改 `br4()` 直比（4 处括号断言 + 年度「四段之和==出走」
+  不变式改写）→ **108/0**；`verify_stats.cjs` `kpiBrkFirst`（出走=首位段）升级为 `kpiBrk + brk4`
+  **整括号比对**（C1/C4 切面/C5 场地共 8 处——原出走单段观测点随首段消失而失效，整括号更强）
+  → **203/0**（204−1：原「KPI 出走（首位）」与整括号断言合并）；`check_data.py` 0 项；
+  `npm run build` 后 dist grep：三页括号无 `#E0F5F4`、`?v=2` 就位。
+
+
+
 

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-18T18:07:10",
+  "generated_at": "2026-09-28T15:50:37",
   "source": "basic.json + races/*.json",
   "stats": {
    "events": 6,
@@ -23,7 +23,7 @@
    "tags": [
     {
      "cat": "gen",
-     "label": "2023年产新马首胜",
+     "label": "2023年世代新马首胜",
      "crown": true
     }
    ],
@@ -91,7 +91,7 @@
     },
     {
      "cat": "gen",
-     "label": "2023年产重赏首胜",
+     "label": "2023年世代重赏首胜",
      "crown": true
     }
    ],
@@ -152,7 +152,7 @@
    "tags": [
     {
      "cat": "gen",
-     "label": "2024年产新马首胜",
+     "label": "2024年世代新马首胜",
      "crown": true
     }
    ],

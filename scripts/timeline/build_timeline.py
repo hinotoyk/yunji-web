@@ -110,9 +110,9 @@ def event_sort_key(date, r):
 
 
 def build_events(horses, races_by_id):
-    # 先扫一遍：每个世代（生年）的两条「首个」，一代各只有一条、之后不再标记：
-    #   genBest   —— 该届产驹在 JRA 中央的首场重赏胜利
-    #   genShinba —— 该届产驹最早的新马战胜利
+    # 先扫一遍：每个年世代（=生年）的两条「首胜」，一代各只有一条、之后不再标记：
+    #   genBest   —— 该年世代产驹在 JRA 中央的首场重赏胜利
+    #   genShinba —— 该年世代产驹最早的新马战胜利
     gen_best, gen_shinba = {}, {}
     for h in horses:
         if not h.get("生年"):
@@ -181,10 +181,10 @@ def build_events(horses, races_by_id):
                     tags.append({"cat": "graded", "label": "海外重赏首胜" if ovs_seq == 1 else "海外重赏第" + str(ovs_seq) + "胜"})
                 if r.get("venue_type") == "中央" and h.get("生年") \
                         and h["生年"] in gen_best and gen_best[h["生年"]]["key"] == race_key(r):
-                    tags.append({"cat": "gen", "label": str(h["生年"]) + "年产重赏首胜"})   # 3. 世代重赏首胜（中央）
+                    tags.append({"cat": "gen", "label": str(h["生年"]) + "年世代重赏首胜"})   # 3. 世代重赏首胜（中央）
             if g == "新馬" and h.get("生年") \
                     and h["生年"] in gen_shinba and gen_shinba[h["生年"]]["key"] == race_key(r):
-                tags.append({"cat": "gen", "label": str(h["生年"]) + "年产新马首胜"})     # 1b. 世代新马首胜
+                tags.append({"cat": "gen", "label": str(h["生年"]) + "年世代新马首胜"})     # 1b. 世代新马首胜
             sw = sire_set.get(norm_race(r.get("レース名")))
             if sw:
                 tags.append({"cat": "sire", "label": "父子制覇",

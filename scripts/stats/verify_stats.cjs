@@ -471,24 +471,21 @@ const kpiV = label => {
   const m = String(els["kpis"]._html).match(new RegExp('class="k">' + label + '</div><div class="v(?: hi| dim)?">([\\s\\S]*?)</div>'));
   return m ? m[1] : null;
 };
-const kpiBrkFirst = () => {   /* 出走数 = 通算战绩首位段（「出走」单列 KPI 已按用户口径移除，语义不变） */
-  const m = String(kpiV("通算战绩") || "").match(/<b[^>]*>(\d+)<\/b>/);
-  return m ? m[1] : null;
-};
+const kpiBrk = () => String(kpiV("通算战绩") || "").replace(/<[^>]+>/g, "");
+const brk4 = b => { const s = startsOf(b); return [b.w, b.p2, b.p3, Math.max(0, s - b.w - b.p2 - b.p3)]; };
 
 setTimeout(function () {
   console.log("[C1] 初始加载（默认 JRA + 全部切面）");
   const b0 = sumB(["中央"], "all");
   const r0 = ratesOf(b0);
-  ok(kpiBrkFirst() === String(startsOf(b0)), "KPI 出走（通算战绩首位）= " + startsOf(b0) + "（仅 JRA）");
   ok(kpiV("总赏金") === manYenOf(b0.pr), "KPI 总赏金 " + manYenOf(b0.pr));
   ok(kpiV("重赏胜利") === '<span class="st-trophy">🏆</span>' + byv["中央"].scopes.all.trophies.length, "KPI 重赏 🏆" + byv["中央"].scopes.all.trophies.length);
-  ok(String(kpiV("通算战绩") || "").replace(/<[^>]+>/g, "") === "[" + startsOf(b0) + "-" + b0.w + "-" + b0.p2 + "-" + b0.p3 + "-" + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "]",
-    "KPI 通算战绩 5 段 [出走-1-2-3-着外]（§65；着外=出走−前三含未完赛 → 后四段之和==首段）");
+  ok(kpiBrk() === "[" + brk4(b0).join("-") + "]",
+    "KPI 通算战绩 4 段 [" + brk4(b0).join("-") + "]（§76 去首位出走段；着外=出走−前三含未完赛 → 四段之和==出走）");
   const brkH = String(kpiV("通算战绩") || "");
-  ok(brkH.includes("#E0F5F4") && brkH.includes("#FEED88") && brkH.includes("#CCDFFD") && brkH.includes("#ECC6A2") && brkH.includes("#ececec")
+  ok(brkH.includes("#FEED88") && brkH.includes("#CCDFFD") && brkH.includes("#ECC6A2") && brkH.includes("#ececec") && !brkH.includes("#E0F5F4")
     && /<i[^>]*>-<\/i>/.test(brkH) && brkH.includes("linear-gradient") && !brkH.includes("#0aa7a0"),
-    "通算战绩 = 5 段 + 首位出走浅青绿 #E0F5F4 + 1/2/3 浅色做底 + 连字符带渐变接缝（底色连成一整条）");
+    "通算战绩 = 4 段 + 1/2/3 浅色做底 + 着外浅灰 + 连字符带渐变接缝（底色连成一整条，无出走青绿 #E0F5F4）");
   const bar = String(els["distBar"]._html);
   ok(bar.includes("st-bar") && bar.includes("#FEED88") && bar.includes("完赛 " + (b0.n - b0.dnf - b0.exc) + " 场"), "着顺分布条（着别=完赛口径；1/2/3 浅色三件套）");
   const rb = String(els["rateBand"]._html);
@@ -500,11 +497,11 @@ setTimeout(function () {
   const modeHtml = String(els["ymodeSeg"]._html);
   ok(modeHtml.includes("生产年") && modeHtml.includes("自然年"), "切面模式：生产年/自然年");
   const yHtml = String(els["yseg"]._html);
-  ok(yHtml.includes("全部") && yHtml.includes("2023年产") && yHtml.includes("2024年产"), "默认生产年值：全部/2023年产/2024年产");
+  ok(yHtml.includes("全部") && yHtml.includes("2023年世代") && yHtml.includes("2024年世代"), "默认生产年值：全部/2023年世代/2024年世代");
 
   console.log("[C2] 年龄成绩曲线（颜色=产年 + 线型=指标多选 + 明细表）");
   const segHtml = String(els["genSeg"]._html);
-  ok(segHtml.includes("全部") && segHtml.includes("2023年产") && segHtml.includes("2024年产"), "世代切换：全部/2023年产/2024年产（届 已弃用）");
+  ok(segHtml.includes("全部") && segHtml.includes("2023年世代") && segHtml.includes("2024年世代"), "世代切换：全部/2023年世代/2024年世代（届·年产 已弃用）");
   const rateHtml = String(els["rateSeg"]._html);
   ok(rateHtml.includes("胜率") && rateHtml.includes("连对率") && rateHtml.includes("复胜率"), "指标 seg：胜率/连对率/复胜率（可组合多选）");
   ok(rateHtml.includes('data-r="win" data-on="true"') && rateHtml.includes('data-r="ren" data-on="false"') && rateHtml.includes('data-r="fuku" data-on="false"'),
@@ -515,11 +512,11 @@ setTimeout(function () {
   ok(cys.length >= 4 && Math.max(...cys) - Math.min(...cys) > 40,
     "曲线点位随比率起伏（最高-最低 cy 差 " + (Math.max(...cys) - Math.min(...cys)).toFixed(0) + "px，防贴底回归）");
   ok((curveHtml.match(/<circle/g) || []).length >= 4, "曲线点标记（含 <title> tooltip）");
-  ok(String(els["curveLegend"]._html).includes("2023年产·胜率") && String(els["curveLegend"]._html).includes("2024年产·胜率") && String(els["curveLegend"]._html).includes("样本少"),
+  ok(String(els["curveLegend"]._html).includes("2023年世代胜率") && String(els["curveLegend"]._html).includes("2024年世代胜率") && String(els["curveLegend"]._html).includes("样本少"),
     "图例（颜色=产年 · 选中指标）+ 样本少说明");
   ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("生产年"), "月龄明细表（生产年列）");
   click("genSeg", "2024");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 1, "切换 2024年产 → 1 条折线");
+  ok((String(els["curve"]._html).match(/<path/g) || []).length === 1, "切换 2024年世代 → 1 条折线");
   click("genSeg", "全部");
   click("rateSeg", "ren");
   ok((String(els["curve"]._html).match(/<path/g) || []).length === 4 && String(els["curveLegend"]._html).includes("连对率"),
@@ -660,40 +657,40 @@ setTimeout(function () {
   ok(firstRow().includes(pctOf(gMin)), "再点表头切换升序 → 首行 " + pctOf(gMin));
   click("matTable", "starts");
 
-  console.log("[C4] 切面切换（生产年 2023年产 → 自然年 2026年）");
+  console.log("[C4] 切面切换（生产年 2023年世代 → 自然年 2026年）");
   click("yseg", "2023");
   const bG23 = sumB(["中央"], "g2023");
-  ok(kpiBrkFirst() === String(startsOf(bG23)), "生产年 2023年产 → 出走 " + startsOf(bG23) + "（g2023 切面）");
+  ok(kpiBrk() === "[" + brk4(bG23).join("-") + "]", "生产年 2023年世代 → 通算战绩 [" + brk4(bG23).join("-") + "]（g2023 切面）");
   ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,byear:2023") + '"'),
     "生产年切面下钻附带 byear:2023");
   click("ymodeSeg", "year");
   const yHtml2 = String(els["yseg"]._html);
-  ok(yHtml2.includes("2025年") && yHtml2.includes("2026年") && !yHtml2.includes("年产"), "切自然年 → 值变 2025年/2026年");
+  ok(yHtml2.includes("2025年") && yHtml2.includes("2026年") && !yHtml2.includes("年世代"), "切自然年 → 值变 2025年/2026年");
   click("yseg", "2026");
   const bY26 = sumB(["中央"], "y2026");
-  ok(kpiBrkFirst() === String(startsOf(bY26)), "自然年 2026年 → 出走 " + startsOf(bY26) + "（y2026 切面）");
+  ok(kpiBrk() === "[" + brk4(bY26).join("-") + "]", "自然年 2026年 → 通算战绩 [" + brk4(bY26).join("-") + "]（y2026 切面）");
   ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,year:2026") + '"'),
     "自然年切面下钻附带 year:2026");
   click("yseg", "all");
-  ok(kpiBrkFirst() === String(startsOf(sumB(["中央"], "all"))), "切面回全部 → 出走 " + startsOf(sumB(["中央"], "all")));
+  ok(kpiBrk() === "[" + brk4(sumB(["中央"], "all")).join("-") + "]", "切面回全部 → 通算战绩 [" + brk4(sumB(["中央"], "all")).join("-") + "]");
   click("ymodeSeg", "gen");
 
   console.log("[C5] 场地范围组合（JRA + NAR；唯一项不可关）");
   click("vseg", "地方");
   const b01 = sumB(["中央", "地方"], "all");
   const r01 = ratesOf(b01);
-  ok(kpiBrkFirst() === String(startsOf(b01)), "加勾 NAR → 出走 " + startsOf(b01));
+  ok(kpiBrk() === "[" + brk4(b01).join("-") + "]", "加勾 NAR → 通算战绩 [" + brk4(b01).join("-") + "]");
   ok(String(els["matTable"]._html).includes(pctOf(r01.win)), "矩阵基准联动 = " + pctOf(r01.win));
   ok(String(els["matTable"]._html).includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央,venue:地方") + '"'),
     "组合下钻 URL 带双 venue（grade:新马,venue:中央,venue:地方）");
   click("vseg", "中央");                     /* 2 项时允许关中央 → 只剩地方 */
   const bL = sumB(["地方"], "all");
-  ok(kpiBrkFirst() === String(startsOf(bL)), "关中央 → 只剩 NAR，出走 " + startsOf(bL));
+  ok(kpiBrk() === "[" + brk4(bL).join("-") + "]", "关中央 → 只剩 NAR，通算战绩 [" + brk4(bL).join("-") + "]");
   click("vseg", "地方");                     /* 唯一项 → 不可关 */
-  ok(kpiBrkFirst() === String(startsOf(bL)), "唯一项不可关（仍为 NAR " + startsOf(bL) + "）");
+  ok(kpiBrk() === "[" + brk4(bL).join("-") + "]", "唯一项不可关（仍为 NAR [" + brk4(bL).join("-") + "]）");
   click("vseg", "中央");                     /* 恢复 */
   click("vseg", "地方");
-  ok(kpiBrkFirst() === String(startsOf(sumB(["中央"], "all"))), "取消地方 → 回纯 JRA " + startsOf(sumB(["中央"], "all")));
+  ok(kpiBrk() === "[" + brk4(sumB(["中央"], "all")).join("-") + "]", "取消地方 → 回纯 JRA [" + brk4(sumB(["中央"], "all")).join("-") + "]");
   const mtGr2 = String(els["matTable"]._html);
   ok(mtGr2.includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央") + '"'), "回 JRA 后 新马下钻仅 venue:中央");
 
