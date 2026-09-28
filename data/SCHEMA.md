@@ -325,3 +325,42 @@
 `scripts/basic/fetch_pedigree.py` 抓 JBIS 血统页 → `data/pedigree/{id}.json`，`basic.json` 里以
 `pedigree_file` 引用。`pedigree.母[1][0].name` = 母父（`merge_basic.damsire_of` 每次合并全量重 derive，
 口径同 `front/public/pedigree.js` 的母线取格逻辑）。
+
+## 8. races-bundle.json —— 全库比赛压缩包（构建期派生，源 data/ 不落盘）
+
+**2026-09-28 立项（路 B，D11 替换式；决策与处置记录 = front/UI优化记录.md §72）**：`data/races/*.json` 276 个逐马文件
+（minified 353KB，站点上为 276 次请求）在 **vite 构建期** 打成单文件
+`dist/data/races-bundle.json`（149.6KB → gzip ≈44KB）。**D11 替换式**：打包成功则 dist
+不再拷贝 `data/races/*.json`；打包失败告警并退回拷贝（叠加形态兜底）。`data/` 仓库永远
+不持有本产物；`run_update.py` 与编辑台保存管线不经过它——**每轮数据更新后重新 `npm run build` 即得新 bundle**。
+
+### 格式 v1（编解码单一出处 = `front/public/race-bundle.js`，`YJ.raceBundle.pack/decode`）
+
+```json
+{ "v": 1, "dict": ["字符串字典…"], "xk": ["模板外键…"], "races": ["[场次行]…"], "by": { "264": ["[马264出场行]…"] } }
+```
+
+- **`by` 键 = 文件名主干 = 马 id**（`data/races/{id}.json` → `"264"`；basic.json 的
+  `races_file` 带 `data/` 前缀，页面侧取 `split("/").pop()` 归一）。未出道马的空文件 → 空数组，保留键。
+- **场次行**：17 个场次级字段按固定顺序（日付,発走,開催,場名,R,コース,レース名,格,条件,距離,芝ダ,馬場,天候,頭数,race_id,venue_type,來源），
+  距離/頭数/race_id 存原始值，其余字符串走 `dict` 下标。
+- **出场行** = `[场次下标, 马级字段…]`：马级 23 字段（出走馬名,性,年齢,斤量,枠番,馬番,人気,単勝,結果,タイム,上り,着差,通過,ペース,馬体重,増減,賞金,本賞金,騎手,調教師,jockey_id,trainer_id,photo）
+  同序编码；`null` = 源里该键缺席（decode 还原为省略，不产出 `null` 值键）。
+- **台账记录**（同马同日多赛事，如 `130.json` 8 条）不与出场行合并：以伪分组键
+  `"\u0001{马id}\u0001{日付}"` 独立成组；其中 `race_id:""`（键在但空串）按原值保真，`race_id` 缺失/`null` 才省略。
+- **未知键**（当前仅 `130.json` 的 `Rt`，值可为 `null`）：记入 `xk`，行尾以 `[xk下标, 值, …]` 对追加，decode 按键还原。
+- **确定性**：马 id 数值序、dict 按首见序、无时间戳 → **同输入字节级稳定 → ETag 稳定 → SWR 304 生效**。
+- **版本联动（审计 2.4）**：格式/字段升级时**三处同步 bump**——① 数据 `v` 字段；② 页面引用的
+  `race-bundle.js?v=N`；③ `yj-cache.js` 缓存桶名 `yj-data-vN`（桶名升级令全部旧缓存条目整体作废）。
+  漏任何一处都会出现「旧 JS 读新 bundle」或「新 JS 读旧缓存」的错读。
+- 打包器 `front/scripts/build-races-bundle.mjs` 自带 **round-trip 断言**
+  （`decode(pack(src))` 逐字段与源全等，`null ≡ 缺席`），不等即 `exit 1` 拒绝构建。
+
+### 消费端
+
+- **比赛记录页（races.html）**：内嵌单马 `renderHorse` → `YJ.cache.fetch("bundle")` →
+  `decode(b)[马id]`；独立模式 `initLibrary` → basic 马表 × `by[races_file 主干]` 组装 `LIB`。
+  两处均保留逐马 `fetch('races/{id}.json')` 回退（源树模式/旧 dist 兜底）。
+- **12h 缓存**：统一走 `front/public/yj-cache.js`（`YJ.cache`，桶 `yj-data-v1`；新鲜期 10min
+  0 请求，软过期秒开 + SWR 后台 `If-None-Match/If-Modified-Since` 校验，304 续期 / 200 更新+onUpdate，
+  硬过期同步取、失败回退旧缓存；`caches` 不可用降级直连）。同控制器还管理 basic/stats/datechart/timeline/pedigree。

@@ -17,10 +17,15 @@ YJ.pedigree = (function () {
   function load(id, base) {
     var key = String(id);
     if (cache[key]) return Promise.resolve(cache[key]);
-    return fetch((base || YJ_DATA.url('pedigree/')) + key + ".json").then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    }).then(function (d) { cache[key] = d; return d; });
+    var url = (base || YJ_DATA.url('pedigree/')) + key + ".json";
+    /* 12h 统一缓存（yj-cache）：注册表按 id 求址（URL 等价）；未引 yj-cache 时回退直连 */
+    var p = (typeof window !== "undefined" && window.YJ && window.YJ.cache)
+      ? window.YJ.cache.fetch("pedigree", { arg: key, url: url })
+      : fetch(url).then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
+    return p.then(function (d) { cache[key] = d; return d; });
   }
 
   /* 单元格：保留国籍后缀，显示年/毛色；深代年/毛色放名字后同行

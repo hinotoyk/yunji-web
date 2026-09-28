@@ -2258,3 +2258,29 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 - `_note` 公开口径：主表自 main 起即随 dist 公开，edit.html 底部补「隐私提示」；sidecar 本地化（`data/_tmp/edit_meta/`）列为可选后续——搬迁要动白名单/双表读写/SCHEMA 契约，本轮不做。
 - `edit.html` 的 `editor.js?v=3`→`v=4`（手工 cache-busting 惯例）。
 
+## 72. 数据层提速收官 · races 压缩包（路 B）+ 全站统一缓存控制器（2026-09-28）
+
+用户两点诉求定稿：① RACES 页 276 次逐马请求 → **极致压缩**（276 请求 ≈180KB gzip → **1 请求 44KB gzip**）；
+② 所有数据产物**统一缓存控制器**（同控制器、每产物可不同 TTL），RACES 数据**至少缓存 12h**；
+强制刷新不走 `?fresh=1`，采用 **SWR**（软过期秒开 + 后台条件校验）。方案先行确认后实施。
+
+**① 压缩包（D11 替换式，契约 = data/SCHEMA.md §8）**
+- `front/public/race-bundle.js`：`YJ.raceBundle.pack/decode` 单一出处。结构拆分+字典：`{v,dict,xk,races,by}`，
+  场次行 17 字段 / 出场行 `[场次下标, 23 马级字段]`，字符串走 dict 下标；台账记录走伪分组键；`Rt` 未知键经 `xk` 保真；
+  确定性输出（无时间戳）→ ETag 稳定。打包器 `front/scripts/build-races-bundle.mjs` 带 **round-trip 全等断言**（不等拒构建）。
+- `front/vite.config.js` copy-data 挂 `buildRacesBundle()`：成功 → **dist 跳过 `data/races/*.json`**（bundle 等值替代）；
+  失败告警退回拷贝（fail-soft 同 gen-font）。`data/` 仓库与 `run_update.py` 全程不碰。
+- 实测：276 马 · 753 条 · 源 minified 353KB → bundle **146KB（gzip 44KB）**。
+
+**② 统一缓存控制器 `front/public/yj-cache.js`（YJ.cache，桶 yj-data-v1）**
+- 分支：新鲜期（<10min）0 请求 → 软过期秒开 + SWR 后台 `If-None-Match/If-Modified-Since`（304 续期 ≈300B / 200 更新缓存 + `onUpdate` 回调）→ 硬过期/首访同步全量（失败回退旧缓存，断网可开）→ 无 `caches` 环境降级直连（行为同旧版）。in-flight 去重 + 每页每键至多一次后台校验。
+- 注册表六产物同 12h TTL（可按产品覆写）：`basic / bundle / pedigree(按 id 求址+前缀清) / stats / datechart / timeline`。
+- 全站接入：`selector.js` loadHorses 走 `YJ.cache.fetch('basic')`、`clearBasicCache()` 联动 `YJ.cache.clear('basic')`（编辑台保存即失效）；
+  `pedigree.js` 按注册表求址；stats/datechart/timeline init 各换一行；`manual_overrides.json` 保持 no-store 不入缓存。
+- 踩坑记录：IIFE 内控制器 `fetch` 与全局 `fetch` 同名遮蔽 → 网络出口必须走 `nativeFetch` 包装（冒烟 16/16 抓出）；
+  `races_file` 实为 `data/races/{id}.json`（带 `data/` 前缀，旧路径靠 `YJ_DATA.url` 归一化掩盖）→ bundle 键取 `split("/").pop()`（drill 47 断言抓出）。
+
+**③ 门禁**：`scripts/verify_yj-cache.cjs` 新增（16 断言：新鲜期/SWR 304·200/硬过期回退/节流/定向清/降级路径）；
+`verify_drill.cjs` bundle stub 现场打包（pack→decode 全链路纳入下钻冒烟）47/47；stats 204 / datechart 108 / result 三态全绿；
+`npm run build` 产物核对：`dist/data/races-bundle.json` 在、`dist/data/races/` 已替换式跳过、其余产物齐。
+

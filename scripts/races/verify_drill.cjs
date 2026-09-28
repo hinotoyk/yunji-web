@@ -73,7 +73,18 @@ global.window = global;
 global.addEventListener = function () {};
 global.YJ_DATA = { url(p) { p = String(p).replace(/^\/+/, ""); if (p.indexOf("data/") === 0) p = p.slice(5); return "data/" + p; } };
 global.fetch = url => {
-  const txt = fs.readFileSync(path.join(ROOT, String(url)), "utf8");
+  url = String(url);
+  /* 主路径 stub：races-bundle.json 在 data/ 仓库不落盘（D11 替换式，只进 dist）→
+   * 现场用共享模块 pack 现做（顺带把 pack→decode 全链路纳入下钻冒烟）。 */
+  if (url.indexOf("races-bundle.json") >= 0) {
+    const byH = {};
+    for (const f of fs.readdirSync(path.join(ROOT, "data", "races")).filter(f => f.endsWith(".json"))) {
+      byH[f.replace(/\.json$/, "")] = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "races", f), "utf8"));
+    }
+    const b = global.YJ.raceBundle.pack(byH);
+    return Promise.resolve({ ok: true, json() { return Promise.resolve(b); } });
+  }
+  const txt = fs.readFileSync(path.join(ROOT, url), "utf8");
   return Promise.resolve({ ok: true, json() { return Promise.resolve(JSON.parse(txt)); } });
 };
 
@@ -99,6 +110,10 @@ global.YJ = {
  * （比赛行/徽章渲染已下沉，见 UI优化记录 §42）。浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序。 */
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
+/* 统一缓存控制器（initLibrary 主路径经 YJ.cache.fetch('bundle') 取数）+ bundle 编解码模块：
+ * node 无 caches → 控制器自动走降级（fetch stub 直读），顺带覆盖降级路径本身 */
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-cache.js"), "utf8"));
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-bundle.js"), "utf8"));
 
 /* 间接 eval → 页面 var/function 落到 global（后续可读 LIB/FLT/entryVal/matchEntry） */
 (0, eval)(code);
@@ -272,6 +287,20 @@ setTimeout(function () {
     "NAME_VIEW=1 同规则：130 → " + hSuf["自译馬名"] + "、无名马仍 母名の生年");
   global.NAME_VIEW = 0;
 }, 100);
+
+/* ---- [F] 两处 pack 等价性（审计 1.2）：drill 现场 pack（stub 主路径用）== 实际 dist 产物（字节级）。
+ * dist 未构建时跳过（data/ 不落盘的既定取舍；打包器侧另有「dist 回读 + 对源对账」断言把关）。 ---- */
+setTimeout(function () {
+  const distPath = path.join(ROOT, "dist", "data", "races-bundle.json");
+  if (!fs.existsSync(distPath)) { console.log("  --  [F] 跳过：dist 未构建（无可比产物）"); return; }
+  const byH = {};
+  for (const f of fs.readdirSync(path.join(ROOT, "data", "races")).filter(f => f.endsWith(".json"))) {
+    byH[f.replace(/\.json$/, "")] = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "races", f), "utf8"));
+  }
+  const s = JSON.stringify(global.YJ.raceBundle.pack(byH));
+  const d = fs.readFileSync(distPath, "utf8");
+  ok(s === d, "drill 现场 pack == dist/data/races-bundle.json（两处 pack 等价，字节级 " + d.length + " B）");
+}, 300);
 
 /* 汇总（放最后：等微任务+finish 全跑完） */
 setTimeout(function () {

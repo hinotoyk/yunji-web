@@ -353,7 +353,7 @@ ok(diffCnt === 0, "逐切面 1:1 对账通过（" + scopeCnt + " 个切面 × ba
 console.log("[C] stats.html 页面冒烟");
 const html = fs.readFileSync(path.join(ROOT, "front", "pages", "stats.html"), "utf8");
 const code = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
-ok(code.includes('YJ_DATA.url("stats.json")'), "页面引用 stats.json");
+ok(code.includes('YJ.cache.fetch("stats")'), "页面经统一缓存控制器引用 stats 产物（12h）");
 
 /* els 用惰性 Proxy：断言里 els["xxx"] 取未注册元素时自动给一个空 stub（_html=""），
  * 让该条断言正常判 FAIL —— 否则旧写法直接 TypeError 崩栈、把后面几十条断言一起吞掉 */
@@ -439,6 +439,9 @@ global.fetch = function (url) {
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "loading.js"), "utf8"));
+/* 页面 init 已改走 YJ.cache.fetch('stats')（12h 统一缓存）：node 无 caches → 控制器自动降级
+ * 为直连 fetch stub，行为与旧版一致（同一份真实 yj-cache.js 顺带覆盖降级路径） */
+(0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-cache.js"), "utf8"));
 eval(code);
 
 /* ---- 期望值工具（全部从产物独立重算；比率分母=出走） ---- */

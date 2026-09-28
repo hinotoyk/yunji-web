@@ -97,10 +97,12 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 </div>
 
 <script src="../data-config.js"></script>
+<script src="../yj-cache.js?v=1"></script>
 <script src="../yj-util.js?v=2"></script>
+<script src="../race-bundle.js?v=1"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js?v=1"></script>
-<script src="../selector.js?v=6"></script>
+<script src="../selector.js?v=7"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script>
@@ -200,16 +202,25 @@ function renderHorse(id){
   var h = list.find(function(x){return x.id===id;});
   var url = YJ_DATA.url('races/'+id+'.json');
   var renderR = function(hh){
-    fetch(url).then(function(r){
-      if(!r.ok) throw new Error("HTTP "+r.status);
-      return r.json();
-    }).then(function(races){
-      var hs = Array.isArray(races) ? races : (races && races.races ? races.races : []);
+    /* 比赛数据主路径：全库压缩包（races-bundle，构建期 276 个逐马文件 → 1 请求），
+     * 12h 统一缓存（YJ.cache）内零请求；dist 替换式下无逐马文件 → 失败回退直连（源树模式兜底） */
+    YJ.cache.fetch("bundle").then(function(b){
+      var hs = YJ.raceBundle.decode(b)[String(id)] || [];
       hs.sort(raceCmp);   /* 日期降序 + 同日発走降序（无発走视为最大排最前），内嵌 PC/mb 共用 */
       lastR = { hh: hh || {id:id}, races: hs };
       renderRaces(lastR.hh, lastR.races);
-    }).catch(function(e){
-      document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">比赛数据加载失败（'+esc(e.message)+'）</div>';
+    }).catch(function(){
+      fetch(url).then(function(r){
+        if(!r.ok) throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(races){
+        var hs = Array.isArray(races) ? races : (races && races.races ? races.races : []);
+        hs.sort(raceCmp);
+        lastR = { hh: hh || {id:id}, races: hs };
+        renderRaces(lastR.hh, lastR.races);
+      }).catch(function(e){
+        document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">比赛数据加载失败（'+esc(e.message)+'）</div>';
+      });
     });
   };
   if (h) { renderR(h); return; }
@@ -948,7 +959,30 @@ function initLibrary(){
   var body=document.getElementById("body");
   document.getElementById("selector").style.display="none";
   body.innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">正在加载全库比赛数据…</div>';
-  YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(horses){
+  function finish(horses, entries){
+    LIB={horses:horses, entries:entries};
+    /* ?horse=id 跳转（基本信息内嵌 RACES → 独立模式查看详情）：预置出走马筛选 */
+    if(URL_HORSE && horses.some(function(h){ return String(h.id)===URL_HORSE; })){
+      FLT.horse=[URL_HORSE];
+    }
+    /* ?f=... 下钻（统计总览矩阵行 → 预置筛选）：无效维度/值静默丢弃（validFilterValue） */
+    if(URL_F){
+      DIM_KEYS.forEach(function(k){
+        var vals=URL_F[k];
+        if(!vals) return;
+        vals.forEach(function(v){
+          if(validFilterValue(k,v) && FLT[k].indexOf(v)<0) FLT[k].push(v);
+        });
+      });
+    }
+    renderFilters();
+    renderResults();
+    bindFilters();
+    bindPager();
+  }
+  /* 逐马回退（主路径失败时才走）：并发 16 拉 data/races/{id}.json —— dist 替换式下无逐马文件，
+   * 仅源树/旧 dist 兜底；verify_drill.cjs 的 bundle stub 失败时也落到这条路径 */
+  function legacy(horses){
     var byFile={};
     horses.forEach(function(h){ if(h.races_file) byFile[h.races_file]=h; });
     var files=Object.keys(byFile);
@@ -965,31 +999,24 @@ function initLibrary(){
         arr.forEach(function(rc){ entries.push({h:h, r:rc}); });
       }).catch(function(){}).then(function(){
         done++;
-        if(done<files.length) pump(); else finish();
+        if(done<files.length) pump(); else finish(horses, entries);
       });
     }
-    function finish(){
-      LIB={horses:horses, entries:entries};
-      /* ?horse=id 跳转（基本信息内嵌 RACES → 独立模式查看详情）：预置出走马筛选 */
-      if(URL_HORSE && horses.some(function(h){ return String(h.id)===URL_HORSE; })){
-        FLT.horse=[URL_HORSE];
-      }
-      /* ?f=... 下钻（统计总览矩阵行 → 预置筛选）：无效维度/值静默丢弃（validFilterValue） */
-      if(URL_F){
-        DIM_KEYS.forEach(function(k){
-          var vals=URL_F[k];
-          if(!vals) return;
-          vals.forEach(function(v){
-            if(validFilterValue(k,v) && FLT[k].indexOf(v)<0) FLT[k].push(v);
-          });
-        });
-      }
-      renderFilters();
-      renderResults();
-      bindFilters();
-      bindPager();
-    }
     for(var k=0;k<conc;k++) pump();
+  }
+  YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(horses){
+    /* 主路径：全库压缩包（races-bundle，构建期把 276 个逐马文件打成 1 请求 ~44KB gzip）；
+     * 12h 统一缓存（YJ.cache）内零请求，SWR 后台校验由控制器自理。
+     * bundle 键 = races_file 末段文件名主干（兼容 data/ 前缀，split("/").pop()）；未出道马的空文件 → 空数组，自然跳过 */
+    YJ.cache.fetch("bundle").then(function(b){
+      var by=YJ.raceBundle.decode(b), entries=[];
+      horses.forEach(function(h){
+        if(!h.races_file) return;
+        var hid=String(h.races_file).split("/").pop().replace(/\.json$/,"");   /* data/races/1.json / races/1.json → 1 */
+        (by[hid]||[]).forEach(function(rc){ entries.push({h:h, r:rc}); });
+      });
+      finish(horses, entries);
+    }).catch(function(){ legacy(horses); });
   }).catch(function(e){
     body.innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
   });

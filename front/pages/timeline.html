@@ -92,6 +92,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
+<script src="../yj-cache.js?v=1"></script>
 <script src="../loading.js?v=2"></script>
 <script>
 /* ================= 时间线 · 里程碑事件页 =================
@@ -222,10 +223,7 @@ function renderStats(st){
     ' · 重赏胜利 <b class="text-foreground">'+(st.graded_wins||0)+'</b> 场 · 父子制覇 <b class="text-foreground">'+(st.sire_wins||0)+'</b> 次';
 }
 function init(){
-  fetch(YJ_DATA.url('timeline.json')).then(function(r){
-    if (!r.ok) throw new Error("HTTP "+r.status);
-    return r.json();
-  }).then(function(data){
+  YJ.cache.fetch("timeline").then(function(data){
     renderStats(data.meta && data.meta.stats);
     render(data.events || []);
   }).catch(function(e){

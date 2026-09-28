@@ -170,6 +170,7 @@ td.dim .num{color:#c6c6ca}
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
+<script src="../yj-cache.js?v=1"></script>
 <script src="../race-rows.js?v=1"></script>
 <script>
 /* ================= 统计总览 STATS =================
@@ -821,10 +822,7 @@ window.addEventListener("resize", function () {
 
 /* ---- 初始化 ---- */
 (function init() {
-  fetch(YJ_DATA.url("stats.json")).then(function (r) {
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
-  }).then(function (data) {
+  YJ.cache.fetch("stats").then(function (data) {
     STATS = data;
     renderAll();
   }).catch(function (e) {

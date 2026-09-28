@@ -169,6 +169,7 @@
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../i18n.js"></script>
+<script src="../yj-cache.js?v=1"></script>
 <script src="../race-rows.js?v=1"></script>
 <script>
 /* ================= 日期统计 · 日历（真实数据版） =================
@@ -764,10 +765,7 @@ document.getElementById("cal").addEventListener("click", function(e){
 
 /* ---- 初始化：fetch 预计算产物 → 锚点 = 最新有胜场的日期；失败/空数据显示对应状态 ---- */
 (function init(){
-  fetch(YJ_DATA.url("datechart.json")).then(function(r){
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
-  }).then(function(data){
+  YJ.cache.fetch("datechart").then(function(data){
     RUNS = (data && data.runs) || [];
     if (!RUNS.length){
       document.getElementById("cal").innerHTML = "";

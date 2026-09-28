@@ -165,6 +165,8 @@ global.YJ_DATA = { url(p) { return "data/" + p; } };
  * 否则页面脚本取不到 YJ.raceRows / YJ.util。 */
 eval(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 eval(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
+/* 页面 init 已改走 YJ.cache.fetch('datechart')：node 无 caches → 控制器自动降级直连 fetch stub */
+eval(fs.readFileSync(path.join(ROOT, "front", "public", "yj-cache.js"), "utf8"));
 global.fetch = function (url) {
   const txt = fs.readFileSync(path.join(ROOT, String(url)), "utf8");
   return Promise.resolve({ ok: true, json() { return Promise.resolve(JSON.parse(txt)); } });

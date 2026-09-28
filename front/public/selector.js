@@ -124,20 +124,26 @@ YJ.selector = (function () {
     const shared = readStore(url);            /* ② 同标签页其它 iframe 已取过 → 直接用，不发请求 */
     if (shared) { horsesCache = shared; return shared; }
     cachePromise = (async function () {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      /* 取原文而非直接 .json()：原文才能塞进 sessionStorage；
-       * 无 text() 的响应（测试替身等）退回 .json()，只是不写共享缓存。 */
+      /* 12h 统一缓存（yj-cache）：Cache API 命中零网络，SWR 后台校验由控制器自理。
+       * 未引 yj-cache 的场景（编辑台 stub 等）回退原直连 fetch，行为不变。 */
       let horses, text = null;
-      if (r && typeof r.text === "function") {
-        text = await r.text();
-        horses = parseHorses(text);
+      if (typeof window !== "undefined" && window.YJ && window.YJ.cache) {
+        horses = horsesOf(await window.YJ.cache.fetch("basic", { url }));
       } else {
-        horses = horsesOf(await r.json());
+        const r = await fetch(url);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        if (r && typeof r.text === "function") {
+          text = await r.text();
+          horses = parseHorses(text);
+        } else {
+          horses = horsesOf(await r.json());
+        }
       }
       if (!horses) throw new Error("basic.json 解析失败");
       horsesCache = horses;
-      writeStore(url, text);
+      /* sessionStorage（路 D，同标签页 1h）保留：12h 缓存命中时拿到的是解析后数据，
+       * 原文不再可得 → 写回重序列化马表（readStore 的 parseHorses 对数组同样兼容）。 */
+      writeStore(url, text || JSON.stringify(horses));
       return horses;
     })();
     try {
@@ -393,10 +399,15 @@ YJ.selector = (function () {
     select(id);
   }
 
-  /* 手动失效（数据更新后 / 排障用）：内存 + sessionStorage 一起清，下次 loadHorses 重新 fetch */
+  /* 手动失效（数据更新后 / 排障用）：内存 + sessionStorage + 12h 统一缓存一起清，
+   * 下次 loadHorses 重新 fetch（编辑台保存 → 浏览页 basic 立即见新值）。
+   * ⚠ 此处刻意只清 basic、不清 bundle：bundle 派生自 data/races/*.json，编辑管道只跑 merge_basic
+   * 不改 races → bundle 不因保存过期（SCHEMA §8）。若将来编辑管道开始写 races/*.json，
+   * 必须在此补 window.YJ.cache.clear("bundle")，否则 RACES 页最长 12h 读旧比赛数据（审计 1.1）。 */
   function clearBasicCache() {
     horsesCache = null;
     cachePromise = null;
+    if (typeof window !== "undefined" && window.YJ && window.YJ.cache) window.YJ.cache.clear("basic");
     if (!SS) return;
     const pre = "yj:basic:" + BASIC_V + ":";
     try {
