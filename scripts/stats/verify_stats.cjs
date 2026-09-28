@@ -696,6 +696,7 @@ setTimeout(function () {
 
   console.log("[C6] 重赏之路 + 补充");
   ok(String(els["gradedProg"]._html).includes("重赏") && String(els["gradedProg"]._html).includes("新马"), "级别胜利进度条");
+  ok(!String(els["gradedProg"]._html).includes("胜场按级别"), "口径注记文案已移除（用户要求，§79）");
   const gW = k => (gAll.find(x => x.k === k) || {}).w || 0;
   const prog = String(els["gradedProg"]._html);
   const wBan = gW("一胜级") + gW("二胜级") + gW("三胜级"), wTrophy = gW("G1") + gW("G2") + gW("G3") + gW("Jpn1") + gW("Jpn2") + gW("Jpn3");
@@ -704,6 +705,7 @@ setTimeout(function () {
   const gl = String(els["gradedList"]._html);
   ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
   ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");
+  ok(gl.includes('target="_blank"'), "重赏明细马名 → 档案新标签页（§80 跳转统一）");
   const tdesc = [...byv["中央"].scopes.all.trophies].sort((a, b) => (a.d > b.d ? -1 : a.d < b.d ? 1 : 0));
   ok(gl.indexOf("profile.html?horse=" + tdesc[0].id) < gl.indexOf("profile.html?horse=" + tdesc[tdesc.length - 1].id),
     "明细按日期降序（最新 " + tdesc[0].d + " 在最上）");

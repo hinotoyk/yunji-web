@@ -241,8 +241,10 @@ setTimeout(function () {
     "体重 下拉挂载点 + URL 预置 470-480 tag + 实例（统计页体重维度下钻落点）");
   const wSel = selOf("搜索体重添加…");
   const wIdx = v => ["<400"].concat(Array.from({ length: 15 }, (_, i) => (400 + i * 10) + "-" + (410 + i * 10))).concat([">550"]).indexOf(v);
-  ok(!!wSel && wSel.items.length >= 10 && wSel.items.every((it, i) => wIdx(it.v) >= 0 && (i === 0 || wIdx(it.v) > wIdx(wSel.items[i - 1].v))),
-    "体重候选档位升序：" + (wSel && wSel.items.map(it => it.v).join("→")) + "（空档不出现）");
+  /* §77：体重候选 = 档位全集补零 —— 当前数据无 540-550 / >550 出走，这两档也必须保留（n=0） */
+  ok(!!wSel && wSel.items.length === 17 && wSel.items.every((it, i) => wIdx(it.v) === i)
+    && wSel.items.some(it => it.v === "540-550" && it.n === 0) && wSel.items.some(it => it.v === ">550" && it.n === 0),
+    "体重候选 17 档全集升序（空档 540-550 / >550 补零保留，n=0）：" + (wSel && wSel.items.map(it => it.v).join("→")));
   ok(f.includes('id="fDimSel_breeder"') && !!selOf("搜索生产牧场添加…"), "生产牧场 下拉挂载点（统计页生产牧场维度下钻落点）");
   ok(f.includes('id="fDimSel_owner"') && !!selOf("搜索马主添加…"), "马主 下拉挂载点（统计页马主维度下钻落点）");
   ok(f.includes("性别") && f.includes(">セン<"), "筛选行 性别（牡/牝/セン）");
@@ -272,6 +274,46 @@ setTimeout(function () {
   {
     const t = String(els["fDimSel_ninki"]._injected);
     ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后 tag 区只剩 2人気（局部刷新不重建筛选条）");
+  }
+
+  console.log("[C3] 性齢列（§78/§78.1）：lib 22 列 性齢 紧随出走马；embed（profile 下段/明细）也展示");
+  {
+    const keys = global.YJ.raceRows.cols("lib").map(c => c.k);
+    ok(keys.length === 22 && keys[0] === "horse" && keys[1] === "sexage",
+      "lib 列集 22 列，性齢 紧随出走马（列序随基准）");
+    const eCols = global.YJ.raceRows.cols("embed");
+    ok(eCols.length === 14 && eCols[0].k === "sexage",
+      "embed 无馬名上下文 14 列、性齢 首列（datechart 传 horse → 15 列 性齢 紧随馬名；§78.1）");
+    const en0 = global.LIB.entries.find(en => String(en.r["性"] || "").trim() && String(en.r["年齢"] || "").trim());
+    ok(!!en0 && global.YJ.raceRows.rowLibHTML(en0).includes(">" + en0.r["性"] + en0.r["年齢"] + "</td>"),
+      "lib 行 性齢 单元格 = " + (en0 ? en0.r["性"] + en0.r["年齢"] : "(无样本)"));
+    ok(!!en0 && global.YJ.raceRows.rowEmbedHTML(en0.r).includes(">" + en0.r["性"] + en0.r["年齢"] + "</td>"),
+      "embed 行 性齢 单元格 = " + (en0 ? en0.r["性"] + en0.r["年齢"] : "(无样本)"));
+    ok(global.YJ.raceRows.libTheadHTML({}).includes(">性齢<"), "lib 表头含 性齢（stub i18n 键即文案）");
+    const mbLib = global.YJ.raceRows.rowLibMbHTML(en0);
+    ok(mbLib.includes("yj-mb-sexage") && mbLib.includes(">" + en0.r["性"] + en0.r["年齢"] + "</span>"),
+      "lib mb 卡片顶部 马名槽后带 性齢 槽");
+    ok(global.YJ.raceRows.rowEmbedMbHTML(en0.r).includes("yj-mb-sexage"),
+      "embed mb 卡片含 性齢 槽（§78.1 两视图一致）");
+  }
+
+  console.log("[C4] 跳转收口（§80/§80.2）：赛事名 → netkeiba SP 比赛页（venue_type 分流 JRA/NAR/db 兜底）；马名档案链接统一新标签页");
+  {
+    const enJra = global.LIB.entries.find(en => en.r.venue_type === "中央" && String(en.r.race_id || "").trim());
+    ok(!!enJra && global.YJ.raceRows.rowLibHTML(enJra).includes('href="https://race.netkeiba.com/race/result.html?race_id=' + enJra.r.race_id + '" target="_blank"'),
+      "中央 → race.netkeiba.com SP 页 race_id=" + (enJra ? enJra.r.race_id : "") + "（.yj-rlink 无提醒样式）");
+    const enNar = global.LIB.entries.find(en => en.r.venue_type === "地方" && String(en.r.race_id || "").trim());
+    ok(!!enNar && global.YJ.raceRows.rowLibHTML(enNar).includes('href="https://nar.netkeiba.com/race/result.html?race_id=' + enNar.r.race_id + '" target="_blank"'),
+      "地方 → nar.netkeiba.com SP 页（地方独立子域）race_id=" + (enNar ? enNar.r.race_id : ""));
+    const enOv = global.LIB.entries.find(en => en.r.venue_type === "海外" && String(en.r.race_id || "").trim());
+    ok(!enOv || global.YJ.raceRows.rowLibHTML(enOv).includes('href="https://db.netkeiba.com/race/' + enOv.r.race_id + '/"'),
+      "海外（字母 id " + (enOv ? enOv.r.race_id : "") + "）→ db.netkeiba.com/race/{id}/ 兜底");
+    const enNo = global.LIB.entries.find(en => !String(en.r.race_id || "").trim());
+    ok(!enNo || !global.YJ.raceRows.rowLibHTML(enNo).includes("netkeiba.com"),
+      "无 race_id 行（台账海外等 8 场）赛事名保持纯文本");
+    const enAny = global.LIB.entries[0];
+    ok(!!enAny && global.YJ.raceRows.rowLibHTML(enAny).includes('target="_blank" rel="noopener"'),
+      "出走马 → 档案链接新标签页（hjump，§80 跳转统一）");
   }
 
   console.log("[E] 马名口径收口（§64）· horseText 剥生产国尾缀 + 无登録名兜底「母名の生年」");

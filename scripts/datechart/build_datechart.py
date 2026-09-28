@@ -82,6 +82,9 @@ def build_runs(horses):
                 "id": h.get("id"),
                 "h": h.get("馬名") or r.get("出走馬名") or h.get("欧字馬名") or "",
                 "hc": h.get("香港馬名") or h.get("自译馬名") or "",
+                "sx": str(r.get("性") or ""),        # 当场比赛 性（牡/牝/セ）—— 明细 性齢 列（§78.1）
+                "ya": _raw(r.get("年齢")),           # 当场比赛 年齢（int/str 原样，同 ki/nk/bw 口径）
+                "rid": _raw(r.get("race_id")),       # netkeiba 赛事 id（''=台账等无 id；明细赛事名跳结果页用，§80）
                 "r": str(r.get("レース名") or ""),
                 "g": str(r.get("格") or ""),
                 "v": str(r.get("場名") or ""),

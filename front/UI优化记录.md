@@ -2359,6 +2359,139 @@ SCHEMA.md 规则头已补注）。纯措辞改动，聚合键/逻辑零变化（
   → **203/0**（204−1：原「KPI 出走（首位）」与整括号断言合并）；`check_data.py` 0 项；
   `npm run build` 后 dist grep：三页括号无 `#E0F5F4`、`?v=2` 就位。
 
+## 77. 比赛记录筛选 · 下拉框加宽 +20%（PC/mb）+ 体重候选档位全集补零（2026-09-28）
+
+用户截图圈选两项反馈，一轮落地（仅 races.html 页内 CSS/JS + 门禁断言收紧，selector.js 零改动）：
+
+- **搜索下拉加宽**（出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重 8 个挂载点同款）：
+  `.f-csel` `min-width:198px` → **`width:238px`**（198×1.2，+20.2%）。⚠ 踩坑：首版用
+  `flex:0 1 238px` **无效**——Chromium 计算 `.filter-chips` 固有宽时忽略嵌套 flex 项的
+  flex-basis（探针实测按 input 默认 ~20ch≈188px 收缩，八挂载点全 188），必须显式 `width`
+  固有贡献才是 238px；`min-width:0` + 默认 shrink 让窄 PC 窗口（~800px 半列）回缩防溢出
+  （旧 `min-width:198` 在该区间反而顶破）。**mb（≤768px）**：`.filter-chips{flex-grow:1}` +
+  `.f-csel{width:auto;flex:1 1 238px}` 拉满整行（移动端搜索框惯例；已选胶囊同行占位、框吃剩余宽；
+  375px 窄屏受行宽所限 ~229px 回缩，绝无横向溢出）。
+- **体重候选档位全集补零**：`initDimSels()` 对 `wbin` 维度先按 `WEIGHT_BINS` 补齐缺失档（n=0）
+  再按档位升序——当前数据无 540-550 / >550 出走也保留选项（显示「0场」），选中即筛 0 场（空态正常）；
+  与统计页 `weight_bin` 17 档口径逐档对应。
+- **门禁**：`verify_drill.cjs` 体重断言从「空档不出现」升级为「**17 档全集升序 + 540-550 / >550
+  补零保留（n=0）**」→ 48/0；`run_update.py --check` 五步全绿；`npm run build` dist 核对
+  （`width:238px` / mb flex 规则 / 补零注释就位）。
+- **探针+截图验证**（无头 Chrome）：计算样式 8 挂载点 PC 全 238.0px；375/500/800/1400 四档
+  `docScroll==docClient` 零溢出（375→~229px 回缩、500→337px 拉满、800→238px 不缩）；
+  `?f=weight:470-480,trainer:矢作芳人` 下钻胶囊+搜索框同行共存正常。
+  截图 `tests/_tmp/w77-pc-1400.png`、`w77-mb-500.png`、`w77-mb-375.png`、`w77-pc-800.png`、
+  `w77-pc-tags.png`、`w77-mb-tags.png`。
+
+## 78. 比赛记录表 · 加「性齢」列（紧随马名）+ mb 卡片性齢槽（2026-09-28）
+
+前置：§59 后逐场记录 753/753 全带 `性`（牡/牝/セ）+ `年齢`（2/3，出赛当时值）。用户点名表格加「性龄」
+列、**加在马名后面**、注意不同尺寸宽度、遵守既定列宽规则。全部走共享模块基准（race-rows.js 单一出处，
+页面零列清单改动）：
+
+- **基准加列**：`BASE_COLS` 21→**22 列**，`sexage` 紧随 `horse`（馬名 → 性齢 → 日付…）；
+  `COL.sexage` = `pc: 性+年齢（セ3 形态，与 netkeiba/台账原值一致，不 ENUM 转公/母——与筛选 chips
+  牡/牝/セン 同口径）`、定宽列（flex:false）`min = fmt("牡10")`（两位数年齢上限防未来溢出）、
+  单元格 clsLib=TCL（与日期/枠番同款紧排 tabular-nums）。
+- **embed 视图隐藏**：`VIEWS.embed.hide` 增 `sexage`（内嵌表/profile 下段 仍 14 列、datechart 明细
+  仍 14 列）——datechart 短键产物无 性/年齢 字段，跟随会出现整列空白；profile 下段单马也用不上。
+  **只有 RACES 独立页（lib 视图）展示** = 用户点名的范围。
+- **mb 卡片**：`BASE_TOP` 增第 4 槽 `sexage`（馬名槽后、着顺槽前），theme.css 新 `.yj-mb-sexage`
+  （flex:none + 11.5px 灰，观感同日期槽；flex:none 保证长马名省略号挤不掉它）。**顶部槽渲染改为只认
+  本视图 PC 列集里的列**（`e = byKey[k]` 不再走 `pick()` 的 COL 回落）——否则 embed mb 卡片会渲染出
+  视图已隐藏的列（基准规则：mb 分组独立于 PC 列集，但顶部槽必须随视图隐藏联动）。
+- **缓存戳**：`race-rows.js ?v=2→?v=3`（races/datechart/stats 三页）；i18n.js 增 `"性齢":"性龄"`
+  键 → 六页引用统一补 `?v=1`（§57 yj-util 同款惯例，防旧缓存表头退回日文键）。
+- **列宽规则遵循（v6/v7 不动）**：lib 列集/量尺/注水全部由共享模块派生（页面 LIB_COLS/LIB_RACE_IDX
+  自动跟上），性齢作为定宽列参与 min 体系。**宽度实测（无头 Chrome 探针）**：1400px `overflowX=0`
+  零溢出精确铺满；~1150-1350 档位带存在**既有**横向滚动（12.5px 档 min 和超容器 → `#yj-lib-wrap`
+  overflow-x 滚动逃生口）——git stash 对照 HEAD 实测 1180/1220 = 27/61px，加列后 52/86px（**+25px
+  = 性齢 列宽，既有行为零恶化**，≥1400 不受影响）。
+- **门禁**：`verify_drill.cjs` 新增 **[C3] 组 6 断言**（lib 22 列且性齢紧随出走马 / embed 13 列
+  （无 horse 上下文）无 sexage / 行单元格值 / 表头 / lib mb 性齢槽 / embed mb 无性齢槽）→ **54/0**；
+  `verify_datechart.cjs` 注释 21→22 列 + 新增「明细不出现 性齢（PC 列与 mb 槽）」防御断言 →
+  **109/0**；`run_update.py --check` 五步全绿；dist 核对（race-rows v3 / theme css 含
+  `.yj-mb-sexage` / i18n `?v=1`）。
+- **视觉**：`?f=sex:セン` 下钻实测 Grand Warrior 逐场 セ3（2026 去势后）/ 牡2（2025 早期）按场正确；
+  PC 1400/1180、mb 500 卡片截图 `tests/_tmp/w78-pc-1400.png`、`w78-pc-1180.png`、`w78-mb-500.png`。
+
+### 78.1 追加调整 · profile 下段/datechart 明细也展示 性齢（2026-09-28）
+
+用户要求「基本信息 · PROFILE 中的比赛记录 · RACES 也要展示性龄」→ embed 视图取消隐藏（§78 的
+「datechart 短键无数据」顾虑用数据侧补齐解决，前端零特判）：
+
+- **产物扩字段**：`build_datechart.py` runs[] 增 `sx`（性，牡/牝/セ/''）+ `ya`（年齢，int/str 原样，
+  同 ki/nk/bw 口径）→ **datechart.json 22→24 字段**；`data/SCHEMA.md` §6 字段模板同步；data 重算后
+  dist 副本随构建更新。
+- **视图**：`VIEWS.embed.hide` 撤 `sexage`（回到隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 7 列）→
+  **datechart 明细 15 列（性齢 紧随馬名）、profile 下段 14 列（无馬名列 → 性齢 为首列）**；
+  mb 卡片 性齢 槽两视图自动出现（顶部槽只认本视图 PC 列集的 §78 修正正好兜住）。datechart.html
+  `toRow()` 补 `性: r.sx, 年齢: r.ya` 映射。`emptyPc colspan="14"` 与 profile 下段 14 列恰好对齐。
+- **缓存戳**：race-rows.js `?v=3→?v=4`（races/datechart/stats 三页）。
+- **门禁**：`verify_datechart.cjs` EXPECTED_KEYS 22→24 键 + sx/ya 类型断言 + 独立重算补 sx/ya →
+  逐条 **24 字段全等**；[C2] 表头期望 15 列（性龄 在 index 1）+ mb 槽正断言（替换 §78 的负断言）
+  → **110/0**；`verify_drill.cjs` [C3] embed 断言翻转（14 列 性齢 首列 / embed 行单元格 /
+  embed mb 槽）→ **55/0**；stats 203/0；`run_update.py --check` 五步全绿。
+- **视觉**（探针预置 sessionStorage `yj:currentHorse=130` 后 iframe embed）：profile 下段 PC 14 列
+  性齢 首列 セ3×5/牡2×3 逐场正确；mb 卡片 性齢 槽位于赛名后、着顺徽章前。截图
+  `tests/_tmp/w781-embed-pc.png`、`w781-embed-mb.png`。
+
+## 79. 统计页 · 移除「胜场按级别」口径注记文案（2026-09-28）
+
+用户点名去掉。`renderGraded()` 拼接的尾注 `<span>胜场按级别（重赏 = G1/G2/G3/Jpn1-3，不含 L/OP）</span>`
+整段删除（口径本身不变，G_STEPS 分桶照旧）；stats.html 为页面脚本无需缓存戳。
+门禁：`verify_stats.cjs` 增负断言「注记文案已移除」→ **204/0**；dist 核对无该文案。
+
+## 80. 跳转语义统一：文案 去「下钻」改「跳转」+ 全部新标签页 + 赛事名 → netkeiba 结果页（2026-09-28）
+
+用户三项定稿：①「下钻」对用户不友好，页面说明统一改「跳转」；②跳转一律新开标签页（不离开当前视图的
+切面/页签/筛选状态）；③比赛记录表赛事名点击 → netkeiba 结果页，**不需要任何提醒的样式**，无 race_id
+不出链接：
+
+- **①文案**（仅用户可见串，内部注释/门禁日志不动）：stats.html 8 处 —— TAB_DIMS tips 4 处
+  （体重·牡/牝「跳转自动附带 sex:…」、生产牧场/马主「行可跳转」）+ notes 4 处（654/657/729/735）。
+- **②新标签页**：stats 矩阵行 `tr[data-href]` 点击 `location.href` → `window.open(url,"_blank","noopener")`；
+  重赏明细马名 `<a>` 补 `target="_blank" rel="noopener"`；**马名→档案链接单一出处** race-rows.js
+  `horseLink()` 补 target/rel（跨马表出走马列 / embed mb 马名槽 / datechart 明细马名一次全覆盖）。
+  侧边栏 data-href（index.html，iframe 装载）不属于跳转语义，不动。
+- **③赛事名链接**：race-rows.js 新 `raceLink(r)`（单一出处）—— 有 `race_id` 才出
+  `<a class="yj-rlink" href="https://db.netkeiba.com/race/{id}/" target="_blank" rel="noopener">`
+  （encodeURIComponent；753 行中台账海外 8 场无 id → 纯文本）；theme.css `.yj-rlink{color:inherit;
+  text-decoration:none}` 无 hover 规则（观感与普通文本一致）；`COL.race` pc/mbTop/mbItem 三处接线
+  （PC 列、mb 顶部槽、mb 项全可点），量宽照旧走 raceNameText（链接不参与量宽）。
+- **datechain 随动**：datechart 明细同属「比赛记录 · RACES」模块 → `build_datechart.py` runs[] 增
+  `rid`（race_id 原样）→ **datechart.json 24→25 字段**，SCHEMA §6 同步；`toRow()` 补
+  `race_id: r.rid`；明细赛事名/mb 槽同享链接（data 重算 + 构建进 dist）。
+- **缓存戳**：race-rows.js `?v=4→?v=5`（races/datechart/stats 三页）。
+- **门禁**：`verify_drill.cjs` 新 **[C4] 3 断言**（有 id 行含 `db.netkeiba.com/race/{id}/` +
+  target=_blank / 无 id 行纯文本 / 出走马档案链接 target=_blank）→ **58/0**；`verify_datechart.cjs`
+  25 键契约 + 明细含 netkeiba 链接 + 出走马 target → **111/0**；`verify_stats.cjs` 重赏明细
+  target=_blank 断言 → **205/0**；`run_update.py --check` 五步全绿。
+- **视觉**：races 默认视图 1400px 赛事列裁片确认观感零变化（无下划线/无变色/徽章照旧）；
+  截图 `tests/_tmp/w80-pc-1400.png`。
+
+### 80.1 追加调整 · SP 比赛页 + 误生成 `.html` 清理（2026-09-28）
+
+- **链接形态**：用户复核「应该跳转 SP 比赛页」→ `raceLink()` 改为
+  `https://race.netkeiba.com/race/result.html?race_id={id}`（原 db.netkeiba.com/race/{id}/ 会重定向，
+  直跳 SP 免一跳）；SCHEMA §6 rid 说明、verify_drill [C4]、verify_datechart 断言同步；
+  race-rows.js `?v=5→?v=6`。门禁 drill 58/0 · datechart 111/0 · stats 205/0 · --check 五步全绿；
+  dist 核对（SP 链接在位、db 形态零残留）。
+- **误产物清理**：`front/pages/.html`（0 字节）为 §78 轮批量改版本号时循环变量插值意外生成，
+  无任何引用（vite 输入为显式 PAGES 清单）→ 删除，后续批量替换后用 `Test-Path` 复核防复发。
+
+### 80.2 追加调整 · SP 页按 中央/地方 分流（2026-09-28）
+
+用户指正「netkeiba SP 页不是区分 JRA 和 NAR 的吗」→ 查证属实：地方竞马走独立子域
+`nar.netkeiba.com/race/result.html?race_id=`（JRA = `race.netkeiba.com` 同路径）。`raceLink()` 改按
+`venue_type` 三分流：**中央 → race.netkeiba.com / 地方 → nar.netkeiba.com / 海外（字母混合 id 如
+2025FPa00d08，仅 db 有路由）→ db.netkeiba.com/race/{id}/ 兜底**。datechart `toRow()` 补
+`venue_type: r.vt`（产物 vt 字段本就在，此前未映射）；race-rows.js `?v=6→?v=7`。
+门禁：`verify_drill.cjs` [C4] 扩为 5 断言（中央/地方/海外三形态 + 无 id 纯文本 + 马名 target）→
+**60/0**；`verify_datechart.cjs` 拆两处——[C2] 默认 JRA 范围断言 race.*（默认范围本无 地方 行）、[C3]
++NAR 切场地后断言 nar.*（复用既有 vseg 切换模式）→ **112/0**；stats 205/0；`--check` 五步全绿；
+dist 三形态核对齐。
+
 
 
 

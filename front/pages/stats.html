@@ -171,9 +171,9 @@ td.dim .num{color:#c6c6ca}
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
-<script src="../i18n.js"></script>
+<script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../race-rows.js?v=2"></script>
+<script src="../race-rows.js?v=7"></script>
 <script>
 /* ================= 统计总览 STATS =================
  * 数据：data/stats.json（后端预计算，按 场地类型 × 统计切面 二维聚合：
@@ -198,14 +198,14 @@ var TAB_DIMS = [
   { k: "cond",    l: "马场",     tip: "良/稍重/重/不良" },
   { k: "ninki",   l: "人气",     tip: "1人気～18人気 逐一（按人気升序）" },
   { k: "sex",     l: "性别",     tip: "牡/牝/セン" },
-  { k: "weight_m", l: "体重·牡", tip: "当日 馬体重（牡，含セン）：400-550kg 每 10kg 一档 + <400 / >550（550 归 540-550；空值不入桶；下钻自动附带 sex:牡+セン）" },
-  { k: "weight_f", l: "体重·牝", tip: "当日 馬体重（牝）：400-550kg 每 10kg 一档 + <400 / >550（550 归 540-550；空值不入桶；下钻自动附带 sex:牝）" },
+  { k: "weight_m", l: "体重·牡", tip: "当日 馬体重（牡，含セン）：400-550kg 每 10kg 一档 + <400 / >550（550 归 540-550；空值不入桶；跳转自动附带 sex:牡+セン）" },
+  { k: "weight_f", l: "体重·牝", tip: "当日 馬体重（牝）：400-550kg 每 10kg 一档 + <400 / >550（550 归 540-550；空值不入桶；跳转自动附带 sex:牝）" },
   { k: "turn",    l: "赛道方向", tip: "右转（顺时针）/ 左转（逆时针）" },
   { k: "mps",     l: "母父",     tip: "母亲的父亲（血统图 母の父 格；按出赛数降序）" },
   { k: "jockey",  l: "骑手",     tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" },
   { k: "trainer", l: "调教师",   tip: "全部列出，按出赛数从多到少；受马匹实力影响仅供参考" },
-  { k: "breeder", l: "生产牧场", tip: "basic.json 生産牧場 现值（空值不入桶；按出赛数降序；行可下钻）" },
-  { k: "owner",   l: "马主",     tip: "basic.json 馬主 现值（空值不入桶；按出赛数降序；行可下钻）" }
+  { k: "breeder", l: "生产牧场", tip: "basic.json 生産牧場 现值（空值不入桶；按出赛数降序；行可跳转）" },
+  { k: "owner",   l: "马主",     tip: "basic.json 馬主 现值（空值不入桶；按出赛数降序；行可跳转）" }
 ];
 var SM_F = 20;            /* 出走 < 20 → 样本少 */
 var DIM_F = 10;           /* 出走 < 10 → 数字弱化 */
@@ -651,10 +651,10 @@ function renderTable() {
   if (tab === "trainer" || tab === "jockey") {
     note = "调教师/骑手全部列出，按出赛数从多到少。胜率受马匹实力与配对影响，仅供参考。";
   } else if (tab === "breeder" || tab === "owner") {
-    note = "生产牧场/马主取 basic.json 现值（空值不入桶），按出赛数从多到少；受马匹实力影响，仅供参考；行可下钻比赛记录。";
+    note = "生产牧场/马主取 basic.json 现值（空值不入桶），按出赛数从多到少；受马匹实力影响，仅供参考；行可跳转比赛记录。";
   } else if (tab === "weight_m" || tab === "weight_f") {
     note = "体重 = 该场比赛登记的 馬体重（当日值；" + (tab === "weight_m" ? "牡，含セン" : "牝") +
-      "；400-550kg 每 10kg 一档 + <400 / >550，550 归 540-550）；空值不入桶 → 行合计 ≤ 总出走；下钻自动附带性别条件。";
+      "；400-550kg 每 10kg 一档 + <400 / >550，550 归 540-550）；空值不入桶 → 行合计 ≤ 总出走；跳转自动附带性别条件。";
   }
   document.getElementById("matNote").innerHTML = note;
 }
@@ -698,8 +698,7 @@ function renderGraded() {
     steps.push('<span class="st-gstep">' + g[0] + ' <b style="color:' + (w ? "#0b6b64" : "#c6c6ca") + '">' + w + '</b>胜</span>');
     if (i < G_STEPS.length - 1) steps.push('<span class="st-garrow">→</span>');
   });
-  document.getElementById("gradedProg").innerHTML = '<div class="st-gline">' + steps.join("") +
-    '<span class="text-[12px] text-muted-foreground">胜场按级别（重赏 = G1/G2/G3/Jpn1-3，不含 L/OP）</span></div>';
+  document.getElementById("gradedProg").innerHTML = '<div class="st-gline">' + steps.join("") + '</div>';
   document.getElementById("gradedNote").textContent = "重赏胜利明细 · " + trophyMerged().length + " 场";
   var list = trophyMerged();
   var html = "";
@@ -713,7 +712,7 @@ function renderGraded() {
     html += '<div class="st-gline">' +
       '<span class="yj-grade yj-' + gk + '">' + esc(lbl) + '</span>' +
       '<span class="text-muted-foreground">' + esc(t.d) + ' · ' + esc(t.v) + (t.R ? esc(t.R + "R") : "") + '</span>' +
-      '<a href="profile.html?horse=' + t.id + '" class="font-semibold text-foreground hover:text-primary">' + esc(t.h) + '</a>' +
+      '<a href="profile.html?horse=' + t.id + '" target="_blank" rel="noopener" class="font-semibold text-foreground hover:text-primary">' + esc(t.h) + '</a>' +
       '<span>' + esc(t.r) + '</span>' +
       '<span class="text-muted-foreground">' + esc(t.jk) + ' · ' + esc(t.tr) + '</span>' +
       '</div>';
@@ -727,13 +726,13 @@ function renderAbout() {
   document.getElementById("aboutNote").innerHTML =
     "集計期間：<b>" + m.first_date + "</b> ~ <b>" + m.last_date + "</b> · " + m.runs + " 条记录 / " + m.horses + " 匹出赛产驹。" +
     "<br>统计切面：<b>生产年</b> = 产驹出生年份（可选 2023年世代/2024年世代…）；<b>自然年</b> = 比赛日历年份（1月1日–12月31日）。" +
-    "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，下钻链接会附带 byear/year 条件。" +
+    "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，跳转链接会附带 byear/year 条件。" +
     "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 着外=出走−前三（含未完赛） · 比率分母=出走，同比赛记录页。" +
     "<br>比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/其他；距离：短距离≤1400m/英里1401-1800m/中距离1801-2400m/长距离>2400m。" +
     "<br>母父 = 产驹母亲的父亲（血统图「母の父」格，同血统图取值；按出赛数从多到少）。" +
     "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +
     "<br>样本少 = 出走 &lt; " + SM_F + "（数字弱化 = 出走 &lt; " + DIM_F + "），小样本仅供参考。" +
-    "<br>倾向矩阵 体重/生产牧场/马主 四页签：体重 = 该场比赛登记的 馬体重（当日值；分 体重·牡（含セン）/ 体重·牝 两页签；400-550kg 每 10kg 一档 + &lt;400 / &gt;550，550 归入 540-550；空值不入桶）；生产牧场 / 马主 = basic.json 现值（空值不入桶，按出赛数降序）；四者均可下钻比赛记录（体重下钻自动附带性别条件）。";
+    "<br>倾向矩阵 体重/生产牧场/马主 四页签：体重 = 该场比赛登记的 馬体重（当日值；分 体重·牡（含セン）/ 体重·牝 两页签；400-550kg 每 10kg 一档 + &lt;400 / &gt;550，550 归入 540-550；空值不入桶）；生产牧场 / 马主 = basic.json 现值（空值不入桶，按出赛数降序）；四者均可跳转比赛记录（体重跳转自动附带性别条件）。";
 }
 
 /* ---- 渲染入口 ---- */
@@ -814,7 +813,7 @@ document.getElementById("matTable").addEventListener("click", function (e) {
     return;
   }
   var tr = e.target.closest ? e.target.closest("tr[data-href]") : null;
-  if (tr) location.href = tr.getAttribute("data-href");
+  if (tr) window.open(tr.getAttribute("data-href"), "_blank", "noopener");   /* §80：跳转新标签页，不离开当前统计视图 */
 });
 var resizeTimer = null;
 window.addEventListener("resize", function () {

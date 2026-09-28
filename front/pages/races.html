@@ -36,12 +36,18 @@
 .f-tag{display:inline-flex;align-items:center;gap:1px;height:26px;padding:0 3px 0 11px;border:1px solid #0aa7a0;border-radius:7px;background:#e6f6f5;color:#0b6b64;font-size:12px;font-weight:600;white-space:nowrap}
 .f-tag-x{width:19px;height:19px;border:0;border-radius:5px;background:transparent;color:#0b6b64;font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .f-tag-x:hover{background:rgba(10,167,160,.16);color:#ef4444}
-/* compact selector 挂载点（出走马 + 人气/母父/骑手/调教师共用）：圆角 7px / 边框 #e3e3e3 / 去下边距
- * —— 与 .filter-chip 完全统一；与 tag 胶囊同高，下拉绝对定位随组件自身 */
+/* compact selector 挂载点（出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重共用）：圆角 7px / 边框 #e3e3e3 / 去下边距
+ * —— 与 .filter-chip 完全统一；与 tag 胶囊同高，下拉绝对定位随组件自身
+ * 宽度（§77 用户反馈圈选「下拉框太短」）：定宽 238px（198×1.2，+20%）。
+ * ⚠ 必须用显式 width 而非 flex-basis —— Chromium 算 .filter-chips 固有宽时忽略嵌套 flex 项的
+ * flex-basis（实测按 input 默认 ~20ch≈188px 收缩）；显式 width 的固有贡献才是 238px。
+ * min-width:0 + 默认 shrink：窄 PC 窗口（~800px 半列 220px）回缩防溢出（旧 min-width:198 反而会顶破）。
+ * mb 追加：chips 行占满 + 挂载点 flex 拉满整行（移动端搜索框惯例；375px 窄屏受行宽所限 ~229px 回缩） */
 .f-csel .box{border-radius:7px;border-color:#e3e3e3}
 .f-csel .box:hover{border-color:rgba(10,167,160,.55)}
 .f-csel .yj-sel{margin-bottom:0}
-.f-csel{min-width:198px}
+.f-csel{width:238px;min-width:0;max-width:100%}
+@media (max-width:768px){.filter-chips{flex-grow:1}.f-csel{width:auto;flex:1 1 238px}}
 /* 自定义 tooltip（悬停显示聚合含义）——维度 chip 用；马名列头/明细标题的 .yj-name-toggle
  * 同款浮层已随该控件移入 theme.css（两页共用，单一出处） */
 .filter-chip[data-tip]{position:relative}
@@ -102,8 +108,8 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 <script src="../yj-cache.js?v=1"></script>
 <script src="../yj-util.js?v=2"></script>
 <script src="../race-bundle.js?v=1"></script>
-<script src="../i18n.js"></script>
-<script src="../race-rows.js?v=2"></script>
+<script src="../i18n.js?v=1"></script>
+<script src="../race-rows.js?v=7"></script>
 <script src="../selector.js?v=7"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
@@ -693,7 +699,7 @@ function renderResults(){
   else if(isMb()){
     listHtml=RR.mbListHTML(list.map(libRowMbHTML).join(""));
   } else {
-    /* 独立 PC 跨马表（21 列，跑道+距离合并为「距离」）——列宽策略 v7（详见文件上方 v7 说明）：
+    /* 独立 PC 跨马表（22 列，§78 增 性齢；跑道+距离合并为「距离」）——列宽策略 v7（详见文件上方 v7 说明）：
      * ① 量最小宽：固定列按格式上限 colW、弹性列按当前页最长内容 pageW（canvas 粗排 + DOM 精量）；
      * ② 按档位分配留白（TIER_CAP：文本列上限随档收窄、数字列随档放宽 → 余量全表均分）→ 表宽恒等于容器；
      * ③ 表内留白 > AIR_TARGET 就升一档字号重算（11.5 → 15.5px），量尺/表头/徽章同步换档。
@@ -746,7 +752,7 @@ function renderResults(){
       }
       return left;
     }
-    /* 给定档位字号 + 容器宽 → 最终 21 列宽度 + 该档「内容墨迹总宽」（供留白判据） */
+    /* 给定档位字号 + 容器宽 → 最终 22 列宽度 + 该档「内容墨迹总宽」（供留白判据） */
     function libLayout(fs, containerW){
       CUR_FS=fs; CUR_TH=TIER_TH[fs]||10;
       var VAL=libVal();
@@ -842,7 +848,7 @@ function addHorse(id){
 
 /* ===== 人气/母父/骑手/调教师筛选：与出走马同款 selector（items 模式） ===== */
 /* fix=true（人气）：候选 1→18 固定升序、显示文本加「人気」；
- * wbin=true（体重）：候选按 WEIGHT_BINS 档位升序（<400→400-410…540-550→>550）；其余按出赛数降序 */
+ * wbin=true（体重）：候选 = WEIGHT_BINS 档位全集补零（无数据的档 n=0 也保留，§77）按档位升序；其余按出赛数降序 */
 var DIM_SEL=[{k:"ninki",l:"人气",fix:true},{k:"mps",l:"母父"},{k:"jockey",l:"骑手"},{k:"trainer",l:"调教师"},
              {k:"breeder",l:"生产牧场"},{k:"owner",l:"马主"},{k:"weight",l:"体重",wbin:true}];
 function dimCfg(key){
@@ -868,7 +874,13 @@ function initDimSels(){
     if(!el || !LIB) return;
     var opts=dimCounts(d.k);
     if(d.fix) opts.sort(function(a,b){ return (+a.v)-(+b.v); });   /* 人气 1→18 固定升序 */
-    else if(d.wbin) opts.sort(function(a,b){ return WEIGHT_BINS.indexOf(a.v)-WEIGHT_BINS.indexOf(b.v); });   /* 体重 <400→…→>550 档位升序 */
+    else if(d.wbin){
+      /* 体重档全集补零（§77 用户要求：当前数据无 540-550 / >550 出走也保留选项，n=0）；
+       * 补齐后按 WEIGHT_BINS 档位升序 <400→400-410…540-550→>550 */
+      var seen={}; opts.forEach(function(o){ seen[o.v]=1; });
+      WEIGHT_BINS.forEach(function(b){ if(!seen[b]) opts.push({v:b,n:0}); });
+      opts.sort(function(a,b){ return WEIGHT_BINS.indexOf(a.v)-WEIGHT_BINS.indexOf(b.v); });
+    }
     var items=opts.map(function(o){ return {v:o.v, l:d.fix?o.v+"人気":o.v, n:o.n}; });
     YJ.selector.init({
       el: el,

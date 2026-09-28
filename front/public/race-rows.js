@@ -18,7 +18,7 @@
  *     YJ.raceRows.mbListHTML(rows, {cls})                 // mb 卡片容器
  *
  * 记录字段用比赛数据原始日文键（日付/場名/R/レース名/距離/芝ダ/馬場/斤量/人気/結果/タイム/賞金/
- *   馬体重/増減/騎手/調教師/格）。数据键不同的页面（如日期统计的预计算短键产物）请先在页面侧
+ *   性/年齢/馬体重/増減/騎手/調教師/格）。数据键不同的页面（如日期统计的预计算短键产物）请先在页面侧
  *   适配成该形状（datechart.html 的 toRow()），再调本模块。
  * ============================================================ */
 window.YJ = window.YJ || {};
@@ -89,6 +89,22 @@ YJ.raceRows = (function () {
     return s;
   }
 
+  /* ---- 赛事名 → netkeiba SP 比赛页（§80/§80.2 用户定稿）：有 race_id 才出 <a>（台账海外等 8 场无 → 纯文本）；
+   * URL 按 venue_type 分流（用户指正：SP 页区分 JRA/NAR）——
+   *   中央 → race.netkeiba.com/race/result.html?race_id=
+   *   地方 → nar.netkeiba.com/race/result.html?race_id=（地方独立子域）
+   *   海外等其余 → db.netkeiba.com/race/{id}/ 兜底（字母混合 id 如 2025FPa00d08 只有 db 路由）
+   * 观感与普通文本完全一致（.yj-rlink 继承色/无下划线/无 hover 变化），新标签页打开 ---- */
+  function raceLink(r) {
+    var n = esc(raceNameText(r));
+    var id = String((r && r.race_id) || "").trim();
+    if (!id) return n;
+    var vt = String((r && r.venue_type) || "");
+    if (vt === "地方") return '<a class="yj-rlink" href="https://nar.netkeiba.com/race/result.html?race_id=' + encodeURIComponent(id) + '" target="_blank" rel="noopener">' + n + '</a>';
+    if (vt === "中央") return '<a class="yj-rlink" href="https://race.netkeiba.com/race/result.html?race_id=' + encodeURIComponent(id) + '" target="_blank" rel="noopener">' + n + '</a>';
+    return '<a class="yj-rlink" href="https://db.netkeiba.com/race/' + encodeURIComponent(id) + '/" target="_blank" rel="noopener">' + n + '</a>';
+  }
+
   /* ---- 场地+R 组合文案：阪神9R / 京都5R / 东京1R ---- */
   function venueR(r) {
     var s = (r && r.場名) || "";
@@ -103,6 +119,15 @@ YJ.raceRows = (function () {
     return ws + ds;
   }
   function weightOf(r) { return weight(r && r.馬体重, r && r.増減); }
+
+  /* ---- 性齢（当场比赛登记，netkeiba SP 页「性齢」列 / 台账人工，§59/§78）：性(牡/牝/セ) + 年齢 → セ3；
+   * 数据侧 753/753 全覆盖，两者皆空才返回 ""（防御：datechart 短键产物无此字段 → 空串，
+   * 这正是 embed 视图隐藏本列的原因之一） ---- */
+  function sexAgeText(r) {
+    var s = String((r && r.性) || "").trim();
+    var a = String((r && r.年齢) || "").trim();
+    return (s || a) ? s + a : "";
+  }
 
   /* ---- 跑道简称（跨马表「距离」列：草1200 / 泥1200 / 障1000 / AW1000） ---- */
   var SURF_SHORT = { "芝": "草", "ダ": "泥", "障害": "障", "AW": "AW" };
@@ -120,7 +145,7 @@ YJ.raceRows = (function () {
   }
   function horseLink(id, name) {
     if (id == null || id === "") return esc(name);
-    return '<a class="hjump" href="profile.html?horse=' + encodeURIComponent(id) + '">' + esc(name) + '</a>';
+    return '<a class="hjump" href="profile.html?horse=' + encodeURIComponent(id) + '" target="_blank" rel="noopener">' + esc(name) + '</a>';
   }
   /* 本行（或本表）的馬名跳转：内嵌/明细走 opts.horse，跨马走 en.h */
   function rowHorse(en, o) {
@@ -153,7 +178,7 @@ YJ.raceRows = (function () {
    * cls    embed 表单元格类名；clsLib = lib 表单元格类名
    * pc(r,en,o)         → PC 单元格内 HTML（不含 <td> 包裹）
    * mbItem(r,en,o,lb)  → mb 卡片项 HTML（"" = 该项不出现；lb = 已解析的 mb 标签）
-   * mbTop(r,en,o)      → mb 卡片顶部槽内 HTML（仅 date/race/horse/place 四列有）
+   * mbTop(r,en,o)      → mb 卡片顶部槽内 HTML（仅 date/race/horse/sexage/place 五列有）
    * mbLabel            mb 标签（i18n key；视图 mbLabel 表可给字面量覆盖）
    * min(ctx)           该列最小宽 px（仅 lib 列宽算法用；ctx = {fmt,page,txt,curFS,curTH,o}）
    * ======================================================================== */
@@ -180,6 +205,13 @@ YJ.raceRows = (function () {
       mbTop: function (r, en, o) { return rowHorse(en, o); },
       min: function (ctx) { return ctx.page(function (en) { return horseName(en, ctx.o); }); }
     },
+    sexage: {   /* 性齢：紧随馬名（§78 用户定稿）；当场比赛时点的 性+年齢（セ3），
+                 * 非 basic 的登录 性別 —— 一匹马年内会从 セ2 变 セ3 */
+      th: "性齢", cls: TC, clsLib: TCL, mbLabel: "性齢",
+      pc: function (r) { return esc(sexAgeText(r)); },
+      mbTop: function (r) { return esc(sexAgeText(r)); },   /* mb：卡片顶部「馬名」槽后的元信息槽 */
+      min: function (ctx) { return ctx.fmt("牡10"); }        /* 牡/牝/セ + 两位数年齢上限 */
+    },
     date: {
       th: "日付", cls: TC, clsLib: TCL,
       pc: function (r) { return esc(r.日付); },
@@ -194,13 +226,13 @@ YJ.raceRows = (function () {
     race: {
       th: "レース名", flex: true,
       cls: "px-1 py-1.5 text-center min-w-[80px] whitespace-normal", clsLib: TTL,
-      pc: function (r) { return esc(raceNameText(r)) + gradeBadge(r.格); },
+      pc: function (r) { return raceLink(r) + gradeBadge(r.格); },
       mbItem: function (r, en, o, lb) {
-        var g = gradeBadge(r.格), n = raceNameText(r);
+        var g = gradeBadge(r.格), n = raceLink(r);
         if (!n) return g ? mbi(null, g, { raw: true }) : "";
-        return mbi(null, esc(n), { cls: "yj-race", after: g });
+        return mbi(null, n, { cls: "yj-race", after: g });
       },
-      mbTop: function (r) { return esc(raceNameText(r)) + gradeBadge(r.格); },
+      mbTop: function (r) { return raceLink(r) + gradeBadge(r.格); },
       min: function (ctx) { return ctx.page(function (en) { return raceMeasure(en, ctx); }); }
     },
     distMerged: {   /* 唯一的「距离」列：跑道+距离合并（草2200 / 泥1500 / 障1000 / AW1000）
@@ -316,11 +348,14 @@ YJ.raceRows = (function () {
    * ★ 基准 = 比赛记录页（races.html）跨马主表 / mb 卡片 的字段与顺序（用户定稿，§53.5）。
    *   内嵌表（profile 下段）与日期统计明细 = 基准的**子集**：只通过 `hide` 清单隐藏字段，
    *   列序恒随基准（各视图**不再各写一份列清单**）→ 加列 / 调序 / 改列只改基准，各视图自动跟随。
-   *   lib   = 基准全量（21 列）
-   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 → 14 列（opts.horse 时含馬名，否则 13 列）
+   *   lib   = 基准全量（22 列，§78 增 性齢）
+   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 → 15 列（opts.horse 时含馬名，否则 14 列、
+   *     性齢 为首列；§78.1 用户要求 profile 下段/datechart 明细也展示 性齢，
+   *     datechart 短键产物已同步补 sx/ya 字段 → 不再有空列问题）
    * 视图差异只允许三处：① hide 隐藏清单 ② th/mbLabel 短标签覆盖 ③ mbLines mb 卡片分组
    *   （mb 分组：lib = 基准 5 行；embed = 自己的 3 行紧凑分组，但**字段顺序同样随基准**） */
-  var BASE_TOP = ["date", "name", "place"];   /* mb 顶部三槽；"name" = 名称槽，见 mbCardHTML */
+  var BASE_TOP = ["date", "name", "sexage", "place"];   /* mb 顶部槽；"name" = 名称槽，见 mbCardHTML；
+                                                         * sexage = 馬名槽后的元信息槽（§78；embed 视图也展示，§78.1） */
   var BASE_LINES = [
     ["race", "distMerged", "tenki", { k: "baba", label: "马场" }],
     ["time", "chakusa", "agari"],
@@ -328,9 +363,9 @@ YJ.raceRows = (function () {
     [{ k: "bw", label: "体重" }, "odds", "prize"],
     ["jockey", "trainer"]
   ];
-  /* 基准列序（21 列）：馬名 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 → 枠番 → 馬番 → 頭数 →
-     斤量 → 人気 → 着順 → タイム → 着差 → 上り → 体重 → 賠率 → 賞金 → 騎手 → 調教師 */
-  var BASE_COLS = ["horse", "date", "venue", "race", "distMerged", "tenki", "baba", "waku", "umaban", "tosu",
+  /* 基准列序（22 列，§78 增 性齢 紧随馬名）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
+     枠番 → 馬番 → 頭数 → 斤量 → 人気 → 着順 → タイム → 着差 → 上り → 体重 → 賠率 → 賞金 → 騎手 → 調教師 */
+  var BASE_COLS = ["horse", "sexage", "date", "venue", "race", "distMerged", "tenki", "baba", "waku", "umaban", "tosu",
                    "kinryo", "ninki", "place", "time", "chakusa", "agari", "bw", "odds", "prize", "jockey", "trainer"];
 
   var VIEWS = {
@@ -418,7 +453,7 @@ YJ.raceRows = (function () {
    * 退回赛事名，且该列在分组行里自动跳过（同一信息不重复出现）。
    * 分组行按列键取列定义：本视图 PC 列里没有的列键（如 embed 把距离并入后的 distMerged）
    * 直接回落 COL 表 → mb 分组与 PC 列集彼此独立，不要求一一对应。 */
-  var MB_SLOT = { date: "yj-mb-date", race: "yj-mb-race", horse: "yj-mb-race", place: "yj-mb-place" };
+  var MB_SLOT = { date: "yj-mb-date", race: "yj-mb-race", horse: "yj-mb-race", sexage: "yj-mb-sexage", place: "yj-mb-place" };
   function mbCardHTML(setName, r, en, o) {
     o = opt(o);
     var byKey = {};
@@ -436,7 +471,9 @@ YJ.raceRows = (function () {
         e = byKey.horse || byKey.race;         /* 馬名优先（基准首列）；无馬名上下文退回赛事名 */
         consumed = e ? e.k : null;
       } else {
-        e = pick(k);
+        /* 顶部槽只认**本视图 PC 列集里存在**的列（date/place 恒在；sexage 在 embed 被隐藏 → 槽自动消失，
+         * 不走 pick 的 COL 回落 —— 回落会让 embed mb 卡片渲染出视图已隐藏的列，§78） */
+        e = byKey[k];
       }
       if (!e || !e.mbTop) return "";
       return '<span class="' + (MB_SLOT[e.k] || "yj-mb-race") + '">' + e.mbTop(r, en, o) + '</span>';

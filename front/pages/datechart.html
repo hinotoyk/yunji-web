@@ -170,9 +170,9 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=2"></script>
-<script src="../i18n.js"></script>
+<script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../race-rows.js?v=2"></script>
+<script src="../race-rows.js?v=7"></script>
 <script>
 /* ================= 日期统计 · 日历（真实数据版） =================
  * 需求（用户定）：日历形式；按 天/周/月/年 快速读出
@@ -464,6 +464,9 @@ function renderCal(mode, key){
 function toRow(r){
   return {
     日付: r.d, R: r.R, 場名: r.v, レース名: r.r, 格: r.g,
+    性: r.sx, 年齢: r.ya,   /* 性齢 列（§78.1）：产物 22→24 字段随 build_datechart 同步 */
+    race_id: r.rid,         /* 赛事名 → netkeiba SP 比赛页链接（§80；'' = 台账等无 id → 纯文本） */
+    venue_type: r.vt,       /* raceLink 按 中央/地方/海外 分流 SP 子域（§80.2） */
     距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 斤量: r.ki,
     人気: r.nk, 結果: r.p, タイム: r.tm, 賞金: r.pr,
     馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr

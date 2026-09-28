@@ -5,7 +5,7 @@
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
  *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮（含跨月周
  *       补真实邻月日：邻月格灰显 M/D、不套 win/run 底色但数据照出）/
- *       年月卡 / 内嵌比赛表同款明细（PC 14 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
+ *       年月卡 / 内嵌比赛表同款明细（PC 15 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
  * 用法: node scripts/datechart/verify_datechart.cjs */
 "use strict";
 const fs = require("fs");
@@ -24,7 +24,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "hc", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障害", "AW"]);
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -60,6 +60,8 @@ for (let i = 0; i < RUNS.length; i++) {
   if (!(typeof r.jk === "string" && typeof r.tr === "string")) badField++;
   if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw))) badField++;
   if (!(typeof r.hc === "string")) badField++;      /* hc = 中文名（切换马名用；无=空串） */
+  if (!(typeof r.sx === "string") || !rawOk(r.ya)) badField++;   /* sx/ya = 性齢（明细列；ya int/str 原样） */
+  if (!rawOk(r.rid)) badField++;                    /* rid = netkeiba 赛事 id（''=台账等无 id） */
   if (i && (RUNS[i - 1].d > r.d || (RUNS[i - 1].d === r.d && String(RUNS[i - 1].id) > String(r.id)))) badSort++;
 }
 ok(badKeys === 0, "字段同构：全部 " + RUNS.length + " 条恰为 " + EXPECTED_KEYS.length + " 键");
@@ -90,6 +92,9 @@ for (const h of basic.horses) {
       id: h.id,
       h: h["馬名"] || r["出走馬名"] || h["欧字馬名"] || "",
       hc: h["香港馬名"] || h["自译馬名"] || "",
+      sx: String(r["性"] || ""),
+      ya: raw(r["年齢"]),
+      rid: raw(r["race_id"]),
       r: String(r["レース名"] || ""),
       g: String(r["格"] || ""),
       v: String(r["場名"] || ""),
@@ -155,7 +160,7 @@ global.document = {
 };
 global.window = global;
 global.YJ = { i18n: {
-  t(k) { return ({ "日付":"日期", "馬名":"马名", "レース名":"赛事", "場名":"场地", "距離":"距离", "芝ダ":"跑道", "着順":"着顺", "賞金":"赏金", "馬場":"马场", "斤量":"负磅", "人気":"人气", "タイム":"时间", "馬体重":"马体重", "騎手":"骑手", "調教師":"调教师" })[k] || k; },
+  t(k) { return ({ "日付":"日期", "馬名":"马名", "性齢":"性龄", "レース名":"赛事", "場名":"场地", "距離":"距离", "芝ダ":"跑道", "着順":"着顺", "賞金":"赏金", "馬場":"马场", "斤量":"负磅", "人気":"人气", "タイム":"时间", "馬体重":"马体重", "騎手":"骑手", "調教師":"调教师" })[k] || k; },
   e(k, v) { return ({ 芝:"草地", ダ:"泥地", 障害:"障碍", AW:"全天候" })[v] || v; },
 } };
 global.YJ_DATA = { url(p) { return "data/" + p; } };
@@ -247,20 +252,24 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
   ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
 
-  console.log("[C2] 内嵌比赛表同款明细（PC 14 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
+  console.log("[C2] 内嵌比赛表同款明细（PC 15 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
-  /* 字段基准（§53.5）= 比赛记录页跨马主表 21 列；明细 = 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 后的 14 列，
+  /* 字段基准（§53.5/§78）= 比赛记录页跨马主表 22 列；明细 = 隐藏 性齢/天候/枠番/馬番/頭数/着差/上り/賠率 后的 14 列，
    * 且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
   const ths = (pcHtml.match(/<th[^>]*>[\s\S]*?<\/th>/g) || [])
     .map(h => h.replace(/<[^>]+>/g, "").replace(/⇄/g, "").trim());   /* 馬名列头含 ⇄ 切换按钮 → 取纯文案 */
   /* 期望列序用 stub 自己的 i18n 生成（断言的是**顺序与字段集**，不重复断言翻译文案本身） */
-  const EXPECT_TH = ["馬名", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "タイム", "馬体重", "賞金", "騎手", "調教師"]
+  const EXPECT_TH = ["馬名", "性齢", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "タイム", "馬体重", "賞金", "騎手", "調教師"]
     .map(k => k === "賞金" ? YJ.i18n.t(k) + "(万円)" : YJ.i18n.t(k));
-  ok(ths.length === 14, "PC 表头 14 列（基准 21 列 − 隐藏 7 列）");
+  ok(ths.length === 15, "PC 表头 15 列（基准 22 列 − 隐藏 7 列，含 性齢 §78.1）");
   ok(JSON.stringify(ths) === JSON.stringify(EXPECT_TH), "列序随基准：" + ths.join("|"));
+  ok(ths.indexOf("性龄") === 1, "性齢 列紧随马名（列头 性龄，§78.1）");
+  ok(String(els["dBody"]._html).includes("yj-mb-sexage"), "mb 明细卡片含 性齢 槽（datechart 短键产物已补 sx/ya）");
   ok(ths.indexOf("跑道") < 0 && /(草|泥|障|AW)\d{3,4}/.test(pcHtml), "跑道并入距离列（无独立跑道列，值如 草1800）");
   ok(pcHtml.includes(">日期<") && pcHtml.includes(">调教师<") && pcHtml.includes("赏金(万元)") === false && pcHtml.includes("赏金(万円)"), "表头走 i18n（日期/调教师/賞金(万円)；马名列表头是切换按钮，见下）");
-  ok(pcHtml.includes("hjump") && pcHtml.includes("profile.html?horse="), "出走马列跳档案链接");
+  ok(pcHtml.includes("hjump") && pcHtml.includes("profile.html?horse=") && pcHtml.includes('target="_blank"'), "出走马列跳档案链接（新标签页 §80）");
+  ok(pcHtml.includes("race.netkeiba.com/race/result.html?race_id=") && pcHtml.includes('class="yj-rlink"'),
+    "赛事名 → netkeiba SP 比赛页（中央 race.* 子域、无提醒样式、新标签页；地方 nar.* 断言见 [C3] +NAR，§80.2）");
   /* 明细走共享模块 race-rows.js：人气 1/2/3 必须是「与着顺同款徽章」（yj-no yj-nk*），
    * 与比赛页内嵌表同源；窗口内无 1/2/3 人气时不假通过，而是断言确实没有彩色徽章 */
   const nkChipCnt = (pcHtml.match(/yj-no yj-nk[123]/g) || []).length;
@@ -312,6 +321,8 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(+kpiRuns() === baseRuns && VT.has("中央"), "唯一启用项不可关闭（JRA 保持）");
   vseg("地方"); VT.add("地方");
   ok(+kpiRuns() === starts(sm).length + nar, "+NAR → 出走 " + (starts(sm).length + nar) + "（中央+地方）");
+  ok(String(els["dBody"]._html).includes("nar.netkeiba.com/race/result.html?race_id="),
+    "+NAR 明细赛事名 → nar.netkeiba.com SP 页（地方独立子域分流，§80.2）");
   vseg("海外"); VT.add("海外");
   ok(+kpiRuns() === starts(sm).length + nar + ovs, "+海外 → 出走 " + (starts(sm).length + nar + ovs) + "（全部场地）");
   ok(nar > 0 && ovs >= 0, "锚点月地方场 " + nar + " 条 / 海外 " + ovs + " 条（数据形态核对）");
