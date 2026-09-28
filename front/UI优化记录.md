@@ -2284,3 +2284,22 @@ stats 与 datechart 的通算战绩括号 `[6-3-3-27]` 里，4 个色块被 `-` 
 `verify_drill.cjs` bundle stub 现场打包（pack→decode 全链路纳入下钻冒烟）47/47；stats 204 / datechart 108 / result 三态全绿；
 `npm run build` 产物核对：`dist/data/races-bundle.json` 在、`dist/data/races/` 已替换式跳过、其余产物齐。
 
+## 73. 全站 favicon 补齐（2026-09-28）
+
+此前 8 个页面均无 `<link rel="icon">`、仓库无任何图标文件 → 浏览器画默认占位图（Chrome 深色主题 =
+深色圆底地球仪线稿，被误认成"黑球"）。补齐为正式品牌图标：
+
+- **`front/public/favicon.svg`**（构建拷进 dist 根）：青绿圆角方标 + 白「云」**简体手绘笔画**
+  （round cap 路径，不依赖系统字体，任何设备渲染一致；用简体 4 画而非侧边栏繁体「雲」14 画，16px 下清晰）。
+- 8 页 `<head>` 各加一行 `<link rel="icon" type="image/svg+xml" href="[../]favicon.svg?v=1">`
+  （相对路径 + `?v=1` 与公共 JS 同款缓存戳：改图标时 +1 即可强刷）。
+- 候选过程：A 云字方标（修正「云」重心：底部「厶」加宽至与第二横同宽）vs C 蹄铁托云
+  （云蹄上下分离 + 钉孔），A 定稿；废案归档 `tests/_trash/favicon-candidates/`
+  （含多尺寸 + 深色标签页 1:1 模拟预览页）。
+- 注意：浏览器 favicon 缓存顽固，更新后需 Ctrl+F5 / 重开浏览器才见新图标。
+- **iOS Safari**：不认 SVG favicon → 另出 **`apple-touch-icon.png`（180×180，3.1KB）**：
+  与 favicon.svg 同一「云」字标，但**满幅方角**（rect 无 rx、无透明角——iOS 自套圆角蒙版，
+  预圆角+透明角会渲成黑角）。生成方式：同形 SVG 内嵌 180×180 HTML 底稿 → headless Chrome
+  截图成 PNG（底稿归档 `tests/_trash/ios-icon-src.html`）。8 页同步加
+  `<link rel="apple-touch-icon" href="[../]apple-touch-icon.png?v=1">`。
+
