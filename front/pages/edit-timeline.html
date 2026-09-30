@@ -11,16 +11,15 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
 }
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>编辑 · 云迹</title>
+<title>航迹线编辑 · 云迹</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="stylesheet" href="theme.css">
 </head>
 <body class="bg-muted/50 text-foreground antialiased">
 
-<!-- 2026-09 定稿（UI优化记录 §82/§82.4 · B 稿「常开工作表」）：单列 880px。报头条卡（雲标 + 马名 + meta +
-     预览/翻马 + 比赛页同款 selector 搜索下拉）→ 工作表卡（照片位 268px + 五字段常开直改 + 备注行）→
-     固定底部保存条（草稿箱模式 · 草稿箱抽屉 · 放弃/提交到 GitHub）。编辑台恒为草稿箱模式：
-     不依赖 edit_server，线上提交统一走 GitHub API → CI（约 2 分钟生效）。
+<!-- 2026-09 定稿（UI优化记录 §82/§82.4 · B 稿）：时间线人工节点独立编辑页。
+     全站一份 timeline_manual.json；草稿箱提交后 CI 自动 merge + build_timeline 重算（约 2 分钟）。
+     人工节点两种入口：引用比赛（选马选场自动填 date/title/link）· 自填荣誉（自由卡片）。
      §82.13：mb 端不开放编辑——应用容器 max-md 隐藏，只留电脑端提示。 -->
 <div class="hidden max-md:block mx-auto w-full max-w-[880px] px-4 pt-16 pb-[60px] text-center">
   <div class="text-[42px] leading-none">🖥️</div>
@@ -32,31 +31,22 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
 
   <header class="rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
     <div id="mast" class="flex flex-wrap items-center gap-x-3 gap-y-2"></div>
-    <div id="selector" class="mt-2.5 max-md:mt-2"></div>
   </header>
 
-  <!-- 工作表卡：左照片位 / 右五个常开可改字段 + 备注 -->
-  <section id="sec-fields" class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">
-    <div class="yj-ed-lbl">基本信息<span class="ml-1.5 font-normal normal-case tracking-normal text-muted-foreground">· 直接改，改动即时记入草稿</span></div>
-    <div class="mt-4 flex items-start gap-6 max-md:flex-col max-md:gap-4">
-      <div id="photos" class="w-[268px] flex-none max-md:w-full"><div class="hint-empty">先选匹马再管理图片。</div></div>
-      <div id="form" class="min-w-0 flex-1 max-md:w-full"><div class="hint-empty">先选匹马再编辑。</div></div>
-    </div>
+  <section class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">
+    <div id="tl"><div class="hint-empty">时间线表加载中…</div></div>
   </section>
 </div>
 
-<!-- 固定底部保存条：#box 抽屉（草稿箱 / 变更摘要 / GitHub 连接）锚在这里，向上弹出（mb 不开放编辑） -->
 <div id="savebar" class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur max-md:hidden">
   <div class="relative mx-auto flex max-w-[880px] flex-wrap items-center gap-2 px-4 py-2.5 max-md:px-3 max-md:pb-[calc(10px+env(safe-area-inset-bottom))]">
     <div id="box"></div>
     <span class="flex items-center gap-1.5 text-[10px] font-bold tracking-[.4px] text-muted-foreground">
       <i class="inline-block h-[7px] w-[7px] flex-none rounded-full bg-chart3"></i>草稿箱模式 · 提交后约 2 分钟生效
     </span>
-    <span id="summary"></span>
     <div id="report" class="order-last w-full max-md:max-h-[60px] max-md:overflow-y-auto"></div>
     <span id="count" class="whitespace-nowrap text-[10.5px] font-semibold tabular-nums text-muted-foreground"></span>
     <span class="ml-auto flex flex-wrap items-center justify-end gap-2">
-      <button id="reset" class="yj-ed-op h-8 px-3" type="button">放弃修改</button>
       <button id="save" class="yj-ed-op yj-ed-op--primary h-8 px-3.5 text-[12.5px] font-bold" type="button" disabled>提交到 GitHub</button>
       <button id="boxBtn" class="yj-ed-op h-8 px-3" type="button">草稿箱</button>
     </span>
@@ -69,12 +59,13 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
 <script src="../device.js"></script>
 <script src="../yj-cache.js?v=1"></script>
 <script src="../selector.js?v=7"></script>
+<script src="../race-bundle.js?v=1"></script>
 <script src="../editor.js?v=6"></script>
 <script>
 YJ.editor.init({
-  selector: "selector", form: "form",
-  report: "report", save: "save", reset: "reset", count: "count",
-  photos: "photos", mast: "mast", summary: "summary",
+  mode: "timeline",
+  mast: "mast", tl: "tl",
+  report: "report", save: "save", count: "count",
   box: "box", boxBtn: "boxBtn"
 });
 </script>

@@ -20,7 +20,6 @@ scripts/
   datechart/      build_datechart.py → data/datechart.json
   stats/          build_stats.py     → data/stats.json
   check_data.py   数据一致性校验（--fix 补跑对应环节）
-  edit_server.py  本地编辑服务：静态 :8090 + 编辑 API + 保存即生效管道（详见 §6）
 ```
 
 ## 2. 怎么跑
@@ -67,16 +66,10 @@ scripts/
 就会把人工的 `馬主` / `調教師` / `登録状態` 抓取值整片覆盖。契约与 `_` 前缀键（`_orig` / `_note`）口径见
 [`data/SCHEMA.md`](../data/SCHEMA.md) §3。
 
-## 6. 编辑服务（edit_server.py）
+## 6. 编辑服务（已删除）
 
-- **启动**：`python scripts/edit_server.py`（`--port` 默认 8090，`--root` 可指向副本树供沙箱测试）。
-  单进程同时服务静态站点（项目根）与编辑 API，**替代** `python -m http.server 8090 --directory 项目根`；
-  只监听 `127.0.0.1`，无鉴权（本机口径），但校验 `Host` 头（防 DNS rebinding）且 CORS 只对本机 Origin 回显。
-- **路由**：`GET /*` 静态（服务项目根）；`GET /healthz`（编辑台在线探测）；`POST /file` 只收白名单两张人工表
-  （`data/manual_overrides.json` / `data/timeline_manual.json`，写前整备校验，`.bak` 备份落 `data/_tmp/edit_backups/`）；
-  `POST /photo` multipart 收**浏览器端已压缩**的图片（魔数验图、服务端生成 `<id>-<n>.<ext>`、5MB 上限，
-  落 `data/photos/` 并同步 dist）。
-- **保存即生效管道（D5）**：写源表 → 子进程 `merge_basic.py --keep` → 把改动文件镜像进 `dist/data/`
-  （`.json` 与 vite copy-data 同口径 minify；时间线表**不自动重算**，要手动跑 `python scripts/timeline/build_timeline.py`）。
-- **降级**：edit_server 未启动时编辑台红条提示并禁用表单（浏览页不受影响，读 dist/data 只读展示）。
+- 原 `edit_server.py`（本机直连保存：静态 :8090 + 编辑 API + 保存即生效管道）**已于 2026-09-30 删除**
+  （UI优化记录 §82.4/§82.14）：编辑台恒为**草稿箱模式**，线上提交统一走
+  草稿箱 → 「提交到 GitHub」（GitHub Data API 单原子 commit）→ CI 构建约 2 分钟生效，
+  本机不再需要任何编辑服务。`<owner>-<n>.<ext>` 图片命名法等约定由 front/public/editor.js 沿用。
 - ⚠ 人工表会随构建进 `dist/data/` **公网可读**（含 `_note` 编辑备注）：备注只写业务理由。

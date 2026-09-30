@@ -2,6 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<script>
+/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
+ * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
+if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
+  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
+  location.replace("../index.html?page=" + encodeURIComponent(rel));
+}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>航迹线 · 云迹</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
@@ -87,7 +95,7 @@
 </head>
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
-  <div class="page-title mb-7 max-md:mt-2.5">航迹线 · TIMELINE</div>
+  <div class="page-title mb-7 flex flex-wrap items-baseline gap-x-4 gap-y-1 max-md:mt-2.5">航迹线 · TIMELINE<a class="text-[11.5px] font-semibold normal-case tracking-normal text-muted-foreground transition hover:text-primary max-md:hidden" href="edit-timeline.html" title="人工节点编辑（编辑台）">编辑 ↗</a></div>
   <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
   <div id="body"><div class="hint-empty">正在加载时间线数据…</div></div>
 </div>

@@ -47,10 +47,10 @@
            data-url 才是真正要加载的地址（带 ?tab= 直达对应段）。 -->
       <template id="editNav">
         <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">编辑</div>
-        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-url="pages/edit.html?tab=fields" data-on="false">
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-on="false">
           <span class="w-[18px] text-center text-[14px] opacity-90">✎</span>基本信息编辑
         </div>
-        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-url="pages/edit.html?tab=timeline" data-on="false">
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-timeline.html" data-url="pages/edit-timeline.html" data-on="false">
           <span class="w-[18px] text-center text-[14px] opacity-90">⧗</span>航迹线编辑
         </div>
       </template>
@@ -78,6 +78,16 @@
 </div>
 
 <script>
+/* ?page= 直达子页（§82.13）：独立打开的内容页自动「回壳」时把目标页带进来。
+ * 只接受本站 /pages/*.html 相对地址（同源 + 无 .. + .html 结尾），防开放跳转。 */
+var wantPage=new URLSearchParams(location.search).get("page");
+if(wantPage){
+  try{
+    var u=new URL(wantPage,location.href);
+    if(u.origin===location.origin&&u.pathname.indexOf("/pages/")>=0&&u.pathname.indexOf("..")<0&&/\.html$/.test(u.pathname))
+      document.getElementById("frame").src=u.pathname+u.search;
+  }catch(e){}
+}
 var nav=document.querySelector("nav");
 /* 「编辑」分组：仅外壳 URL 带 ?edit=1 时把 template 注入导航（默认一行 DOM 都不产生 → 公网访客看不到入口）。
    注入必须在收集 items 之前，两条编辑项才与既有五项同一套点击/高亮逻辑。 */

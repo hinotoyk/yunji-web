@@ -147,7 +147,8 @@
                "自动事件 = 本事件最高优先级标签的类别（sire>gen>first>graded>award），manual 固定 manual",
       "horse": { "id": 产驹id（profile 跳转用）, "name": 馬名, "cn": 〈港译/自译〉 },
                // race/award 才有；manual 无此键
-      "photo": "图源 URL/路径：race.photo 优先 → 回退马照片；manual 可自带；空串=浅灰占位",
+      "photo": "图源：比赛人工配图优先（data/races_manual.json，§4.5）→ race.photo（历史抓取值兼容，
+                 抓取管线已不产生该字段）→ 回退马照片；manual 可自带；空串=浅灰占位",
       "tags":  [ { "cat": "标签类别色（同 node 取值）", "label": "徽章文字", "tip": "可选：悬停提示",
                    "crown": true —— 可选：首胜标签（label 以「首胜」结尾）前端在右上角画斜置小皇冠 } ],
 
@@ -183,6 +184,26 @@
 
 用法:  python scripts/timeline/build_timeline.py
 ```
+
+---
+
+## 4.5 races_manual.json —— 比赛人工配图（人工表，2026-09-29 定稿 §82.9）
+
+**定位**：`race.photo` 的唯一维护入口。用户定稿：比赛节点配图属**人工配置**（race_id → photo），
+抓取管线**不产不写** race.photo；`build_timeline.py` 只读本表，**永不覆盖**（与 timeline_manual.json
+同一哲学）。编辑台入口 = `edit-timeline.html` 工具栏「比赛配图」（选马 → 选场 → 上传，图压缩口径同
+马照片 ≤1280px/≤100KB webp），提交链 = 草稿箱「提交到 GitHub」单原子 commit（图落
+`data/photos/<race_id>-<n>.<ext>`，与本马图同一命名法）。
+
+```jsonc
+{
+  "<race_id>": { "photo": "../data/photos/<race_id>-<n>.<ext>" }   // 值亦兼容纯字符串路径
+}
+```
+
+- 键 = races 数据的 `race_id`（netkeiba 全局唯一）；`build_timeline.py` 取图优先级：
+  **本表 photo > race.photo（历史兼容）> 马照片**；编辑台删除条目 = 删键（节点回退马照片）。
+- 无此文件 / 读取失败 = 无比赛人工配图，管线照常（告警不中断）。
 
 ---
 

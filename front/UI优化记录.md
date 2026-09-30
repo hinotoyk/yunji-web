@@ -2492,6 +2492,273 @@ SCHEMA.md 规则头已补注）。纯措辞改动，聚合键/逻辑零变化（
 +NAR 切场地后断言 nar.*（复用既有 vseg 切换模式）→ **112/0**；stats 205/0；`--check` 五步全绿；
 dist 三形态核对齐。
 
+## 81. 编辑台大改版 · 双形态（本机直连 / 草稿箱）+ 线上一次性提交 + 页面拆分（2026-09-29）
+
+### 81.1 需求（用户六点反馈 + 四项定稿）
+
+①线上要能直接打开编辑页（`www.yunji.xyz/pages/edit` 已可打开，无需再动 URL）；②「未启动 edit_server」
+横幅线上线下乱弹；③表单要清爽，生效预览改成点击新开标签页确认，无关文案太多；④编辑备注不该强制；
+⑤基本信息与航迹线（人工节点）拆成两个编辑页；⑥视觉向展示页对齐。四项拍板：**线上直接编辑（草稿箱存
+浏览器本地 + 一次性提交，本期做）**、**PAT 存 localStorage**、**图片线上本期含**、**预览 = 新标签页叠加
+真实资料页**。
+
+### 81.2 最终思路
+
+- **双形态**（`state.mode`）：`local` = edit_server 在线（探测同源/127.0.0.1:8090 `/healthz`），直接保存，
+  原 D5 管道一字未动；`draft` = 其余一切情况（线上打开 / 本地没开服务），编辑自动进**草稿箱**，表单不禁用。
+  探测只在本机页面发起（`isLocalPage()`）——线上页面不再跨源探测 127.0.0.1（Chrome 142+ 本地网络限制
+  必拦且要权限弹窗），横幅按语境分三态：本机在线=无横幅 / 本机未连=muted 一行小提示+重试 / 线上=零横幅
+  只留报头状态行。
+- **草稿箱**：`localStorage["yj.edit.drafts.v1"]` 存 `{ov, ph, tl, tlPhotos}`（字段值|null、图片清单、时间线
+  整表快照），图片二进制走 IndexedDB（`yj-edit-blobs`）；每次重渲染幂等落箱（`persistHorse`），换马回填
+  （`hydrateHorse`）。字段/备注/图片/时间线四类改动统一攒着，保存条「草稿箱 · N」抽屉逐条可看/可放弃。
+- **一次性提交**（GitHub writer，Git Data API）：ref→commits→contents（拿远端两表+sha）→`git/trees`
+  数 data/photos 现有 `<owner>-<n>` 序号→草稿图传 blob→草稿叠到远端最新表（首次人工补 `_orig` 快照，
+  与 edit_server 同口径）→**单原子 commit**（blobs→tree→commit→update ref，422 冲突整链重试一次）→
+  push main 触发 deploy。提交后抽草稿、报告 commit 链接 + 「CI 约 2 分钟生效」。
+- **CI 收尾**（deploy.yml 新增两步，纯 stdlib 秒级幂等）：`merge_basic.py --keep`（人工表套进 basic.json——
+  展示页读的是合并产物，只提交人工表值不会变）+ `build_timeline.py`（时间线不再需要本地手动重算）。
+- **页面拆分**：`edit.html` 只管本马（两栏：马匹列 + 报头/台账/图片/保存条）；新 `edit-timeline.html` 管全站
+  人工节点（单列事件列表，`editor.js` 以 `state.page` 参数一体两用，无马匹栏）。原第三栏撤除：保存清单/
+  草稿箱收进抽屉，「生效预览」改为报头**「预览 ↗」新开资料页**。
+- **草稿叠加预览**（profile.html）：读同一草稿箱键，五字段草稿值盖在 basic 值上 + 行尾「草稿」小徽章 +
+  页顶「草稿预览」提示条（含图片张数、回编辑台链接）；图片二进制不内嵌，只报张数。
+- **备注非必填**：去掉 `_note` 强制拦截；留空 = 保留旧备注不误删。
+- **文案减负**：三大段说明压成一行短句；隐私提示缩为「人工表随构建公开到 GitHub Pages，备注只写业务理由」。
+- 视觉沿用既有 `.yj-ed-*` 组件与全站 token（chart3 橙=草稿态），未新增色值、未动 theme.css。
+
+### 81.3 落地清单
+
+`front/public/editor.js`（双形态/草稿箱/GitHub writer/抽屉/备注/预览链接/mast 状态行，`?v=5`）、
+`front/pages/edit.html`（两栏重写）、`front/pages/edit-timeline.html`（新）、`front/vite.config.js`
+（PAGES + edit-timeline）、`front/pages/profile.html`（草稿叠加 + 提示条）、`front/pages/timeline.html`
+（页题「编辑 ↗」入口）、`.github/workflows/deploy.yml`（+setup-python 两步）、`scripts/edit_server.py`
+（无扩展名 `/pages/<name>` → `dist/pages/<name>.html`，本地与线上打开方式一致）。
+
+### 81.4 门禁与状态
+
+✅ `npm run build` EXIT=0（edit-timeline 2.74kB 入列；races-bundle round-trip 对账通过）；dist
+`theme-*.css` 逐类核对 `.yj-ed-*` 11 类 + `text-chart3` / `bg-chart3/10` / `bg-chart3/15` 全在；
+`node --check editor.js` EXIT=0；`py_compile edit_server.py` EXIT=0；edit_server :8099 冒烟
+（/healthz 200 · /pages/edit 200 且含「云迹编辑台」· /pages/edit-timeline?id= 200 带参路由）全绿；
+新增函数 34 个定义唯一性扫描通过。未 commit（等用户确认）。线上链路（PAT 提交 → CI 生效）待用户
+实测反馈。
+
+## 82. 编辑台三稿竞稿 → B 稿「常开工作表」定稿 + 时间线双入口（2026-09-29）
+
+### 82.1 需求与竞稿
+
+用户复核 §81 成果：「页面太丑了」，要求用设计技能出**清爽简单的表单**，三个候选稿选择。按 frontend-design
+技能流程产出三个同语言、不同交互模型的候选稿（`tests/edit-redesign-2026-09/cand-a/b/c.html`，像素稿 +
+1440px 整页截图逐张过目）：**A 台账即资料页**（点行展开编辑）/ **B 常开工作表**（字段常开直改，改动控件
+青绿描边 + 「改」角标）/ **C 字段卡栈**（一字段一大卡，大字排印）。用户先选 A，看到三稿后**改选 B**。
+
+同轮澄清时间线数据模型并定稿：timeline.json 节点三来源（比赛一着=管线自动 / 受赏=basic.json 受賞歴 /
+人工节点=timeline_manual.json），**编辑台只管人工节点**；人工节点两种入口——**引用比赛（浅引用）**与
+**自填荣誉卡**（用户定稿「都做」）。
+
+### 82.2 B 稿落地
+
+- **容器**（edit.html / edit-timeline.html 重写）：单列 `max-w-[880px]`，页面 `bg-muted/50`；**左栏检索列
+  撤除**，换报头条卡内**马匹速选下拉**（`data-horsejump`，change 委托 setHorse）；工作表卡 = 眉行
+  「基本信息 · 直接改，改动即时记入草稿」+ 照片位 268px 左 / 字段右 + 精简提示行；**保存条改视口固定**
+  （inset-x-0 bottom-0 backdrop-blur）：模式点（青=本机直连 / 橙=草稿箱）+ 变更摘要（**只在草稿箱抽屉
+  打开时展开**，平时一行条）+ 放弃修改 / 保存并跑管道（本机）· 提交到 GitHub（草稿）+ 草稿箱 · N。
+- **字段区**（editor.js rowHTML 重写）：**常开直改**（oninput → state.draft，同一套数据语义），无展开态；
+  行尾 chip 复用 fieldState（已保存=primary/10 · 待保存/待恢复官方值=chart3 · 与官方一致=muted）；改动控件
+  右上角 16px「改」圆徽（bg-primary，pointer-events-none）；恢复官方值按钮常驻行尾（undo 时 hidden）。
+  A 稿的 editrow/lock/canceledit 机制全拆（bind 分支删除，state.editing 残留引用清空为无害 no-op）。
+- **报头 mastHTML 重写**（两页共用）：条卡（`yj-ed-mk` 雲/航标 + 马名 20px + 青杠别名/欧文）+ 右 meta
+  （NK-ID · 台账 #N / 母 · 通算成績）+ 速选下拉 + 预览 ↗（草稿时 预览草稿 ↗）+ ‹ ›。
+- **选马来源重构**：init 不再经 YJ.selector 拉马表（selector.js 从编辑页卸载），改 `loadHorses()` 直读
+  basic.json；`?id=` 无效/缺省回退台账第一匹；`YJ.selector.*` 调用点全部有守卫。
+- **时间线双入口**（edit-timeline.html）：工具栏 `＋ 引用比赛` / `＋ 自填荣誉` 两瓦片 + 一句定位说明
+  （时间线主体由管线自动生成，这里只管人工节点）。**引用比赛 = 浅引用**：选马 → 拉
+  `races-bundle.json`（no-store，`YJ.raceBundle.decode` 与比赛页同一解码器；按马懒加载，全库解码一次后
+  全马可用 `state.tl.bundle/bundleFor`）→ 选场自动填 date/title + 按 §80 口径生成链接（中央
+  race.netkeiba.com / 地方 nar.netkeiba.com / 海外 db.netkeiba.com 兜底，无 race_id 不出链接可手填）；
+  说明/标签仍手填；**生成的仍是普通人工节点**，走 timeline_manual 提交链，不改 build_timeline.py。
+  自填荣誉 = 原自由表单。编辑既有节点不出选赛器（kind 仅新增时区分）。
+
+### 82.3 门禁与状态
+
+✅ `node --check editor.js` EXIT=0；`npm run build` EXIT=0（theme-*.css 重编译 49.92kB，`.yj-ed-*`
+组件类 11 类逐个核对全在；yj-ed-seg5/yj-ed-vbadge 随引用撤除被 content 裁剪，属预期）；dist
+edit-timeline.html + editor.js(?v=6) 就位；:8090 冒烟 4 条 URL 全 200。候选稿三件套留
+`tests/edit-redesign-2026-09/`（A 已选定稿落地，B/C 留对照，可归档 _trash）。未 commit。
+遗留：races-bundle 拉取失败时选赛下拉停在「加载中」（下一轮可加错误态）；报头速选无搜索（276 匹下拉
+可用但不便检索，需要时再挂回 selector 弹层）。
+
+### 82.4 追加定稿 · 本机直连下线 + selector 检索回归 + 文案减负（2026-09-29 用户三点反馈）
+
+- **edit_server 依赖整个下线**：用户问「为什么一直要起多一个服务，能不能删了」→ 能。编辑台**恒为草稿箱
+  模式**：init 不再探测 /healthz（probe 保留导出但 UI 不再调用），横幅/重试按钮整个删除，保存条模式点改
+  页面静态文案「草稿箱模式 · 提交后约 2 分钟生效」；本机保存按钮/管道三步报告/时间线本机 tlSave/未保存
+  红字提示全部拆掉，唯一落盘通道 = 草稿箱 → 「提交到 GitHub」（单原子 commit）→ CI。save()/buildPayload()
+  等本机函数保留不删（不可达死代码，注释已说明），scripts/edit_server.py 文件保留但编辑台不再依赖。
+- **马匹检索 = 比赛记录页同款组件**：撤掉原生速选 select，edit.html 报头条卡内恢复 `#selector` 挂载点
+  （静态元素，不随 render 重建），`YJ.selector.init({compact:true, onSelect:setHorse})` —— 搜索马名/马主/
+  调教师/NK-ID 与 races.html 出走马筛选同一交互；navHorse 经 selector.select → onSelect → setHorse。
+- **文案减负**（用户点名「无意义」）：删「补全表 N 项（现值去重）…」「拖拽缩略图排序 · 删除=移出数组」
+  「保存前官方值：…」「当前无图片：点上方图位上传或粘外链」「服务端只收浏览器压好的图（D8）」及
+  edit.html 底部整段隐私/压缩说明；图片空态只留「暂无图片 / 已清空 · 待保存」，photoBadge 未保存态改
+  「与官方一致」与字段 chip 同词汇。
+- 门禁：`node --check` ✓；build ✓（theme 49.83kB 重编译）；dist 标记核对：selector.init/compact/
+  引用比赛在位，bannerHTML/horsejump/tlSave/dirtyTip/modeDot 零残留；:8090 静态服务即可全功能使用
+  （数据走 dist/data 副本，草稿箱+GitHub 提交不依赖本机服务）。
+
+### 82.5 追加 · 「改」角标作用域收窄（2026-09-29 用户反馈）
+
+用户问瓦片上「改」角标是干嘛的——实为「该字段有未提交改动」的标记，但挂在**瓦片组**包裹层右上角会
+浮在末位瓦片（（空））角上，被误读成「那颗瓦片被改过」。先收窄到单控件 + title 说明；用户复核后定稿
+**整个删除角标**（「看着不清爽」）——待保存状态由行尾 chip + 控件青绿描边承担。同轮删除时间线页
+「时间线主体由比赛管线自动生成…」说明块（用户点名）。
+
+### 82.6 追加 · 登録状態 瓦片改回下拉（2026-09-29 用户定稿）
+
+「JRA登录状态 也做成下拉框」——五字段控件形态统一：`FIELDS` 去掉 `tiles:true`，登録状態 与毛色/性別
+同样走 select（枚举含「（空）」留空项，optLabel 同源）；controlHTML 瓦片分支与 bind 的 data-v 分支
+随之纯删除（yj-ed-tile 类被 content 裁剪，theme 48.42kB）。`node --check` + build ✓。
+
+### 82.7 修复 · 上传本地图片报 TypeError（2026-09-29 用户反馈）
+
+`Uncaught TypeError: Cannot read properties of undefined (reading 'pmumjreewhh948')` @photoSrc——
+**根因两处叠加**：① photoSrc 里引用了不存在的 `state.tlPhotos[ref]`（正确位置是 `state.tl.tlPhotos`，
+键还是 bare ref），任何 meta 未命中的草稿图都会在这里炸；② uploadOne 的 draft 分支**漏写 objectURL
+进缓存**（blobPut 后只 addPhoto，没 `state.photos.meta["draft:"+ref] = {url…}`），所以刚上传的图必然
+未命中 → 必炸。修复：photoSrc 按形状取缓存（对象=meta["draft:<ref>"]；"draft:tl:<ref>" 串=
+state.tl.tlPhotos[bareRef]；其它草稿串=meta[原串]），uploadOne 补写缓存键。dist 核对：state.tlPhotos
+零残留。`node --check` + build ✓。
+
+### 82.8 修复 · 外链本地化被 CORS 拒（2026-09-29 用户反馈）
+
+用户贴 zh.wikipedia 词条页 / B站 hdslb / 百度图床地址 → 浏览器 fetch 被 CORS 拦（百度/B站还带
+403 防盗链），原实现只会报「拉不下来」。fetchRemote 升级**三级抓取**：① 输入归一化——Wikipedia
+词条页（`…#/media/File:X`）与 `wiki/File:X` 自动换成同域 `Special:FilePath/<名>` 图片直链；
+② 直连 fetch（upload.wikimedia.org 等 CORS 友好源）；③ 直连被拒自动改走公共图片代理
+**images.weserv.nl**（服务端代抓 + ACAO *，仅借道取字节，图仍浏览器压缩入库；日志明示「改走公共
+代理」）。两级都失败 → 人话提示（右键另存 → 上传本地文件 / 换图片直链；仍不降级存外链，D8）。
+外链输入框 placeholder 同步更新。`node --check` + build ✓（theme-DRFC-ZyS.css）。
+
+### 82.9 新规则 · 比赛人工配图 races_manual.json（2026-09-30 用户定稿）
+
+用户定稿数据模型：**给单场比赛配专属图才是对的，race.photo 是人工配置的产物，不应由脚本抓取**。
+落地三层：
+
+- **数据**：新人工表 `data/races_manual.json`（race_id → `{photo}`，值兼容纯字符串），与
+  timeline_manual.json 同哲学——用户自维护、重算/抓取**永不覆盖**。契约入 SCHEMA.md §4.5；
+  §4 timeline photo 行同步改为优先级：**人工配图 > race.photo（历史兼容）> 马照片**。
+- **管线**：`build_timeline.py` main() 读 races_manual（缺文件/坏 JSON 告警跳过），
+  `to_render_event(e, race_manual)` 按 race_id 查表取图；实测运行后 data/timeline.json 仅
+  meta.source 行变化、events 零变化。`py_compile` + 实跑 ✓。
+- **编辑台**：edit-timeline.html 工具栏新增「**比赛配图**」：选马（复用 races-bundle，全马一次解码）
+  → 选场 → 上传/替换/移除，压缩口径同马照片（≤1280px/≤100KB webp 优先）；当前图三态预览
+  （草稿新图/已配置/未配置回退马照片）。草稿存 `d.racePh`（IndexedDB 存二进制），抽屉列条目 +
+  单条放弃；「放弃修改」连带清箱。**提交链**：图落 `data/photos/<race_id>-<n>.<ext>`（与马图同一
+  `<owner>-<n>` 命名法，ghPhotoSeqs 天然兼容）+ races_manual.json 远端叠加（null=删键）进同一原子
+  commit；成功后清草稿。刷新后草稿图预览经 IndexedDB 恢复（hydrateRacePh）。
+- 门禁：`node --check` ✓ · `py_compile` ✓ · build ✓（theme-BjIPBHiH.css）· build_timeline 实跑对账 ✓。
+  未 commit。
+
+### 82.10 追加 · 时间线页选马下拉统一复用 selector 组件（2026-09-30 用户定稿）
+
+「编辑页的选马下拉框通通复用基本信息的选马下拉框」——edit-timeline.html 的两处 STEP1 原生 select
+（引用比赛 / 比赛配图）全部换成 edit.html 报头同款 **selector.js compact 搜索组件**（搜马名/马主/
+调教师/NK-ID，276 匹免翻轮）：STEP1 改为挂载点 span，`renderTL` 后 `mountTlPickers()` 按 visible
+状态挂载；选中后预填马名、聚焦清空重选。安全性：selector init 是全量重建 + 失联实例自动清退
+（document 监听只装一次），动态表单里反复挂载无残留。edit-timeline.html 补载 selector.js?v=7；
+旧 data-refhorse/data-rmhorse 分支纯删除。门禁：`node --check` + build ✓（theme-DHsPsf53.css）。
+
+### 82.11 追加 · 选马下拉开双名显示（2026-09-30 用户反馈）
+
+用户确认三处下拉与 races 页同组件后，要求「和基本信息一样能展示港译名（没有就自译名）」——races 页
+未开 `doubleName`，profile 左栏开了。编辑页三处（edit.html 报头 + 时间线页两处 STEP1）全部加
+`doubleName: true`：主名日文/英文 + 副名 港译（橙块）→ 自译（紫块），与主名相同则省略（nameHTML
+契约 §64）。选中/回填的输入框文字同步用中文显示名（cnNameOf = 香港馬名 || 自译馬名 || 主名；
+报头经 setTimeout 绕过 setSel 的主名回写，时间线页靠重挂载回填）。门禁：`node --check` + build ✓
+（theme-DoLE3qNa.css）。
+
+### 82.12 追加 · STEP 下拉规格统一（2026-09-30 用户反馈）
+
+「你这个下拉框大小要一致」——比赛配图面板里 STEP1（selector compact 框 26px）与 STEP2（原生 select
+默认 .yj-ed-in 38px）高矮不一。新增 `SEL_CMP` 紧凑下拉规格（h-[26px] / rounded-[10px] / px-2 /
+text-[12px]，与 selector compact 框同款；utility 层在 .yj-ed-in components 之后 → 覆盖生效），应用到
+引用比赛 / 比赛配图 两处 STEP2（含「先选马 / 加载中」禁用态）；两处 STEP1 挂载点与 STEP2 宽度统一
+380px。门禁：`node --check` + build ✓（theme-B7mQj3NZ.css，h-[26px] 工具类核对在位）。
+
+### 82.13 追加 · mb 端不开放编辑台（2026-09-30 用户要求）
+
+三处编辑入口 mb（<768px）隐藏：timeline.html 标题「编辑 ↗」、profile.html 字段 📌 钉子（人工值标记）、
+草稿预览条「回编辑台 ↗」（均加 max-md:hidden）。编辑页本体（edit.html / edit-timeline.html）：应用
+容器 + 底部保存条 max-md:hidden，窄屏只显示「🖥️ 编辑台请在电脑端使用」提示块。桌面端行为零变化。
+build ✓（theme-BZRYi8rq.css）。另在同轮答复用户两问：edit_server.py = 已下线的本机直连保存服务
+（编辑台不再依赖，文件可删）；线上直接编辑 = 打开 GitHub Pages 上的编辑页 + 本机粘贴 PAT（数据安全
+边界 = GitHub 权限模型：fine-grained PAT 只授权本仓库 Contents 读写、存本机 localStorage、可随时清除；
+他人无 PAT 无法动数据，仓库协作权限才是根本闸门）。
+
+### 82.14 · 删除 edit_server.py + 跳转带回侧边栏（2026-09-30 用户要求）
+
+- **edit_server.py 删除**（用户确认「可以删就删」）：scripts/edit_server.py 移除；scripts/README.md
+  §6 改为墓碑说明（草稿箱模式为唯一落盘链）、文件表删行；vite.config.js / build_timeline.py 顶部注释
+  同步（UI优化记录与 request-path.html 为历史记录不改）。editor.js 内 local 形态死代码与相关注释保留
+  （不可达，注释已注明）。
+- **跳转带回侧边栏**（用户：「跳转完没有侧边栏的菜单了」）：丢侧边栏的场景 = **独立打开**内容页（无外壳
+  iframe）。① 外壳 index.html 支持 `?page=` 直达子页（同源 + `/pages/*.html` + 无 `..` 白名单校验，防
+  开放跳转）；② 8 个内容页 head 注入「独立打开 = 自动回壳」小段（`top===self` 且非 embed 时
+  `location.replace("../index.html?page=…")`；外壳 iframe / embed 模式原样），独立打开任何页都回到
+  带侧边栏的外壳；③ 编辑页「预览 ↗」改为新标签开 `../index.html?page=pages/profile.html?horse=…`；
+  ④ 外壳「编辑」组修正：航迹线编辑原指 edit.html?tab=timeline（tab 已拆页），改 data-href/data-url =
+  pages/edit-timeline.html。页内普通 href 跳转（回编辑台/📌/编辑↗）本就在 iframe 内进行、外壳保留，
+  无需改。注入用 PS 时踩了编码坑（Get-Content ANSI 误读风险 + CRLF/BOM），已用 .NET 严格 UTF-8
+  （无 BOM）重写并归位到 charset 之后、LF 统一。门禁：`node --check` + `py_compile` + build ✓；
+  dist 核对（index ?page=/edit nav 修正/各页回壳段/预览壳化全在位）。
+
+### 82.15 修复 · 「连接 / 设置」点了没反应（2026-09-30 用户反馈）
+
+草稿箱抽屉里点「连接 / 设置」无反应——ghPanelBtn 处理器 `state.gh = null` 后重绘，boxHTML 的 GH 面板
+消息行 `state.gh.msg` **不判空** → TypeError → innerHTML 重绘中断（首次点击面板永远展不开）。修复：
+`((state.gh && state.gh.msg) ? … : "")`。连带覆盖「放弃修改（state.gh=null 后 render）时 ghPanel 仍开
+着」的同类炸点。`node --check` + build ✓。
+
+### 82.16 临时 · 压缩管线离线复刻预览（2026-09-30 用户要求，跑完即弃）
+
+用户要求对盘上已有图片按编辑台上传的同一套规则跑一遍（本地化 + 压缩）看效果。临时脚本
+`tests/photo-pipeline-preview/run.mjs`（sharp 临时 `npm i --no-save`，createRequire 从 front 侧解析）：
+完整复刻 compressImage/encodeSearch 口径（长边 ≤1280 · webp 优先 · ≤100KB · q 0.93→0.72→二分 ≤7 次 ·
+超则 ×0.82 缩边 ≤6 轮 · 压后≥原体积留原图）。盘上实有 2 张（data/photos/142-1.jpg 274KB、142-2.jpg
+172KB；用户说的第 3 张在浏览器草稿箱 IndexedDB 未提交，盘上没有）。结果：142-1 → 99KB webp q0.85
+（960×1280，−64%）；142-2 → 94KB webp q0.93（−45%），双双达标，画质肉眼无损（compare.html 对照页 +
+截图确认）。产物只写 tests/photo-pipeline-preview/out/，**不写 data/**（真正入库仍走编辑台提交链）。
+追加：脚本加 URL 参数模式（argv[2]，Node 服务端直下无 CORS），跑用户给的第三张 =
+Wikimedia thumb 直链（Go to Sky 2025-10-05）：272KB · 1280×914 jpeg → 99KB webp **q0.5**
+（q0.93=345K→0.72=144K→二分 7 次用满；画面细节多，1280 全宽进 100KB 质量分只能落到 0.5）。
+编辑台内同链路可达：添加图片直链 → fetchRemote 直连被 CORS 拦 → 自动走 weserv 代理 → 同一压缩。
+
+### 82.17 · 图片正式本地化入库（2026-09-30 用户拍板）
+
+三张图验收后正式落位：**马 142** photo 切到压缩版 `142-3.webp`(99KB)/`142-4.webp`(94KB)，删除原
+142-1.jpg/142-2.jpg（274/172KB，−64%）；**马 40**（ゴーイントゥスカイ）撤 Wikimedia 外链热链，photo 改
+`data/photos/40-1.webp`(99KB)。写入路径：`manual_overrides.json` 钉 photo 数组（持久源，管线重放同一
+结果）+ basic.json 同步套用同一确定性变换（离线缓存已清 → merge_basic 不可跑；pull 最新 CI 产物后
+等值替换，等价 apply_overrides 结果）。远端先 pull（CI data auto update ×2），字体子集冲突取远端新版。
+check_data ✓ · build ✓（dist/data/photos 新 webp 在位）。commit + 用户特批 push，CI 约 2 分钟上线。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

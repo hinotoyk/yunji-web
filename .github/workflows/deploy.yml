@@ -32,6 +32,20 @@ jobs:
           node-version: 22
           # 去掉 cache: npm —— 排除 GitHub actions 缓存导致的偶发 npm ci 失败；构建仅 ~30s，缓存收益低
 
+      # 线上编辑台提交（编辑台草稿箱 → GitHub API commit）后由此自动生效：
+      # ① merge_basic 把 manual_overrides.json 套进 basic.json（展示页读的是合并产物，只提交人工表值不会变）；
+      # ② 重算时间线产物（时间线人工节点提交后不再需要本地手动 build_timeline）。
+      # 两步均纯 stdlib、秒级、幂等（缓存缺失 read_cache 返回 {}；重排/套表与既有产物等值）。
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Apply manual overrides + rebuild timeline
+        run: |
+          python scripts/basic/merge_basic.py --keep
+          python scripts/timeline/build_timeline.py
+
       # 前端构建：产物输出到仓库根 dist/（与 data/ 同级），随后随仓库根整体发布
       - name: Build frontend
         run: |

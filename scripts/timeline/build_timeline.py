@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""时间线事件预计算：读 data/basic.json + data/races/*.json → data/timeline.json
+"""时间线事件预计算：读 data/basic.json + data/races/*.json + data/races_manual.json → data/timeline.json
 
 事件生成规则与产物字段契约见 data/SCHEMA.md（本节原为 1-76 行文件头，6a 搬过去）。
 """
@@ -29,7 +29,7 @@ GRADED = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}          # 重赏判�
 NODE_PRIO = {"sire": 0, "gen": 1, "first": 2, "graded": 3, "award": 4}  # 节点取色优先级（小者优先）
 # 人工节点 tags[].cat 白名单（D9 六色，允许自选）：与自动节点同源 = NODE_PRIO 五类 + manual。
 # 取值即前端 timeline.html 的 .tl-node / .tl-tag 类名（那页只读参考，改色需同步），
-# 同 scripts/edit_server.py::TL_CATS 与 front/public/editor.js::TL_CATS 下拉。
+# 同 front/public/editor.js::TL_CATS 下拉（原 edit_server.py 已删，§82.4）。
 MANUAL_CATS = frozenset(NODE_PRIO) | {"manual"}
 
 # ---- 父子制覇常量：コントレイル（飞机云）生涯重赏一着 ----
@@ -208,7 +208,7 @@ def build_events(horses, races_by_id):
     return out
 
 
-def to_render_event(e):
+def to_render_event(e, race_manual=None):
     """内部事件 → 渲染就绪事件（前端拿到即画，不再做任何计算）。"""
     h, tags = e["h"], e["tags"]
     ev = {
@@ -252,7 +252,11 @@ def to_render_event(e):
         "pop": (str(r["人気"]) + "番") if r.get("人気") not in (None, "") else "—",
         "team": team,
     }
-    ev["photo"] = first_photo(r.get("photo")) or first_photo(h.get("photo"))
+    # 取图优先级（§82.9 用户定稿）：比赛人工配图（data/races_manual.json，race_id → photo，抓取永不写）
+    # > race.photo（历史抓取值兼容，现管线已不产生）> 回退马照片
+    m = race_manual.get(str(r.get("race_id") or "")) if race_manual else None
+    mp = (m.get("photo") if isinstance(m, dict) else m) if m else ""
+    ev["photo"] = first_photo(mp) or first_photo(r.get("photo")) or first_photo(h.get("photo"))
     ev["race"] = race
     return ev
 
@@ -293,6 +297,18 @@ def to_manual_event(e):
 def main():
     basic = json.loads((DATA / "basic.json").read_text(encoding="utf-8"))
     horses = basic.get("horses", [])
+
+    # 比赛人工配图（data/races_manual.json，§82.9）：race_id → {"photo": 路径}；用户自维护，重算永不覆盖
+    race_manual = {}
+    rm_path = DATA / "races_manual.json"
+    if rm_path.exists():
+        try:
+            raw = json.loads(rm_path.read_text(encoding="utf-8-sig"))
+            if isinstance(raw, dict):
+                race_manual = raw
+        except (json.JSONDecodeError, OSError) as ex:
+            print(f"  ⚠ races_manual.json 读取失败，本次不含比赛人工配图: {ex}")
+
     races_by_id = {}
     for h in horses:
         if not h.get("races_file"):          # 与前端旧逻辑一致：无成绩文件（未出道等）跳过
@@ -309,7 +325,7 @@ def main():
 
     # 自动事件：转渲染事件的同时生成排序键（build_events 内部 out.sort 只保证「首个」判定的
     # 稳定输入顺序；最终顺序以这里为准）
-    items = [(event_sort_key(e["date"], e.get("r")), to_render_event(e))
+    items = [(event_sort_key(e["date"], e.get("r")), to_render_event(e, race_manual))
              for e in build_events(horses, races_by_id)]
 
     # 人工节点：data/timeline_manual.json（用户自维护）。重算永不覆盖该文件，
@@ -341,7 +357,7 @@ def main():
     payload = {
         "meta": {
             "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
-            "source": "basic.json + races/*.json",
+            "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
             "stats": stats,
         },
         "events": events,

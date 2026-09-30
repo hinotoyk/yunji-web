@@ -3,8 +3,9 @@ const { spawnSync } = require('child_process');
 const { defineConfig } = require('vite');
 
 // 多页应用：外壳 + 各功能子页（iframe 架构，每页独立入口）
-// edit = 编辑页（D6 独立入口，不在外壳 iframe 内，本地经 edit_server 访问）
-const PAGES = ['profile', 'races', 'pedigree', 'stats', 'datechart', 'timeline', 'edit'];
+// edit = 编辑页（D6 独立入口，§82.4 起恒为草稿箱模式：线上提交走 GitHub API → CI，无本机服务依赖）
+// edit-timeline = 航迹线人工节点编辑页（2026-09 从 edit.html 拆出，同为独立入口）
+const PAGES = ['profile', 'races', 'pedigree', 'stats', 'datechart', 'timeline', 'edit', 'edit-timeline'];
 
 const input = { main: resolve(__dirname, 'index.html') };
 PAGES.forEach(function (p) {

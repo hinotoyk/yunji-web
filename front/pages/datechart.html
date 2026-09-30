@@ -2,6 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<script>
+/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
+ * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
+if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
+  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
+  location.replace("../index.html?page=" + encodeURIComponent(rel));
+}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>日期统计 · 云迹</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
