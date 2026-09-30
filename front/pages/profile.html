@@ -58,61 +58,10 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
-/* ── 钉住标记（OPTIMIZATION_PLAN §4.4 末条 + §4.6）───────────────────────────────
- * 人工表 data/manual_overrides.json 只读探测：哪匹马的哪个字段是人钉的值。与 basic.json
- * 并行拉；拿不到（404 / 离线 / 结构不合法）静默按「无钉住」处理 → 页面 DOM 与接线前完全一致。
- * 浏览页只做两件事：行尾一枚 📌 + 点击跳 edit.html?id=<id> 定位该马；
- * 解除/改钉等编辑动作全部收在编辑页（D6），这里不放按钮。 */
-var PINS = {};            /* overrides 本体；'_' 前缀键（_readme/_examples/_note/_orig）一律无视 */
-var currentH = null;      /* 当前渲染的马：钉住表晚于详情到达时用它补渲染一次 */
-/* 基本信息行 → 人工表里能命中的字段名（性別行同时认后端逐场派生的 性別_当前；photo = 头像区） */
-var PIN_ROW = {
-  "photo": ["photo"],
-  "性別": ["性別", "性別_当前"],
-  "登録状態": ["登録状態"],
-  "毛色": ["毛色"],
-  "馬主": ["馬主"],
-  "調教師": ["調教師"]
-};
-/* 标记样式只用既有 utility 类（theme.css 归后续阶段所有，本次不新增类） */
-var PIN_CLS = "flex-none cursor-pointer rounded-full border border-transparent px-1 text-[11px] leading-[1.5] opacity-60 transition hover:border-primary/40 hover:opacity-100";
-
-function pinEntry(id){
-  var e = PINS[String(id)];
-  return (e && typeof e === "object" && !Array.isArray(e)) ? e : null;
-}
-/* 该行命中的钉住字段（无 → ""）。认「键存在」而非「值非空」：留空也是钉住的一种（解除 = 删键）。 */
-function pinField(id, rowKey){
-  var e = pinEntry(id);
-  if (!e) return "";
-  var fs = PIN_ROW[rowKey] || [];
-  for (var i = 0; i < fs.length; i++) {
-    if (fs[i].charAt(0) !== "_" && Object.prototype.hasOwnProperty.call(e, fs[i])) return fs[i];
-  }
-  return "";
-}
-function hasPin(id){
-  for (var k in PIN_ROW) { if (pinField(id, k)) return true; }
-  return false;
-}
-function pinMark(id, rowKey, cls){
-  var f = pinField(id, rowKey);
-  if (!f) return "";
-  var v = pinEntry(id)[f];
-  var shown = (v && typeof v === "object") ? (Array.isArray(v) ? v.length + " 张" : "（复合值）")
-    : (v === "" ? "（空）" : String(v));
-  return '<button type="button" class="' + cls + ' max-md:hidden" data-edit="' + esc(id) + '" title="' +
-    esc("人工保存值 · " + YJ.i18n.t(f) + "（" + f + "）：" + shown + " · 点击到编辑页核对/恢复官方值") + '">📌</button>';
-}
-function loadPins(){
-  fetch(YJ_DATA.url("manual_overrides.json"), { cache: "no-store" }).then(function(r){
-    return r.ok ? r.json() : null;
-  }).then(function(o){
-    if (o && typeof o === "object" && !Array.isArray(o)) PINS = o;
-    /* 表比详情晚到（basic.json 命中共享缓存 → 秒选）：当前马确有钉住才补渲染一次，否则零动作 */
-    if (currentH && hasPin(currentH.id) && !document.querySelector("[data-edit]")) render(currentH);
-  }, function(){ /* 取不到 = 无钉住，静默降级 */ });
-}
+/* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「回编辑台 ↗」等直跳编辑页的入口
+   仅 URL 带 ?edit=1 时出现 —— 与外壳 index.html「编辑」导航组同一开关
+   （外壳加载子页时把 edit=1 透传进 iframe；直接开本页也可自行拼接）。 */
+var EDIT_MODE = new URLSearchParams(location.search).get("edit") === "1";
 
 /* ── 编辑台草稿叠加（2026-09 预览定稿）：读 editor.js 草稿箱（localStorage，键同源）──
  * 把本马未提交的五字段改动叠加在 basic 值上渲染 + 页顶「草稿预览」提示条；
@@ -286,7 +235,6 @@ function renderOverview(hs){
 }
 
 function render(h){
-  currentH = h;                 /* 钉住表晚于详情到达时按它补渲染（见 loadPins） */
   var t=YJ.i18n.t;
   var title = h.自译馬名 || h.欧字馬名 || YJ.util.splitName(h.馬名).name || YJ.util.fallbackName(h);
 
@@ -337,7 +285,7 @@ function render(h){
   var fi=function(k,v,field){
     var dm = (field && dOv && Object.prototype.hasOwnProperty.call(dOv, field) && dOv[field] !== null)
       ? '<span class="flex-none rounded bg-chart3/15 px-1 py-px text-[9.5px] font-bold text-chart3" title="编辑台草稿 · 未提交">草稿</span>' : '';
-    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+dm+(field?pinMark(h.id,field,PIN_CLS):'')+'</div>';
+    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+dm+'</div>';
   };
   var stBadge=hv.登録状態 ? (hv.登録状態==="現役"
     ? '<span class="inline-flex items-center rounded-full bg-accent px-2 py-[2px] text-[11.5px] font-semibold text-accent-foreground">现役</span>'
@@ -448,7 +396,7 @@ function render(h){
         (dN ? ' · 字段 '+dN+' 处' : '')+
         (dP ? ' · 图片'+(dP.mode==="remove" ? '恢复官方值' : '草稿 '+dP.list.length+' 张（未提交不显示）') : '')+
         ' · 提交后约 2 分钟全站生效</span>'+
-      '<a class="ml-auto flex-none font-semibold text-chart3 underline underline-offset-2 hover:text-primary max-md:hidden" href="edit.html?id='+encodeURIComponent(h.id)+'">回编辑台 ↗</a></div>';
+      (EDIT_MODE ? '<a class="ml-auto flex-none font-semibold text-chart3 underline underline-offset-2 hover:text-primary max-md:hidden" href="edit.html?id='+encodeURIComponent(h.id)+'">回编辑台 ↗</a>' : '')+'</div>';
   }
   document.getElementById("body").innerHTML =
     ribbon+
@@ -468,15 +416,6 @@ function render(h){
   /* iframe 高度自适应（与嵌入内容融为一体，避免空白框） */
   fitFrames();
 }
-
-/* 标记点击 → 跳编辑页并定位该马。profile 本身跑在外壳内容 iframe 里，改 location 即在原框内换页；
- * 事件委托挂 #body（该元素跨渲染常驻，innerHTML 换掉也不用重挂），且无标记时零开销 */
-document.getElementById("body").addEventListener("click", function(e){
-  var b = e.target && e.target.closest ? e.target.closest("[data-edit]") : null;
-  if (!b) return;
-  location.href = "edit.html?id=" + encodeURIComponent(b.getAttribute("data-edit"));
-});
-loadPins();   /* 与 basic.json 并行探测人工表（拿不到 = 无钉住，静默） */
 
 YJ.selector.init({
   el: document.getElementById("selector"),

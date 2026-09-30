@@ -80,19 +80,27 @@
 <script>
 /* ?page= 直达子页（§82.13）：独立打开的内容页自动「回壳」时把目标页带进来。
  * 只接受本站 /pages/*.html 相对地址（同源 + 无 .. + .html 结尾），防开放跳转。 */
+var EDIT_MODE=new URLSearchParams(location.search).get("edit")==="1";
+/* 编辑模式（外壳 ?edit=1）透传进 iframe：内容页据此显示各自的编辑入口（不带则一律不可见，
+   2026-10-02 定稿）。子页已有 query 用 & 追加。 */
+function withEdit(href){ return EDIT_MODE ? href+(href.indexOf("?")>=0?"&":"?")+"edit=1" : href; }
+var frameEl=document.getElementById("frame");
 var wantPage=new URLSearchParams(location.search).get("page");
+var wantSet=false;
 if(wantPage){
   try{
     var u=new URL(wantPage,location.href);
-    if(u.origin===location.origin&&u.pathname.indexOf("/pages/")>=0&&u.pathname.indexOf("..")<0&&/\.html$/.test(u.pathname))
-      document.getElementById("frame").src=u.pathname+u.search;
+    if(u.origin===location.origin&&u.pathname.indexOf("/pages/")>=0&&u.pathname.indexOf("..")<0&&/\.html$/.test(u.pathname)){
+      frameEl.src=withEdit(u.pathname+u.search); wantSet=true;
+    }
   }catch(e){}
 }
+if(EDIT_MODE&&!wantSet) frameEl.src=withEdit(frameEl.getAttribute("src"));   /* 默认页（profile）也进编辑模式 */
 var nav=document.querySelector("nav");
 /* 「编辑」分组：仅外壳 URL 带 ?edit=1 时把 template 注入导航（默认一行 DOM 都不产生 → 公网访客看不到入口）。
    注入必须在收集 items 之前，两条编辑项才与既有五项同一套点击/高亮逻辑。 */
 var editTpl=document.getElementById("editNav");
-if(editTpl && new URLSearchParams(location.search).get("edit")==="1") nav.appendChild(editTpl.content.cloneNode(true));
+if(editTpl && EDIT_MODE) nav.appendChild(editTpl.content.cloneNode(true));
 var items=[].slice.call(document.querySelectorAll('.nav-item'));
 var sidebar=document.getElementById('sidebar');
 var backdrop=document.getElementById('backdrop');
@@ -113,7 +121,7 @@ function light(it){
   if(it) active=it;
 }
 function go(href,it){
-  document.getElementById('frame').src=href;
+  frameEl.src=withEdit(href);
   light(it);
   closeDrawer();
 }
