@@ -77,12 +77,21 @@ def race_key(r):
 
 
 def first_photo(p):
-    """photo 兼容 数组/字符串（同 profile 头像约定），取首图路径/URL；无则空串。"""
+    """photo 兼容 数组/字符串（同 profile 头像约定），取首图路径/URL；无则空串。
+    路径归一为「pages 页相对」：马照片在 basic.json 里是仓库相对 data/…（§82.17 本地化），
+    人工节点/比赛配图存 ../data/…（编辑台约定，timeline.html 直读 src 不经 YJ_DATA）——
+    仓库相对形式统一补 ../ 前缀，否则浏览器按 /pages/data/… 解析 404（2026-10-01 线上实测）。
+    外链 URL 原样。"""
     if isinstance(p, list):
-        return p[0] if p and p[0] else ""
-    if isinstance(p, str):
-        return p
-    return ""
+        s = p[0] if p and p[0] else ""
+    elif isinstance(p, str):
+        s = p
+    else:
+        return ""
+    s = str(s).strip()
+    if s.startswith("data/"):
+        s = "../" + s
+    return s
 
 
 def posttime_key(r):

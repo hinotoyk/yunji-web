@@ -2791,6 +2791,16 @@ profile 详情照片左上角的 📌（人工钉住标记，点击跳编辑页�
 data/timeline.json——diff 仅 时间戳 / source 串（§82.9 时代代码）/ 马 40 照片本地化路径（§82.17），盘上产物本就落后
 两轮数据更新，非本次回归。`editor.js` → `?v=9`。node --check + build_timeline ✓ + build ✓。
 
+### 82.23 · 时间线照片 `/pages/data/…` 404：timeline.json 路径口径定稿（2026-09-30 线上报障）
+
+线上报障：`www.yunji.xyz/data/photos/40-1.webp` 能访问、`www.yunji.xyz/pages/data/photos/40-1.webp` 404。
+根因 = §82.17 图片本地化后，basic.json 马照片首次以**仓库相对** `data/…` 进入 timeline.json（此前全是外链
+URL），而 `timeline.html` 直读 `ev.photo` 塞 `<img src>`（不经 YJ_DATA，编辑台人工节点照片的既定约定）→
+浏览器按页面目录拼成 `/pages/data/…`。定稿路径口径（补进 SCHEMA §4 photo 字段）：**timeline.json photo =
+页相对 `../data/…`（timeline/edit 页直读，编辑台人工节点照片同款）或外链 URL**；`first_photo()` 统一给
+仓库相对形式补 `../` 前缀。产物 diff = 1 处 photo 值 + 时间戳。本轮教训入档：构建输出管道接
+`Select-Object -First` 会在截断处杀掉 npm，曾把 dist 清成半成品——**构建验证一律输出到日志文件再 tail**。
+
 
 
 

@@ -148,7 +148,10 @@
       "horse": { "id": 产驹id（profile 跳转用）, "name": 馬名, "cn": 〈港译/自译〉 },
                // race/award 才有；manual 无此键
       "photo": "图源：比赛人工配图优先（data/races_manual.json，§4.5）→ race.photo（历史抓取值兼容，
-                 抓取管线已不产生该字段）→ 回退马照片；manual 可自带；空串=浅灰占位",
+                 抓取管线已不产生该字段）→ 回退马照片；manual 可自带；空串=浅灰占位。
+                 路径口径 = 页相对 ../data/…（timeline.html 直读 src 不经 YJ_DATA，编辑台人工节点
+                 照片同款约定）或外链 URL；仓库相对 data/…（basic.json 马照片形式）由
+                 build_timeline 统一补 ../ 前缀（2026-10-01 修 /pages/data/… 404）",
       "tags":  [ { "cat": "标签类别色（同 node 取值）", "label": "徽章文字", "tip": "可选：悬停提示",
                    "crown": true —— 可选：首胜标签（label 以「首胜」结尾）前端在右上角画斜置小皇冠 } ],
 
