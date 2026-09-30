@@ -59,11 +59,13 @@
         </div>
       </template>
     </nav>
-    <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">
+    <div class="border-t border-border px-4 py-3 text-[12px] text-muted-foreground">
       云迹 · 数据仅供分享交流
-      <!-- 站点访问量（不蒜子回填 · §85）。容器先 hidden（Tailwind），取数成功才由脚本把 display 改成
-           inline 显示；超时（3s）/离线/被拦截 → 一直隐藏，不会出现「总访问 次」这种空占位。
-           非正式域名（本地 :8090 / file:// / *.github.io）连脚本都不加载 → 这里永远保持隐藏，页脚只剩上面那行文案。
+      <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。原为 hidden md:block，
+           导致 mb 端只计数、不显示（计数脚本挂在外壳 head，与视口无关），2026-09-30 用户确认改常显。
+           站点访问量（不蒜子回填）：容器先 hidden（Tailwind），取数成功才由脚本把 display 改成 inline 显示；
+           超时（3s）/离线/被拦截 → 一直隐藏，不会出现「总访问 次」这种空占位。
+           非正式域名（本地 :8090 / file:// / *.github.io）连脚本都不加载 → 这里只显示上面那行文案。
            只接站点级两个 id：site_pv = 本域名累计打开次数、site_uv = 独立访客数（cookie 去重）。
            不接 page_pv：内容页都在 iframe 里，页面级计数没有意义。 -->
       <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-none">
