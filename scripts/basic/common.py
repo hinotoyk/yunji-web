@@ -10,11 +10,21 @@ import io
 import sys
 from pathlib import Path
 
-import requests                  # noqa: F401  脚本以 common.requests 使用
-from bs4 import BeautifulSoup    # noqa: F401  脚本以 common.BeautifulSoup 使用
-
+# requests / bs4 惰性重导出（2026-10-01）：抓取脚本仍以 common.requests / common.BeautifulSoup
+# 使用（PEP 562 __getattr__ 兜底），但 import common 本身不再触发第三方依赖 —— merge_basic 等
+# 离线脚本在 GitHub runner（不预装 requests）上可纯 stdlib 运行，Pages deploy job 不再被炸。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
 from _shared import basic_io, manual, net, paths, text    # noqa: E402
+
+
+def __getattr__(name):
+    if name == "requests":
+        import requests
+        return requests
+    if name == "BeautifulSoup":
+        from bs4 import BeautifulSoup
+        return BeautifulSoup
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     try:

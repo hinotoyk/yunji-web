@@ -13,9 +13,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import requests
-from bs4 import BeautifulSoup
-
+# requests / bs4 不在模块顶层导入（2026-10-01）：_shared 会被 merge_basic / build_timeline 等
+# 离线脚本连坐 import（_shared/__init__ re-export net），而 GitHub runner 镜像不再预装 requests，
+# 顶层导入曾把 Pages 部署 job 炸掉（deploy.yml 该步按设计纯 stdlib）。改到真正发请求的函数内导入。
 from . import paths
 
 COLORS = ("青鹿毛", "黒鹿毛", "鹿毛", "芦毛", "栗毛", "白毛", "青毛", "粕毛", "栃栗毛", "鹿栗毛", "月毛", "河原毛")
@@ -52,6 +52,7 @@ def sleep_for(url, fallback=None, domain_sleep=None):
 def fetch(url, retries=3, encoding="utf-8", session=None, sleep_on_403=20,
           domain_sleep=None, strip_bases=None):
     """GET 并按 encoding 解码；403 长退避，其余重试。返回响应文本。"""
+    import requests                       # 惰性：见文件头说明（离线脚本不被迫装依赖）
     t0 = time.time()
     s = session or requests
     for attempt in range(retries):
@@ -107,4 +108,5 @@ def jitter(url_or_base, fallback=None, domain_sleep=None):
 
 
 def soup_of(url, encoding="utf-8", **kw):
+    from bs4 import BeautifulSoup         # 惰性：见文件头说明
     return BeautifulSoup(fetch(url, encoding=encoding, **kw), "lxml")

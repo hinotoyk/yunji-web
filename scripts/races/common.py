@@ -10,13 +10,23 @@ import io
 import sys
 from pathlib import Path
 
-import requests                  # noqa: F401  脚本以 common.requests 使用
-from bs4 import BeautifulSoup    # noqa: F401  脚本以 common.BeautifulSoup 使用
-
+# requests / bs4 惰性重导出（2026-10-01，与 basic/common.py 同口径）：抓取脚本仍以
+# common.requests / common.BeautifulSoup 使用（PEP 562 __getattr__ 兜底），import common
+# 本身不再触发第三方依赖，离线/CI 场景不被 runner 预装包变化连坐。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
 from _shared import basic_io, manual, net, paths, text    # noqa: E402
 
 import racelib  # noqa: E402  name_key 用于跨源去重键
+
+
+def __getattr__(name):
+    if name == "requests":
+        import requests
+        return requests
+    if name == "BeautifulSoup":
+        from bs4 import BeautifulSoup
+        return BeautifulSoup
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
     try:

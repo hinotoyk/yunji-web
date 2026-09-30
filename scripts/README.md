@@ -31,6 +31,10 @@ scripts/
 - 日常/定时更新统一走项目根 `python run_update.py <策略>`；`run_all.py` 是各管线的并发编排（抓取 → 合并 → 删缓存）。
 - ⚠ `fetch_*` / `run_update.py` 会联网；`--init` / `--races-force` 会删空或覆盖 `data/`。
   纯本地可跑：`merge_basic.py`、`merge_races.py`、三个 `build_*.py`、`check_data.py`、`verify_*.cjs`。
+- **离线脚本零第三方依赖**（2026-10-01 定稿）：requests/bs4 只在真正发请求处惰性导入（`_shared/net.py`
+  的 `fetch()`/`soup_of()` 函数内、两个 `common.py` 走 PEP 562 `__getattr__` 重导出）——GitHub runner
+  不再预装 requests，顶层 import 曾把 Pages deploy 的 merge 步炸掉（deploy 步按设计纯 stdlib）。
+  新增共享工具时保持这条线：**不要在 `_shared/*` 或 `common.py` 模块顶层 import 第三方包**。
 - 门禁：`python scripts/check_data.py`（退出码 0）+ 四个断言脚本
   `node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` /
   `node scripts/datechart/verify_datechart.cjs`。改数据或改生成脚本后都要跑绿，并断言 `data/` diff 为空。

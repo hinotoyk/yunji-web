@@ -1,0 +1,69 @@
+# 临时审计 · GitHub Pages 部署失败（runner 不再预装 requests）
+
+> **性质**：临时文档，仅供审计；审毕可删或移 `tests/_trash/`。
+> **范围**：deploy 工作流一次性失败 + 代码层修复。不含本轮前端功能改动（另有 commit 与 UI优化记录 §82.19–82.22）。
+> **状态**：✅ 已修复并本地验证，待 push 后 CI 复核。
+
+---
+
+## 1. 事故档案
+
+| 项 | 内容 |
+|---|---|
+| 现象 | push main 后「Deploy to GitHub Pages」job 失败，站点停留在上一次成功部署版本 |
+| 失败步 | `Apply manual overrides + rebuild timeline` → `python scripts/basic/merge_basic.py --keep` |
+| 报错 | `ModuleNotFoundError: No module named 'requests'`（`scripts/basic/common.py:13`） |
+| 影响面 | 仅 Pages 部署链路；`update-data` 工作流不受影响（自带 `pip install`）；数据无损 |
+| 触发方式 | 外部环境变化——**GitHub runner 镜像移除了预装的 `requests`**，本仓库代码与 push 内容无责 |
+
+## 2. 根因链（逐环可验）
+
+1. `deploy.yml` 的 merge 步按设计**纯 stdlib**（工作流注释明示「两步均纯 stdlib、秒级、幂等」），runner 上从未装过第三方包。
+2. `merge_basic.py` 顶部 `import common`。
+3. `scripts/basic/common.py` 顶层 `import requests` + `from bs4 import BeautifulSoup`（供抓取脚本以 `common.requests` 共用）。
+4. 同时 `common.py` 顶层 `from _shared import … net …`，而 `scripts/_shared/__init__.py` re-export `net` → **任何** import `_shared` 的离线脚本都被连坐。
+5. `scripts/_shared/net.py` 顶层 `import requests`。
+6. 旧 runner 镜像预装 requests → 此链一直侥幸存活；镜像砍掉预装包后第 3/5 环即炸。
+7. `update-data.yml` 之所以没事：第 61 行有 `pip install requests beautifulsoup4 lxml fonttools brotli`。
+
+**定性**：潜伏的结构问题（离线脚本隐式依赖第三方包）× 外部环境变更（runner 预装包收缩）= 部署失败。不是本次 push 引入的回归。
+
+## 3. 修复方案（已实施）
+
+原则：**恢复「离线脚本零第三方依赖」的设计意图**，而不是给 deploy 塞 PyPI 安装。
+
+| # | 文件 | 改动 |
+|---|---|---|
+| 1 | `scripts/_shared/net.py` | `requests` / `bs4` 从模块顶层移入 `fetch()` / `soup_of()` **函数内惰性导入**（真正发请求时才需要） |
+| 2 | `scripts/basic/common.py` | 顶层 import 改 **PEP 562 模块 `__getattr__`** 惰性重导出；抓取脚本的 `common.requests` / `common.BeautifulSoup` 用法一字不变 |
+| 3 | `scripts/races/common.py` | 同 #2（两管线同口径，互不 import 的约定不变） |
+| 4 | `scripts/README.md` | 沉淀硬规：`_shared/*` 与 `common.py` **模块顶层禁止 import 第三方包** |
+| 5 | `deploy.yml` | **不改**（设计本意即纯 stdlib，修代码而非加依赖） |
+
+## 4. 落选方案与理由
+
+- **deploy.yml 加 `pip install requests beautifulsoup4`**：能好，但①给部署 job 引入 PyPI 网络依赖（多了个偶发失败点）；②与工作流注释「纯 stdlib」的设计相悖；③掩盖结构问题，下次换个包再炸一次。
+- **`merge_basic.py` 绕过 common 直连 `_shared`**：改动面大（load_basic/read_cache/BASIC_ORDER/overrides 等八个符号要改绑定），且 `_shared/__init__` 仍会拉起 net，治标不治本——必须切断 net 的顶层导入才算修。
+- **vendor requests / 换 urllib 重写**：牵动全部抓取脚本，收益为零。
+
+## 5. 验证证据（本机全部复跑通过）
+
+| 验证 | 命令 | 结果 |
+|---|---|---|
+| 无第三方导入 | `python -X importtime scripts/basic/merge_basic.py --keep` + `build_timeline.py`，grep import 日志 | `requests`/`bs4`/`lxml` **零出现** ✓ |
+| CI 两步本地复现 | 同上（退出码） | merge `exit=0`、timeline `exit=0`（timeline 报「内容无变化，跳过写入」）✓ |
+| 合并幂等/等值 | merge 后 `git diff data/basic.json` + 语义比对 | 277 匹**值零差异**（仅键序归一 + 时间戳），basic.json 已还原保持 diff 最小 ✓ |
+| 抓取契约保持 | `import common`（两管线）后取 `common.requests` / `common.BeautifulSoup` | 均正常解析，`fetch`/`soup_of` 可调用 ✓ |
+| 语法 | `py_compile` merge_basic / build_timeline | OK ✓ |
+
+## 6. 残留风险与建议
+
+1. **纪律依赖**：修复靠「顶层禁第三方」约定维持（已写入 scripts/README.md）。若要机械化，可加一条 CI lint（如 `python -c "import …"` 后断言 `sys.modules` 无 requests）——本轮未做，避免过度工程。
+2. `update-data.yml` 的 `pip install` 保持原样（抓取管线真需要），不受本次影响。
+3. deploy 失败期间 Pages 一直服务旧版本（GitHub Pages 行为），push 本修复后自动恢复，无需手动 re-run。
+4. 仓库根有未跟踪的 `.ci-check/`（历史遗留整仓拷贝 scratch），本次**未**提交；建议审计后删除或入 `.gitignore`。
+
+## 7. 变更清单（本次 commit）
+
+- `fix(ci)`：`scripts/_shared/net.py`、`scripts/basic/common.py`、`scripts/races/common.py`、`scripts/README.md` + 本审计文档
+- `front`（同批上线的功能改动，见 UI优化记录 §82.19–82.22）：`front/pages/profile.html`、`front/pages/edit.html`、`front/pages/edit-timeline.html`、`front/public/editor.js`、`front/public/selector.js`、`front/assets/fonts/noto-sc*.{css,woff2}`、`scripts/timeline/build_timeline.py`、`data/SCHEMA.md`、`data/timeline.json`、`front/UI优化记录.md`
