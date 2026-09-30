@@ -3,7 +3,7 @@
 > 用途：验证 `run_update.py` 的 9 种更新策略在**真实联网端到端**下都正常，作为新增策略、
 > 改代码后回归、以及排查数据/流程问题时的可复用手册。
 > 实测基线来自 2026-08-31 一次完整验证（`--init` 全量重建 + 其余策略逐一真实联网）。
-> 本文件是对 `README.md`（策略表）与 `HANDOFF.md`（附录 D）的**可执行测试补充**。
+> 本文件是对 `README.md`（策略表）与 `HANDOFF.md`（数据管线）的**可执行测试补充**。
 
 ---
 
@@ -211,7 +211,8 @@ python scripts/races/merge_races.py --keep        # 合并（--keep 保留缓存
 
 ## 6. 参考
 
-- 策略设计说明：根 `README.md`（更新策略表）、`HANDOFF.md` 附录 D
+- 策略设计说明：根 `README.md`（更新策略表）、`HANDOFF.md`（数据管线/架构）
+- 前端 UI 决策：`front/UI优化记录.md`
 - 基础部分实现：`scripts/basic/README.md`
 - 竞赛部分实现：`scripts/races/README.md`
 - 请求·数据流路径图：`request-path.html`

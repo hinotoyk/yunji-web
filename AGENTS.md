@@ -5,9 +5,9 @@
 ## 0. Git 协作（最高优先级）
 
 - **commit**：仅在用户明确要求提交时执行；未要求不得自行 `git commit`。
-  —— `front/README.md`「Git 协作约定」
+  —— `HANDOFF.md`「Git 协作约定」
 - **push**：永远不执行 `git push`；推送只能由用户本人操作。
-  —— `front/README.md`「Git 协作约定」
+  —— `HANDOFF.md`「Git 协作约定」
 - `dist/` 在 `.gitignore` 中，构建产物不入库，由 CI/本地构建生成。
 
 ## 1. 工作流程
