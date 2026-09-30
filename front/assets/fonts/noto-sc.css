@@ -3,11 +3,11 @@
  * 本文件由 front/scripts/gen-font.mjs 在 vite build 前生成，请勿手改（改了会被覆盖）。
  * 语料 = 项目根 data 目录下的全部 .json（渲染数据，排除 _tmp 缓存）
  *        + front 静态文案（index.html、pages 下 .html、public 下 .js，含 i18n 字典）
- * 源字体 = NotoSansSC-VF.ttf（可变），wght 轴限 300–700；2017 字符 / 2692 字形 / 1 片，替换旧 101 片（4.5MB）
+ * 源字体 = NotoSansSC-VF.ttf（可变），wght 轴限 300–700；2019 字符 / 2694 字形 / 1 片，替换旧 101 片（4.5MB）
  * 漏字 = 新数据带来的汉字未进子集时，按 body 字体栈尾（Noto Sans CJK SC / PingFang SC / Microsoft YaHei）降级，不出豆腐块
  * 重算 = npm run build 自动（字符集变了才真跑子集化）；强制重算 FONT_GEN=force npm run build
  * ============================================================ */
-/* yj-font: v=2 hash=1e71cad0db091a1d chars=2017 in_src=1993 glyphs=2692 flavor=woff2 bytes=614488 wght=300-700 src=NotoSansSC-VF.ttf tool=fontTools4.61.1 at=2026-09-30T05:47:20Z */
+/* yj-font: v=2 hash=89e197e993cae90d chars=2019 in_src=1995 glyphs=2694 flavor=woff2 bytes=615584 wght=300-700 src=NotoSansSC-VF.ttf tool=fontTools4.61.1 at=2026-09-30T06:35:02Z */
 @font-face {
   font-family: 'Noto Sans SC';
   font-style: normal;

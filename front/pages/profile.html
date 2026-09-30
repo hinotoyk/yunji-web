@@ -76,7 +76,6 @@ var PIN_ROW = {
 };
 /* 标记样式只用既有 utility 类（theme.css 归后续阶段所有，本次不新增类） */
 var PIN_CLS = "flex-none cursor-pointer rounded-full border border-transparent px-1 text-[11px] leading-[1.5] opacity-60 transition hover:border-primary/40 hover:opacity-100";
-var PIN_CLS_ABS = "absolute left-2.5 top-2.5 z-10 cursor-pointer rounded-full border border-black/10 bg-white/85 px-1 text-[11px] leading-[1.5] opacity-80 shadow-sm transition hover:opacity-100";
 
 function pinEntry(id){
   var e = PINS[String(id)];
@@ -166,29 +165,26 @@ function fitFrames(){
 /* 头像：photo 兼容 数组/网络/本地；多图 → 相册：点击左/右切换，悬停提示
  * 照片区为弹性大区域（flex-1 撑满剩余宽度）；照片完整展示（object-contain + max 约束，
  * 不拉伸不裁切），铺满宽度/高度中取最大适配，放不下/不够大时居中 */
-function avatarHTML(photo, id){
+function avatarHTML(photo){
   var list=[];
   if(Array.isArray(photo)) list=photo.slice();
   else if(typeof photo==="string" && photo) list=[photo];
   list=list.filter(function(p){return p;});
   var wrap='relative flex min-h-[340px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 max-md:h-[240px] max-md:min-h-0 max-md:flex-none max-md:w-full';
-  /* photo 被人工钉住 → 角上一枚标记（贴左上，右上被多图计数徽标占了）；无钉住时 pinMark 出空串，DOM 一字不改 */
-  var mark = id==null ? "" : pinMark(id, "photo", PIN_CLS_ABS);
-  if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span>'+mark+'</div>';
+  if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span></div>';
   list=list.map(function(p){ return (String(p).indexOf("data/")===0) ? YJ_DATA.url(p) : p; });
   /* 图片标记统一走 YJ.ui.img：loading=lazy + decoding=async + 写死占位尺寸（防 CLS）。
    * 占位盒由上面的 wrap（min-h-[340px] / mb 240px）承担，width/height 给的是库内实拍比例 1108×1477，
    * 让浏览器在解码前就定好比例；object-contain + absolute inset-0 再由 CSS 覆盖实际渲染尺寸。 */
   if(list.length===1){
     return '<div class="'+wrap+'">'+YJ.ui.img({src:list[0], cls:'absolute inset-0 h-full w-full object-contain', w:1108, h:1477,
-      attrs:'alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"'})+mark+'</div>';
+      attrs:'alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"'})+'</div>';
   }
   return '<div class="'+wrap+' group" data-photos="'+esc(list.join("|"))+'">'+
     YJ.ui.img({src:list[0], cls:'pav-img absolute inset-0 h-full w-full object-contain', w:1108, h:1477, alt:'头像', attrs:'onerror="this.style.display=\'none\'"'})+
     '<button type="button" class="pav-nav pav-prev absolute top-1/2 left-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="上一张">‹</button>'+
     '<button type="button" class="pav-nav pav-next absolute top-1/2 right-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="下一张">›</button>'+
     '<div class="pav-count absolute top-2.5 right-3 rounded-full border border-black/15 bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums tracking-[.5px] text-foreground/75 shadow-md backdrop-blur-sm">1/'+list.length+'</div>'+
-    mark+
   '</div>';
 }
 
@@ -220,7 +216,6 @@ function avatarBind(){
   }
   preload(1); preload(photos.length-1);   /* 首图已在外层懒加载，先把两端挂上 */
   el.addEventListener("click",function(e){
-    if(e.target && e.target.closest && e.target.closest("[data-edit]")) return;   /* 点钉住标记 = 跳编辑页，不算切图 */
     var rect=el.getBoundingClientRect();
     if(e.clientX-rect.left < rect.width/2) show(idx-1); else show(idx+1);
   });
@@ -370,7 +365,7 @@ function render(h){
    * 容器等高由 items-stretch 保证，总高度以基本资料表为基准；
    * mb 端退回单列纵向 max-md:flex-col。 */
   var basicBlock='<div class="mt-6 flex items-stretch gap-6 max-md:flex-col max-md:gap-4">'+
-    avatarHTML(h.photo, h.id)+
+    avatarHTML(h.photo)+
     '<div class="min-w-0 flex-1">'+info+'</div>'+
     '<div class="min-w-0 flex-1">'+pedBlock+'</div></div>';
 

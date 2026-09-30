@@ -210,6 +210,9 @@ YJ.selector = (function () {
     /* doubleName: 双格式马名（基本信息 PC 常驻列表 + mb 下拉用）——
      * 主名=日文(无则英文) + 副名=港译(无则自译)；其余实例不传即保持单格式 */
     const doubleName = !!opts.doubleName;
+    /* currentName: 预填已选名（编辑台配图/引用比赛面板切马用）——数据到货后写进输入框并标记
+     * 已选，再次聚焦即自动清空展示全列表（§82.21：修「切马得先手删预填名」） */
+    const currentName = opts.currentName || "";
     const placeholder = opts.placeholder || "日文名 · 英文名 · 港译名 · 自译名 · 母名 · 马主 · 调教师 · 生产牧场";
 
     el.innerHTML =
@@ -375,6 +378,7 @@ YJ.selector = (function () {
     /* items 模式：数据已在手，不加载马匹；compact 无 cnt 元素，需判空 */
     if (items) {
       if (cnt) cnt.textContent = items.length;
+      if (currentName && input) { input.value = currentName; selected = true; }
       if (persistent) render("");
       return Promise.resolve(items);
     }
@@ -382,6 +386,7 @@ YJ.selector = (function () {
       horses = hs;
       horsesCache = hs;
       if (cnt) cnt.textContent = hs.length;
+      if (currentName && input) { input.value = currentName; selected = true; }
       if (persistent) render(""); /* 常驻模式：加载后直接展示全部列表 */
       return hs;
     });

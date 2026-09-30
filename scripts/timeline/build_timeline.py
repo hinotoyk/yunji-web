@@ -253,8 +253,13 @@ def to_render_event(e, race_manual=None):
         "team": team,
     }
     # 取图优先级（§82.9 用户定稿）：比赛人工配图（data/races_manual.json，race_id → photo，抓取永不写）
-    # > race.photo（历史抓取值兼容，现管线已不产生）> 回退马照片
-    m = race_manual.get(str(r.get("race_id") or "")) if race_manual else None
+    # > race.photo（历史抓取值兼容，现管线已不产生）> 回退马照片。
+    # 键 = race_id；无 race_id 的台账场（§82.22 兼容，与人工荣誉节点同类）= 虚拟键 "@马id@日付"
+    # （一马一天只跑一场，SCHEMA 去重键同口径；编辑台 STEP2 用 rmKeyOf 生成同一键）
+    rid = str(r.get("race_id") or "").strip()
+    if not rid:
+        rid = "@{}@{}".format(h.get("id"), str(r.get("日付") or "").strip())
+    m = race_manual.get(rid) if race_manual else None
     mp = (m.get("photo") if isinstance(m, dict) else m) if m else ""
     ev["photo"] = first_photo(mp) or first_photo(r.get("photo")) or first_photo(h.get("photo"))
     ev["race"] = race

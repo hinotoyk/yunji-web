@@ -2750,6 +2750,47 @@ push 后线上 `GET /data/photos/142-1|2.jpg 404`：老访客的 yj-cache 条目
 **桶版本 yj-data-v1 → v2**（口径升级整体作废，全员一次性全量重取），并沉淀硬规进 yj-cache.js 注释：
 **删被引用的数据文件必须同轮 bump 桶版本，或保留旧文件一个 TTL 周期再删**。`node --check` + build ✓。
 
+### 82.19 · 详情照片区去掉 📌 钉住标记（2026-09-30 用户要求）
+
+profile 详情照片左上角的 📌（人工钉住标记，点击跳编辑页）没必要，去掉。`avatarHTML()` 删 photo 分支的
+`pinMark(id,"photo",PIN_CLS_ABS)`（无图/单图/多图三处），连带删掉只用一次的 `PIN_CLS_ABS`、avatarBind
+里「点标记不算切图」的死守卫、以及 `avatarHTML` 空置的 `id` 形参（调用处同步）。基本信息表行尾的 📌
+与 `hasPin` 晚到补渲染逻辑不动（行尾标记仍是人工值入口）。`manual_overrides.json` 数据与编辑台功能零影响。
+同轮用户确认：浏览页定位/改值都走编辑页，照片区标记去掉即可。
+
+### 82.20 · 编辑台抽屉「已保存」段折叠 + 马名检索（2026-09-30 用户定稿）
+
+草稿箱抽屉里「已保存（人工表现值）」原本全量铺开每匹的 字段chips/备注/原值，马一多抽屉就是流水账。定稿三层收敛：
+**① 段级折叠**——标题行改「已保存（人工表现值）· N 匹 ▸/▾」整行可点，默认收起只报数量；**② 马名检索**——展开后顶部
+`#savedQ` 输入框按「主名+四个名字槽+#id」大小写不敏感过滤，逐键过滤（renderBox 重建 input 后回填焦点与光标位）；
+**③ 条目折叠**——检索词为空时每匹一行（名 + #id + N 项 + ▸/▾，展开态存 `state.savedExp`），点 ▸ 才见字段/备注/原值；
+**检索词非空 = 命中马直接展开详情**（检索本来就是问「这匹改过了什么」，不再要求二次点击；此时不渲染 ▸）。
+条目行内点马名仍是 `data-goto` 定位不变。`editor.js` 改 `state`（savedOpen/savedQ/savedExp）+ `pinsHTML()` 重排 +
+抽屉 click/input 委托各一；`?v=6→7`（edit.html / edit-timeline.html）。node --check + build ✓。
+
+### 82.21 · 修比赛配图草稿「下标当键」：多场配图互相覆盖 + 切换不了（2026-09-30 用户报障）
+
+用户报「草稿箱名存实亡，给多个比赛配图切换不了」。排查根因 = 比赛配图面板 STEP2 的选项值用了 **bundle 行下标**
+当草稿键，而 `races_manual.json` 的键契约是 **netkeiba race_id**（SCHEMA §4.5）。三重后果：①跨马下标相撞 →
+第二场上传静默覆盖第一场草稿（连 IndexedDB 二进制都被 blobDel）；②`rmCurrent` 拿下标查 raceManual → 盘上
+已配置的场永远显示「未配置」；③就算提交成功，键/文件名（`<下标>-1.webp`）也是错的，build_timeline 永远配不上。
+盘上尚无 races_manual.json，无脏数据。修复：**STEP2 键改真 race_id**（无 race_id 的台账场 option 禁用并标注
+「台账场不可配图」）；草稿箱条目 `#<下标>` → 可读标签「日付 赛名（格）」（`rmMeta()` 反查 bundle 懒缓存，查不到
+退 `#race_id`）+ **点击条目跳回配图面板**自动选中该马该场（跨页跳 edit-timeline.html）——多场草稿随时可切回
+查看/替换，正面回答「切换不了」；选马器 selector.js 新增 `currentName` 选项（预填 + 已选态，聚焦自动清空展示
+全列表，修「切马要先手删名字」），editor 面板 mount 改走该选项；`loadRaceBundle` bundle 已解码就不再重复拉取
+（本就全库一份）。`editor.js` / `selector.js` 内容变 → 两编辑页 `?v=7→8`。node --check ×2 + build ✓。
+
+### 82.22 · 台账场（无 race_id）也可配图：races_manual 虚拟键 `@马id@日付`（2026-09-30 用户定稿）
+
+用户定稿：无 race_id 的台账场和人工荣誉节点同类，**要能配图**。§82.21 里「禁选台账场」的口子收回，改虚拟键方案：
+**键 = race_id 原样；无 race_id = `"@马id@日付"`**（一马一天只跑一场，SCHEMA §3 去重键同口径；日付是 ISO 格式，
+`@`/`-` 文件名安全，`ghPhotoSeqs` 的 `(.+)-(\d+).ext` 正则天然兼容 → 图文件名 `@130@2026-08-31-1.webp` 同法成立）。
+前端 `editor.js` 新增 `rmKeyOf(r, hid)` 单一出处（STEP2 选项值 / rmMeta 反查索引共用），台账场选项标注「· 台账」；
+后端 `build_timeline.py` 取图时同规则生成虚拟键查表；契约补进 `data/SCHEMA.md` §4.5。回归：跑 build_timeline 重算
+data/timeline.json——diff 仅 时间戳 / source 串（§82.9 时代代码）/ 马 40 照片本地化路径（§82.17），盘上产物本就落后
+两轮数据更新，非本次回归。`editor.js` → `?v=9`。node --check + build_timeline ✓ + build ✓。
+
 
 
 

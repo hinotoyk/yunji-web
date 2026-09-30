@@ -1,7 +1,7 @@
 {
  "meta": {
-  "generated_at": "2026-09-28T15:50:37",
-  "source": "basic.json + races/*.json",
+  "generated_at": "2026-09-30T14:42:47",
+  "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 6,
    "horses": 6,
@@ -77,7 +77,7 @@
     "name": "ゴーイントゥスカイ",
     "cn": "通天飞"
    },
-   "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+   "photo": "data/photos/40-1.webp",
    "tags": [
     {
      "cat": "first",
