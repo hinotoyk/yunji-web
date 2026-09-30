@@ -1801,7 +1801,7 @@
    },
    "セリ取引価格": "3,300万円 (2023年 セレクトセール)",
    "photo": [
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Going_to_Sky_2025.10.05.jpg/1280px-Going_to_Sky_2025.10.05.jpg?utm_source=zh.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+    "data/photos/40-1.webp"
    ],
    "races_file": "data/races/40.json",
    "pedigree_file": "data/pedigree/40.json",
@@ -6381,8 +6381,8 @@
    },
    "セリ取引価格": "-",
    "photo": [
-    "data/photos/142-1.jpg",
-    "data/photos/142-2.jpg"
+    "data/photos/142-3.webp",
+    "data/photos/142-4.webp"
    ],
    "races_file": "data/races/142.json",
    "pedigree_file": "data/pedigree/142.json",

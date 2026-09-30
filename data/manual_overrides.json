@@ -5,5 +5,13 @@
       "性別_当前": "セ",
       "_note": "Grand Warrior(JPN) 在北美出赛、无 JRA 登录 → netkeiba 与 JBIS 的 性別 都停在去势前的「牡」；2026-05-31 起逐场台账记录的 性 已是「セ」。当前该值已由 merge_races 的 5b 逐场派生自动得出（本表留空即可），这里只作写法示范。"
     }
+  },
+  "40": {
+    "photo": ["data/photos/40-1.webp"],
+    "_note": "2026-09-30 图片本地化：撤 Wikimedia 外链热链（thumb.wikimedia.org/…/Going_to_Sky_2025.10.05.jpg 1280px），改用本地 data/photos/40-1.webp（272KB jpeg → 99KB webp q0.5，编辑台同规格压缩）。"
+  },
+  "142": {
+    "photo": ["data/photos/142-3.webp", "data/photos/142-4.webp"],
+    "_note": "2026-09-30 图片压缩本地化：原 142-1.jpg/142-2.jpg（274/172KB）按编辑台压缩规则转 webp（99/94KB，960×1280），旧 jpg 删除；序号顺延避免与历史文件名混淆。"
   }
 }
