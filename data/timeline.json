@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-30T15:14:15",
+  "generated_at": "2026-09-30T15:25:55",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 6,
@@ -19,7 +19,7 @@
     "name": "ルージュボヤージュ",
     "cn": "翱天赤骥"
    },
-   "photo": "",
+   "photo": "../data/photos/202503020605-1.webp",
    "tags": [
     {
      "cat": "gen",
@@ -48,7 +48,7 @@
     "name": "バドリナート",
     "cn": "印度神庙"
    },
-   "photo": "",
+   "photo": "../data/photos/202508030909-1.webp",
    "tags": [
     {
      "cat": "first",
