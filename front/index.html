@@ -7,6 +7,10 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="pages/theme.css">
+<!-- 访问统计（不蒜子 · busuanzi）：第三方脚本的唯一注入点在 public/yj-visit.js，
+     由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
+     （既不计数也不显示数字，页脚两个标签保持 hidden）。见 UI优化记录 §85。 -->
+<script src="yj-visit.js?v=1"></script>
 </head>
 <body class="overflow-hidden bg-background text-foreground antialiased">
 <div class="flex h-screen">
@@ -55,7 +59,18 @@
         </div>
       </template>
     </nav>
-    <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">云迹 · 数据仅供分享交流</div>
+    <div class="hidden border-t border-border px-4 py-3 text-[12px] text-muted-foreground md:block">
+      云迹 · 数据仅供分享交流
+      <!-- 站点访问量（不蒜子回填 · §85）。容器先 hidden（Tailwind），取数成功才由脚本把 display 改成
+           inline 显示；超时（3s）/离线/被拦截 → 一直隐藏，不会出现「总访问 次」这种空占位。
+           非正式域名（本地 :8090 / file:// / *.github.io）连脚本都不加载 → 这里永远保持隐藏，页脚只剩上面那行文案。
+           只接站点级两个 id：site_pv = 本域名累计打开次数、site_uv = 独立访客数（cookie 去重）。
+           不接 page_pv：内容页都在 iframe 里，页面级计数没有意义。 -->
+      <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-none">
+        <span id="busuanzi_container_site_pv" class="hidden">总访问 <span id="busuanzi_value_site_pv" class="font-medium text-foreground/80"></span> 次</span>
+        <span id="busuanzi_container_site_uv" class="hidden">访客 <span id="busuanzi_value_site_uv" class="font-medium text-foreground/80"></span> 人</span>
+      </div>
+    </div>
   </aside>
 
   <!-- 抽屉遮罩（仅手机） -->

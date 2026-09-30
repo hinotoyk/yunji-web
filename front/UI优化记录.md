@@ -93,6 +93,7 @@
 | 82 | 编辑台 B 稿定稿 | ✅ | 「常开工作表」定稿，82.1~82.23 全部落地（详见 §82） |
 | 83 | 编辑入口全站收敛 | ✅ | 所有直跳编辑页入口默认不进视野，唯一开关 URL `?edit=1` |
 | 84 | 钉住标记（📌）移除 | ✅ | 行尾 📌 机制整块删除，浏览页零直跳编辑入口 |
+| 85 | 侧栏页脚访问统计（不蒜子） | ✅ | 只统计线上 `www.yunji.xyz`（本地/其它域不加载），页脚回填站点 PV/UV |
 
 ---
 
@@ -484,3 +485,14 @@
 - **最终落地**：`pages/profile.html` 删 `PINS`/`PIN_ROW`/`PIN_CLS`/`pinEntry`/`pinField`/`hasPin`/`pinMark`/`loadPins`、行渲染里的 `pinMark(...)`、`currentH` 追踪变量、`[data-edit]` 点击委托（跳 `edit.html?id=`）。
 - **最终状态**：✅ 已完成（构建 + HTTP 复验：行/概览/比赛记录均正常，无 📌）。
 - **关键结论**：行尾 📌 用户判「丑且没必要」整块删除（§82.19 只删掉了照片区那一枚）；浏览页因此**零**直跳编辑页入口（唯一残留的「回编辑台 ↗」按 §83 门控）。顺带收益：profile 不再每次加载多拉一次 `manual_overrides.json`。**保留不动**：「草稿」徽章（未提交草稿提示）与草稿预览提示条。
+
+### §85 · 侧栏页脚接入站点访问统计（不蒜子 · busuanzi）
+- **最终落地**：`public/yj-visit.js`（**新增**：第三方统计脚本的唯一注入点 + 正式域名白名单）+ `index.html`（head 引 `yj-visit.js?v=1`；侧栏页脚「云迹 · 数据仅供分享交流」下方加 `#busuanzi_container_site_pv` / `#busuanzi_container_site_uv` 两个标签，数字位 `#busuanzi_value_site_pv` / `#busuanzi_value_site_uv`）。
+- **最终状态**：✅ 已完成（构建 + dist 核对 + 真 HTTP/headless 复验：正式域名取数回填、本地不加载不显示、统计服务不可达保持隐藏）。
+- **关键结论**：
+  1. **计数归属 = 请求 Referer 的 host**（实测）：无 Referer 直接 `Bad Request`；同 host 不同路径共享一个 `site_pv`；`sub.example.com` 与 `example.com` 各自独立桶。**本地 `127.0.0.1`/`localhost` 是「全网本地测试者共享的桶」**（实测 100 万+，显示出来纯误导），线上每个域名（`www.yunji.xyz` / apex `yunji.xyz` / `<user>.github.io`）各自一个桶、互不相加。
+  2. **门控口径（2026-09-30 用户确认）：只统计线上 `https://www.yunji.xyz/`，本地不掺进来** → `yj-visit.js` 里 `HOSTS = ['www.yunji.xyz']` 白名单，非白名单域名**连脚本都不加载**（不计数也不显示，页脚只剩文案）。要加/换域名只改这一处；**apex `yunji.xyz` 是另一个桶**，不做跳转就会出现两个域名各算一份、数字忽大忽小。
+  3. **PV 口径 = 一次「打开网站」= 一次**（不存在「每页各算一次」的水分）：第三方脚本**只挂外壳** `index.html`（`dist/pages/*.html` 实测 0 处引用），iframe 内换页不重新加载外壳 → 不计；从书签直开内容页时该页无脚本、只做 `location.replace('../index.html?page=…')`（§82.13 回壳）→ 也只计 1 次。只接站点级 `site_pv`（累计打开）/`site_uv`（cookie 去重的独立访客），**不接 `page_pv`**（内容页全在 iframe 内、外壳是唯一 URL，页面级无意义）。
+  4. **空占位防护沿用官方推荐做法**：容器先 `hidden`（Tailwind，等价官方 `style="display:none"`），取数成功才由脚本改成 `display:inline`；3 秒超时/离线/被拦截 → 一直隐藏，不会出现「总访问 次」。注入点放 head（第三方脚本自带 `async`），数字回填由脚本内部 `ready()` 等到 DOM 就绪，不会丢数字。
+  5. **本方案只给「累计」**：不蒜子不提供「今日」维度，要今日数据得另挂百度统计一类带后台的分析（本项目未接）。线上数字从 0 起算；想让线上从某个基数开始，需到不蒜子注册登录后自行改。
+
