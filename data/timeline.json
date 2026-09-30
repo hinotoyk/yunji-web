@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-30T15:25:55",
+  "generated_at": "2026-09-30T08:30:52",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 6,
@@ -77,7 +77,7 @@
     "name": "ゴーイントゥスカイ",
     "cn": "通天飞"
    },
-   "photo": "../data/photos/40-1.webp",
+   "photo": "../data/photos/202605020111-1.webp",
    "tags": [
     {
      "cat": "first",
@@ -116,7 +116,7 @@
     "name": "コンジェスタス",
     "cn": "塔状高云"
    },
-   "photo": "",
+   "photo": "../data/photos/202608030511-1.webp",
    "tags": [
     {
      "cat": "graded",
@@ -148,7 +148,7 @@
     "name": "レニュアージュ",
     "cn": "香槟云朵"
    },
-   "photo": "",
+   "photo": "../data/photos/202607020602-1.webp",
    "tags": [
     {
      "cat": "gen",
@@ -177,7 +177,7 @@
     "name": "チェリヴェント",
     "cn": "乘天风"
    },
-   "photo": "",
+   "photo": "../data/photos/202604020607-1.webp",
    "tags": [
     {
      "cat": "first",
