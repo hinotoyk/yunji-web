@@ -536,7 +536,13 @@ YJ.editor = (function () {
             tree.push({ path: TL_PATH, mode: "100644", type: "blob", sha: r2.body.sha });
           }).then(rmCommit);
         });
-        return jobs2.then(function () { return { d: d, tree: tree }; });
+        return jobs2.then(function () {
+          /* 照片 blob 装进 tree（2026-10-01 审计补）：此前 uploads 只进成功报告、从不进 tree，
+           * 编辑台提交的照片全部成了孤儿 blob，表里引用的 data/photos/*.webp 在仓库中不存在
+           *（线上实测：races_manual 引用 4-1.webp，photos 目录无此文件）。比赛图/马图两条路径同修。 */
+          uploads.forEach(function (u) { tree.push({ path: u.path, mode: "100644", type: "blob", sha: u.sha }); });
+          return { d: d, tree: tree };
+        });
       }).then(function (pack) {
         state.gh.log = ["建 tree/commit…"]; render();
         return gh("/repos/" + GH_REPO + "/git/trees", { method: "POST", body: { base_tree: treeSha, tree: pack.tree } }).then(function (r) {

@@ -67,3 +67,40 @@
 
 - `fix(ci)`：`scripts/_shared/net.py`、`scripts/basic/common.py`、`scripts/races/common.py`、`scripts/README.md` + 本审计文档
 - `front`（同批上线的功能改动，见 UI优化记录 §82.19–82.22）：`front/pages/profile.html`、`front/pages/edit.html`、`front/pages/edit-timeline.html`、`front/public/editor.js`、`front/public/selector.js`、`front/assets/fonts/noto-sc*.{css,woff2}`、`scripts/timeline/build_timeline.py`、`data/SCHEMA.md`、`data/timeline.json`、`front/UI优化记录.md`
+
+---
+
+## 8. 补充审计 · push 前复核新发现（同批修复，2026-10-01）
+
+push 时被远端拒绝（non-fast-forward）→ fetch 发现远端多了两个**编辑台草稿提交**
+（`edit: 编辑台草稿一次性提交（0 匹人工值 · 比赛配图 1）`）——用户已在真实使用编辑台的
+GitHub 提交链路，顺势深挖出**第二个 bug**：
+
+### 8.1 编辑台提交的照片从未进入 git tree（严重，马图/比赛图两条路径同中）
+
+- **证据**：远端 `data/races_manual.json` = `{"4":{"photo":"../data/photos/4-1.webp"}}`，
+  但 `git ls-tree origin/main -- data/photos/` **没有 `4-1.webp`**（只有 §82.17 走本地管线
+  提交的三张马图）。照片 blob POST `/git/blobs` 成功（代码里 `if (!r.ok) throw`），
+  但 `tree` 数组只装了三个表（manual_overrides / timeline_manual / races_manual），
+  `uploads`（blob sha 清单）**只用于成功报告的文件列表，从不进 tree** → 每张经编辑台
+  提交的照片都是孤儿 blob，表里引用 404。
+- **为何此前没暴露**：§82.17 的马图本地化走的是本地管线 commit；编辑台 GitHub 提交链路
+  本次是第一次被真实端到端使用。
+- **修复**：`submitDrafts()` 的 tree 组装处（`jobs2.then` 内）把 `uploads` 逐条
+  `tree.push({path, mode:"100644", type:"blob", sha})`，与表 blob 同一次原子 commit 落库。
+
+### 8.2 悬空数据清理
+
+- 远端那条 `races_manual["4"]` 是**修复前的下标键**（§82.21）+ 指向不存在文件的引用，
+  双重无效：build_timeline 查的是 race_id，"4" 永远匹配不上；即便匹配上，图也是 404。
+- 照片 blob 在 GitHub 侧已成孤儿（不可达、无法取回）→ 需用修复后的编辑台**重新上传**
+  （新链路：真 race_id 键 + 照片随 commit 落库）。本地已把 `data/races_manual.json`
+  重置为 `{}`（SCHEMA：空表 = 无配图，管线照常）。
+- 编辑台 UI 看不到 "4" 这条脏键（`rmCurrent` 按 race_id 查）→ 只能数据侧清理，已做。
+
+### 8.3 观察项（不修，留档）
+
+- 远端出现一个**空提交**（`4546705`，与 `20730d9` 同文案零 diff）：疑似连续两次点「提交」，
+  第二次草稿内容与远端已完全一致 → 生成同内容 tree 的空 commit。无害（无数据影响）；
+  防重复属于体验优化，本轮不加（`ghBusy` 护栏已在，实际风险低）。
+- `manual_overrides.json` 被编辑台重写为紧凑 JSON + 键序变化（内容等值），无害。
