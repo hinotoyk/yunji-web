@@ -67,10 +67,25 @@ def load_basic():
 
 
 def save_basic(data):
-    """写 basic.json（更新 _meta）。"""
+    """写 basic.json（更新 _meta）。
+
+    `updated` = **数据实质变化时间**（2026-10-02 定稿）：马匹内容与磁盘现状等值时保留旧时间戳，
+    不盖新钟——deploy.yml 每次部署都幂等重跑 merge_basic，若每次都换时间戳，部署落库步骤
+    （重算产物 commit 回 main）会因纯时间戳 diff 永远循环。实质有变化才进新钟。"""
+    prev_meta, prev_horses = None, None
+    try:
+        prev = json.loads(paths.BASIC_JSON.read_text(encoding="utf-8"))
+        prev_meta, prev_horses = prev.get("_meta"), prev.get("horses")
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    stamp_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if prev_horses == data["horses"] and isinstance(prev_meta, dict) and prev_meta.get("updated"):
+        updated = prev_meta["updated"]
+    else:
+        updated = stamp_now
     data["_meta"] = {
         "schema": "basic/v1",
-        "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "updated": updated,
         "count": len(data["horses"]),
     }
     paths.DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -80,6 +95,39 @@ def save_basic(data):
 def next_id(data):
     """下一个自增主键（从 1 开始）。"""
     return max((h["id"] for h in data["horses"]), default=0) + 1
+
+
+def move_after(h, field, anchor):
+    """键序归位：field 紧跟 anchor 之后（只动键序，不动值；缺任一侧则不动）。
+    与 scripts/races/merge_races.py 同名 helper 同语义（此处为落库序的单一出处）。"""
+    keys = list(h.keys())
+    if field not in keys or anchor not in keys:
+        return
+    keys.remove(field)
+    keys.insert(keys.index(anchor) + 1, field)
+    if keys == list(h.keys()):
+        return
+    for k in keys:
+        h[k] = h.pop(k)
+
+
+def order_horse(h, drop=()):
+    """按契约列序重排单匹马（2026-10-02 定稿）：键序 = BASIC_ORDER，模板外键（含派生列）
+    追加在末尾，再把派生列 BASIC_DERIVED_TAIL 归位到各自锚点之后。
+
+    ⚠ 这是 basic.json 落库键序的**单一出处**：写盘的两条管线（scripts/basic/merge_basic.py 与
+    scripts/races/merge_races.py）必须产出同一键序。此前 merge_basic 把派生列留在模板外尾部、
+    merge_races 用 move_after 归位，两序并存 → 值全等却恒有 5000+ 行纯键序 diff，
+    会让 deploy.yml 的产物落库步骤每次部署都 commit（键序抖动，无实质变化）。
+    drop：不保留的旧字段名集合（如改名后的 獲得賞金 系列）。
+    """
+    extra = {k: v for k, v in h.items() if k not in BASIC_ORDER and k not in drop}
+    reordered = {k: h.get(k, "") for k in BASIC_ORDER}
+    reordered.update(extra)
+    h.clear()
+    h.update(reordered)
+    for field, anchor in (("性別_当前", "性別"), ("通算成績_逐场", "通算成績")):
+        move_after(h, field, anchor)
 
 
 # ---------------- 并发缓存（写独立文件，避免并发覆盖 basic.json） ----------------

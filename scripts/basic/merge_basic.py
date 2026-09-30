@@ -123,15 +123,10 @@ def main():
             h["母父"] = v
             n_mps += 1
 
-    # 按标准字段顺序重排（列序单一出处：_shared/basic_io.BASIC_FIELDS → common.BASIC_ORDER）
-    ORDER = common.BASIC_ORDER
+    # 按标准字段顺序重排（列序单一出处：_shared/basic_io.order_horse ← BASIC_FIELDS → common.BASIC_ORDER）
     LEGACY_DROP = {"獲得賞金", "獲得賞金地方"}   # 旧字段名（已改名为 獲得賞金 (中央)/(地方)），丢弃
     for h in horses:
-        extra = {k: v for k, v in h.items() if k not in ORDER and k not in LEGACY_DROP}
-        reordered = {k: h.get(k, "") for k in ORDER}
-        reordered.update(extra)          # 模板外的新字段（如后续竞赛字段）保留在末尾
-        h.clear()
-        h.update(reordered)
+        common.order_horse(h, LEGACY_DROP)
 
     # 人工维护表（data/manual_overrides.json）：重排后、写回前套用，人工值优先于抓取值
     overrides = common.load_overrides()

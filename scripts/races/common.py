@@ -74,6 +74,7 @@ norm = text.norm
 
 load_basic = basic_io.load_basic
 save_basic = basic_io.save_basic
+move_after = basic_io.move_after       # 键序归位单一出处（与 merge_basic/order_horse 同一落库序）
 
 tmp_path = functools.partial(basic_io.tmp_path, tmp_dir=TMP_DIR)
 write_cache = functools.partial(basic_io.write_cache, tmp_dir=TMP_DIR)

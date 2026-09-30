@@ -120,16 +120,8 @@ def career_from_recs(recs):
 
 
 def move_after(h, field, anchor):
-    """派生字段在 basic.json 里的位置归位：紧跟其同源字段（只动键序，不动值）。"""
-    keys = list(h.keys())
-    if field not in keys or anchor not in keys:
-        return
-    keys.remove(field)
-    keys.insert(keys.index(anchor) + 1, field)
-    if keys == list(h.keys()):
-        return
-    for k in keys:
-        h[k] = h.pop(k)
+    """键序归位：单一出处 = _shared/basic_io.move_after（此处仅为文件内既有调用点的薄别名）。"""
+    return common.move_after(h, field, anchor)
 
 
 def load_races_file(id_s):

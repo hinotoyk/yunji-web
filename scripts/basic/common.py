@@ -81,6 +81,7 @@ ROMAN_FULL = text.ROMAN_FULL
 load_basic = basic_io.load_basic
 save_basic = basic_io.save_basic
 next_id = basic_io.next_id
+order_horse = basic_io.order_horse
 BASIC_FIELDS = basic_io.BASIC_FIELDS
 BASIC_ORDER = basic_io.BASIC_ORDER
 BASIC_TEMPLATE = basic_io.BASIC_TEMPLATE
