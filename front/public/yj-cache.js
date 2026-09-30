@@ -26,7 +26,10 @@ window.YJ = window.YJ || {};
 YJ.cache = (function () {
   "use strict";
 
-  var BUCKET = "yj-data-v1";
+  /* v2（2026-09-30）：照片本地化删除了被 basic/timeline/races 旧数据引用的 data/photos/142-1|2.jpg，
+   * 旧缓存条目会让老访客 404 一张图——桶 +1 整体作废（教训：**删被引用的数据文件必须同轮 bump 桶版本**，
+   * 或保留旧文件一个 TTL 周期再删）。v1（2026-09-28）：控制器首版。 */
+  var BUCKET = "yj-data-v2";
   var REVAL = 10 * 60 * 1000;            /* 新鲜期：窗口内 0 请求 */
   var TTL_DEF = 12 * 60 * 60 * 1000;     /* 默认 12h（用户 2026-09-28 定）；注册表可按产品覆写 */
 

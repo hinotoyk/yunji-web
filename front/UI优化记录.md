@@ -2743,6 +2743,14 @@ Wikimedia thumb 直链（Go to Sky 2025-10-05）：272KB · 1280×914 jpeg → 9
 等值替换，等价 apply_overrides 结果）。远端先 pull（CI data auto update ×2），字体子集冲突取远端新版。
 check_data ✓ · build ✓（dist/data/photos 新 webp 在位）。commit + 用户特批 push，CI 约 2 分钟上线。
 
+### 82.18 修复 · 删图后老访客 404 → 缓存桶 v2（2026-09-30 线上报错）
+
+push 后线上 `GET /data/photos/142-1|2.jpg 404`：老访客的 yj-cache 条目（TTL 12h）仍持有引用已删 jpg 的
+旧 basic/timeline/bundle，首帧渲染即 404（SWR 后台校验会自愈，但首帧躲不掉）。修法 = 走控制器既定杠杆
+**桶版本 yj-data-v1 → v2**（口径升级整体作废，全员一次性全量重取），并沉淀硬规进 yj-cache.js 注释：
+**删被引用的数据文件必须同轮 bump 桶版本，或保留旧文件一个 TTL 周期再删**。`node --check` + build ✓。
+
+
 
 
 
