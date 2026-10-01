@@ -19,9 +19,9 @@ if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
 ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data"
 
-# 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径：G1/G2/G3/Jpn1/Jpn2/Jpn3；
-# L/OP 在页面有级别徽章但不计入重赏 → 🏆 计数用本集合）
-TROPHY_GRADES = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}
+# 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径：G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3；
+# L/OP 在页面有级别徽章但不计入重赏 → 🏆 计数用本集合。2026-10 起障害重赏计入）
+TROPHY_GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}
 
 
 def norm_place(v):

@@ -44,7 +44,9 @@ def parse_pedigree(html):
             y = re.search(r"(\d{4})", meta)
             if y:
                 node["year"] = y.group(1)
-            col = next((c for c in COLORS if c in meta), None)
+            # 毛色：正则提全 token（漢字1-3+毛），白名单命中优先——未收录毛色用原值
+            m_all = re.findall(r"[\u4e00-\u9fff]{1,3}毛", meta)
+            col = next((c for c in m_all if c in COLORS), m_all[0] if m_all else None)
             if col:
                 node["color"] = col
             items.append(node)

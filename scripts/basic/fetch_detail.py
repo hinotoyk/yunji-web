@@ -28,7 +28,10 @@ def parse_txt01(txt):
     sex_m = re.search(r"(牡|牝|セ|セン)", txt)
     status_m = re.search(r"(現役|抹消|引退|繁殖|功労馬|登録)", txt)
     age_m = re.search(r"(\d+)歳", txt)
-    color = next((c for c in common.COLORS if c in txt), "")
+    # 毛色：正则提全 token（漢字1-3+毛），白名单命中优先——未收录毛色用原值，
+    # 也修掉旧子串扫描的截断 bug（栃栗毛/鹿栗毛 被缩成 栗毛）
+    m_all = re.findall(r"[\u4e00-\u9fff]{1,3}毛", txt)
+    color = next((c for c in m_all if c in common.COLORS), m_all[0] if m_all else "")
     return {
         "登録状態": status_m.group(1) if status_m else "",
         "性別": sex_m.group(1) if sex_m else "",

@@ -7,7 +7,7 @@
 ## ★ 全站编码约定 · 复用抽离（§48 定稿，此后一切前端编码必须遵守）
 
 1. **公共工具单一出处**：HTML 转义等页面级工具放 `public/yj-util.js`（`YJ.util.*`），页面只写薄别名 `var esc = YJ.util.esc`，**禁止再复制函数体**；共享模块保持零依赖可独立单测的，内部实现可自包含（如 race-rows 的 esc），但语义必须两处一致。
-2. **业务语义组件单一出处**：比赛行/徽章/格式化（`gradeBadge/placeBadge/ninki*/G/GLABEL/weightOf/venueR…`）一律复用 `public/race-rows.js`，新页面直接引入，禁止本地重写映射表或徽章 HTML。
+2. **业务语义组件单一出处**：比赛行/徽章/格式化（`gradeBadge/placeBadge/ninki*/GRADE（含派生 G/GLABEL）/weightOf/venueR…`）一律复用 `public/race-rows.js`，新页面直接引入，禁止本地重写映射表或徽章 HTML。
 3. **数据语义色单一出处**：着顺浅色三件套（1/2/3着+着外）JS 侧 = `race-rows.js` 的 `PLACE_BG`，CSS 侧 = theme.css `.yj-nkm*`，两处互指注释、**改色必须同步**；新增数据语义色先找单一出处再写。
 4. **组件样式进 theme.css**：≥3 页共用或全站统一的样式 → `@layer components` 用 `@apply` 封装（如 `.page-title`/`.sec-title`）；**但类名靠 JS 动态拼接、content 里没有字面量的类（如 `.yj-g*`），必须放在 @layer 之外**——Tailwind 会按 content 候选裁剪 @layer 内规则。
 5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例：`.seg`/`manYen`/`#page.embed` 等）。
@@ -499,4 +499,25 @@
   7. **UV 实测不可靠，口径以 PV 为准**（2026-09-30 线上实测）：同一浏览器 profile 连开两次，`site_pv` 10→11 的同时 `site_uv` 也 10→11，且该 profile 的 cookie 库里**没有 busuanzi 的 cookie**（第三方 cookie 被浏览器默认拦截）→ 不蒜子的 UV 靠它自己域上的 cookie 去重，**去重失效时 UV 会趋近 PV**。故展示端「总访问」当主指标，「访客」只作参考；要精确独立访客须用第一方分析（百度统计一类）。
   8. **补救：页脚两端都显示（2026-09-30 用户确认）**。原页脚块是 `hidden md:block`，于是 **mb 端只计数、不显示**（计数脚本挂在外壳 head，与视口无关）——实测手机视口下 `script[src*=busuanzi]` 已注入、`#busuanzi_value_site_pv` 已回填 22，但 `页脚 display:none`、高度 0，且抽屉里 nav 一路延伸到抽屉底边（无页脚）。改为常显（去掉 `hidden`/`md:block`）后：桌面侧栏底部与手机 ☰ 抽屉底部显示同一块，抽屉内页脚矩形底边 == 抽屉底边；桌面像素不变。
   9. **验证法沉淀（mb 端专用）**：要看手机抽屉内的真实状态，headless 的 `--screenshot` 不够（抽屉默认关着），需 CDP：起 `--remote-debugging-port`，`Runtime.evaluate` 里 `#menuBtn.click()` 后 `Page.captureScreenshot`（本轮临时脚本 `%TEMP%\yj-visit\yj-cdp.mjs`，不入库）。**坑**：headless Chrome 窗口会被最小宽度钳到 ~492px，而 `--screenshot` 仍按请求宽度裁切 → 会造出「mb 端内容被切」的**假象**（实测 shell / iframe 的 `scrollWidth == clientWidth == 492`，**无横向溢出**）；另 `Start-Process -ArgumentList` 不会给含空格的参数加引号，`--host-resolver-rules` 这种会被拆开导致 Chrome 立刻退出——用 `&`/后台 job 启动才安全。
+
+### §86 · 硬编码白名单收敛 + 障害重赏（JG1-3）纳入重赏口径（2026-10-01）
+- **最终落地**：
+  1. **海外场不设白名单**（`scripts/races/racelib.py`）：删 `OVERSEAS_VENUES`，`venue_type()` = 非中央/地方一律「海外」（原「未知」中间态取消）；台账缺 `場名` 也归海外，`fetch_ledger.py` 的 `REQUIRED` 收敛为 `日付/競走名/出走馬名/結果`。
+  2. **着順非数字不设合法值白名单**（同文件 `coerce_record`）：删 `RESULT_DNF`，非数字結果一律保留原值（单字 中/取/除/失 仍经 `DNF_ABBR` 归一）；**空結果也收**（结果未出/未填），配套 `merge_races.career_from_recs` 把空結果**排除在通算计数外**（不计出走/着外）。
+  3. **成绩页表头必填列最小集**（`scripts/races/fetch_races.py`）：必填仅 `日付/レース名`（缺才返回 `[]`），其余列可选（缺列→字段空，`c()` 与 `race_id/jockey_id` 解析全容错；线上实测表头 33 列无「馬名」列，马名来自 basic.json）。開催白名单未命中 → 去 R 号噪音后**原值作场名**。
+  4. **毛色**（`basic/fetch_detail.py`、`races/fetch_detail.py`、`basic/fetch_pedigree.py`）：正则提全 token（漢字1-3+毛）、白名单命中优先、未收录用原值；顺带修掉旧子串扫描把「栃栗毛/鹿栗毛」截成「栗毛」的存量 bug。
+  5. **徽章单表 + 障害重赏**：后端 `build_timeline.py` 的 `GLBL`/`GBADGE` 两张表合并为 **`GRADE = {格: (显示文案, 徽章类)}`**（旧名降级为派生别名），前端 `race-rows.js` 同构（`GRADE` + 派生 `G/GLABEL`，新增导出 `YJ.raceRows.GRADE`），两边补 `JGI/JGII/JGIII → JG1/JG2/JG3`（徽章类复用 `g1/g2/g3`，**不新增 CSS**）。
+  6. **重赏口径全链路纳入 JG**：`timeline GRADED` / `stats+datechart TROPHY_GRADES` / 两个校验脚本的 `TROPHY_G`、`gradeKey`、`gradedKeys`、`G_SEQ`、重赏合计 / `races.html gradeMatches`+
+     新单级选项 JG1-3 / `datechart.html GRADED` / `stats.html` 级别桶·下钻键·重赏步·帮助文案 / `data/SCHEMA.md` 口径定义。L/OP 仍不算重赏。
+  7. **（顺带修存量缺陷）三个校验脚本的 DOM stub 补全 `location`**（`verify_stats.cjs`/`verify_datechart.cjs`/`verify_drill.cjs`）：页面 §82.13 的「独立打开=自动回壳」脚本要读 `location.search/pathname` 并调 `location.replace`，stub 只有 `{href:""}` → 页面冒烟段自 9/30 起**每次 eval 即崩**（`undefined.indexOf`），导致 `run_update.py --ci` 的断言门长期判失败（而 workflow 自己的 commit 步骤照旧提交，所以 CI 表面正常、断言实际没跑）。补全后 4 个校验脚本 112+205+60 条断言 + 三态对账全绿。
+- **最终状态**：✅ 已完成。构建通过（dist 已核对：`races.html` 含 JG1-3 选项、`stats.html` 含 JG 桶、`race-rows.js` 含 `GRADE`）；`timeline/datechart/stats` 三产物重算**内容无变化**（现库无 JG 场次 → 零影响、无回归）；合成 JGI 一着穿透测试通过（级别首胜 JG1/N 胜/世代重赏首胜/统计桶 JG1/筛选命中）；4 个校验脚本全绿。
+- **关键结论**：白名单只许出现在「能同时覆盖未来取值」的地方——**分类口径（中央/地方 vs 其余）用默认值，不用枚举**；枚举仅保留「归一化词表」（如 `DNF_ABBR`/`ROMANS`），命中就归一、未命中就原值透传，**绝不用枚举做准入判定**。所有消费同一口径的副本（前端筛选/统计桶/断言脚本/文档）必须同轮同步，否则会出现「时间线认、筛选页不认」的静默不一致。
+
+### §87 · 口径词汇统一：「格」归一入口 + 芝ダ 的 障/障害 分裂修正（2026-10-01）
+- **最终落地**：
+  1. **`格` 归一（新增 `racelib.normalize_grade()`，入库+落库双入口）**：全角折半角（`str.maketrans` 表）→ 去空白/中点/连字符 → 罗马数字折拉丁 → 阿拉伯记法映射罗马记法：`G1-3→GI-GIII`、`JG1-3→JGI-JGIII`、`Jpn1-3→JpnI-JpnIII`（覆盖 `JG2`/`J・G2`/`ＪＧ２`/`JpnⅡ`）。调用点：`coerce_record`（台账 CSV 入库）+ `merge_races.save_races_file`（落库自愈，历史/外部来源一并修正）；未命中值原样返回，台账自由文本（Allowance）与班赛 token（1勝クラス/新馬/未勝利/オープン）不受影响。
+  2. **`芝ダ` 口径统一为 `障`**（`racelib.normalize_surface()` 提为公开入口，`_normalize_surface` 兼容别名；`save_races_file` 加入落库归一）。同步 5 处错写成 `障害` 的消费端：`races.html` 跑道筛选选项值（原 `障害` 永远筛不到库里的 `障`）、`i18n.js` 芝ダ 枚举（缺 `障` 键 → 显示不出「障碍」）、`race-rows.js` `SURF_SHORT`（`障害→障` 查表落空 → 跨马表丢「障」前缀）、`verify_datechart.cjs` `SURF_SET`（缺 `障` → 一旦有障碍场次断言即挂）、`SCHEMA.md` §日期图 `s` 取值说明。
+- **最终状态**：✅ 已完成。构建通过；三产物重算**内容无变化**（现库 `格`/`芝ダ` 已是规范值 → 零影响）；40 条 python 断言（归一全写法 + 台账入库 + 落库自愈）+ 14 条前端断言全过；4 个校验脚本 112+205+60 全绿。
+- **关键结论**：「归一化词表」必须在**入库和落库两个口**都做——只在解析侧归一，外部直接落库的值（台账手填、历史文件、编辑台写入）就会漏；同一份数据语义在库里只能有一种写法（`障` 而非 `障害`），消费端要么读规范值，要么在字典里同时容纳两种写法，**不能只认另一种**。另：`str.translate` 只认 ordinal 键，给字符键会**静默不生效**（本次实测踩到，必须用 `str.maketrans` 构造）。
+
 

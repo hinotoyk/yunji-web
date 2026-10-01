@@ -34,7 +34,7 @@ const weightBinOf = w => {
   const lo0 = Math.floor(n / 10) * 10, lo = lo0 >= 550 ? 540 : lo0;
   return lo + "-" + (lo + 10);
 };
-const TROPHY_G = new Set(["GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"]);
+const TROPHY_G = new Set(["GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"]);
 const SCOPE_RE = /^(all|y\d{4}|g\d{4})$/;
 
 console.log("[A] data/stats.json 产物断言");
@@ -171,6 +171,9 @@ const gradeOf = g => {
   if (g === "GI") return "G1";
   if (g === "GII") return "G2";
   if (g === "GIII") return "G3";
+  if (g === "JGI") return "JG1";
+  if (g === "JGII") return "JG2";
+  if (g === "JGIII") return "JG3";
   if (g === "JpnI") return "Jpn1";
   if (g === "JpnII") return "Jpn2";
   if (g === "JpnIII") return "Jpn3";
@@ -425,7 +428,7 @@ global.document = {
 };
 global.window = global;
 global.addEventListener = function () {};
-global.location = { href: "" };
+global.location = { href: "", search: "", pathname: "/pages/stats.html", replace() {} };   /* 补全：页面「独立打开=自动回壳」分支（§82.13）要读 search/pathname 并调 replace */
 global.YJ = { i18n: { t: k => k, e: (f, v) => v } };
 global.YJ_DATA = { url(p) { return "data/" + p; } };
 global.fetch = function (url) {
@@ -577,14 +580,14 @@ setTimeout(function () {
   const cellIdx = (h, name) => { const m = h.match(new RegExp(">" + name + "(<span|</td>)")); return m ? m.index : -1; };
   const gAll = byv["中央"].scopes.all.dims.grade;
   ok(String(els["matTabs"]._html).includes(">比赛级别<"), "页签改名「比赛级别」");
-  const gradedKeys = ["G1", "G2", "G3", "Jpn1", "Jpn2", "Jpn3"];
+  const gradedKeys = ["G1", "G2", "G3", "JG1", "JG2", "JG3", "Jpn1", "Jpn2", "Jpn3"];
   const gEx = gradedKeys.filter(k => gAll.some(x => x.k === k));
   const gk = gEx.find(k => gAll.find(x => x.k === k).w > 0) || gEx[0];   /* 优先取有胜场的重赏桶 */
   ok(gk && new RegExp(">" + gk + "(<span[^>]*>样本少</span>)?</td>(<td( class=\"dim\")?>\\d+</td>)<td( class=\"dim\")?>" + gAll.find(x => x.k === gk).w + "</td>").test(mtGr),
     "比赛级别页签：" + (gk || "?") + " 行 1着 = " + (gk ? gAll.find(x => x.k === gk).w : "?") + "（纯数字无样式）");
   ok(gk && mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:" + gk + ",venue:中央") + '"'), (gk || "?") + " 行下钻 = grade:" + gk);
   ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:1勝クラス,venue:中央") + '"'), "一胜级行下钻 = grade:1勝クラス（races.html gradeMatches 已支持）");
-  const G_SEQ = ["新马", "未胜利", "一胜级", "二胜级", "三胜级", "OP", "L", "Jpn1", "Jpn2", "Jpn3", "G1", "G2", "G3", "其他"]
+  const G_SEQ = ["新马", "未胜利", "一胜级", "二胜级", "三胜级", "OP", "L", "Jpn1", "Jpn2", "Jpn3", "G1", "G2", "G3", "JG1", "JG2", "JG3", "其他"]
     .filter(k => gAll.some(x => x.k === k));
   ok(G_SEQ.length >= 2 && G_SEQ.every((k, i) => cellIdx(mtGr, k) >= 0 && (i === 0 || cellIdx(mtGr, k) > cellIdx(mtGr, G_SEQ[i - 1]))),
     "比赛级别固定序：" + G_SEQ.join("→"));
@@ -699,9 +702,9 @@ setTimeout(function () {
   ok(!String(els["gradedProg"]._html).includes("胜场按级别"), "口径注记文案已移除（用户要求，§79）");
   const gW = k => (gAll.find(x => x.k === k) || {}).w || 0;
   const prog = String(els["gradedProg"]._html);
-  const wBan = gW("一胜级") + gW("二胜级") + gW("三胜级"), wTrophy = gW("G1") + gW("G2") + gW("G3") + gW("Jpn1") + gW("Jpn2") + gW("Jpn3");
+  const wBan = gW("一胜级") + gW("二胜级") + gW("三胜级"), wTrophy = gW("G1") + gW("G2") + gW("G3") + gW("JG1") + gW("JG2") + gW("JG3") + gW("Jpn1") + gW("Jpn2") + gW("Jpn3");
   ok(prog.includes(">" + wBan + "</b>胜"), "班赛步数 = 一胜~三胜级合计 " + wBan);
-  ok(prog.includes(">" + wTrophy + "</b>胜"), "重赏步数 = G1-3+Jpn1-3 合计 " + wTrophy + "（不含 L/OP）");
+  ok(prog.includes(">" + wTrophy + "</b>胜"), "重赏步数 = G1-3+JG1-3+Jpn1-3 合计 " + wTrophy + "（不含 L/OP）");
   const gl = String(els["gradedList"]._html);
   ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
   ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");

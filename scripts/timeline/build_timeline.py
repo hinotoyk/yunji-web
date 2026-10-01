@@ -21,11 +21,18 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data"
 
 # ---- 常量（口径与前端/races.html 一致） ----
-GLBL = {"GI": "G1", "GII": "G2", "GIII": "G3", "L": "L", "OP": "OP",
-        "JpnI": "Jpn1", "JpnII": "Jpn2", "JpnIII": "Jpn3"}
-GBADGE = {"GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop",
-          "JpnI": "g1", "JpnII": "g2", "JpnIII": "g3"}
-GRADED = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}          # 重赏判定
+# 格 → (显示文案, 徽章类)：单一表（2026-10 決定：合并原 GLBL/GBADGE 两张表，并补障害重赏 JGI/JGII/JGIII）。
+# 徽章类复用同级别 g1/g2/g3（Jpn/障害 与中央 G1-G3 视觉同级，靠文案区分）；L/OP 用 gl/gop。
+# ★ 与前端 front/public/race-rows.js 的 GRADE 表互指，改一处必须同步另一处。
+GRADE = {
+    "GI": ("G1", "g1"), "GII": ("G2", "g2"), "GIII": ("G3", "g3"),
+    "JGI": ("JG1", "g1"), "JGII": ("JG2", "g2"), "JGIII": ("JG3", "g3"),
+    "JpnI": ("Jpn1", "g1"), "JpnII": ("Jpn2", "g2"), "JpnIII": ("Jpn3", "g3"),
+    "L": ("L", "gl"), "OP": ("OP", "gop"),
+}
+GLBL = {g: v[0] for g, v in GRADE.items()}      # 派生别名（显示文案）：既有调用点不变
+GBADGE = {g: v[1] for g, v in GRADE.items()}    # 派生别名（徽章类）：既有调用点不变
+GRADED = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}   # 重赏判定（含障害重赏）
 NODE_PRIO = {"sire": 0, "gen": 1, "first": 2, "graded": 3, "award": 4}  # 节点取色优先级（小者优先）
 # 人工节点 tags[].cat 白名单（D9 六色，允许自选）：与自动节点同源 = NODE_PRIO 五类 + manual。
 # 取值即前端 timeline.html 的 .tl-node / .tl-tag 类名（那页只读参考，改色需同步），

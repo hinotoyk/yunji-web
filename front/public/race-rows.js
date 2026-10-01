@@ -42,11 +42,18 @@ YJ.raceRows = (function () {
    * （首位出走浅青绿 #E0F5F4）已删；#E0F5F4 仍用于 selector 日文名色块、profile 出走强调色。 */
 
   /* ---- 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 浅青绿）
-   * ★ 取值必须与 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见 */
-  var G = { "GI": "g1", "GII": "g2", "GIII": "g3", "L": "gl", "OP": "gop",
-            "JpnI": "g1", "JpnII": "g2", "JpnIII": "g3" };
-  var GLABEL = { "GI": "G1", "GII": "G2", "GIII": "G3", "L": "L", "OP": "OP",
-                 "JpnI": "Jpn1", "JpnII": "Jpn2", "JpnIII": "Jpn3" };
+   * ★ 取值必须与 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见。
+   * 单一表 GRADE：格 → [显示文案, 徽章类]（2026-10 決定：合并原 G/GLABEL 两张表，并补障害重赏 JG1-3；
+   * Jpn/障害 复用 g1/g2/g3 = 同级别视觉，靠文案区分）。G/GLABEL 为兼容导出而派生，新代码请用 GRADE。
+   * ★ 与后端 scripts/timeline/build_timeline.py 的 GRADE 表互指，改一处必须同步另一处。 */
+  var GRADE = {
+    "GI": ["G1", "g1"], "GII": ["G2", "g2"], "GIII": ["G3", "g3"],
+    "JGI": ["JG1", "g1"], "JGII": ["JG2", "g2"], "JGIII": ["JG3", "g3"],
+    "JpnI": ["Jpn1", "g1"], "JpnII": ["Jpn2", "g2"], "JpnIII": ["Jpn3", "g3"],
+    "L": ["L", "gl"], "OP": ["OP", "gop"]
+  };
+  var G = {}, GLABEL = {};
+  for (var gk in GRADE) { G[gk] = GRADE[gk][1]; GLABEL[gk] = GRADE[gk][0]; }
   function gradeBadge(g) {
     var k = g && G[g];
     return k ? '<span class="yj-grade yj-' + k + '">' + esc(GLABEL[g]) + '</span>' : "";
@@ -130,7 +137,7 @@ YJ.raceRows = (function () {
   }
 
   /* ---- 跑道简称（跨马表「距离」列：草1200 / 泥1200 / 障1000 / AW1000） ---- */
-  var SURF_SHORT = { "芝": "草", "ダ": "泥", "障害": "障", "AW": "AW" };
+  var SURF_SHORT = { "芝": "草", "ダ": "泥", "障": "障", "障害": "障", "AW": "AW" };   /* 数据口径 = 障，障害 兼容旧值 */
   function surfaceShort(v) { return SURF_SHORT[v] || ""; }
 
   /* ---- 马名 ----
@@ -517,7 +524,7 @@ YJ.raceRows = (function () {
   function libTheadHTML(o) { return theadHTML("lib", o); }
 
   return {
-    esc: esc, G: G, GLABEL: GLABEL, PLACE_BG: PLACE_BG,
+    esc: esc, GRADE: GRADE, G: G, GLABEL: GLABEL, PLACE_BG: PLACE_BG,
     gradeBadge: gradeBadge, placeBadge: placeBadge,
     ninkiBadge: ninkiBadge, ninkiMbCls: ninkiMbCls,
     raceNameText: raceNameText, venueR: venueR, surfaceShort: surfaceShort,

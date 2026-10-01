@@ -92,7 +92,7 @@ global.fetch = url => {
 const DRILL_F = ["surface:ダ", "venue:中央", "dist:中距离", "cond:良", "turn:右", "ninki:1",
   "sex:牝", "grade:2勝クラス", "trainer:矢作芳人", "jockey:武豊", "result:一着", "byear:2024",
   "weight:470-480", "grade:ZZZ", "track:不存在", "sex:未知", "weight:ABC"].join(",");
-global.location = { search: "?f=" + encodeURIComponent(DRILL_F), href: "" };
+global.location = { search: "?f=" + encodeURIComponent(DRILL_F), href: "", pathname: "/pages/races.html", replace() {} };   /* pathname/replace 补全：页面「独立打开=自动回壳」分支（§82.13）要用 */
 global.YJ = {
   i18n: { t: k => k, e: (f, v) => v, g: (f, v) => v },
   device: { isMb() { return false; }, onChange() {}, isPc() { return true; } },

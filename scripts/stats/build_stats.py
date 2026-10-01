@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data"
 
 # 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径；L/OP 不计入）
-TROPHY_GRADES = {"GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"}
+TROPHY_GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}   # 含障害重赏（2026-10）
 DIM_KEYS = ["surf", "dist", "cond", "turn", "grade", "ninki", "sex", "track", "trainer", "jockey", "mps",
             "weight_m", "weight_f", "breeder", "owner"]   # 后四为 2026-09 增补：体重按性别拆两维（m=牡含セン / f=牝，当日馬体重档）；breeder/owner=basic 现值
 VENUE_KEYS = ["中央", "地方", "海外"]
@@ -96,6 +96,12 @@ def grade_key(g):
         return "G2"
     if g == "GIII":
         return "G3"
+    if g == "JGI":
+        return "JG1"
+    if g == "JGII":
+        return "JG2"
+    if g == "JGIII":
+        return "JG3"
     if g == "JpnI":
         return "Jpn1"
     if g == "JpnII":

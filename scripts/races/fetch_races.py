@@ -98,12 +98,12 @@ def parse_races(html):
         return []
     ths = [th.get_text(" ", strip=True).replace(" ", "") for th in tbl.find_all("th")]
     idx = {n: i for i, n in enumerate(ths)}
-    need = ["日付", "開催", "天気", "R", "レース名", "頭数", "枠番", "馬番", "オッズ", "人気",
-            "着順", "騎手", "斤量", "距離", "馬場", "タイム", "着差", "通過", "ペース", "上り",
-            "馬体重", "賞金"]
-    if any(n not in idx for n in need):
+    # 必填列最小集（2026-10 決定）：仅缺这些才整页放弃（返回 []）；其余列一律可选，
+    # 缺失只让对应字段为空。注意本页没有「馬名」列（马名来自 basic.json；台账必填列见 fetch_ledger.py REQUIRED）。
+    required_cols = ("日付", "レース名")
+    if any(n not in idx for n in required_cols):
         return []  # 页面结构变化 → 视为无记录，交由调用方告警
-    venues = racelib.JRA_VENUES | racelib.NAR_VENUES | racelib.OVERSEAS_VENUES
+    venues = racelib.JRA_VENUES | racelib.NAR_VENUES
 
     def num(v):
         try:
@@ -127,13 +127,15 @@ def parse_races(html):
         tds = tr.find_all("td")
         if len(tds) <= last_col:
             continue
-        c = lambda n: tds[idx[n]].get_text(" ", strip=True)  # noqa: E731
+        c = lambda n: tds[idx[n]].get_text(" ", strip=True) if n in idx else ""  # noqa: E731
         m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", c("日付"))
         if not m:
             continue
         date_n = f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         kai = c("開催")
         venue = next((v for v in venues if v in kai), "")
+        if not venue and kai:      # 海外/未收录開催 → 去 R 号等噪音后原值作场名（海外不设白名单）
+            venue = re.sub(r"[(（][^)）]*[)）]|[0-9０-９]|\s", "", kai)
         m2 = re.match(r"^(芝|ダ|障)(\d+)$", c("距離"))
         if m2:
             surf = {"芝": "芝", "ダ": "ダート", "障": "障害"}[m2.group(1)]
@@ -159,8 +161,8 @@ def parse_races(html):
             "タイム": c("タイム"), "着差": c("着差"), "通過": c("通過"),
             "ペース": c("ペース"), "上り": c("上り"),
             "馬体重": bw_v, "増減": bw_d, "賞金": num(c("賞金")),
-            "race_id": link_id(tds[idx["レース名"]], r"/race/([0-9A-Za-z]+)/"),
-            "jockey_id": link_id(tds[idx["騎手"]], r"/jockey/result/(?:recent/)?([0-9A-Za-z]+)/"),
+            "race_id": link_id(tds[idx["レース名"]], r"/race/([0-9A-Za-z]+)/") if "レース名" in idx else "",
+            "jockey_id": link_id(tds[idx["騎手"]], r"/jockey/result/(?:recent/)?([0-9A-Za-z]+)/") if "騎手" in idx else "",
         })
     out.sort(key=lambda r: r["日付"], reverse=True)
     return out

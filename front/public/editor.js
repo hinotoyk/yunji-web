@@ -3,8 +3,7 @@
  * mode "draft" = 其余情况（线上打开 / 本地没开服务），编辑进浏览器草稿箱（字段 localStorage + 图片 IndexedDB），
  * 攒够一次性走 GitHub API 提交（Git Data API 单原子 commit，PAT 存 localStorage）→ push main 触发 CI（deploy.yml
  * 里 merge_basic + build_timeline）约 2 分钟生效。备注 _note 可选；时间线不再依赖本地手动重算（CI 自动）。
- * 图片（D8）：压缩全部在浏览器 canvas 里做完再入库 —— 本地 POST /photo；草稿态存 IndexedDB，提交时上传。
- * 出处：OPTIMIZATION_PLAN.md §4.2 / §4.3 / §4.4（图片段）/ §4.5（时间线段）；2026-09 改案见 front/UI优化记录.md。 */
+ * 图片（D8）：压缩全部在浏览器 canvas 里做完再入库 —— 本地 POST /photo；草稿态存 IndexedDB，提交时上传。 */
 window.YJ = window.YJ || {};
 YJ.editor = (function () {
   "use strict";

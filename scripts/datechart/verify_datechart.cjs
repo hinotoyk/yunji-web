@@ -26,9 +26,9 @@ const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.js
 const RUNS = product.runs || [];
 const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
-const SURF_SET = new Set(["芝", "ダ", "障害", "AW"]);
+const SURF_SET = new Set(["芝", "ダ", "障", "障害", "AW"]);   /* 存放口径 = 障（racelib 归一），障害 兼容旧值 */
 const VT_SET = new Set(["中央", "地方", "海外"]);
-const TROPHY_G = new Set(["GI", "GII", "GIII", "JpnI", "JpnII", "JpnIII"]);   /* 重赏口径同 races.html（L/OP 不算） */
+const TROPHY_G = new Set(["GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"]);   /* 重赏口径同 races.html（L/OP 不算；障害重赏 2026-10 起计入） */
 
 console.log("[A] data/datechart.json 产物断言");
 {
@@ -65,7 +65,7 @@ for (let i = 0; i < RUNS.length; i++) {
   if (i && (RUNS[i - 1].d > r.d || (RUNS[i - 1].d === r.d && String(RUNS[i - 1].id) > String(r.id)))) badSort++;
 }
 ok(badKeys === 0, "字段同构：全部 " + RUNS.length + " 条恰为 " + EXPECTED_KEYS.length + " 键");
-ok(badField === 0, "字段类型：d 格式 / id int / h 非空 / s∈芝·ダ·障害·AW / p 着顺段位 / vt∈中央·地方·海外 / 明细字段齐全");
+ok(badField === 0, "字段类型：d 格式 / id int / h 非空 / s∈芝·ダ·障·AW / p 着顺段位 / vt∈中央·地方·海外 / 明细字段齐全");
 ok(badSort === 0, "排序：按 d → id → R 升序");
 
 /* ═══════════ [B] 产物 ↔ 源数据 1:1 对账（独立第二实现） ═══════════ */
@@ -159,6 +159,7 @@ global.document = {
   addEventListener(t, f) { (this._handlers[t] = this._handlers[t] || []).push(f); },
 };
 global.window = global;
+global.location = { href: "", search: "", pathname: "/pages/datechart.html", replace() {} };   /* 补全：页面「独立打开=自动回壳」分支（§82.13）要读 search/pathname 并调 replace */
 global.YJ = { i18n: {
   t(k) { return ({ "日付":"日期", "馬名":"马名", "性齢":"性龄", "レース名":"赛事", "場名":"场地", "距離":"距离", "芝ダ":"跑道", "着順":"着顺", "賞金":"赏金", "馬場":"马场", "斤量":"负磅", "人気":"人气", "タイム":"时间", "馬体重":"马体重", "騎手":"骑手", "調教師":"调教师" })[k] || k; },
   e(k, v) { return ({ 芝:"草地", ダ:"泥地", 障害:"障碍", AW:"全天候" })[v] || v; },
@@ -354,7 +355,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === "2026/08/09（" + weekdayCn("2026-08-09") + "）", "点 8/9 → " + els["winLabel"].textContent);
   const sd = sDay("2026-08-09");
   ok(+kpiRuns() === starts(sd).length, "天 KPI 出走 " + starts(sd).length + "（J·GIII 胜日）");
-  ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sd), "天 KPI 重赏胜利 🏆" + trophyOf(sd) + "（G1-3/Jpn1-3 口径）");
+  ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sd), "天 KPI 重赏胜利 🏆" + trophyOf(sd) + "（G1-3/JG1-3/Jpn1-3 口径）");
   /* 周口径 → 带周号日历面板 */
   seg("week");
   dpTrigger();

@@ -203,8 +203,8 @@ function pad2(n){return n<10?"0"+n:""+n;}
  * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
 var RUNS = [];
 
-/* ---- 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 ---- */
-var GRADED = { "GI":1, "GII":1, "GIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
+/* ---- 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 ---- */
+var GRADED = { "GI":1, "GII":1, "GIII":1, "JGI":1, "JGII":1, "JGIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
 /* ---- 着顺归类（括号后四段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
  * 未出走(取消/除外) 不进任何段——见 statsOf()，未出闸不算通算战绩 */
 function placeSlot(p){

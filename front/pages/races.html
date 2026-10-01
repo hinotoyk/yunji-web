@@ -346,12 +346,15 @@ var SEX_OPTS = [
   {v:"牡", l:"牡"}, {v:"牝", l:"牝"}, {v:"セン", l:"セン"}
 ];
 
-/* 级别：单级 G1/G2/G3/Jpn1/Jpn2/Jpn3/L/OP + 聚合重赏(G1-3+Jpn1-3) + 班赛(1/2/3胜) + 新马/未胜利 */
+/* 级别：单级 G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3/L/OP + 聚合重赏(G1-3+JG1-3+Jpn1-3) + 班赛(1/2/3胜) + 新马/未胜利 */
 function gradeMatches(g, opt){
-  if(opt==="重赏") return g==="GI"||g==="GII"||g==="GIII"||g==="JpnI"||g==="JpnII"||g==="JpnIII";
+  if(opt==="重赏") return g==="GI"||g==="GII"||g==="GIII"||g==="JGI"||g==="JGII"||g==="JGIII"||g==="JpnI"||g==="JpnII"||g==="JpnIII";
   if(opt==="G1") return g==="GI";
   if(opt==="G2") return g==="GII";
   if(opt==="G3") return g==="GIII";
+  if(opt==="JG1") return g==="JGI";
+  if(opt==="JG2") return g==="JGII";
+  if(opt==="JG3") return g==="JGIII";
   if(opt==="Jpn1") return g==="JpnI";
   if(opt==="Jpn2") return g==="JpnII";
   if(opt==="Jpn3") return g==="JpnIII";
@@ -366,8 +369,9 @@ function gradeMatches(g, opt){
   return false;
 }
 var GRADE_OPTS = [
-  {v:"重赏",   l:"重赏",   tip:"G1/G2/G3/Jpn1/Jpn2/Jpn3"},
+  {v:"重赏",   l:"重赏",   tip:"G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3"},
   {v:"G1", l:"G1"}, {v:"G2", l:"G2"}, {v:"G3", l:"G3"},
+  {v:"JG1", l:"JG1"}, {v:"JG2", l:"JG2"}, {v:"JG3", l:"JG3"},
   {v:"Jpn1", l:"Jpn1"}, {v:"Jpn2", l:"Jpn2"}, {v:"Jpn3", l:"Jpn3"},
   {v:"L", l:"L"}, {v:"OP", l:"OP"},
   {v:"班赛",   l:"班赛",   tip:"1胜/2胜/3胜クラス"},
@@ -406,7 +410,7 @@ var VENUE_OPTS = [{v:"中央",l:"中央"},{v:"地方",l:"地方"},{v:"海外",l:
 var SURFACE_OPTS = [
   {v:"芝",   l:"草地",  tip:"JRA 芝（草地）"},
   {v:"ダ",   l:"泥地",  tip:"JRA ダート（泥地）"},
-  {v:"障害", l:"障碍",  tip:"障害竞走（JRA 独立竞走种类）"},
+  {v:"障", l:"障碍",  tip:"障害竞走（JRA 独立竞走种类；数据口径 芝ダ=障）"},
   {v:"AW",   l:"全天候", tip:"仅海外竞马场（JRA 无全天候跑道）"}
 ];
 

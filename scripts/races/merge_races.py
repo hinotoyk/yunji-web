@@ -103,6 +103,8 @@ def career_from_recs(recs):
     starts = exc = dnf = w = p2 = p3 = 0
     for r in recs:
         res = r.get("結果")
+        if res in ("", None):
+            continue              # 结果未出/未填：记录保留并展示，但不进通算计数（2026-10 決定）
         if res in EXC_RES:
             exc += 1
             continue
@@ -136,6 +138,8 @@ def save_races_file(id_s, recs):
     # 结果字段统一归一（历史单字 DNF 中/取/除/失 → 全称 中止/取消/除外/失格）
     for i, r in enumerate(recs):
         r["結果"] = racelib.normalize_result(r.get("結果", ""))
+        r["格"] = racelib.normalize_grade(r.get("格", ""))            # 格 落库归一（台账手填 JG2 / 历史记录自愈）
+        r["芝ダ"] = racelib.normalize_surface(r.get("芝ダ", ""))      # 芝ダ 落库归一（障害→障，与前端/统计同口径）
         recs[i] = common.order_record(r)      # 固定字段模板顺序（模板外未知键兜底追加，不丢数据）
     recs.sort(key=lambda r: r.get("日付", ""), reverse=True)
     (common.RACES_DATA_DIR / f"{id_s}.json").write_text(

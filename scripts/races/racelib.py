@@ -10,11 +10,10 @@ import re
 JRA_VENUES = {"札幌", "函館", "福島", "新潟", "東京", "中山", "中京", "京都", "阪神", "小倉"}
 NAR_VENUES = {"門別", "帯広", "盛岡", "水沢", "金沢", "笠松", "名古屋", "園田", "姫路",
               "高知", "佐賀", "大井", "船橋", "川崎", "浦和", "荒尾"}
-OVERSEAS_VENUES = {"ウッドバイン", "デルマー", "フォートエリー", "ドバイ", "メイダン",
-                   "シャティン", "ロンシャン", "サンタアニタ", "チャーチルダウンズ",
-                   "アケダクト", "ベルモントパーク", "サラトガ", "キーンランド"}
+# 海外场不设白名单（2026-10 決定）：venue_type = 非中央/地方一律「海外」。
+# 此前 OVERSEAS_VENUES 硬编码 13 场当过滤门，フィンガーレイクス 未收录 → 台账行被静默丢弃。
 
-RESULT_DNF = {"中止", "取消", "除外", "失格"}
+# 着順非数字不再设合法值白名单（2026-10 決定）：coerce_record 一律保留原值（单字略称经 DNF_ABBR 归一）。
 
 # 格（从レース名括号后缀推导）：GRADE_ORDER 为规范顺序（含 Jpn*/OP）
 GRADE_ORDER = ["GI", "JpnI", "GII", "JpnII", "GIII", "JpnIII", "L", "OP"]
@@ -58,18 +57,20 @@ def parse_float(v):
 
 
 def venue_type(name):
+    """非中央/地方一律「海外」（海外场不设白名单，2026-10 決定）。"""
     if name in JRA_VENUES:
         return "中央"
     if name in NAR_VENUES:
         return "地方"
-    if name in OVERSEAS_VENUES:
-        return "海外"
-    return "未知"
+    return "海外"
 
 
-def _normalize_surface(surf):
-    """芝ダ 归一化：netkeiba 距离列 芝/ダ/障；台账 芝/ダート/AW → 芝/ダ/AW；障害→障。"""
+def normalize_surface(surf):
+    """芝ダ 归一（入库/落库统一入口）：netkeiba 距离列 芝/ダ/障；台账 芝/ダート/AW → 芝/ダ/AW；障害→障。"""
     return {"ダート": "ダ", "障害": "障", "芝": "芝", "ダ": "ダ", "障": "障", "AW": "AW"}.get(surf or "", surf or "")
+
+
+_normalize_surface = normalize_surface   # 兼容旧名（fetch_races 等既有调用点）
 
 
 def _cell(row, key):
@@ -99,11 +100,8 @@ def coerce_record(row, issues):
     result = parse_int(result_s)
     dnf = ""
     if result is None:
-        if result_s in RESULT_DNF:
-            dnf, result = result_s, None
-        else:
-            issues.append({"type": "結果格式异常", "馬名": name, "日付": date_norm, "結果": result_s})
-            return None
+        # 非数字一律保留原值（单字略称经 DNF_ABBR 归一）；空值也收（结果未出/未填，2026-10 決定）
+        dnf = DNF_ABBR.get(result_s, result_s)
 
     prize = parse_int(_cell(row, "賞金"))
     prize = prize if prize is not None else ""
@@ -128,7 +126,7 @@ def coerce_record(row, issues):
         "場名": venue,
         "R": _cell(row, "R"),
         "レース名": _cell(row, "レース名") or _cell(row, "競走名"),
-        "格": _cell(row, "格"),
+        "格": normalize_grade(_cell(row, "格")),      # 台账手填 JG2/J・G2/G1 等一律归一为罗马记法
         "条件": _cell(row, "条件"),
         "距離": dist if dist is not None else _cell(row, "距離"),
         "芝ダ": _normalize_surface(_cell(row, "芝ダ") or _cell(row, "馬場")),
@@ -165,8 +163,30 @@ def coerce_record(row, issues):
 # 障害重賞 netkeiba 记法为 (JG1)/(JG2)/(JG3)（阿拉伯），统一归一为 JGI/JGII/JGIII。
 _GRADE_PATTERN = r"J?G(?:[I]{1,3}|[123])|Jpn[I]{1,3}"
 GRADE_SUFFIX_RE = re.compile(rf"\(({_GRADE_PATTERN}|L|OP)\)\s*$")
-_GRADE_ROMAN = {"G1": "GI", "G2": "GII", "G3": "GIII",
-                "JG1": "JGI", "JG2": "JGII", "JG3": "JGIII"}
+# 格 别名 → 规范罗马记法（下游集合统一用罗马记法）：
+# netkeiba 障害重赏 (JG1~3) / 海外 (G1~3) / 日式 J・G1 / 台账手填 Jpn1~3 一律归一
+_GRADE_ALIAS = {"G1": "GI", "G2": "GII", "G3": "GIII",
+                "JG1": "JGI", "JG2": "JGII", "JG3": "JGIII",
+                "JPN1": "JpnI", "JPN2": "JpnII", "JPN3": "JpnIII"}
+_GRADE_ROMAN = _GRADE_ALIAS          # 兼容旧名（_norm_grade 用）
+# 全角 ASCII（Ａ-Ｚ ａ-ｚ ０-９ 等 94 字）→ 半角：外部来源可能手打全角
+# 注意必须走 str.maketrans（translate 只认 ordinal 键，直接给字符键会静默不生效）
+_FW_ASCII = str.maketrans({chr(0xFF01 + i): chr(0x21 + i) for i in range(94)})
+# 罗马数字（全角/半角）→ 拉丁：GⅡ / GII 统一
+_ROMAN_CHARS = {"Ⅰ": "I", "Ⅱ": "II", "Ⅲ": "III"}
+_GRADE_NOISE_RE = re.compile(r"[\s\u3000・･·\-－–—]+")
+
+
+def normalize_grade(g):
+    """格 归一（入库/落库唯一入口）：全角折半角 + 去空白/中点/连字符 + 罗马数字折拉丁后，
+    把阿拉伯记法映射成规范罗马记法（G1-3→GI-GIII、JG1-3→JGI-JGIII、Jpn1-3→JpnI-JpnIII；
+    覆盖 `JG2` / `J・G2` / `ＪＧ２` / `JpnⅡ` 等写法）。未命中的取值**原样返回**——
+    台账自由文本（Allowance 等）与班赛 token（1勝クラス/新馬/未勝利/オープン）不受影响。"""
+    s = str(g or "").translate(_FW_ASCII).strip()
+    s = _GRADE_NOISE_RE.sub("", s)
+    for k, v in _ROMAN_CHARS.items():
+        s = s.replace(k, v)
+    return _GRADE_ALIAS.get(s.upper(), s)
 COND_SUFFIX_RE = re.compile(r"\((1勝クラス|2勝クラス|3勝クラス|OP)\)")
 PLAIN_COND_RE = re.compile(r"(?:\d+歳(?:以上)?)?(?:新馬|未勝利|メイクデビュー|\d*勝クラス)")
 COND_NAR_RE = re.compile(r"(C\d|\d+歳\s*[A-Z]|\d+歳ー?\d+)")
