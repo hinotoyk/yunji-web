@@ -520,4 +520,24 @@
 - **最终状态**：✅ 已完成。构建通过；三产物重算**内容无变化**（现库 `格`/`芝ダ` 已是规范值 → 零影响）；40 条 python 断言（归一全写法 + 台账入库 + 落库自愈）+ 14 条前端断言全过；4 个校验脚本 112+205+60 全绿。
 - **关键结论**：「归一化词表」必须在**入库和落库两个口**都做——只在解析侧归一，外部直接落库的值（台账手填、历史文件、编辑台写入）就会漏；同一份数据语义在库里只能有一种写法（`障` 而非 `障害`），消费端要么读规范值，要么在字典里同时容纳两种写法，**不能只认另一种**。另：`str.translate` 只认 ordinal 键，给字符键会**静默不生效**（本次实测踩到，必须用 `str.maketrans` 构造）。
 
+### §87 · 访问统计由不蒜子迁到 Vercount（2026-10-02）
+- **最终落地**：`public/yj-visit.js`（只改注入的 `s.src` → `https://cn.vercount.one/js`）+ `index.html`（引 `yj-visit.js?v=2` 绕缓存；页脚两个 `span` 与 id **零改动**——Vercount 兼容同一套 `busuanzi_container_*`/`busuanzi_value_*`，且额外认 `vercount_*`）。
+- **最终状态**：✅ 已完成（构建 + dist 核对 + 真实 Chrome/CDP 线上复验：数字回填、容器由 hidden 转 inline）。
+- **关键结论**：
+  1. **迁移动因：不蒜子服务端故障，不是本站代码问题**。2026-10-02 实测（Node/OpenSSL 通路，对照 `cn.bing.com` 447ms 正常）：取数 API `https://busuanzi.ibruce.info/busuanzi` 返回 **`502 Bad Gateway`**（另两次 24s/30s 超时），静态脚本本体 `busuanzi.pure.mini.js` 时好时坏（621ms 成功 / 24s 超时）。社区同步佐证：linux.do「不蒜子好像挂了两天了」「又又又挂了，不想忍了」。**区分**：同期 headless Chrome 实测 CF beacon（`static.cloudflareinsights.com`）返回 200/30KB，故 `index:159` 那条 `ERR_SSL_PROTOCOL_ERROR` 在本机属**偶发**、与页脚缺数字**不同源**，不要把两件事混为一谈。
+  2. **诊断法沉淀（本轮新增，可复用）**：判定「页脚数字没了」这类问题必须**分层**——① 用 CDP 看 `#busuanzi_container_site_pv` 的 `display` 与 `#busuanzi_value_site_pv` 文本；② 看 `document.querySelector('script[src*="busuanzi"]')` 是否注入（验证白名单与门控）；③ **单独**探测取数端点本身。本轮 ①② 全绿、③ 502 → 一步定位服务端，避免误改前端。**坑**：本机 `curl.exe`（Schannel）报 `SEC_E_NO_CREDENTIALS`、PS 5.1 `Invoke-WebRequest` 拿不到 HTTPS 响应头，但 **Node（OpenSSL）TLS 正常**——探针一律走 Node，别用 curl 下结论。（另：PS 5.1 无 `-SkipHttpErrorCheck`，`-MaximumRedirection` 亦需 7.0+；`Start-Process -ArgumentList` 启动 headless Chrome 需 `--user-data-dir`，沿用 §85 第 9 条。）
+  3. **Vercount 的两处行为优于不蒜子**：① 用 **POST + `window.location.href`**（不依赖 Referer），故**直接访问也能计数**，没有不蒜子「无 Referer 直接 Bad Request」的毛病；② 取数成功会写 **localStorage 缓存**，API 失败时用上次成功的值续显，比「失败即隐藏」更稳。**已实测** CORS：`access-control-allow-origin: *`、预检 `OPTIONS` 放行 `Content-Type`，POST 返回 `{"status":"success","data":{"site_uv":1,"site_pv":1,"page_pv":1}}`。
+  4. **门控口径不变**：`HOSTS = ['www.yunji.xyz']` 白名单保留（本地/`file://`/`*.github.io` 连脚本都不加载）；apex → www 的 CF 301 已在 §85 第 6 条配好，四个入口都落 www。**代价**：Vercount 是独立服务，累计数字**从 0 重新起算**（不蒜子里那份旧数字仍存于其服务端，若其恢复可查）。
+  5. **仍未解决（已知局限）**：不提供「今日/近 7 天」维度；UV 仍为 cookie 去重近似值（Vercount 为 `max-age=31536000; samesite=lax`，比不蒜子的第三方 cookie 可靠），要精确独立访客仍须第一方分析。
+
+### §88 · 修复「下钻新开标签页却停在首页」：?page= 扩展名归一 + `..` 校验归位（2026-10-02）
+- **最终落地**：`index.html` 外壳 `?page=` 解析块（1 处）：① 扩展名归一——`pn = u.pathname` 不以 `.html` 结尾则补上，再进校验与赋 src（不动 `u.search`）；② `..` 检查从「`u.pathname` 归一后」改为「`wantPage` 原始串」的路径段正则 `/(^|[\/\\])\.\.($|[\/\\?])/`。
+- **最终状态**：✅ 已完成（构建 + dist 核对 + 真浏览器 7 用例全绿：①用户原 URL 修复、②③④回归、⑤非法域名仍拒、⑥`..` 现在被拒、⑦query 内合法 `..` 未误伤）。
+- **关键结论**：
+  1. **根因是托管平台的扩展名重定向**：线上 `/pages/races.html` 返回 **301/307 → `/pages/races`**（实测 GitHub Pages 与 CF Pages 均如此）。于是内容页**独立打开**时 `location.pathname` 已无 `.html`，8 个内容页共用的回壳脚本（`location.pathname.split("/").slice(-2).join("/") + location.search`）算出 `rel = "pages/races?f=…"`，被外壳旧的 `/\.html$/` 校验**拒绝** → `wantSet` 保持 false → iframe 停在默认 profile。**表现为「新开标签页却停在首页」**，而地址栏里的 `page` 参数恰好缺 `.html`（那不是浏览器显示问题，是平台剥的）。**影响面不止下钻**：任何内容页被独立打开（分享单页链接、刷新内容页）都走这条路。
+  2. **诊断法教训：本地静态服务器复现不出这类 bug**。`python -m http.server` 不做扩展名规范化，`/pages/races.html` 直接 200，于是本地全绿、线上全红。**凡涉及 URL 形态的问题，必须打真实托管域名验证**（本轮先用 Node 跟随 307 链发现 `/pages/races` 是 200 且 title 正常，才定位到回壳产物）。反向亦然：本地测「无扩展名直开」会 404，那是**测试环境差异**、不是缺陷。
+  3. **旧 `..` 校验是空操作**：`new URL()` 已把 `../` 规范化掉，对 `u.pathname` 判 `".."` 永远不命中（实测 `pages/../pages/races.html` 被照常接受）。改为对**原始串**按路径段匹配后，该形态被正确拒绝；用 `(^|[/\\])\.\.($|[/\\?])` 而非裸 `indexOf("..")`，才不会误伤 query 里合法的 `..`（如 `f=venue:..`）——**安全校验要不误伤合法值，只能按结构匹配，不能按子串匹配**。
+  4. **顺带澄清一处易误判**：下钻链接的 `data-href` 是裸相对路径 `races.html?f=…`，本轮实测 `window.open` 从 iframe 内调用时**按 iframe 的 baseURI 解析**（`/pages/stats.html` → `/pages/races.html`），故该写法本身正确、与既有 `raceLink()` 的 `profile.html?horse=` 同构；**若将来改由外壳读 `data-href` 导航，必须换成 `pages/races.html` 全路径**（相对基址不同 → 会落到站点根 `/races.html` 404）。此隐患本轮未改（无调用方），仅记录。
+
+
 

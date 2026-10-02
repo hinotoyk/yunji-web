@@ -7,10 +7,10 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="pages/theme.css">
-<!-- 访问统计（不蒜子 · busuanzi）：第三方脚本的唯一注入点在 public/yj-visit.js，
+<!-- 访问统计（Vercount）：第三方脚本的唯一注入点在 public/yj-visit.js，
      由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
-     （既不计数也不显示数字，页脚两个标签保持 hidden）。见 UI优化记录 §85。 -->
-<script src="yj-visit.js?v=1"></script>
+     （既不计数也不显示数字，页脚两个标签保持 hidden）。见 UI优化记录 §87（原不蒜子，§85）。 -->
+<script src="yj-visit.js?v=2"></script>
 </head>
 <body class="overflow-hidden bg-background text-foreground antialiased">
 <div class="flex h-screen">
@@ -63,8 +63,8 @@
       云迹 · 数据仅供分享交流
       <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。原为 hidden md:block，
            导致 mb 端只计数、不显示（计数脚本挂在外壳 head，与视口无关），2026-09-30 用户确认改常显。
-           站点访问量（不蒜子回填）：容器先 hidden（Tailwind），取数成功才由脚本把 display 改成 inline 显示；
-           超时（3s）/离线/被拦截 → 一直隐藏，不会出现「总访问 次」这种空占位。
+           站点访问量（Vercount 回填）：容器先 hidden（Tailwind），取数成功才由脚本把 display 改成 inline 显示；
+           超时（5s）/离线/被拦截 → 一直隐藏，不会出现「总访问 次」这种空占位。
            非正式域名（本地 :8090 / file:// / *.github.io）连脚本都不加载 → 这里只显示上面那行文案。
            只接站点级两个 id：site_pv = 本域名累计打开次数、site_uv = 独立访客数（cookie 去重）。
            不接 page_pv：内容页都在 iframe 里，页面级计数没有意义。 -->
@@ -96,7 +96,11 @@
 
 <script>
 /* ?page= 直达子页（§82.13）：独立打开的内容页自动「回壳」时把目标页带进来。
- * 只接受本站 /pages/*.html 相对地址（同源 + 无 .. + .html 结尾），防开放跳转。 */
+ * 只接受本站 /pages/* 相对地址（同源 + 无 .. + 内容页扩展名），防开放跳转。
+ * ★ §88 扩展名归一：托管平台会把 /pages/x.html 301/307 重定向成 /pages/x（实测线上
+ *   GitHub Pages 与 CF Pages 均如此），于是内容页回壳时 location.pathname 已无 .html，
+ *   算出 rel = "pages/races?f=…" —— 旧校验要求 /\.html$/ 会**拒绝**它并静默回落默认
+ *   profile，表现为「下钻新开标签页却停在首页」。故这里先补回 .html 再校验，两种写法都收。 */
 var EDIT_MODE=new URLSearchParams(location.search).get("edit")==="1";
 /* 编辑模式（外壳 ?edit=1）透传进 iframe：内容页据此显示各自的编辑入口（不带则一律不可见，
    2026-10-02 定稿）。子页已有 query 用 & 追加。 */
@@ -107,8 +111,15 @@ var wantSet=false;
 if(wantPage){
   try{
     var u=new URL(wantPage,location.href);
-    if(u.origin===location.origin&&u.pathname.indexOf("/pages/")>=0&&u.pathname.indexOf("..")<0&&/\.html$/.test(u.pathname)){
-      frameEl.src=withEdit(u.pathname+u.search); wantSet=true;
+    /* 扩展名归一（§88）：平台重定向会剥掉 .html，补回后再校验（不改变 u.search） */
+    /* .. 检查必须在**归一之前**用原始串判：new URL() 已把 "../" 规范化掉，
+       对 u.pathname 判 ".." 是空操作（§88 顺带修）。只在「真像带 .. 的路径段」时才拒，
+       避免误伤 query 里合法的 ".."（如 venue:..）。 */
+    var suspicious=/(^|[\/\\])\.\.($|[\/\\?])/.test(wantPage);
+    var pn=u.pathname;
+    if(!/\.html$/.test(pn)) pn+=".html";
+    if(u.origin===location.origin&&pn.indexOf("/pages/")>=0&&!suspicious&&/\.html$/.test(pn)){
+      frameEl.src=withEdit(pn+u.search); wantSet=true;
     }
   }catch(e){}
 }
