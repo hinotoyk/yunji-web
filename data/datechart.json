@@ -1,15 +1,15 @@
 {
  "meta": {
-  "generated_at": "2026-10-02T01:56:20",
+  "generated_at": "2026-10-03T01:30:07",
   "source": "basic.json + races/*.json",
   "stats": {
-   "runs": 762,
-   "horses": 149,
+   "runs": 763,
+   "horses": 150,
    "wins": 86,
    "trophy_wins": 3,
    "prize_total": 1224434000,
    "first_date": "2025-06-15",
-   "last_date": "2026-10-01"
+   "last_date": "2026-10-02"
   }
  },
  "runs": [
@@ -20586,6 +20586,33 @@
    "dz": "0",
    "jk": "田野豊三",
    "tr": "寺地誠一"
+  },
+  {
+   "d": "2026-10-02",
+   "id": 131,
+   "h": "Hazey Jane",
+   "hc": "朦胧佳人",
+   "sx": "牝",
+   "ya": "3",
+   "rid": "",
+   "r": "Maiden Special Weight",
+   "g": "",
+   "v": "サンタアニタ",
+   "R": "5",
+   "hs": "",
+   "dist": 1207,
+   "s": "芝",
+   "p": "SCR",
+   "pr": 0,
+   "vt": "海外",
+   "bk": "Firm",
+   "ki": "122lb",
+   "nk": "",
+   "tm": "",
+   "bw": "",
+   "dz": "",
+   "jk": "木村和士",
+   "tr": "M Glatt"
   }
  ]
 }
