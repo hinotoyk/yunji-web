@@ -495,15 +495,25 @@ YJ.editor = (function () {
             ent[k] = v;
           });
           if (d.ov[id]._note) ent._note = d.ov[id]._note;
-          if (d.ph && d.ph[id]) {
-            if (d.ph[id].mode === "set") {
-              if (!Object.prototype.hasOwnProperty.call(ent, "photo") && !(ent._orig && ent._orig.photo)) {
-                ent._orig = (ent._orig && typeof ent._orig === "object") ? ent._orig : {};
-                ent._orig.photo = h ? normList(h.photo) : [];
-              }
-              ent.photo = committed[id] || [];
-            } else if (d.ph[id].mode === "remove") { delete ent.photo; }
-          }
+          var hasPin = Object.keys(ent).some(function (k) { return k[0] !== "_"; });
+          if (hasPin) table[id] = ent; else delete table[id];
+        });
+        /* 照片（d.ph）独立于人工字段循环（2026-10-08 修）：此前嵌在 d.ov 循环里，只传照片
+         * 不存任何人工字段的马 → 图片文件入库但 manual_overrides 无 photo 条目（孤儿图，
+         * 乘天风/66 案例 715e836）。mode set/remove 的马无条件写/删 photo 条目，与上传通道对齐。 */
+        Object.keys(d.ph || {}).forEach(function (id) {
+          var mode = d.ph[id] && d.ph[id].mode;
+          if (mode !== "set" && mode !== "remove") return;
+          var h = state.byId[id];
+          var ent = (table[id] && typeof table[id] === "object" && !Array.isArray(table[id]))
+            ? JSON.parse(JSON.stringify(table[id])) : {};
+          if (mode === "set") {
+            if (!Object.prototype.hasOwnProperty.call(ent, "photo") && !(ent._orig && ent._orig.photo)) {
+              ent._orig = (ent._orig && typeof ent._orig === "object") ? ent._orig : {};
+              ent._orig.photo = h ? normList(h.photo) : [];
+            }
+            ent.photo = committed[id] || [];
+          } else { delete ent.photo; }   /* mode === "remove"：恢复官方值 = 删键 */
           var hasPin = Object.keys(ent).some(function (k) { return k[0] !== "_"; });
           if (hasPin) table[id] = ent; else delete table[id];
         });

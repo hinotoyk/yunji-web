@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""基础管线共享工具：本管线特有的站点常量 + 将中立层（scripts/_shared）注入本管线口径。
+"""基础管线共享工具：本管线特有的站点常量 + 将中立层（scripts/core）注入本管线口径。
 
-网络/路径/basic.json 读写/人工表等与竞赛管线逐字重复的部分已收进 _shared；
+网络/路径/basic.json 读写/人工表等与竞赛管线逐字重复的部分已收进 core；
 设计原则与并发架构见 scripts/README.md，basic.json 字段契约见 data/SCHEMA.md。
 """
 import functools
@@ -14,7 +14,7 @@ from pathlib import Path
 # 使用（PEP 562 __getattr__ 兜底），但 import common 本身不再触发第三方依赖 —— merge_basic 等
 # 离线脚本在 GitHub runner（不预装 requests）上可纯 stdlib 运行，Pages deploy job 不再被炸。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
-from _shared import basic_io, manual, net, paths, text    # noqa: E402
+from core import basic_io, manual, net, paths, text    # noqa: E402
 
 
 def __getattr__(name):

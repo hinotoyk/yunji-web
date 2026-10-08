@@ -94,6 +94,7 @@
 | 83 | 编辑入口全站收敛 | ✅ | 所有直跳编辑页入口默认不进视野，唯一开关 URL `?edit=1` |
 | 84 | 钉住标记（📌）移除 | ✅ | 行尾 📌 机制整块删除，浏览页零直跳编辑入口 |
 | 85 | 侧栏页脚访问统计（不蒜子） | ✅ | 只统计线上 `www.yunji.xyz`（本地/其它域不加载），页脚回填站点 PV/UV |
+| 86 | 编辑台照片提交孤儿图修复 | ✅ | photo 条目写入脱离 d.ov 循环，纯传照片也能正确提交（§89） |
 
 ---
 
@@ -538,6 +539,14 @@
   2. **诊断法教训：本地静态服务器复现不出这类 bug**。`python -m http.server` 不做扩展名规范化，`/pages/races.html` 直接 200，于是本地全绿、线上全红。**凡涉及 URL 形态的问题，必须打真实托管域名验证**（本轮先用 Node 跟随 307 链发现 `/pages/races` 是 200 且 title 正常，才定位到回壳产物）。反向亦然：本地测「无扩展名直开」会 404，那是**测试环境差异**、不是缺陷。
   3. **旧 `..` 校验是空操作**：`new URL()` 已把 `../` 规范化掉，对 `u.pathname` 判 `".."` 永远不命中（实测 `pages/../pages/races.html` 被照常接受）。改为对**原始串**按路径段匹配后，该形态被正确拒绝；用 `(^|[/\\])\.\.($|[/\\?])` 而非裸 `indexOf("..")`，才不会误伤 query 里合法的 `..`（如 `f=venue:..`）——**安全校验要不误伤合法值，只能按结构匹配，不能按子串匹配**。
   4. **顺带澄清一处易误判**：下钻链接的 `data-href` 是裸相对路径 `races.html?f=…`，本轮实测 `window.open` 从 iframe 内调用时**按 iframe 的 baseURI 解析**（`/pages/stats.html` → `/pages/races.html`），故该写法本身正确、与既有 `raceLink()` 的 `profile.html?horse=` 同构；**若将来改由外壳读 `data-href` 导航，必须换成 `pages/races.html` 全路径**（相对基址不同 → 会落到站点根 `/races.html` 404）。此隐患本轮未改（无调用方），仅记录。
+
+### §89 · 修复「只传照片不写 photo 条目」：编辑台提交孤儿图（2026-10-08）
+- **现象**：提交 `715e836`（编辑台草稿一次性提交）显示「0 匹人工值 · 1 匹图片」→ 图片文件 `data/photos/66-1.webp` 入库，但 `manual_overrides.json` **没有** 66 的 photo 条目 → 乘天风（id 66）页面显示 🐎 占位。
+- **根因**：`editor.js` 批量提交组装里，photo 条目写入（`ent.photo = committed[id]`）**嵌套在 `d.ov`（人工字段草稿）的循环内**。只传照片、不存任何人工字段的马不进该循环 → 图片文件走 `uploads` 通道成功入库，但 photo 条目永不写入人工表。commit message 的「N 匹图片」统计的是**文件数**，与人工表条目数不同步，极具迷惑性。
+- **最终落地**：`front/public/editor.js` 提交组装函数——把 `d.ph`（照片草稿）处理拆成**独立循环**，`mode === "set"`/`"remove"` 的马**无条件**写/删 `photo` 条目（含 `_orig` 官方值快照与 `hasPin` 判定，与人工字段循环同口径），与上传通道对齐；同一匹马 ov+ph 并存时顺序为 ov 先、ph 后叠加，结果与旧行为一致。
+- **数据侧补救**：`data/manual_overrides.json` 补 `"66": {"photo": ["data/photos/66-1.webp"], "_note": "…"}`，`merge_races.py`（离线、幂等）套用 → `basic.json` id 66 photo 生效（diff 仅 6 行），重建 dist 后线上可显示。
+- **验证**：`node --check` 语法通过；`npm run build` + dist 核对（`dist/editor.js` 含独立循环）；`dist/data/basic.json` id 66 `photo=data/photos/66-1.webp`；HTTP `/dist/data/photos/66-1.webp` 200。
+- **教训**：**「文件入库」≠「关联入库」**——编辑台三条通道（马图/比赛图/时间线图）都是「blob 上传 + 表条目」两段式，任何一段漏了都会产生孤儿（此前 `:540` 修的是**文件缺失**方向，本轮修的是**条目缺失**方向）。以后改提交流程，先检查「文件」与「条目」成对。
 
 
 

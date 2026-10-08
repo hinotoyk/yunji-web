@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """竞赛管线共享工具：本管线特有的站点/比赛记录约定 + 将中立层注入本管线口径。
 
-与基础管线（scripts/basic/）互不 import，二者只共用中立层 scripts/_shared；
+与基础管线（scripts/basic/）互不 import，二者只共用中立层 scripts/core；
 设计原则与并发架构见 scripts/README.md，比赛记录字段契约见 data/SCHEMA.md。
 """
 import functools
@@ -14,7 +14,7 @@ from pathlib import Path
 # common.requests / common.BeautifulSoup 使用（PEP 562 __getattr__ 兜底），import common
 # 本身不再触发第三方依赖，离线/CI 场景不被 runner 预装包变化连坐。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
-from _shared import basic_io, manual, net, paths, text    # noqa: E402
+from core import basic_io, manual, net, paths, text    # noqa: E402
 
 import racelib  # noqa: E402  name_key 用于跨源去重键
 

@@ -113,7 +113,7 @@ svg#graph{display:block}
 <header>
   <div class="kicker">Cloud Tracks · Data Pipeline</div>
   <h1><span class="dot"></span>云迹「后端全流程」路径图</h1>
-  <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>：建档 → 基础 ∥ 竞赛 → 预计算×3 → <b>五门禁检查</b> → <b>压缩（字体子集 / 构建期 JSON minify）</b> → <b>CI（update-data.yml → deploy.yml → Pages）</b>，外加 <b>编辑台本机回写</b> 与 <b>_shared 中立层 / 人工表</b>。点击任一节点或连线看它抓什么、何时触发、产出什么；顶部切换视图点亮对应子链路。</p>
+  <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>：建档 → 基础 ∥ 竞赛 → 预计算×3 → <b>五门禁检查</b> → <b>压缩（字体子集 / 构建期 JSON minify）</b> → <b>CI（update-data.yml → deploy.yml → Pages）</b>，外加 <b>编辑台本机回写</b> 与 <b>core 中立层 / 人工表</b>。点击任一节点或连线看它抓什么、何时触发、产出什么；顶部切换视图点亮对应子链路。</p>
 </header>
 
 <div class="ctl">
@@ -197,8 +197,8 @@ const NODES={
       cond:'无条件（编排入口）：策略决定哪些环节与接口被触发',
       role:'日常与 GitHub Actions（update-data.yml）的调用入口。--init 复用 run_full_test.py 从 0 全量；--ci = 基本增量 + 比赛增量 + 校验 + 日期图/统计断言 + git 提交（全部通过才提交）。⚠ --init 删空 data/、--races-force 全量覆盖、--ci 会 commit。'},
   // S 共享层（全宽）
-  g05:{x:70,y:124,w:1060,c:'mg',scen:[1,2,3],nm:'scripts/_shared/ · 中立共享层',
-      url:'net.py · paths.py · basic_io.py · manual.py · text.py（_shared 永不 import 管线）',
+  g05:{x:70,y:124,w:1060,c:'mg',scen:[1,2,3],nm:'scripts/core/ · 中立核心层',
+      url:'net.py · paths.py · basic_io.py · manual.py · text.py（core 永不 import 管线）',
       fn:'fetch 引擎 / BASIC_FIELDS / 缓存四件套 / apply_overrides / norm',tag:'SHARED · 中立层',
       out:'两条管线共用引擎与契约；差异（限速表/日志前缀/缓存目录）由各 common.py 形参注入',
       cond:'无条件（被 import 的库层，本身无网络请求）',
@@ -238,7 +238,7 @@ const NODES={
   b5:{x:COL.L,y:612,w:COL.LW,c:'mg',scen:[1,2,5],nm:'merge_basic.py · 合并',
       url:'读 _tmp/{pedigree,nk_id,studbook,detail}.json',
       fn:'apply() 按 id 回填 + 重排 + apply_overrides',tag:'BASIC · MERGE',
-      out:'回写 basic.json → 删缓存；写回前套 _shared/manual.apply_overrides（人工值最后写入 = 最高优先级）',
+      out:'回写 basic.json → 删缓存；写回前套 core/manual.apply_overrides（人工值最后写入 = 最高优先级）',
       cond:'无条件：--basic/--init/--ci 的基础环节每次运行都执行合并（合并后删缓存；--keep 保留）',
       role:'把并发三件套 + 详情的独立缓存统一合并进 basic.json 并按标准字段顺序重排；写回前套 apply_overrides——两管线收尾都套人工表是 BUG-1 修复（此前只跑 --basic 会把人工 馬主/調教師/登録状態 整片覆盖）。编辑台保存也经子进程跑本脚本（--keep）。'},
   b6:{x:COL.L,y:692,w:COL.LW,c:'mg',scen:[1,2,3,4],nm:'basic.json · 共享数据源',
@@ -382,8 +382,8 @@ Object.keys(NODES).forEach(k=>{ if(!NODES[k].h) NODES[k].h=NH; });
    lx/ly 可选：覆盖默认连线标签位置（默认取路径中点） */
 const EDGES=[
   // 入口 → 共享层 → 建档
-  {s:'g0',t:'g05',l:'统一调度 · 全部抓取经 _shared 引擎',cond:null,scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:118},
-  {s:'g05',t:'g1',l:'sys.path bootstrap · 两管线 import（彼此零 import）',cond:'两管线各自 import _shared；_shared 永不 import 管线',scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:200},
+  {s:'g0',t:'g05',l:'统一调度 · 全部抓取经 core 引擎',cond:null,scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:118},
+  {s:'g05',t:'g1',l:'sys.path bootstrap · 两管线 import（彼此零 import）',cond:'两管线各自 import core；core 永不 import 管线',scen:[1,2,3],from:'B',via:[],to:'T',lx:600,ly:200},
   // 建档 → 基础并发三件套
   {s:'g1',t:'b1',l:'建档 → 抓血統',cond:'只补缺：无血統文件 / --init 全量',scen:[1,2],from:'L',via:[[24,238],[24,322]],to:'L',lx:130,ly:286},
   {s:'g1',t:'b2',l:'建档 → 找 nk_id',cond:'只补缺：缺 nk_id / --init 全量',scen:[1,2],from:'L',via:[[24,238],[24,402]],to:'L',lx:130,ly:368},
@@ -434,7 +434,7 @@ const EDGES=[
 ];
 
 const SCEN_DESC={
-  1:'全流程：建档 → _shared 中立层 → 基础并发（血統/nk_id/意味 ∥ + 详情）→ basic.json → 竞赛（判变 → 成绩增量 → 台账 → racelib 収得）→ 人工表 apply_overrides 双端套用 → 预计算×3（时间线/日期图/统计）→ 五门禁 → 压缩（字体子集 / JSON minify）→ CI（update-data → deploy → dist/）；编辑台本机回写见视图⑤。',
+  1:'全流程：建档 → core 中立层 → 基础并发（血統/nk_id/意味 ∥ + 详情）→ basic.json → 竞赛（判变 → 成绩增量 → 台账 → racelib 収得）→ 人工表 apply_overrides 双端套用 → 预计算×3（时间线/日期图/统计）→ 五门禁 → 压缩（字体子集 / JSON minify）→ CI（update-data → deploy → dist/）；编辑台本机回写见视图⑤。',
   2:'基础部分（scripts/basic/）：建档 → 并发三件套 + 详情 → merge_basic（写回前套 apply_overrides = BUG-1 修复）→ basic.json → 预计算×3。',
   3:'竞赛部分（scripts/races/）：读 basic.json → 详情判变 → 成绩增量（SP 页回填 格/条件/調教師/本賞金）→ 台账海外 → merge_races（racelib 収得 + 全部派生后套 apply_overrides）→ races 文件 → 预计算×3。',
   4:'检查·压缩·CI：五门禁（check_data.py 引用/对账/重复 → verify_result·drill·stats·datechart 四段 node 断言）→ 字体子集（woff2 单片 587KB，CI --force、拉取失败 fail-soft）→ copy-data JSON minify（dist/data −1.25MB）→ update-data.yml（断言全过才 commit+push data/+字体）→ deploy.yml（npm ci + build → GitHub Pages；_headers 仅 CF Pages 消费）。',
@@ -476,7 +476,7 @@ function buildPath(e){
 /* ── stage band labels ── */
 const STAGE_BANDS=[
   {y:24,  t:'0 · 统一入口 ENTRY'},
-  {y:120, t:'S · 共享层 SHARED（scripts/_shared/ · 中立层）'},
+  {y:120, t:'S · 共享层 SHARED（scripts/core/ · 中立层）'},
   {y:196, t:'1 · 建档 LOCATE'},
   {y:272, t:'2 · 基础部分 BASIC（scripts/basic/ · 并发 ∥）'},
   {y:288, t:'3 · 竞赛部分 RACES（线性）', x:COL.R+6},

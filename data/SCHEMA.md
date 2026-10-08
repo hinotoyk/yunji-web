@@ -11,7 +11,7 @@
 结构：`{"_meta": {"schema": "basic/v1", "updated": "...", "count": N}, "horses": [ … ]}`
 （`_meta` 由 `save_basic` 每次重写；前端只读，勿手改——手改第二天会被 CI 抹掉，人工值走 §3 人工表。）
 
-**字段模板与列序的唯一出处 = `scripts/_shared/basic_io.py::BASIC_FIELDS`（31 键，键序 = 落库列序）**，
+**字段模板与列序的唯一出处 = `scripts/core/basic_io.py::BASIC_FIELDS`（31 键，键序 = 落库列序）**，
 两处历史副本（`build_registry.BASIC_TEMPLATE`、`merge_basic.py` 的局部 `ORDER`）已合成它：
 
 - `BASIC_TEMPLATE` = 去掉「管线才写入的列」（`収得賞金`、`母父`、`馬齢`）→ 建档时初始化的模板；

@@ -7,7 +7,7 @@
 
 ## 0. 项目一句话
 
-**云迹 · コントレイル产驹资料库**：铁鸟翱天（Contrail，netkeiba id `2017101835`）产驹的个人查阅/检索静态站，GitHub Pages 部署，`dist/` 自包含数据副本。
+**云迹 · 云崽档案**：单一种马产驹的个人查阅/检索静态站（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `REFACTOR.md` §1），GitHub Pages 部署，`dist/` 自包含数据副本。
 
 ## 1. 当前状态（最新）
 
@@ -27,7 +27,7 @@ yunji-web/
 ├── data/                  # ★ 全部数据产物（basic.json / pedigree/ / races/ / timeline.json / datechart.json / stats.json / 人工表）
 │   └── SCHEMA.md          # 数据产物字段契约（单一出处，改字段先改这里）
 ├── scripts/               # Python 数据管线
-│   ├── _shared/           #   中立共享层（net/paths/basic_io/manual/text，不 import 任一管线）
+│   ├── core/               #   中立核心层（net/paths/basic_io/manual/text，不 import 任一管线）
 │   ├── basic/             #   基础管线：建档（JBIS）→ 血统/nk_id/意味（并发）→ 详情（netkeiba）→ merge
 │   ├── races/             #   竞赛管线：详情+判变 → 成绩增量（SP 页回填格/条件/調教師/本賞金）→ 台账海外 → merge
 │   ├── timeline/ datechart/ stats/   # 前端预计算产物（build_*.py → data/*.json）
@@ -83,11 +83,11 @@ yunji-web/
 
 ## 5. 数据管线
 
-- **两条管线代码隔绝**：`scripts/basic/` 与 `scripts/races/` **互不 import**，只共用中立层 `scripts/_shared`（不认识管线；限速表/缓存目录/剥前缀等差异由各 `common.py` 以形参注入）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
+- **两条管线代码隔绝**：`scripts/basic/` 与 `scripts/races/` **互不 import**，只共用中立层 `scripts/core`（不认识管线；限速表/缓存目录/剥前缀等差异由各 `common.py` 以形参注入）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
 - **线性单链**（无跨源来回兜底）：基础 = JBIS 建档 → 血统/nk_id/意味 并发 → netkeiba 详情 → merge；竞赛 = 详情+判变 → 成绩增量（SP 页一次回填 格/条件/調教師/本賞金）→ 台账海外 → merge。
 - **缓存 + 合并模式**：抓取脚本只写 `data/_tmp/{basic,races}/` 独立缓存，merge 时统一写 basic.json 并删缓存 → 可并发、无覆盖。
 - **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.csv` 统一日志（含 host 列），据此调间隔。
-- **离线脚本零第三方依赖**（硬规）：`_shared/*` 与 `common.py` 模块顶层**禁止 import 第三方包**（requests/bs4 只在真正发请求处惰性导入，PEP 562 `__getattr__` 重导出）——GitHub runner 不再预装 requests，顶层导入会炸掉 Pages deploy 的 merge 步。
+- **离线脚本零第三方依赖**（硬规）：`core/*` 与 `common.py` 模块顶层**禁止 import 第三方包**（requests/bs4 只在真正发请求处惰性导入，PEP 562 `__getattr__` 重导出）——GitHub runner 不再预装 requests，顶层导入会炸掉 Pages deploy 的 merge 步。
 - **人工值**：`data/manual_overrides.json`（马字段钉住）、`data/timeline_manual.json`（时间线人工节点）、`data/races_manual.json`（比赛人工配图）——两条管线的合并收尾都套 `manual.apply_overrides`，直接改 basic.json 会被次日 CI 抹掉。
 - **判变 = 变化 ∪ 缺失**：成绩抓取目标 = 通算成績变化 ∪ 无 races 文件 ∪ 数据缺失（文件出赛 < 通算战数），自动补拉，杜绝盲区。
 - **门禁**：`scripts/check_data.py` + 4 个断言脚本（`node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` / `node scripts/datechart/verify_datechart.cjs`）。改数据或改生成脚本后都要跑绿，并断言 `data/` diff 为空。
@@ -97,7 +97,7 @@ yunji-web/
 
 **所有产物字段契约与口径的单一出处 = `data/SCHEMA.md`**（生成脚本文件头只留一行指路）。要点：
 
-- `basic.json`：`{"_meta":{...}, "horses":[…]}`，字段模板与列序 = `scripts/_shared/basic_io.py::BASIC_FIELDS`（31 键）。**前端只读，勿手改**（手改次日被 CI 抹掉，人工值走人工表）。
+- `basic.json`：`{"_meta":{...}, "horses":[…]}`，字段模板与列序 = `scripts/core/basic_io.py::BASIC_FIELDS`（31 键）。**前端只读，勿手改**（手改次日被 CI 抹掉，人工值走人工表）。
 - `races/{id}.json`：逐场成绩数组，列序 = `scripts/races/common.py::RACE_RECORD_ORDER`；**結果三态** = 完赛（数字着顺）/ 未完赛（中止·失格，计出走）/ 未出走（取消·除外，不计出走）。
 - `timeline.json` / `datechart.json` / `stats.json`：前端预计算产物，内容无变化时跳过写入（避免 `--ci` 每轮空 diff 提交）。
 - ⚠ 人工表会随构建进 `dist/data/` **公网可读**（含 `_note` 编辑备注）：备注只写业务理由。

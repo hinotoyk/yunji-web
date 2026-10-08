@@ -13,8 +13,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# requests / bs4 不在模块顶层导入（2026-10-01）：_shared 会被 merge_basic / build_timeline 等
-# 离线脚本连坐 import（_shared/__init__ re-export net），而 GitHub runner 镜像不再预装 requests，
+# requests / bs4 不在模块顶层导入（2026-10-01）：core 会被 merge_basic / build_timeline 等
+# 离线脚本连坐 import（core/__init__ re-export net），而 GitHub runner 镜像不再预装 requests，
 # 顶层导入曾把 Pages 部署 job 炸掉（deploy.yml 该步按设计纯 stdlib）。改到真正发请求的函数内导入。
 from . import paths
 

@@ -1,6 +1,6 @@
-# 云迹 · コントレイル产驹资料库
+# 云迹 · 云崽档案
 
-「云迹」是コントレイル（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹的个人查阅/检索资料库，以 **GitHub Pages 静态站**形式部署。数据由 Python 管线从 JBIS / netkeiba / studbook.jp 抓取维护，前端为 Vite 多页 + Tailwind CSS 构建，全站离线自包含。
+「云迹 · 云崽档案」是**单一种马产驹**的个人查阅/检索资料库（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `REFACTOR.md` §1），以 **GitHub Pages 静态站**形式部署。数据由 Python 管线从 JBIS / netkeiba / studbook.jp 抓取维护，前端为 Vite 多页 + Tailwind CSS 构建，全站离线自包含。
 
 ## 功能页
 

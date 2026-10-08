@@ -24,7 +24,7 @@ import common
 
 YEARS_DEFAULT = ["2023", "2024"]
 
-# 标准字段模板（建档即初始化，默认 ""）：单一出处 _shared/basic_io.BASIC_FIELDS → common.BASIC_TEMPLATE。
+# 标准字段模板（建档即初始化，默认 ""）：单一出处 core/basic_io.BASIC_FIELDS → common.BASIC_TEMPLATE。
 BASIC_TEMPLATE = common.BASIC_TEMPLATE
 ROMAN_FULL = common.ROMAN_FULL
 

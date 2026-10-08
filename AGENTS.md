@@ -37,7 +37,7 @@
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
 - **前端数据一律走统一缓存控制器 `front/public/yj-cache.js`（`YJ.cache.fetch(name[, opts])`）**：注册表按产物给 TTL（当前全 12h，可按产品覆写），禁止页面绕过控制器直连 fetch 数据产物（编辑台 no-store 语义除外）。**改数据目录/位置时同步核对 `yj-cache.js` 注册表的 `url/prefix`**。
 - `data/races-bundle.json`（比赛压缩包，契约 = `data/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
-- 数据更新：`scripts/basic` 与 `scripts/races` 代码隔绝（各自 `common.py` **互不 import**，但可共用中立层 `scripts/_shared`——中立层不得出现管线概念，管线差异用形参注入），数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `TESTING.md` §4.3）。
+- 数据更新：`scripts/basic` 与 `scripts/races` 代码隔绝（各自 `common.py` **互不 import**，但可共用中立层 `scripts/core`——中立层不得出现管线概念，管线差异用形参注入），数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `TESTING.md` §4.3）。
 
 ## 4. 已删除 / 不要复活
 
@@ -46,5 +46,5 @@
 
 ## 5. 项目定位
 
-- 站点：**云迹 · コントレイル产驹资料库**（个人查阅/检索用）。
+- 站点：**云迹 · 云崽档案**（单一种马产驹的个人查阅/检索用，当前收录コントレイル产驹）。
 - 部署：GitHub Pages 静态站，**站点根 = 仓库根**，入口 `/dist/index.html`（dist 已自包含 `dist/data/` 副本；后续可改为只发布 `dist/`）；push main 时 `.github/workflows/deploy.yml` 自动 `npm run build` 并发布。本地预览用服务项目根或 `dist/` 的静态服务器（`:8090`）。

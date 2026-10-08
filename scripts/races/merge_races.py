@@ -122,7 +122,7 @@ def career_from_recs(recs):
 
 
 def move_after(h, field, anchor):
-    """键序归位：单一出处 = _shared/basic_io.move_after（此处仅为文件内既有调用点的薄别名）。"""
+    """键序归位：单一出处 = core/basic_io.move_after（此处仅为文件内既有调用点的薄别名）。"""
     return common.move_after(h, field, anchor)
 
 

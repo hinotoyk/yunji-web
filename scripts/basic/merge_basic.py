@@ -123,7 +123,7 @@ def main():
             h["母父"] = v
             n_mps += 1
 
-    # 按标准字段顺序重排（列序单一出处：_shared/basic_io.order_horse ← BASIC_FIELDS → common.BASIC_ORDER）
+    # 按标准字段顺序重排（列序单一出处：core/basic_io.order_horse ← BASIC_FIELDS → common.BASIC_ORDER）
     LEGACY_DROP = {"獲得賞金", "獲得賞金地方"}   # 旧字段名（已改名为 獲得賞金 (中央)/(地方)），丢弃
     for h in horses:
         common.order_horse(h, LEGACY_DROP)

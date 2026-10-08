@@ -85,7 +85,7 @@ python run_all.py --skip-detail       # 只做阶段1 + merge（不抓详情）
 
 ## basic.json 标准字段模板（一条马）
 
-字段清单、键序与派生口径 = `data/SCHEMA.md` §1（单一出处 `scripts/_shared/basic_io.py::BASIC_FIELDS`）；
+字段清单、键序与派生口径 = `data/SCHEMA.md` §1（单一出处 `scripts/core/basic_io.py::BASIC_FIELDS`）；
 建档即初始化模板字段为 `""`，各脚本按 id 回填。本部分相关：
 
 - 建档填：`id, jbis_id, 馬名, 母名, 生年`
@@ -128,7 +128,7 @@ python fetch_detail.py --limit 5
 - 数据源分工：**建档只用 JBIS**；nk_id/详情用 netkeiba；意味・由来用 studbook。
 - 无跨源来回兜底（线性流）；未匹配/抓取失败记报告，不阻塞。
 - 并发脚本写独立缓存 `data/_tmp/basic/`，basic.json 只在 merge 时写一次 → 无覆盖风险。
-- 与 `scripts/races/` **互不 import**，但可共用中立层 `scripts/_shared`（请求/路径/basic.json 读写/人工表）；
+- 与 `scripts/races/` **互不 import**，但可共用中立层 `scripts/core`（请求/路径/basic.json 读写/人工表）；
   本部分 `common.py` 只留 JBIS/NK/STUD 站点常量与本管线限速表，并以形参把差异注进中立层。
 - `basic.json` 写回前会套一次 `data/manual_overrides.json`（人工值优先），字段契约见 `data/SCHEMA.md`。
 - 原项目 `Z:\IdeaProjects\yunji-web` 为只读参考，业务逻辑不照抄。
