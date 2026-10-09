@@ -28,7 +28,7 @@ function genFont() {
 
 // 构建期派生（D11 替换式 · 2026-09-28 立项）：把 data/races/*.json 打成 dist/data/races-bundle.json
 // （1 请求 ~44KB gzip，等值替代 276 个逐马请求）。编解码单一出处 front/public/race-bundle.js
-// （字段契约 = data/SCHEMA.md §8）；脚本自带 round-trip 断言，不等即失败。
+// （字段契约 = docs/SCHEMA.md §8）；脚本自带 round-trip 断言，不等即失败。
 // fail-soft 同 gen-font：打包失败告警并退回拷贝逐马小文件（站点仍可用，只是退回叠加形态）。
 // COPY_DATA=skip 的快速迭代不打包（沿用 dist 里上一次的 bundle；首次构建前别用 skip）。
 function buildRacesBundle() {
@@ -72,11 +72,50 @@ async function copyData() {
   await walk(resolve(__dirname, '../data'), resolve(__dirname, '../dist/data'), '');
 }
 
+// 站点配置注入（docs/REFACTOR.md §5.4 D1/D2 + §12 R6 · P3）：
+//   ① transformIndexHtml 替换 9 个入口的 {{YJ_SITE_NAME/SUBTITLE/TAGLINE/LOGO}} 占位符（dev + build 通用，D2）；
+//   ② closeBundle emit dist/site-config.js（D1：dist 根，window.YJ_SITE + window.YJ_GRADE）；
+//   ③ configureServer 中间件直挂 /site-config.js（vite dev 下也不缺运行时配置）。
+// 逻辑单一出处 = front/scripts/gen-site-config.mjs（vite.config.js 动态 import 其导出）。
+function siteConfigPlugin() {
+  const fs = require('fs');
+  const path = require('path');
+  const { pathToFileURL } = require('url');
+  // 非字面量说明符：Vite config loader 的 esbuild（externalize-deps）对 dynamic-import 一律 external，
+  // 本文件不进配置 bundle（避免 inject-file-scope-variables 把 shebang 顶到行中），运行时由 Node 原生加载。
+  const genConfigUrl = pathToFileURL(path.resolve(__dirname, 'scripts/gen-site-config.mjs')).href;
+  return {
+    name: 'config-inject',
+    async transformIndexHtml(html) {
+      const gen = await import(genConfigUrl);
+      const reps = gen.htmlReplacements();
+      let out = html;
+      for (const k of Object.keys(reps)) out = out.split(k).join(reps[k]);
+      return out;
+    },
+    async closeBundle() {
+      const gen = await import(genConfigUrl);
+      const dst = path.resolve(__dirname, '../dist/site-config.js');
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, gen.siteConfigJs());
+    },
+    configureServer(server) {
+      server.middlewares.use('/site-config.js', function (req, res) {
+        import(genConfigUrl).then(function (gen) {
+          res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          res.end(gen.siteConfigJs());
+        });
+      });
+    }
+  };
+}
+
 module.exports = defineConfig({
   // 相对路径 base：产物可部署到任意子目录
   base: './',
   plugins: [
     { name: 'gen-font', apply: 'build', buildStart: genFont },
+    siteConfigPlugin(),
     { name: 'copy-data', apply: 'build', closeBundle: copyData },
   ],
   build: {

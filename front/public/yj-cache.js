@@ -51,6 +51,8 @@ YJ.cache = (function () {
   var epoch = 0;         /* clear() 自增：作废在途 SWR 回写——否则「清缓存 + 在途 304」会把刚清掉的
                           * 键用旧数据续期成「新鲜旧值」（审计 2.2）；在途 fetchFull 回写新鲜全量，无害 */
 
+  /* URL 绝对化（自包含副本，不引 YJ.util.absUrl，B2/F1.4 收口）：缓存控制器独立于工具层，
+   * 缓存键稳定性要求 self-contained —— 与 yj-util.absUrl 是同一实现，语义一致。 */
   function abs(url) {
     try { return new URL(String(url), document.baseURI || location.href).href; }
     catch (e) { return String(url); }   /* stub/怪环境 → 退回原串（键一致性由调用方保证） */

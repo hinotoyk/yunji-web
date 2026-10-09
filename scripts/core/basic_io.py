@@ -9,7 +9,7 @@ BASIC_FIELDS 是 basic.json 字段契约的**唯一出处**（键序 = 落库列
 import json
 from datetime import datetime
 
-from . import paths
+from . import constants
 
 # (字段, 建档默认值)：键序 = 落库列序
 BASIC_FIELDS = [
@@ -58,9 +58,9 @@ BASIC_TEMPLATE = {k: d for k, d in BASIC_FIELDS if k not in BASIC_PIPELINE_FIELD
 # ---------------- basic.json 读写 ----------------
 def load_basic():
     """读 basic.json → {_meta, horses}；不存在则返回空骨架。"""
-    if not paths.BASIC_JSON.exists():
+    if not constants.BASIC_JSON.exists():
         return {"_meta": {"schema": "basic/v1", "updated": "", "count": 0}, "horses": []}
-    data = json.loads(paths.BASIC_JSON.read_text(encoding="utf-8"))
+    data = json.loads(constants.BASIC_JSON.read_text(encoding="utf-8"))
     if isinstance(data, dict) and "horses" in data:
         return data
     return {"_meta": {"schema": "basic/v1", "updated": "", "count": len(data)}, "horses": data}
@@ -74,7 +74,7 @@ def save_basic(data):
     （重算产物 commit 回 main）会因纯时间戳 diff 永远循环。实质有变化才进新钟。"""
     prev_meta, prev_horses = None, None
     try:
-        prev = json.loads(paths.BASIC_JSON.read_text(encoding="utf-8"))
+        prev = json.loads(constants.BASIC_JSON.read_text(encoding="utf-8"))
         prev_meta, prev_horses = prev.get("_meta"), prev.get("horses")
     except (OSError, json.JSONDecodeError, ValueError):
         pass
@@ -88,8 +88,8 @@ def save_basic(data):
         "updated": updated,
         "count": len(data["horses"]),
     }
-    paths.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    paths.BASIC_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    constants.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    constants.BASIC_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def next_id(data):

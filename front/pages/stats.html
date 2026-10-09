@@ -2,26 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>统计总览 · 云迹</title>
+<title>统计总览 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
 <style>
-/* 分段控件（同 datechart .seg） */
-.seg{display:inline-flex;overflow:hidden;border:1px solid #e5e5e5;border-radius:8px;background:#fff}
-.seg button{height:30px;padding:0 13px;border:0;border-right:1px solid #ececec;background:#fff;font-size:12.5px;color:#52525b;cursor:pointer;transition:background .15s,color .15s}
-.seg button:last-child{border-right:0}
-.seg button:not([data-on=true]):hover{background:#f5f5f5}
-.seg button[data-on=true]{background:#0aa7a0;color:#fff;font-weight:600}
+/* 分段控件样式单一出处 = theme.css @layer components（.seg，与 datechart 单位切换同款；2026-xx 收口） */
 /* 数据概览 KPI（同 datechart .dc-kpis/.dc-kpi/.dc-brk/.trophy） */
 .st-kpis{display:flex;flex-wrap:wrap}
 .st-kpi{padding:2px 18px;border-left:1px solid #ececec}
@@ -178,9 +166,10 @@ td.dim .num{color:#c6c6ca}
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
+<script src="../site-config.js"></script>
 <script src="../race-rows.js?v=7"></script>
 <script>
 /* ================= 统计总览 STATS =================
@@ -235,13 +224,11 @@ var RATE_METRICS = [
 ];
 
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
-var i18n = (window.YJ && window.YJ.i18n) ? YJ.i18n : { t: function (k) { return k; }, e: function (f, v) { return v; } };
+var i18n = YJ.i18n;   /* i18n.js 已在上方显式引入（D4：删去唯一多余的防御 stub） */
 
 /* 着顺浅色三件套（1/2/3着 + 着外）：JS 侧单一出处 = race-rows.js PLACE_BG（CSS 同源 = theme.css .yj-nkm1/2/3）
  * → 着别分布条与图例用它（4 段，完赛口径） */
-var BR = YJ.raceRows.PLACE_BG;
-/* 通算战绩括号四段配色（= 着顺四段：1/2/3 浅色三件套 + 着外浅灰）：同源 race-rows.js PLACE_BG（§76 去掉首位出走段） */
-var CBR = YJ.raceRows.PLACE_BG;
+var BR = YJ.raceRows.PLACE_BG;   /* 通算战绩括号四段配色（= 着顺四段：1/2/3 浅色三件套 + 着外浅灰）：同源 race-rows.js PLACE_BG（§76 去掉首位出走段；D5 合并 BR/CBR 双别名） */
 
 /* ---- 统计切面：all / yYYYY(自然年) / gYYYY(生产年) ---- */
 function scopeKey() {
@@ -304,14 +291,7 @@ function rates(b) {
 }
 var pct1 = function (x) { return (x * 100).toFixed(1); };
 var pct = function (x) { return pct1(x) + "%"; };
-var manYen = function (pr) {
-  if (!pr) return "0万";
-  if (pr >= 1e8) {
-    var o = Math.floor(pr / 1e8), m = Math.floor((pr % 1e8) / 1e4);
-    return o + "亿" + (m ? m.toLocaleString() + "万" : "");
-  }
-  return Math.round(pr / 1e4).toLocaleString() + "万";
-};
+var manYen = function (pr) { return YJ.util.manYen(pr, "0万"); };   /* 空值 → "0万"（KPI 必须有值）；格式化逻辑单一出处 = YJ.util.manYen（2026-xx 收口） */
 var ageLabel = function (a) { return Math.floor(a / 12) + "岁" + (a % 12) + "月"; };
 
 /* ---- ① 数据概览 ---- */
@@ -324,8 +304,8 @@ function renderKpis() {
   var vals = [b.w, b.p2, b.p3, Math.max(0, nStart - b.w - b.p2 - b.p3)];
   var brk = '<span class="st-brk st-brk-lg">[';
   vals.forEach(function (v, i) {
-    if (i) brk += '<i style="background:linear-gradient(90deg,' + CBR[i - 1] + ',' + CBR[i] + ')">-</i>';
-    brk += '<b style="background:' + CBR[i] + '">' + v + '</b>';
+    if (i) brk += '<i style="background:linear-gradient(90deg,' + BR[i - 1] + ',' + BR[i] + ')">-</i>';
+    brk += '<b style="background:' + BR[i] + '">' + v + '</b>';
   });
   brk += ']</span>';
   var kpi = function (k, v, cls) {
@@ -593,7 +573,7 @@ function matHtml(tab) {
       return ra - rb;                                  /* 稳定排序：同档保持 n 降序 */
     });
   }
-  /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 UI优化记录 §44）；8 个数值列表头可点击排序 */
+  /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 docs/UI优化记录.md §44）；8 个数值列表头可点击排序 */
   var COLS = [
     { k: "starts", l: "出走" },
     { k: "w",      l: "1着" },

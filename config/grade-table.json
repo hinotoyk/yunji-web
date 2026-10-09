@@ -1,0 +1,9 @@
+{
+  "about": "格 → [显示文案, 徽章类] 单一事实源（docs/REFACTOR.md §12 R6）。徽章类 = 前端 CSS 类后缀（yj-<badge>）与重赏判定键，不是格名：g1/g2/g3 = GI/GII/GIII 重赏徽章；listed/open = L/OP 非重赏特别赛徽章。GRADED 重赏判定 = 徽章类 ∈ {g1,g2,g3}（grade.py 与前端共用此派生规则）。",
+  "GRADE": {
+    "GI": ["G1", "g1"], "GII": ["G2", "g2"], "GIII": ["G3", "g3"],
+    "JGI": ["JG1", "g1"], "JGII": ["JG2", "g2"], "JGIII": ["JG3", "g3"],
+    "JpnI": ["Jpn1", "g1"], "JpnII": ["Jpn2", "g2"], "JpnIII": ["Jpn3", "g3"],
+    "L": ["L", "listed"], "OP": ["OP", "open"]
+  }
+}

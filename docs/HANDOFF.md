@@ -1,13 +1,13 @@
 # 云迹 · 交接文档（HANDOFF）
 
 > 本文件是项目**唯一交接文档**，覆盖前端 + 数据管线 + 编码规范 + 关键决策 + 当前状态（历史背景不展开，一律以最新状态为准）。
-> 配套文档：`README.md`（项目介绍/快速开始）、`data/SCHEMA.md`（数据契约单一出处）、`scripts/README.md`（管线怎么跑）、`TESTING.md`（测试与排查）、`front/UI优化记录.md`（各模块 UI 最终方案与成果）。
+> 配套文档：`README.md`（项目介绍/快速开始）、`docs/SCHEMA.md`（数据契约单一出处）、`docs/pipeline.md`（管线怎么跑）、`docs/TESTING.md`（测试与排查）、`docs/UI优化记录.md`（各模块 UI 最终方案与成果）。
 
 ---
 
 ## 0. 项目一句话
 
-**云迹 · 云崽档案**：单一种马产驹的个人查阅/检索静态站（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `REFACTOR.md` §1），GitHub Pages 部署，`dist/` 自包含数据副本。
+**云迹 · 云崽档案**：单一种马产驹的个人查阅/检索静态站（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `docs/REFACTOR.md` §1），GitHub Pages 部署，`dist/` 自包含数据副本。
 
 ## 1. 当前状态（最新）
 
@@ -24,29 +24,25 @@
 
 ```
 yunji-web/
-├── data/                  # ★ 全部数据产物（basic.json / pedigree/ / races/ / timeline.json / datechart.json / stats.json / 人工表）
-│   └── SCHEMA.md          # 数据产物字段契约（单一出处，改字段先改这里）
-├── scripts/               # Python 数据管线
-│   ├── core/               #   中立核心层（net/paths/basic_io/manual/text，不 import 任一管线）
-│   ├── basic/             #   基础管线：建档（JBIS）→ 血统/nk_id/意味（并发）→ 详情（netkeiba）→ merge
-│   ├── races/             #   竞赛管线：详情+判变 → 成绩增量（SP 页回填格/条件/調教師/本賞金）→ 台账海外 → merge
+├── config/                  # 站点/种马配置（sire.json 种马+品牌+台账开关 · grade-table.json 格级单源）
+├── data/                    # ★ 全部数据产物（basic.json / pedigree/ / races/ / timeline.json / datechart.json / stats.json / 人工表）
+├── docs/                    # ★ 全部人工文档（8 篇，逐篇说明见 docs/README.md 索引与下文）
+├── scripts/                 # Python 数据管线
+│   ├── core/                #   中立核心层（constants/net/basic_io/manual/text/runtime/sire_config/grade，常量单源 constants.py，不 import 任一管线）
+│   ├── basic/               #   基础管线：建档（JBIS）→ 血统/nk_id/意味（并发）→ 详情（netkeiba）→ merge
+│   ├── races/               #   竞赛管线：详情+判变 → 成绩增量（SP 页回填格/条件/調教師/本賞金）→ 台账海外 → merge
 │   ├── timeline/ datechart/ stats/   # 前端预计算产物（build_*.py → data/*.json）
-│   ├── check_data.py      #   数据一致性校验（--fix 补跑）
-│   └── README.md + basic/README.md + races/README.md   # 管线说明
-├── front/                 # ★ 前端正式源码（Vite 多页 + Tailwind，产物 → 根 dist/）
-│   ├── index.html         #   外壳：左侧导航 + iframe 内容区（单断点 768px）
-│   ├── pages/             #   8 个功能子页 + theme.css（唯一 Tailwind 输入）
-│   ├── public/            #   共享 JS：data-config / i18n / selector / race-rows / yj-cache / yj-util / bus / device / pedigree / editor / race-bundle / loading
-│   ├── scripts/           #   构建期工具：gen-font.mjs（字体子集）+ subset_font.py + build-races-bundle.mjs（races 压缩包）
-│   └── UI优化记录.md      #   各模块 UI 优化最终方案 + 当前成果（文首含全站编码约定）
-├── dist/                  # 构建产物（gitignore，CI 现场构建；dist 已自包含 data/ 副本）
-├── run_update.py          # 数据更新统一入口（9 种策略，见 README.md 表格）
-├── run_full_test.py       # 从 0 全量自测（= --init 实际载体，~2 小时）
-├── request-path.html      # 请求·数据流路径图（基础+竞赛 3 视图）
-├── AGENTS.md              # AI 助手工作规则（硬性约定汇总）
-├── README.md              # 项目介绍 + 快速开始 + 部署
-├── HANDOFF.md             # 本文件（交接）
-└── TESTING.md             # 更新策略验证点 / 回归清单 / 排查指南
+│   └── check_data.py        #   数据一致性校验（--fix 补跑）
+├── front/                   # ★ 前端正式源码（Vite 多页 + Tailwind，产物 → 根 dist/）
+│   ├── index.html           #   外壳：左侧导航 + iframe 内容区（单断点 768px）
+│   ├── pages/               #   8 个功能子页 + theme.css（唯一 Tailwind 输入）
+│   ├── public/              #   共享 JS：data-config / i18n / selector / race-rows / yj-cache / yj-util / bus / device / pedigree / editor / race-bundle / loading
+│   └── scripts/             #   构建期工具：gen-font.mjs（字体子集）+ subset_font.py + gen-site-config.mjs（品牌/格级注入）+ build-races-bundle.mjs（races 压缩包）
+├── dist/                    # 构建产物（gitignore，CI 现场构建；dist 已自包含 data/ 副本）
+├── run_update.py            # 数据更新统一入口（9 种策略，见 README.md 表格）
+├── run_full_test.py         # 从 0 全量自测（= --init 实际载体，~2 小时）
+├── AGENTS.md                # AI 助手工作规则（硬性约定汇总）
+└── README.md                # 项目介绍 + 快速开始 + 部署
 ```
 
 ## 3. 前端架构（已定稿，勿回退）
@@ -79,11 +75,11 @@ yunji-web/
 6. **零影响红线**：复用收口只做等值搬移/纯删除；改完必跑 build + 核对 dist。
 7. **教训速记**：① JS 动态类必须确认被 content 扫描并验证编译产物；② 预览/探索页 ≠ 正式版，交互行为以正式版为准；③ 同一实体的「显示名」逻辑单点维护。
 
-> 复用收口的完整细则（含反例清单与隐藏耦合案例）见 `front/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
+> 复用收口的完整细则（含反例清单与隐藏耦合案例）见 `docs/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
 
 ## 5. 数据管线
 
-- **两条管线代码隔绝**：`scripts/basic/` 与 `scripts/races/` **互不 import**，只共用中立层 `scripts/core`（不认识管线；限速表/缓存目录/剥前缀等差异由各 `common.py` 以形参注入）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
+- **两条管线业务隔离、代码抽离复用**：`scripts/basic/` 与 `scripts/races/` 的**业务模块互不 import 对方**，但共享逻辑统一下沉中立层 `scripts/core`——路径/站点/颜色等字面量常量单源 = `core/constants.py`（原 `paths.py` 扩展），两个 `common.py` 只做薄再导出；限速表/剥前缀等风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`（net 不认识管线）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
 - **线性单链**（无跨源来回兜底）：基础 = JBIS 建档 → 血统/nk_id/意味 并发 → netkeiba 详情 → merge；竞赛 = 详情+判变 → 成绩增量（SP 页一次回填 格/条件/調教師/本賞金）→ 台账海外 → merge。
 - **缓存 + 合并模式**：抓取脚本只写 `data/_tmp/{basic,races}/` 独立缓存，merge 时统一写 basic.json 并删缓存 → 可并发、无覆盖。
 - **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.csv` 统一日志（含 host 列），据此调间隔。
@@ -91,11 +87,11 @@ yunji-web/
 - **人工值**：`data/manual_overrides.json`（马字段钉住）、`data/timeline_manual.json`（时间线人工节点）、`data/races_manual.json`（比赛人工配图）——两条管线的合并收尾都套 `manual.apply_overrides`，直接改 basic.json 会被次日 CI 抹掉。
 - **判变 = 变化 ∪ 缺失**：成绩抓取目标 = 通算成績变化 ∪ 无 races 文件 ∪ 数据缺失（文件出赛 < 通算战数），自动补拉，杜绝盲区。
 - **门禁**：`scripts/check_data.py` + 4 个断言脚本（`node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` / `node scripts/datechart/verify_datechart.cjs`）。改数据或改生成脚本后都要跑绿，并断言 `data/` diff 为空。
-- 详细机制见 `scripts/README.md`（跨管线）、`scripts/basic/README.md`、`scripts/races/README.md`。
+- 详细机制见 `docs/pipeline.md`（总览 / basic 管线 / races 管线 / 校验编排 / 离线红线）。
 
 ## 6. 数据契约
 
-**所有产物字段契约与口径的单一出处 = `data/SCHEMA.md`**（生成脚本文件头只留一行指路）。要点：
+**所有产物字段契约与口径的单一出处 = `docs/SCHEMA.md`**（生成脚本文件头只留一行指路）。要点：
 
 - `basic.json`：`{"_meta":{...}, "horses":[…]}`，字段模板与列序 = `scripts/core/basic_io.py::BASIC_FIELDS`（31 键）。**前端只读，勿手改**（手改次日被 CI 抹掉，人工值走人工表）。
 - `races/{id}.json`：逐场成绩数组，列序 = `scripts/races/common.py::RACE_RECORD_ORDER`；**結果三态** = 完赛（数字着顺）/ 未完赛（中止·失格，计出走）/ 未出走（取消·除外，不计出走）。
@@ -132,3 +128,4 @@ yunji-web/
 - 编辑台：草稿箱模式 + 线上一次性提交 + 页面拆分（2026-09-29/30）。
 - 全站措辞：侧边栏「日期图」→「日期统计」、「时间线」→「航迹线」、「XXXX年产」→「XXXX年世代」、「下钻」→「跳转」。
 - 字体：101 片 Google 分片 → 构建期按需全量子集 1 片（2026-09-20 定稿）。
+- 复用收口追补（2026-xx）：取消「两管线代码隔绝（common.py 互不 import）」硬限制 → 改为「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 **`core/constants.py`**（路径+站点 URL+颜色+网络默认单源，两个 common.py 只再导出）；新增 `net.bind(domain_sleep, strip_bases)`（收口两 common 的五连 partial 样板）与 `runtime.install_lazy_http()`（收口两 common 的惰性导出块）。详见 `docs/重复代码审计.md`。

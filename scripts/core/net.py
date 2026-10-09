@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 """中立层网络：请求 / 按域名限速 / 风控日志。
 
-两管线差异（basic 含 JBIS·studbook，races 含 race·nar 域）不写死在这里，
-由各自 common.py 用 domain_sleep / strip_bases 形参注入。
+请求头 / 兜底间隔 / 颜色等字面量常量收在 core/constants.py（单源，两条管线共用）；
+两管线差异（basic 含 JBIS·studbook，races 含 race·nar 域）的风控口径不写死在这里，
+由各自 common.py 用 domain_sleep / strip_bases 形参注入（见下方 bind()）。
 """
 import csv
+import functools
 import random
 import re
 import sys
@@ -16,19 +18,11 @@ from pathlib import Path
 # requests / bs4 不在模块顶层导入（2026-10-01）：core 会被 merge_basic / build_timeline 等
 # 离线脚本连坐 import（core/__init__ re-export net），而 GitHub runner 镜像不再预装 requests，
 # 顶层导入曾把 Pages 部署 job 炸掉（deploy.yml 该步按设计纯 stdlib）。改到真正发请求的函数内导入。
-from . import paths
-
-COLORS = ("青鹿毛", "黒鹿毛", "鹿毛", "芦毛", "栗毛", "白毛", "青毛", "粕毛", "栃栗毛", "鹿栗毛", "月毛", "河原毛")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-    "Accept-Language": "ja,en;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-}
+from . import constants
 
 # 按域名配置请求间隔（基准秒，会再乘以 0.8~1.2 抖动）：本层留空表，由管线 common.py 传参覆盖。
 DOMAIN_SLEEP = {}
-DEFAULT_SLEEP = 2.0              # 未匹配到域名的兜底间隔
+DEFAULT_SLEEP = constants.DEFAULT_SLEEP   # 未匹配到域名的兜底间隔
 
 # log_fetch 记 path 时剥掉的站点根前缀：同样由管线注入（两管线消费的域不同）。
 STRIP_BASES = ()
@@ -57,7 +51,7 @@ def fetch(url, retries=3, encoding="utf-8", session=None, sleep_on_403=20,
     s = session or requests
     for attempt in range(retries):
         try:
-            r = s.get(url, headers=HEADERS, timeout=30)
+            r = s.get(url, headers=constants.HEADERS, timeout=30)
             r.encoding = encoding
             r.raise_for_status()
             log_fetch(url, r.status_code, time.time() - t0, attempt + 1, strip_bases=strip_bases)
@@ -79,8 +73,8 @@ def fetch(url, retries=3, encoding="utf-8", session=None, sleep_on_403=20,
 def log_fetch(url, status, dur, retries, note="", strip_bases=None):
     """风控观测：记录 域名 + 最小必要请求信息，失败不影响抓取。"""
     try:
-        log = paths.DATA_DIR / "fetch_log.csv"
-        paths.DATA_DIR.mkdir(parents=True, exist_ok=True)   # 首次运行目录可能还不存在
+        log = constants.DATA_DIR / "fetch_log.csv"
+        constants.DATA_DIR.mkdir(parents=True, exist_ok=True)   # 首次运行目录可能还不存在
         bases = STRIP_BASES if strip_bases is None else strip_bases
         path = url.split("?")[0]
         for base in bases:
@@ -110,3 +104,18 @@ def jitter(url_or_base, fallback=None, domain_sleep=None):
 def soup_of(url, encoding="utf-8", **kw):
     from bs4 import BeautifulSoup         # 惰性：见文件头说明
     return BeautifulSoup(fetch(url, encoding=encoding, **kw), "lxml")
+
+
+def bind(domain_sleep, strip_bases):
+    """把管线风控口径绑成具名 partial 集（common.py 再导出为模块级名）。
+
+    收口 basic/common.py 与 races/common.py 相同的「五连 functools.partial」样板
+    （2026-xx 用户决策）：net 接口签名变化时只改这里一处，两条管线调用点不变。
+    返回 dict：{"sleep_for","jitter","fetch","soup_of","log_fetch"}。"""
+    return {
+        "sleep_for": functools.partial(sleep_for, domain_sleep=domain_sleep),
+        "jitter": functools.partial(jitter, domain_sleep=domain_sleep),
+        "fetch": functools.partial(fetch, domain_sleep=domain_sleep, strip_bases=strip_bases),
+        "soup_of": functools.partial(soup_of, domain_sleep=domain_sleep, strip_bases=strip_bases),
+        "log_fetch": functools.partial(log_fetch, strip_bases=strip_bases),
+    }

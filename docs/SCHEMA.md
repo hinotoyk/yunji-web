@@ -1,7 +1,7 @@
-# data/SCHEMA.md · 数据产物字段契约（单一出处）
+# docs/SCHEMA.md · 数据产物字段契约（单一出处）
 
 `data/` 各产物的**字段契约与口径**统一写在这里（原来散在 `scripts/**/build_*.py` 文件头，阶段 6a 搬来）。
-改字段先改这里 + 对应生成脚本；「管线怎么跑」见 `scripts/README.md`，跨管线代码结构见同文件。
+改字段先改这里 + 对应生成脚本；「管线怎么跑」见 `docs/pipeline.md`，跨管线代码结构见同文件。
 前端只读产物，字段解释以外实现在 `front/`。
 
 ---
@@ -52,7 +52,7 @@
 | 30 | `races_file` | `""` | ✓ | ✓ | 站点根相对路径 data/races/{id}.json |
 | 31 | `pedigree_file` | `""` | ✓ | ✓ | 站点根相对路径 data/pedigree/{id}.json |
 
-抓取来源分工（详见 `scripts/README.md`）：JBIS 建档（id / jbis_id / 馬名 / 母名 / 生年）→ netkeiba 详情（
+抓取来源分工（详见 `docs/pipeline.md`）：JBIS 建档（id / jbis_id / 馬名 / 母名 / 生年）→ netkeiba 详情（
 登録状態 / 性別 / 毛色 / 馬主 / 調教師 / 通算成績 / 獲得賞金 …）→ studbook（馬名意味）→ 血统图（pedigree_file / 母父）
 → 竞赛管线（races_file / 収得賞金 / 性別_当前 / 通算成績_逐场）。
 
@@ -77,6 +77,8 @@
   只用于 `check_data.py` 同口径对账；展示一律用 `basic.json` 的 `通算成績_逐场`（含台账场）。
 - **去重键**（增量抓取判重用，两条同时生效）：`race:{race_id}` 与 `horse:{馬名归一}|{日付}`，
   见 `scripts/races/common.py::record_keys`；无 race_id 的台账记录靠 馬名+日付（一匹马一天只跑一场）。
+- **格** → 显示文案 / 徽章类 / 重赏判定的单一出处 = `config/grade-table.json`（REFACTOR.md §12 / R6；
+  Python 端经 `scripts/core/grade.py` 消费，前端经构建注入 `window.YJ_GRADE`）。
 - 文件按 `日付` 倒序（新赛在前）。
 
 ---
@@ -161,7 +163,7 @@
                    口径同 race-rows.js raceNameText —— 尾缀与 格 相等且该格有徽章才剥，否则 (1勝クラス) 等原样保留）",
         "grade":  "原始格（GII/JpnI/L/OP…，新马战为 新馬）",
         "glabel": "徽章显示字（G2/G3/L…，无徽章格为空）",
-        "gbadge": "徽章 css 类（g1/g2/g3/gl/gop）",
+        "gbadge": "徽章 css 类（g1/g2/g3/listed/open；见 config/grade-table.json）",
         "meta":   "「東京11R · 芝2400m · 良」场地一行",
         "time":   "タイム（缺失=—）",
         "agari":  "上り（缺失=—）",
@@ -292,7 +294,7 @@
 日期图数据预计算：读 data/basic.json + data/races/*.json → data/datechart.json
 
 页面 front/pages/datechart.html 只做渲染：fetch 本产物 → RUNS → 天/周/月/年 日历聚合
-（2026-09-14 布局样式定稿，按 UI优化记录 §32.6 接入真实数据）。
+（2026-09-14 布局样式定稿，按 docs/UI优化记录.md §32.6 接入真实数据）。
 产物 runs[] 与页面字段完全同构（布局稿 RUNS 契约），本脚本只做
 「字段抽取 + 类型归一 + 排序」，不做任何聚合口径计算——进板数 6 段、🏆 计数、
 赏金合计等全部由前端在 runs[] 上聚合，保证单一事实源（data/races）与页面零换算。
@@ -359,7 +361,7 @@
 
 ## 8. races-bundle.json —— 全库比赛压缩包（构建期派生，源 data/ 不落盘）
 
-**2026-09-28 立项（路 B，D11 替换式；决策与处置记录 = front/UI优化记录.md §72）**：`data/races/*.json` 276 个逐马文件
+**2026-09-28 立项（路 B，D11 替换式；决策与处置记录 = docs/UI优化记录.md §72）**：`data/races/*.json` 276 个逐马文件
 （minified 353KB，站点上为 276 次请求）在 **vite 构建期** 打成单文件
 `dist/data/races-bundle.json`（149.6KB → gzip ≈44KB）。**D11 替换式**：打包成功则 dist
 不再拷贝 `data/races/*.json`；打包失败告警并退回拷贝（叠加形态兜底）。`data/` 仓库永远

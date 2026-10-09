@@ -2,22 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>编辑 · 云迹</title>
+<title>编辑 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="stylesheet" href="theme.css">
 </head>
 <body class="bg-muted/50 text-foreground antialiased">
 
-<!-- 2026-09 定稿（UI优化记录 §82/§82.4 · B 稿「常开工作表」）：单列 880px。报头条卡（雲标 + 马名 + meta +
+<!-- 2026-09 定稿（docs/UI优化记录.md §82/§82.4 · B 稿「常开工作表」）：单列 880px。报头条卡（雲标 + 马名 + meta +
      预览/翻马 + 比赛页同款 selector 搜索下拉）→ 工作表卡（照片位 268px + 五字段常开直改 + 备注行）→
      固定底部保存条（草稿箱模式 · 草稿箱抽屉 · 放弃/提交到 GitHub）。编辑台恒为草稿箱模式：
      不依赖 edit_server，线上提交统一走 GitHub API → CI（约 2 分钟生效）。
@@ -63,12 +56,13 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
   </div>
 </div>
 
+<script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="../device.js"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../selector.js?v=8"></script>
+<script src="../selector.js?v=9"></script>
 <script src="../editor.js?v=10"></script>
 <script>
 YJ.editor.init({

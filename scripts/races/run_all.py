@@ -19,19 +19,28 @@
     python run_all.py --keep          # 合并后保留缓存（调试）
 """
 import argparse
-import io
 import subprocess
 import sys
 from pathlib import Path
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
-
 HERE = Path(__file__).resolve().parent
 PY = sys.executable
+
+sys.path.insert(0, str(HERE.parent))        # 引导 scripts/core/（纯 stdlib）
+from core import constants, runtime, sire_config  # noqa: E402
+
+runtime.install_utf8_stdout()
+
+
+def clean_stale_ledger_cache():
+    """台账关闭/跳过时清掉上次启用可能残留的 _tmp/races/ledger.json（D6 编排层清理：
+    fetch_ledger.py 内部只在「入口被调用」时清，关闭态编排层根本不调它 →
+    这里显式补一次，防 merge_races 误消费存量；record_keys 幂等仅作兜底）。
+    缓存真实路径 = constants.tmp_dir("races")/ledger.json（races/common.py TMP_DIR）。"""
+    stale = constants.tmp_dir("races") / "ledger.json"
+    if stale.exists():
+        stale.unlink()
+        print(f"✔ 已清理残留台账缓存: {stale}")
 
 
 def run(script, *args):
@@ -54,10 +63,14 @@ def main():
 
     run("fetch_races.py", *lim(), *(["--force"] if args.force else []))
 
-    if not args.skip_ledger:
-        run("fetch_ledger.py")
-    else:
+    if args.skip_ledger:
         print("\n◆ 跳过台账环节 (--skip-ledger)")
+        clean_stale_ledger_cache()
+    elif not sire_config.ledger_url():
+        print("\n◆ 跳过台账环节 (台账未启用：config/sire.json 的 ledger.url 为空)")
+        clean_stale_ledger_cache()
+    else:
+        run("fetch_ledger.py")
 
     print("\n◆ 合并缓存 → races 文件 + basic.json")
     run("merge_races.py", *(["--keep"] if args.keep else []))

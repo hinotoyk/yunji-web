@@ -2,26 +2,24 @@
 # -*- coding: utf-8 -*-
 """日期图数据预计算：读 data/basic.json + data/races/*.json → data/datechart.json
 
-产物字段契约见 data/SCHEMA.md（6a 搬家）；页面只做渲染，聚合口径全在前端。
+产物字段契约见 docs/SCHEMA.md（6a 搬家）；页面只做渲染，聚合口径全在前端。
 """
 import datetime
-import io
 import json
 import sys
 from pathlib import Path
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # scripts/ 入 sys.path（直跑脚本）
+from core import artifacts, constants, grade, runtime    # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-DATA = ROOT / "data"
+runtime.install_utf8_stdout()
 
-# 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径：G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3；
-# L/OP 在页面有级别徽章但不计入重赏 → 🏆 计数用本集合。2026-10 起障害重赏计入）
-TROPHY_GRADES = {"GI", "GII", "GIII", "JGI", "JGII", "JGIII", "JpnI", "JpnII", "JpnIII"}
+ROOT = constants.ROOT
+DATA = constants.DATA_DIR
+
+# 重赏判定（同 races.html「重赏」筛选 / timeline.py GRADED 口径；单一出处 = config/grade-table.json，
+# GRADED 由徽章类 ∈ {g1,g2,g3} 派生；L/OP 在页面有级别徽章但不计入重赏 → 🏆 计数用本集合）
+TROPHY_GRADES = grade.load_grade()["GRADED"]
 
 
 def norm_place(v):
@@ -37,21 +35,6 @@ def norm_place(v):
         return int(s)
     except ValueError:
         return s
-
-
-def norm_prize(v):
-    """該马该场的 賞金 → pr（円 int）；空串/非数 → 0。"""
-    if isinstance(v, bool):
-        return 0
-    if isinstance(v, (int, float)):
-        return int(v)
-    s = str(v or "").strip().replace(",", "")
-    if not s:
-        return 0
-    try:
-        return int(float(s))
-    except ValueError:
-        return 0
 
 
 def _raw(v):
@@ -71,7 +54,7 @@ def build_runs(horses):
             data = json.loads(f.read_text(encoding="utf-8"))
         except FileNotFoundError:
             continue
-        arr = data if isinstance(data, list) else (data.get("races") or [])
+        arr = artifacts.records_of(data)
         for r in arr:
             d = str(r.get("日付") or "")
             if not d:
@@ -93,7 +76,7 @@ def build_runs(horses):
                 "dist": dist if isinstance(dist, (int, float)) and not isinstance(dist, bool) else "",
                 "s": str(r.get("芝ダ") or ""),
                 "p": norm_place(r.get("結果")),
-                "pr": norm_prize(r.get("賞金")),
+                "pr": artifacts.norm_prize(r.get("賞金")),
                 "vt": str(r.get("venue_type") or ""),
                 "bk": str(r.get("馬場") or ""),
                 "ki": _raw(r.get("斤量")),
@@ -109,8 +92,7 @@ def build_runs(horses):
 
 
 def main():
-    basic = json.loads((DATA / "basic.json").read_text(encoding="utf-8"))
-    horses = basic.get("horses", [])
+    horses = artifacts.load_basic_horses()
     runs = build_runs(horses)
 
     wins = [x for x in runs if x["p"] == 1]
@@ -134,19 +116,8 @@ def main():
     out = DATA / "datechart.json"
 
     # 内容无变化时跳过写入：generated_at 每次运行都不同，若照写会使 --ci 每轮都产生空 diff 提交
-    def content_signature(d):
-        m = dict(d.get("meta") or {})
-        m.pop("generated_at", None)
-        return json.dumps({"meta": m, "runs": d.get("runs")}, ensure_ascii=False, sort_keys=True)
-
-    if out.exists():
-        try:
-            if content_signature(json.loads(out.read_text(encoding="utf-8"))) == content_signature(payload):
-                print("日期图数据预计算: 内容无变化，跳过写入")
-                return
-        except (json.JSONDecodeError, OSError):
-            pass   # 旧文件损坏/不可读 → 走全量重写
-    out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    if not artifacts.write_if_changed(out, payload, ("meta", "runs"), "日期图数据预计算"):
+        return
     print(f"日期图数据预计算完成: {stats['runs']} 条出走 / {stats['horses']} 匹产驹 / "
           f"一着 {stats['wins']} 场（🏆 {stats['trophy_wins']}）/ 赏金合计 {stats['prize_total']:,} 円 "
           f"（{stats['first_date']} ~ {stats['last_date']}）→ {out.relative_to(ROOT)}")

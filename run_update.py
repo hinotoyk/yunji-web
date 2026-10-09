@@ -6,10 +6,12 @@
   --init        初始化：删空 data/ 从 0 全量（复用 run_full_test.py 的完整测试流程）
   --basic       基本数据增量：新马对账建档(--year) + 补缺(血统/nk_id/意味/详情) + merge
   --races       比赛数据增量：详情更新+判变 → 成绩增量(SP页含格/条件/調教師/本賞金) → 台账海外 → 合并
-  --horse id    定向更新：只处理指定 id 的马（详情更新 + 成绩增量 + 合并）
+  --horse id    定向更新：只处理指定 id 的马（详情更新 + 成绩增量 + 台账海外 + 合并；
+                台账环防「海外台账马 races 文件丢失后被成绩页 0 场误判为空」——见 docs/TESTING.md §4 边界）
   --races-force 比赛全量刷新：全部马重抓成绩页（覆盖式重建，历史数据修正用；已有记录缺失字段一并回填）
   --check       数据校验：引用完整性 + 通算战数 vs 文件出赛数（--fix 自动补跑）+ 日期图断言(node)
-  --since N     轻量时段增量：只抓最近 N 天内出赛的马的成绩（不跑详情/判变，需配合 --races）
+  --since N     轻量时段增量：只抓最近 N 天内出赛的马的成绩（不跑详情/判变，需配合 --races；
+                含台账环防海外台账马误伤）
   --ledger      仅台账：只拉台账海外场并入（不跑 netkeiba）
   --ci          CI 全自动：基本增量 + 比赛增量 + 校验 + 日期图断言(node) + git 提交（全部通过才提交）
 
@@ -28,18 +30,16 @@
 """
 import argparse
 import datetime
-import io
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))   # 引导 scripts/core/（纯 stdlib）
+from core import runtime, sire_config  # noqa: E402
+
+runtime.install_utf8_stdout()
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
@@ -127,6 +127,22 @@ def git_commit_if_changed():
         log(f"⚠ git 操作异常: {e}")
 
 
+def run_ledger():
+    """台账环（--ledger / --horse / --races --since 三处同款收口）：
+    台账启用则拉取海外场；未启用则跳过并清理残留缓存（防 merge 误消费存量）。"""
+    if not sire_config.ledger_url():
+        # D5：台账关闭态只跳 fetch_ledger 一步，merge/派生照跑（空缓存下均为 no-op）
+        log("台账未启用（config/sire.json 的 ledger.url 为空）→ 跳过台账拉取，merge/派生照跑")
+        # D6 编排层清理：fetch_ledger 未启用时不会被调用，残留缓存由这里显式清（防 merge 误消费存量）
+        # 缓存真实路径 = data/_tmp/races/ledger.json（races/common.py TMP_DIR = constants.tmp_dir("races")）
+        _stale = DATA / "_tmp" / "races" / "ledger.json"
+        if _stale.exists():
+            _stale.unlink()
+            log(f"✔ 已清理残留台账缓存: {_stale}")
+    else:
+        run_step("台账·海外拉取", RACES / "fetch_ledger.py")
+
+
 def main():
     ap = argparse.ArgumentParser(description="统一更新入口（9 种策略）")
     g = ap.add_mutually_exclusive_group(required=True)
@@ -161,6 +177,7 @@ def main():
     elif args.races:
         if args.since:
             run_step("比赛·轻量时段增量", RACES / "fetch_races.py", "--since", str(args.since), *lim())
+            run_ledger()
             run_step("比赛·合并", RACES / "merge_races.py")
         else:
             run_step("比赛·增量流水线", RACES / "run_all.py", *lim())
@@ -173,6 +190,7 @@ def main():
             sys.exit("--horse 需要至少一个 id")
         run_step("比赛·详情更新(定向)", RACES / "fetch_detail.py", "--id", ",".join(ids))
         run_step("比赛·成绩增量(定向)", RACES / "fetch_races.py", "--id", ",".join(ids))
+        run_ledger()
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
@@ -189,7 +207,7 @@ def main():
         run_step("比赛记录·下钻冒烟", VERIFY_RACES_DRILL, exe="node")
         run_step("比赛记录·结果对账", VERIFY_RACES_RESULT, exe="node")
     elif args.ledger:
-        run_step("台账·海外拉取", RACES / "fetch_ledger.py")
+        run_ledger()
         run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)

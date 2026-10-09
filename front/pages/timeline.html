@@ -2,16 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>航迹线 · 云迹</title>
+<title>航迹线 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -100,13 +93,15 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
   <div id="body"><div class="hint-empty">正在加载时间线数据…</div></div>
 </div>
 
+<script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../yj-cache.js?v=1"></script>
 <script src="../loading.js?v=2"></script>
 <script>
 /* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「编辑 ↗」仅 URL 带 ?edit=1 时显示
-   —— 与外壳 index.html「编辑」导航组同一开关（外壳加载子页时把 edit=1 透传进 iframe）。 */
+   —— 与外壳 index.html「编辑」导航组同一开关（外壳加载子页时把 edit=1 透传进 iframe）。
+   保持内联（不引 YJ.util.qs，F1.3）：头部极早执行的一行原生 URLSearchParams 开关，先于任何工具依赖。 */
 if(new URLSearchParams(location.search).get("edit")==="1"){ var ee=document.getElementById("editEntry"); if(ee) ee.classList.remove("hidden"); }
 /* ================= 时间线 · 里程碑事件页 =================
  * 数据：data/timeline.json —— 后端预计算（scripts/timeline/build_timeline.py 生成，

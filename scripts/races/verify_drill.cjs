@@ -5,7 +5,7 @@
  *   [B] FLT 预置后 matchEntry 命中数 == 源数据独立重算（口径互证，覆盖新维度）
  *   [C] renderFilters 新筛选行（赛道方向/人气/性别/调教师/骑手 select）渲染 + 页面不崩
  *   [D] 人气 select 交互（添加 + tag 删除，同调教师/骑手）
- *   [E] 马名口径收口（horseText 剥生产国尾缀 + 无登録名兜底「母名の生年」，见 UI优化记录 §64）
+ *   [E] 马名口径收口（horseText 剥生产国尾缀 + 无登録名兜底「母名の生年」，见 docs/UI优化记录.md §64）
  * 用法: node scripts/races/verify_drill.cjs */
 "use strict";
 const fs = require("fs");
@@ -107,7 +107,13 @@ global.YJ = {
 };
 
 /* 共享模块按浏览器加载顺序入 stub：yj-util.js（YJ.util.esc，§48 后页面薄别名依赖）→ race-rows.js
- * （比赛行/徽章渲染已下沉，见 UI优化记录 §42）。浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序。 */
+ * （比赛行/徽章渲染已下沉，见 docs/UI优化记录.md §42）。浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序。 */
+/* P3/R6（docs/REFACTOR.md §12.4）：race-rows.js 已改读 window.YJ_GRADE（fail-fast）→ stub 环境须先注入
+ * 与浏览器一致的 YJ_SITE / YJ_GRADE（node 侧 fs 读 config 两个 JSON，与 dist/site-config.js 同源）。 */
+const _sireCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "sire.json"), "utf8"));
+const _gradeCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "grade-table.json"), "utf8"));
+window.YJ_SITE = _sireCfg.site || {};
+window.YJ_GRADE = _gradeCfg.GRADE || {};
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-util.js"), "utf8"));
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "race-rows.js"), "utf8"));
 /* 统一缓存控制器（initLibrary 主路径经 YJ.cache.fetch('bundle') 取数）+ bundle 编解码模块：

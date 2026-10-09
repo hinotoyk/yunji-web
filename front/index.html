@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>云迹 · 云崽档案</title>
+<title>{{YJ_SITE_NAME}} · {{YJ_SITE_SUBTITLE}}</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="pages/theme.css">
+<!-- 站点配置（构建期由 front/scripts/gen-site-config.mjs 注入 dist/site-config.js；单源 = config/sire.json）：
+     必须先于 yj-visit.js 加载（统计域名白名单读 YJ_SITE.domains）。 -->
+<script src="site-config.js"></script>
 <!-- 访问统计（Vercount）：第三方脚本的唯一注入点在 public/yj-visit.js，
      由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
-     （既不计数也不显示数字，页脚两个标签保持 hidden）。见 UI优化记录 §87（原不蒜子，§85）。 -->
+     （既不计数也不显示数字，页脚两个标签保持 hidden）。见 docs/UI优化记录.md §87（原不蒜子，§85）。 -->
 <script src="yj-visit.js?v=2"></script>
 </head>
 <body class="overflow-hidden bg-background text-foreground antialiased">
@@ -21,13 +24,13 @@
            data-[open=true]:translate-x-0
            md:static md:z-auto md:w-[220px] md:translate-x-0 md:shadow-none md:transition-none">
     <div class="flex items-center gap-2.5 border-b border-border px-[18px] pb-3.5 pt-[18px]">
-      <div class="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">雲</div>
-      <div class="text-[15px] font-semibold tracking-[.5px]">云迹
-        <small class="block text-[11px] font-normal tracking-[1px] text-secondary-foreground">云崽档案</small>
+      <div class="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">{{YJ_SITE_LOGO}}</div>
+      <div class="text-[15px] font-semibold tracking-[.5px]">{{YJ_SITE_NAME}}
+        <small class="block text-[11px] font-normal tracking-[1px] text-secondary-foreground">{{YJ_SITE_SUBTITLE}}</small>
       </div>
     </div>
     <nav class="flex-1 overflow-y-auto p-2.5">
-      <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">云崽档案</div>
+      <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">{{YJ_SITE_SUBTITLE}}</div>
       <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/profile.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">📖</span>基本信息
       </div>
@@ -60,7 +63,7 @@
       </template>
     </nav>
     <div class="border-t border-border px-4 py-3 text-[12px] text-muted-foreground">
-      云迹 · 数据仅供分享交流
+      {{YJ_SITE_NAME}} · 数据仅供分享交流
       <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。原为 hidden md:block，
            导致 mb 端只计数、不显示（计数脚本挂在外壳 head，与视口无关），2026-09-30 用户确认改常显。
            站点访问量（Vercount 回填）：容器先 hidden（Tailwind），取数成功才由脚本把 display 改成 inline 显示；
@@ -101,6 +104,7 @@
  *   GitHub Pages 与 CF Pages 均如此），于是内容页回壳时 location.pathname 已无 .html，
  *   算出 rel = "pages/races?f=…" —— 旧校验要求 /\.html$/ 会**拒绝**它并静默回落默认
  *   profile，表现为「下钻新开标签页却停在首页」。故这里先补回 .html 再校验，两种写法都收。 */
+/* 保持内联（不引 YJ.util.qs，F1.3）：外壳独立脚本树、不加载 yj-util；一行原生实现极早执行。 */
 var EDIT_MODE=new URLSearchParams(location.search).get("edit")==="1";
 /* 编辑模式（外壳 ?edit=1）透传进 iframe：内容页据此显示各自的编辑入口（不带则一律不可见，
    2026-10-02 定稿）。子页已有 query 用 & 追加。 */

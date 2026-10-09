@@ -24,14 +24,14 @@ YJ.selector = (function () {
     miss:'bg-[#F1F1F1] text-[#B0B0B0]',
     id:  'bg-muted text-muted-foreground'
   };
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
+  /* esc：单一出处 public/yj-util.js（2026-xx 收口，docs/重复代码审计.md B1）；
+   * selector 已依赖 YJ.util.nameKind/splitName/fallbackName，「零依赖自包含」前提不成立。 */
+  var esc = YJ.util.esc;
   /* 右列仅保留出生年；性别交给主名前的小色点表达（见 nameHTML） */
   function metaHTML(h) {
     return h.生年 || '';
   }
-  /* 主名链 = 日文 → 英文 → 「母名の生年」兜底(母名也缺才退化 #id)；dbl=true 时主名后追加 港译(无则自译)，与主名相同/为空则跳过。双格式契约见 front/UI优化记录.md §64 */
+  /* 主名链 = 日文 → 英文 → 「母名の生年」兜底(母名也缺才退化 #id)；dbl=true 时主名后追加 港译(无则自译)，与主名相同/为空则跳过。双格式契约见 docs/UI优化记录.md §64 */
   function nameHTML(h, dbl) {
     var names = [];
     /* 色块语言按内容判定（YJ.util.nameKind），与 profile 名字四格同口径：
@@ -85,10 +85,8 @@ YJ.selector = (function () {
     } catch (e) { return null; }         /* 不可用 → null，本模块全程只走内存 */
   })();
 
-  function absUrl(url) {
-    try { return new URL(String(url), document.baseURI || location.href).href; }
-    catch (e) { return String(url); }
-  }
+  /* URL 绝对化：单一出处 public/yj-util.js（B2 收口；yj-cache.js 内部保留自包含副本，见其注释） */
+  var absUrl = YJ.util.absUrl;
   function basicKey(url) { return "yj:basic:" + BASIC_V + ":" + absUrl(url); }
   function readStore(url) {
     if (!SS) return null;

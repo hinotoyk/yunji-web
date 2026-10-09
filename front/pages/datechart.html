@@ -2,16 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日期统计 · 云迹</title>
+<title>日期统计 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -20,12 +13,7 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
  * 已收敛到 theme.css @layer components，并与 front/public/race-rows.js 配套：
  * 明细与比赛页（内嵌）共用同一份样式与同一份行渲染代码，改一次两处同步 ===== */
 
-/* ===== 单位切换（天/周/月/年 分段控件） ===== */
-.seg{display:inline-flex;overflow:hidden;border:1px solid #e5e5e5;border-radius:8px;background:#fff}
-.seg button{height:32px;padding:0 15px;border:0;border-right:1px solid #ececec;background:#fff;font-size:13px;color:#52525b;cursor:pointer;transition:background .15s,color .15s}
-.seg button:last-child{border-right:0}
-.seg button:not([data-on=true]):hover{background:#f5f5f5}
-.seg button[data-on=true]{background:#0aa7a0;color:#fff;font-weight:600}
+/* 单位切换（天/周/月/年 分段控件）：样式单一出处 = theme.css @layer components（.seg，与 stats 场地切换同款；2026-xx 收口） */
 
 /* ===== 窗口切换 ‹ › ===== */
 .dc-nav{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:15px;line-height:1;cursor:pointer;transition:all .15s}
@@ -177,9 +165,10 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
 </div>
 
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
+<script src="../site-config.js"></script>
 <script src="../race-rows.js?v=7"></script>
 <script>
 /* ================= 日期统计 · 日历（真实数据版） =================
@@ -203,8 +192,10 @@ function pad2(n){return n<10?"0"+n:""+n;}
  * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
 var RUNS = [];
 
-/* ---- 重赏口径（同 races.html 筛选 / timeline.py GRADED）：G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3，L/OP 只是徽章不算重赏 ---- */
-var GRADED = { "GI":1, "GII":1, "GIII":1, "JGI":1, "JGII":1, "JGIII":1, "JpnI":1, "JpnII":1, "JpnIII":1 };
+/* ---- 重赏口径（同 races.html 筛选 / config/grade-table.json 单源，docs/REFACTOR.md §12）：由
+ * window.YJ_GRADE 徽章类派生——徽章类 ∈ {g1,g2,g3} 即重赏（含障害 JG/Jpn；L/OP 是 listed/open 不算）---- */
+var GRADED = {};
+if (window.YJ_GRADE) { for (var gk in window.YJ_GRADE) { var _gb = window.YJ_GRADE[gk][1]; if (_gb === "g1" || _gb === "g2" || _gb === "g3") GRADED[gk] = 1; } }
 /* ---- 着顺归类（括号后四段）：1/2/3 各一段，4 名及以后 + 未完走(中止/失格) → 第 3 名开外 ----
  * 未出走(取消/除外) 不进任何段——见 statsOf()，未出闸不算通算战绩 */
 function placeSlot(p){
@@ -229,15 +220,9 @@ function bracketHTML(vals, cls){
   }
   return s + ']</span>';
 }
-/* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿） */
-function manYen(pr){
-  if (!pr) return "";
-  if (pr >= 1e8){
-    var oku = Math.floor(pr / 1e8), man = Math.floor((pr % 1e8) / 10000);
-    return oku + "亿" + (man ? man.toLocaleString() + "万" : "");
-  }
-  return Math.round(pr / 10000).toLocaleString() + "万";
-}
+/* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿）；格式化逻辑单一出处 = YJ.util.manYen
+ * （2026-xx 收口；本页空值 → ""，调用处均已 s.pr ? … 守卫兜底） */
+var manYen = YJ.util.manYen;
 
 /* ---- ISO 周工具 ---- */
 function isoWeekInfo(dstr){

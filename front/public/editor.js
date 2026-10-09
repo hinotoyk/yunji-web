@@ -21,7 +21,7 @@ YJ.editor = (function () {
   var GH_TOKEN_KEY = "yj.gh.token";
   var GH_API = "https://api.github.com";
   /* 草稿箱：字段/备注/图片清单/时间线表快照 → localStorage；图片二进制 → IndexedDB（localStorage 存不了 Blob） */
-  var DRAFT_KEY = "yj.edit.drafts.v1";
+  var DRAFT_KEY = YJ.util.DRAFT_KEY;   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 profile 页共用） */
   var BLOB_DB = "yj-edit-blobs", BLOB_STORE = "blobs";
 
   /* D8 压缩口径：最大边缩进 1280px（profile 头像大图位 / 时间线图位都够清晰），目标 ≤100KB。
@@ -816,6 +816,7 @@ YJ.editor = (function () {
    * horse 页 = 雲标 + 马名/别名 + meta + 预览/翻马（马匹检索 = races 页同款 selector 组件，挂 #selector）；
    * timeline 页 = 航标 + 标题 + 契约提示 + 回马匹编辑。模式点常驻底部保存条（草稿箱模式）。 */
   function mastHTML() {
+    var _site = window.YJ_SITE || {};   /* site-config.js 万一未加载：编辑台不依赖品牌也能用，兜底空对象 */
     if (state.page === "timeline") {
       return '<span class="yj-ed-mk" style="border-radius:10px">航</span>' +
         '<div class="min-w-0">' +
@@ -827,14 +828,14 @@ YJ.editor = (function () {
         "</div>";
     }
     if (!state.horse) {
-      return '<span class="yj-ed-mk">雲</span>' +
-        '<span class="text-[17px] font-bold">云迹编辑台</span>' +
+      return '<span class="yj-ed-mk">' + esc(_site.logo || '') + '</span>' +
+        '<span class="text-[17px] font-bold">' + (_site.name || '') + '编辑台</span>' +
         '<span class="yj-ed-lbl">加载马匹列表中…</span>';
     }
     var h = state.horse;
     var alias = h.自译馬名 || h.香港馬名 || "";
     var hasDraftHere = draftHasHorse(h.id);
-    return '<span class="yj-ed-mk">雲</span>' +
+    return '<span class="yj-ed-mk">' + esc(_site.logo || '') + '</span>' +
       '<div class="min-w-0">' +
         '<div class="text-[20px] font-bold leading-tight tracking-[-.3px]">' + esc(YJ.util.mainName(h)) + "</div>" +
         '<div class="mt-0.5 flex items-center gap-1.5 text-[11.5px]">' +

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""台账海外场增量拉取（竞赛流水线第 4 环）。
+"""台账海外场增量拉取（竞赛流水线第 4 环，**可选环节**）。
 
-下载 Google Sheets 比赛台账 CSV（唯一知道台账细节的代码：URL / 列名映射），
+台账 URL 读 config/sire.json 的 ledger.url（--url CLI 参数优先，见 docs/REFACTOR.md §4.2/D8）；
+为空 = 台账未启用 → 打印提示后跳过（exit 0，不联网、不写缓存，并顺带清掉残留旧缓存 D6）。
+启用时：下载 Google Sheets 比赛台账 CSV（唯一知道台账细节的代码：URL / 列名映射），
 规范化成记录后**只保留海外场**（venue_type=海外），按 出走馬名 匹配 basic.json
 的马 → 与已有 races 文件按比赛键去重 → 只把**新增海外记录**写缓存：
   - _tmp/ledger.json    {id: [新增海外记录...]}
@@ -25,11 +27,9 @@ import sys
 import urllib.request
 
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
-import common  # noqa: E402
+import common  # noqa: E402  （common 已把 scripts/ 置入 sys.path）
 import racelib  # noqa: E402
-
-DEFAULT_URL = ("https://docs.google.com/spreadsheets/d/1PPasJnqqBQy_cbhXLDJ0V11CTUDJs6UBtRwe-nsCNfc"
-               "/export?format=csv&gid=1454271910")
+from core import sire_config  # noqa: E402
 
 # 馬名匹配键统一走 racelib.name_key（去国家后缀+去空白）
 
@@ -79,8 +79,8 @@ def _normalize_date(s):
     return s
 
 
-def fetch_rows(url=DEFAULT_URL, timeout=60):
-    """拉取台账 → 字符串行字典列表（日付已规范化）。"""
+def fetch_rows(url, timeout=60):
+    """拉取台账 → 字符串行字典列表（日付已规范化）。URL 必传（由调用方按 --url > 配置 > 跳过 解析）。"""
     raw = _download(url, timeout)
     rows = list(csv.reader(io.StringIO(raw.decode("utf-8-sig", "replace"))))
     if not rows:
@@ -105,8 +105,20 @@ def fetch_rows(url=DEFAULT_URL, timeout=60):
 
 def main():
     ap = argparse.ArgumentParser(description="台账海外场增量拉取")
-    ap.add_argument("--url", default=DEFAULT_URL, help="台账 CSV 导出 URL（默认内置）")
+    ap.add_argument("--url", default="",
+                    help="台账 CSV 导出 URL（优先级高于配置；缺省读 config/sire.json 的 ledger.url，空 = 未启用）")
     args = ap.parse_args()
+
+    url = args.url or sire_config.ledger_url()
+    if not url:
+        # 台账未启用（§4.1）：不联网、不写缓存；顺带清掉可能残留的旧缓存（D6，
+        # 防 merge_races 误消费上次启用时留下的存量）。
+        stale = common.TMP_DIR / "ledger.json"
+        if stale.exists():
+            stale.unlink()
+            print(f"✔ 已清理残留台账缓存: {stale}")
+        print("台账未启用，跳过")
+        return
 
     data = common.load_basic()
     horses = data["horses"]
@@ -115,7 +127,7 @@ def main():
         if h.get("馬名"):
             name_to_h.setdefault(racelib.name_key(h["馬名"]), h)
 
-    rows = fetch_rows(args.url)
+    rows = fetch_rows(url)
     issues = []
     ledger = {}
     unmatched = []

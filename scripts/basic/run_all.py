@@ -13,17 +13,15 @@
     python run_all.py --skip-detail       # 只做阶段1 + merge（不抓详情）
 """
 import argparse
-import io
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 引导 scripts/core/（纯 stdlib）
+from core import runtime  # noqa: E402
+
+runtime.install_utf8_stdout()
 
 HERE = Path(__file__).resolve().parent
 PY = sys.executable

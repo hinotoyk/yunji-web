@@ -2,16 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>基本信息 · 云迹</title>
+<title>基本信息 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -45,12 +38,14 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
   </div>
 </div>
 
+<!-- site-config.js（构建产物，D1）：YJ_SITE 运行时出处，profile 的动态 title（:388 直读）依赖它 -->
+<script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../loading.js?v=2"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../selector.js?v=7"></script>
+<script src="../selector.js?v=9"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script src="../pedigree.js?v=1"></script>
@@ -61,12 +56,12 @@ var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官�
 /* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「回编辑台 ↗」等直跳编辑页的入口
    仅 URL 带 ?edit=1 时出现 —— 与外壳 index.html「编辑」导航组同一开关
    （外壳加载子页时把 edit=1 透传进 iframe；直接开本页也可自行拼接）。 */
-var EDIT_MODE = new URLSearchParams(location.search).get("edit") === "1";
+var EDIT_MODE = YJ.util.qs("edit") === "1";
 
 /* ── 编辑台草稿叠加（2026-09 预览定稿）：读 editor.js 草稿箱（localStorage，键同源）──
  * 把本马未提交的五字段改动叠加在 basic 值上渲染 + 页顶「草稿预览」提示条；
  * 图片草稿是 IndexedDB 二进制，不内嵌显示，只在提示条报张数。读不到 = 原样渲染、零开销。 */
-var DRAFT_KEY = "yj.edit.drafts.v1", DRAFT = {};
+var DRAFT_KEY = YJ.util.DRAFT_KEY, DRAFT = {};   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 editor.js 共用） */
 try { var _dj = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); DRAFT = (_dj && typeof _dj === "object") ? _dj : {}; } catch (e) { DRAFT = {}; }
 function draftOv(id){ var e = DRAFT.ov && DRAFT.ov[String(id)]; return (e && typeof e === "object") ? e : null; }
 function draftPh(id){ var e = DRAFT.ph && DRAFT.ph[String(id)]; return (e && typeof e === "object" && Array.isArray(e.list)) ? e : null; }
@@ -228,8 +223,8 @@ function renderOverview(hs){
   document.getElementById("body").innerHTML =
     '<div class="flex min-h-full flex-col gap-4">'+
       '<div class="rounded-[10px] border border-border bg-card p-6">'+
-        '<div class="text-[17px] font-bold">云迹 · 云崽档案</div>'+
-        '<div class="mt-1.5 text-[13px] text-muted-foreground">沿着飞机云的轨迹，记录每一匹云崽。</div>'+
+        '<div class="text-[17px] font-bold">{{YJ_SITE_NAME}} · {{YJ_SITE_SUBTITLE}}</div>'+
+        '<div class="mt-1.5 text-[13px] text-muted-foreground">{{YJ_SITE_TAGLINE}}</div>'+
       '</div>'+statHTML+
     '</div>';
 }
@@ -385,7 +380,7 @@ function render(h){
     '</div>'+
     '<iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div>';
 
-  document.title=title+' · 基本信息 · 云迹';
+  document.title=title+' · 基本信息 · '+YJ_SITE.name;
   /* 草稿预览提示条：本马在编辑台有未提交改动（含图片草稿张数）时才出现 */
   var ribbon = "";
   if (draftHas(h.id)) {
@@ -430,9 +425,9 @@ YJ.selector.init({
   }
 }).then(function(horses){
   renderOverview(horses);
-  /* 从外部（如 races 页全库查询结果）带 ?horse=id 跳转定位 */
-  var m=location.search.match(/[?&]horse=([^&]+)/);
-  if(m && YJ.selector.selectById) YJ.selector.selectById(decodeURIComponent(m[1]));
+  /* 从外部（如 races 页全库查询结果）带 ?horse=id 跳转定位（query 解析单一出处 = YJ.util.qs） */
+  var horseId=YJ.util.qs("horse");
+  if(horseId && YJ.selector.selectById) YJ.selector.selectById(horseId);
 }).catch(function(e){
   document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
 });

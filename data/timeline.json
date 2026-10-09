@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-09-30T08:30:52",
+  "generated_at": "2026-10-09T17:58:49",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 6,
@@ -60,7 +60,7 @@
     "name": "萩S",
     "grade": "L",
     "glabel": "L",
-    "gbadge": "gl",
+    "gbadge": "listed",
     "meta": "京都9R · 芝1800m · 稍重",
     "time": "1:47.1",
     "agari": "34.3",

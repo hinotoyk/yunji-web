@@ -7,7 +7,9 @@
   2. pedigree_file 引用：文件存在
   3. races_file 引用：文件存在
   4. 比赛数据完整性：netkeiba 通算成績 战数 ≠ 文件里「來源=netkeiba」的出赛行数 → 抓漏/重复
-     （同口径对账；台账补录的海外场次不在该口径内，只在报告里信息性列出）
+     （同口径对账；台账补录的海外场次不在该口径内，只在报告里信息性列出。
+      台账为**可选环节**（config/sire.json 的 ledger.url 为空 = 未启用，docs/REFACTOR.md §4）：
+      未启用时数据里本就不会有台账来源记录，本项对账为空报告/空列表，属正常状态，无需处理。）
   5. 信息性统计：nk_id / 欧字馬名 / 馬名意味 / 香港馬名 / 自译馬名 填充数
 
 输出：stdout 摘要 + data/check_report.md（含问题明细与问题 id 清单）。
@@ -22,7 +24,6 @@
     python scripts/check_data.py --fix       # 校验后自动补跑修复
 """
 import argparse
-import io
 import json
 import re
 import subprocess
@@ -30,14 +31,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+sys.path.insert(0, str(Path(__file__).resolve().parent))   # 本文件在 scripts/ 下，引导 scripts/core/（纯 stdlib）
+from core import constants, runtime  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
+runtime.install_utf8_stdout()
+
+ROOT = constants.ROOT
+DATA = constants.DATA_DIR
 BASIC = ROOT / "scripts" / "basic"
 RACES = ROOT / "scripts" / "races"
 PY = sys.executable
@@ -71,14 +71,6 @@ def actual_starts(recs, src=None):
         if isinstance(res, int) or res in ("中止", "失格", "中", "失"):
             n += 1
     return n
-
-
-def race_key(r):
-    """比赛唯一键（与 common.race_key 一致）：race_id 优先，否则 (日付,場名,R)。"""
-    rid = str(r.get("race_id") or "").strip()
-    if rid:
-        return "race:" + rid
-    return "slot:{}|{}|{}".format(r.get("日付", ""), r.get("場名", ""), r.get("R", ""))
 
 
 def main():
@@ -117,6 +109,7 @@ def main():
     # 2) 比赛数据完整性（netkeiba 通算战数 vs 文件里 netkeiba 源出赛数 —— 同口径才叫对账）
     missing_races = 0
     ledger_only = []            # (id, 馬名, 台账场数)：台账补录的海外场次不在 netkeiba 口径内
+                                # （台账为可选环节：ledger.url 空 = 未启用 → 此列表为空，对账照常通过）
     for h in hs:
         ref = h.get("races_file") or ""
         if not ref:

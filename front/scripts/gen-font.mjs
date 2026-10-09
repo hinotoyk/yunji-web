@@ -7,8 +7,11 @@
 //         旧 101 片 Google 导出物不再进 dist（替换式，部署包只减不增）。
 //
 // 语料口径（不许写死，见 OPTIMIZATION_PLAN §5.0-1 / tests/font-cand/ANALYSIS.md §3）：
-//   data/**/*.json（排除 _tmp/） ∪ front/index.html ∪ front/pages/*.html ∪ front/public/*.js
+//   data/**/*.json（排除 _tmp/） ∪ config/*.json ∪ front/index.html ∪ front/pages/*.html ∪ front/public/*.js
 //   —— 数据文件全取「键 + 字符串值」，静态文案全取文件文本（宁多勿漏）。
+//   config/*.json 自 P3 起纳入（docs/REFACTOR.md §5.4）：站点品牌文案（site.name/subtitle/tagline/logo）
+//   已从 front 静态文件迁到 config/sire.json（构建注入），扫描器必须跟随，否则品牌字会掉出子集
+//   （实测丢「崽」→ 侧栏「云崽档案」回退系统字体）。
 //   当前 ≈1,902 字符（汉字 1,561）；每天 CI 更新数据会带新汉字，所以必须每次 build 重算。
 //
 // 增量：对字符集取 sha256，与已有 noto-sc.css 头部 `hash=` 一致且字体文件在 → 跳过（幂等、快）。
@@ -42,7 +45,7 @@ const FAMILY = 'Noto Sans SC';
 // 生成 CSS 的模板版本：改了头注释/声明写法就 +1，让「字符集没变」的旧产物也重生成一次
 // （noto-sc.css 会被 postcss/Tailwind 解析，注释正文里出现注释结束符会直接炸构建，
 //   所以措辞改动必须能在下一次 build 滚动生效，而不是被 hash 相同的跳过逻辑留住）
-const CSS_VERSION = 2;
+const CSS_VERSION = 3;
 // 站点实际用到的字重区间：theme.css + 各页内联样式实测 300（font-light）…700（font-bold）
 const WGHT = { lo: 300, hi: 700 };
 // 源可变字体（同字族同轴，tests/font-cand 全部实测即基于它）
@@ -87,6 +90,17 @@ function collectData(set) {
   return files;
 }
 
+// config/*.json（P3 起站点品牌文案的源，含 config/sire.json）：与 data/ 同口径取「键 + 字符串值」。
+const CONFIG_DIR = path.join(ROOT, 'config');
+function collectConfig(set) {
+  let files = 0;
+  if (!fs.existsSync(CONFIG_DIR)) return 0;
+  for (const ent of fs.readdirSync(CONFIG_DIR, { withFileTypes: true })) {
+    if (ent.isFile() && ent.name.endsWith('.json')) { readJson(path.join(CONFIG_DIR, ent.name), set); files++; }
+  }
+  return files;
+}
+
 function collectStatic(set) {
   const files = [path.join(FRONT, 'index.html')];
   for (const dir of ['pages', 'public']) {
@@ -105,10 +119,11 @@ function collectStatic(set) {
 function extractCorpus() {
   const set = new Set();
   const nData = collectData(set);
+  const nConfig = collectConfig(set);
   const nStatic = collectStatic(set);
   const codes = [...set].map((c) => c.codePointAt(0)).sort((a, b) => a - b);
   const hash = crypto.createHash('sha256').update(codes.join(',')).digest('hex').slice(0, 16);
-  return { set, codes, hash, nData, nStatic };
+  return { set, codes, hash, nData, nConfig, nStatic };
 }
 
 // ---------- 2. 现有产物（从 noto-sc.css 头部读 hash，单一出处不另立 manifest） ----------
@@ -188,6 +203,7 @@ function writeCss(fontName, kv, corpus, srcFont) {
  * ${FAMILY} · 按需全量子集（P0 字体瘦身 · 方案 b，2026-09-20 定稿）
  * 本文件由 front/scripts/gen-font.mjs 在 vite build 前生成，请勿手改（改了会被覆盖）。
  * 语料 = 项目根 data 目录下的全部 .json（渲染数据，排除 _tmp 缓存）
+ *        + config 目录下的全部 .json（站点品牌文案源，P3 起）
  *        + front 静态文案（index.html、pages 下 .html、public 下 .js，含 i18n 字典）
  * 源字体 = ${path.basename(srcFont)}（可变），wght 轴限 ${WGHT.lo}–${WGHT.hi}；${kv.CODES} 字符 / ${kv.GLYPHS} 字形 / 1 片，替换旧 101 片（4.5MB）
  * 漏字 = 新数据带来的汉字未进子集时，按 body 字体栈尾（Noto Sans CJK SC / PingFang SC / Microsoft YaHei）降级，不出豆腐块
@@ -225,7 +241,7 @@ function main() {
   if (process.env.FONT_GEN === 'skip') { log('FONT_GEN=skip，沿用现有字体产物'); return; }
 
   const corpus = extractCorpus();
-  log(`语料 ${corpus.codes.length} 字符（data ${corpus.nData} 个 JSON + 静态 ${corpus.nStatic} 个文件）hash=${corpus.hash.slice(0, 8)}`);
+  log(`语料 ${corpus.codes.length} 字符（data ${corpus.nData} 个 JSON + config ${corpus.nConfig} 个 JSON + 静态 ${corpus.nStatic} 个文件）hash=${corpus.hash.slice(0, 8)}`);
   const cur = readExisting();
   if (!force && cur && cur.hash === corpus.hash && cur.size > 0) {
     log(`字符集未变、产物在（${(cur.size / 1024).toFixed(0)}KB），跳过生成。${cur.attrs}`);

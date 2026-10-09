@@ -10,7 +10,8 @@
  *     · 线上各域名（www.yunji.xyz / apex yunji.xyz / *.github.io）是彼此独立的桶，数字互不相加。
  *   本站口径（2026-09-30 用户确认）：只统计线上 https://www.yunji.xyz/。
  *
- * 想换统计域名：只改下面 HOSTS 一处。apex 'yunji.xyz' 是另一个独立桶——
+ * 想换统计域名：改 config/sire.json 的 site.domains（构建注入 window.YJ_SITE，本处只做读取归一）。
+ * apex 'yunji.xyz' 是另一个独立桶——
  *   线上已有 CF 侧 301（apex → www，见 §85 第 6 条），apex 与 http 裸域四个入口都落到 www。
  *
  * ★ 2026-10-02 由「不蒜子」迁到 Vercount（§87）：不蒜子服务端 502（取数 API
@@ -21,7 +22,10 @@
  *   本脚本不加载时它们一直隐藏 → 页脚只剩原文案，不会出现「总访问 次」这种空占位。
  * ============================================================ */
 (function () {
-  var HOSTS = ['www.yunji.xyz'];
+  /* HOSTS = 站点域名白名单，单一出处 config/sire.json 的 site.domains（F5 配置化）：
+   * 构建期由 site-config.js 注入 window.YJ_SITE；这里再归一一次双保险——缺省/非数组 → []，
+   * [] 时 indexOf 恒 -1 → 不加载统计脚本（与「非正式域名」行为一致，防 undefined 抛 TypeError）。 */
+  var HOSTS = (window.YJ_SITE && Array.isArray(window.YJ_SITE.domains)) ? window.YJ_SITE.domains : [];
   if (HOSTS.indexOf(location.hostname) < 0) return;
   var s = document.createElement('script');
   s.async = true;

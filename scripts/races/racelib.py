@@ -6,6 +6,12 @@
 抓取脚本产出原始字段后，统一走本模块规范化/计算，保证任何来源进入同一套逻辑。
 """
 import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 引导 scripts/core/（纯 stdlib，R7-β：本模块原先零 core import，不依赖隐式顺序）
+from core import text  # noqa: E402
+_fw2hw_narrow = text.fw2hw_narrow   # R7-γ：cond_from_racedata02 的形参 text 会遮蔽模块名 → 先绑定窄版转换（等值于原 .translate(窄表)）
 
 JRA_VENUES = {"札幌", "函館", "福島", "新潟", "東京", "中山", "中京", "京都", "阪神", "小倉"}
 NAR_VENUES = {"門別", "帯広", "盛岡", "水沢", "金沢", "笠松", "名古屋", "園田", "姫路",
@@ -169,9 +175,6 @@ _GRADE_ALIAS = {"G1": "GI", "G2": "GII", "G3": "GIII",
                 "JG1": "JGI", "JG2": "JGII", "JG3": "JGIII",
                 "JPN1": "JpnI", "JPN2": "JpnII", "JPN3": "JpnIII"}
 _GRADE_ROMAN = _GRADE_ALIAS          # 兼容旧名（_norm_grade 用）
-# 全角 ASCII（Ａ-Ｚ ａ-ｚ ０-９ 等 94 字）→ 半角：外部来源可能手打全角
-# 注意必须走 str.maketrans（translate 只认 ordinal 键，直接给字符键会静默不生效）
-_FW_ASCII = str.maketrans({chr(0xFF01 + i): chr(0x21 + i) for i in range(94)})
 # 罗马数字（全角/半角）→ 拉丁：GⅡ / GII 统一
 _ROMAN_CHARS = {"Ⅰ": "I", "Ⅱ": "II", "Ⅲ": "III"}
 _GRADE_NOISE_RE = re.compile(r"[\s\u3000・･·\-－–—]+")
@@ -182,7 +185,8 @@ def normalize_grade(g):
     把阿拉伯记法映射成规范罗马记法（G1-3→GI-GIII、JG1-3→JGI-JGIII、Jpn1-3→JpnI-JpnIII；
     覆盖 `JG2` / `J・G2` / `ＪＧ２` / `JpnⅡ` 等写法）。未命中的取值**原样返回**——
     台账自由文本（Allowance 等）与班赛 token（1勝クラス/新馬/未勝利/オープン）不受影响。"""
-    s = str(g or "").translate(_FW_ASCII).strip()
+    # fw2hw 为原「全角 ASCII 表」（FF01-FF5E）的超集（额外 0x3000→空格），其后 _GRADE_NOISE_RE 连 \u3000 一起剥 → 结果等值
+    s = text.fw2hw(str(g or "")).strip()
     s = _GRADE_NOISE_RE.sub("", s)
     for k, v in _ROMAN_CHARS.items():
         s = s.replace(k, v)
@@ -191,12 +195,11 @@ COND_SUFFIX_RE = re.compile(r"\((1勝クラス|2勝クラス|3勝クラス|OP)\)
 PLAIN_COND_RE = re.compile(r"(?:\d+歳(?:以上)?)?(?:新馬|未勝利|メイクデビュー|\d*勝クラス)")
 COND_NAR_RE = re.compile(r"(C\d|\d+歳\s*[A-Z]|\d+歳ー?\d+)")
 
-# 全角数字/括号 → 半角（netkeiba SP 正文用全角，统一折叠后匹配）
-_FULLWIDTH = str.maketrans("０１２３４５６７８９（）", "0123456789()")
-
 
 def _fold_fullwidth(s):
-    return (s or "").translate(_FULLWIDTH)
+    """全角数字/括号 → 半角（窄版：全角字母不折叠，防 3歳Ａ→3歳A 行为变化，R7-α）。
+    实现已收进 core/text.fw2hw_narrow（R7-γ：消费方调用点全部保持原样）。"""
+    return text.fw2hw_narrow(s)
 
 
 def _norm_grade(g):
@@ -278,7 +281,7 @@ def cond_from_racedata02(text):
     m = _COND_END.search(tail)
     if m:
         tail = tail[:m.start()]
-    return re.sub(r"[ 　]", "", tail).translate(_FULLWIDTH)
+    return _fw2hw_narrow(re.sub(r"[ 　]", "", tail))
 
 
 def _class_token(name):
@@ -328,9 +331,19 @@ def name_key(s):
     return s.replace(" ", "").replace("　", "")
 
 
-# netkeiba 着順 DNF：成绩页用单字（中/取/除/失），台账/详情用全称（中止/取消/除外/失格）
+# ── 比赛唯一键（单源，docs/REFACTOR.md §5.1 R2 / §9 D4：统一取防御版，common 只再导出） ──
+def race_key(r):
+    """比赛唯一键：优先 race_id（全局稳定），否则 (日付, 場名, R)。"""
+    rid = str((r or {}).get("race_id") or "").strip()
+    if rid:
+        return "race:" + rid
+    return "slot:" + str(r.get("日付") or "") + "|" + str(r.get("場名") or "") + "|" + str(r.get("R") or "")
+
+
+# netkeiba 着順 DNF：成绩页用单字（中/取/除/失），台账/详情用全称（中止/取消/除外/失格）。
+# SCR（Scratched，海外赛前退出）≈ 取消 → 归一为「取消」（归入未出走类，2026-10 决定，方案 A）。
 DNF_ABBR = {"中止": "中止", "取消": "取消", "除外": "除外", "失格": "失格",
-            "中": "中止", "取": "取消", "除": "除外", "失": "失格"}
+            "中": "中止", "取": "取消", "除": "除外", "失": "失格", "SCR": "取消"}
 
 
 def normalize_result(v):

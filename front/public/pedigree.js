@@ -10,9 +10,9 @@ YJ.pedigree = (function () {
 
   var cache = {};
 
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  }
+  /* esc：单一出处 public/yj-util.js（2026-xx 收口，docs/重复代码审计.md B1）。
+   * 原页内副本缺 .replace(/>/g,"&gt;") 已漂移（血统弹窗 title/名字含 > 不转义），此处顺带修复。 */
+  var esc = YJ.util.esc;
 
   function load(id, base) {
     var key = String(id);

@@ -43,15 +43,12 @@ YJ.raceRows = (function () {
 
   /* ---- 等级徽章（JBIS 配色：实心胶囊 + 白字；OP 浅青绿）
    * ★ 取值必须与 .yj-g* 类名完全同大小写（全小写），否则徽章无底色、白字不可见。
-   * 单一表 GRADE：格 → [显示文案, 徽章类]（2026-10 決定：合并原 G/GLABEL 两张表，并补障害重赏 JG1-3；
-   * Jpn/障害 复用 g1/g2/g3 = 同级别视觉，靠文案区分）。G/GLABEL 为兼容导出而派生，新代码请用 GRADE。
-   * ★ 与后端 scripts/timeline/build_timeline.py 的 GRADE 表互指，改一处必须同步另一处。 */
-  var GRADE = {
-    "GI": ["G1", "g1"], "GII": ["G2", "g2"], "GIII": ["G3", "g3"],
-    "JGI": ["JG1", "g1"], "JGII": ["JG2", "g2"], "JGIII": ["JG3", "g3"],
-    "JpnI": ["Jpn1", "g1"], "JpnII": ["Jpn2", "g2"], "JpnIII": ["Jpn3", "g3"],
-    "L": ["L", "gl"], "OP": ["OP", "gop"]
-  };
+   * 单一表 GRADE：格 → [显示文案, 徽章类]——单一出处 = config/grade-table.json（R6，docs/REFACTOR.md §12），
+   * 构建期经 site-config.js 注入 window.YJ_GRADE，后端 core/grade.py 读同一份（原「与 build_timeline.py 互指」
+   * 的手同步约定消灭）。缺失即显式报错（fail-fast，防漏注入静默跑错），回退空表派生空 G/GLABEL 不崩。
+   * G/GLABEL 为兼容导出而派生，新代码请用 GRADE。 */
+  var GRADE = window.YJ_GRADE;
+  if (!GRADE) { console.error("[race-rows] window.YJ_GRADE 缺失（site-config.js 未先于本模块加载？）"); GRADE = {}; }
   var G = {}, GLABEL = {};
   for (var gk in GRADE) { G[gk] = GRADE[gk][1]; GLABEL[gk] = GRADE[gk][0]; }
   function gradeBadge(g) {

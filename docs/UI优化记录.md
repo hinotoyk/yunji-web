@@ -2,7 +2,7 @@
 
 > 本文档记录「云迹」前端各模块 UI 优化的**最终方案**与**当前成果**（按最新状态收口；历史背景/废案/反复迭代过程不展开）。
 > 约定：每改一个模块，先把该模块的最终思路与成果写进本文档，再合并进正式页面（`front/` 源码 → `npm run build` → `dist/` 验证）。
-> 配套：根 `HANDOFF.md`（交接/规范）、根 `README.md`（项目介绍）、`data/SCHEMA.md`（数据契约）。
+> 配套：`docs/HANDOFF.md`（交接/规范）、根 `README.md`（项目介绍）、`docs/SCHEMA.md`（数据契约）。
 
 ## ★ 全站编码约定 · 复用抽离（§48 定稿，此后一切前端编码必须遵守）
 
@@ -10,8 +10,9 @@
 2. **业务语义组件单一出处**：比赛行/徽章/格式化（`gradeBadge/placeBadge/ninki*/GRADE（含派生 G/GLABEL）/weightOf/venueR…`）一律复用 `public/race-rows.js`，新页面直接引入，禁止本地重写映射表或徽章 HTML。
 3. **数据语义色单一出处**：着顺浅色三件套（1/2/3着+着外）JS 侧 = `race-rows.js` 的 `PLACE_BG`，CSS 侧 = theme.css `.yj-nkm*`，两处互指注释、**改色必须同步**；新增数据语义色先找单一出处再写。
 4. **组件样式进 theme.css**：≥3 页共用或全站统一的样式 → `@layer components` 用 `@apply` 封装（如 `.page-title`/`.sec-title`）；**但类名靠 JS 动态拼接、content 里没有字面量的类（如 `.yj-g*`），必须放在 @layer 之外**——Tailwind 会按 content 候选裁剪 @layer 内规则。
-5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例：`.seg`/`manYen`/`#page.embed` 等）。
+5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例：`.seg`/`manYen`/`#page.embed` 等）。追补（2026-xx 用户决策）：凡 **2~3 处使用但高度相似**的代码，一律先归档进 `docs/重复代码审计.md` 再统一处理；其中 `.seg`（统一 32px 规范值）与 `manYen`（`YJ.util.manYen(pr, empty)` 参数化）**已经用户确认分叉非刻意后收口**（见该文档 F1.8/F1.9），其余分叉项（如 `#page.embed`）保持不动。
 6. **零影响红线与验证清单**：复用收口只做等值搬移/纯删除；改完必跑 `npm run build` + 核对 dist（theme css 新类在、旧类无、`dist/data/basic.json` 存在——`COPY_DATA=skip` 与 `emptyOutDir` 叠加会清掉 data）。
+7. **改 `public/x.js` 必须同步全站版本戳**：非 module 公共脚本用 `?v=N` 手工缓存戳，改完 `x.js` 必须 grep 全站 `x.js?v=` 统一 +1（2026-xx 定稿，防按页面批次漏改导致脏缓存；selector.js 曾长期 v7/v8 并存）。
 
 ---
 
@@ -183,6 +184,7 @@
 - **最终落地**：`pages/races.html`（`G` 取值统一小写）。
 - **最终状态**：✅ 已修复。
 - **关键结论**：class 选择器区分大小写，`"L":"gL"` 对 `.yj-gl` 永远不命中。
+- **按语（2026-10-09）**：等级徽章类名后更名 —— `.yj-gl/.yj-gop` → `.yj-listed/.yj-open`（L=Listed/OP=Open 全名，防被误读为格名；见 `config/grade-table.json` 的 `about` 键与 `docs/REFACTOR.md` §12）。本条为历史日志，保留当时类名。
 
 ### §25 · 人气徽章改「着顺同款颜色文字」
 - **最终落地**：`pages/races.html`（`ninkiBadge()` 删胶囊，仅文字色）。
@@ -509,7 +511,7 @@
   4. **毛色**（`basic/fetch_detail.py`、`races/fetch_detail.py`、`basic/fetch_pedigree.py`）：正则提全 token（漢字1-3+毛）、白名单命中优先、未收录用原值；顺带修掉旧子串扫描把「栃栗毛/鹿栗毛」截成「栗毛」的存量 bug。
   5. **徽章单表 + 障害重赏**：后端 `build_timeline.py` 的 `GLBL`/`GBADGE` 两张表合并为 **`GRADE = {格: (显示文案, 徽章类)}`**（旧名降级为派生别名），前端 `race-rows.js` 同构（`GRADE` + 派生 `G/GLABEL`，新增导出 `YJ.raceRows.GRADE`），两边补 `JGI/JGII/JGIII → JG1/JG2/JG3`（徽章类复用 `g1/g2/g3`，**不新增 CSS**）。
   6. **重赏口径全链路纳入 JG**：`timeline GRADED` / `stats+datechart TROPHY_GRADES` / 两个校验脚本的 `TROPHY_G`、`gradeKey`、`gradedKeys`、`G_SEQ`、重赏合计 / `races.html gradeMatches`+
-     新单级选项 JG1-3 / `datechart.html GRADED` / `stats.html` 级别桶·下钻键·重赏步·帮助文案 / `data/SCHEMA.md` 口径定义。L/OP 仍不算重赏。
+     新单级选项 JG1-3 / `datechart.html GRADED` / `stats.html` 级别桶·下钻键·重赏步·帮助文案 / `docs/SCHEMA.md` 口径定义。L/OP 仍不算重赏。
   7. **（顺带修存量缺陷）三个校验脚本的 DOM stub 补全 `location`**（`verify_stats.cjs`/`verify_datechart.cjs`/`verify_drill.cjs`）：页面 §82.13 的「独立打开=自动回壳」脚本要读 `location.search/pathname` 并调 `location.replace`，stub 只有 `{href:""}` → 页面冒烟段自 9/30 起**每次 eval 即崩**（`undefined.indexOf`），导致 `run_update.py --ci` 的断言门长期判失败（而 workflow 自己的 commit 步骤照旧提交，所以 CI 表面正常、断言实际没跑）。补全后 4 个校验脚本 112+205+60 条断言 + 三态对账全绿。
 - **最终状态**：✅ 已完成。构建通过（dist 已核对：`races.html` 含 JG1-3 选项、`stats.html` 含 JG 桶、`race-rows.js` 含 `GRADE`）；`timeline/datechart/stats` 三产物重算**内容无变化**（现库无 JG 场次 → 零影响、无回归）；合成 JGI 一着穿透测试通过（级别首胜 JG1/N 胜/世代重赏首胜/统计桶 JG1/筛选命中）；4 个校验脚本全绿。
 - **关键结论**：白名单只许出现在「能同时覆盖未来取值」的地方——**分类口径（中央/地方 vs 其余）用默认值，不用枚举**；枚举仅保留「归一化词表」（如 `DNF_ABBR`/`ROMANS`），命中就归一、未命中就原值透传，**绝不用枚举做准入判定**。所有消费同一口径的副本（前端筛选/统计桶/断言脚本/文档）必须同轮同步，否则会出现「时间线认、筛选页不认」的静默不一致。

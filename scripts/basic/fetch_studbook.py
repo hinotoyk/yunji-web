@@ -23,7 +23,8 @@ import time
 from urllib.parse import quote
 
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
-import common
+import common  # noqa: E402  （common 已把 scripts/ 置入 sys.path）
+from core import sire_config, text  # noqa: E402
 
 STUD = common.STUD
 S = common.requests.Session()
@@ -35,27 +36,20 @@ def fetch(url):
     return common.fetch(url, session=S)
 
 
-def full2half(s):
-    """全角 → 半角（字母数字标点）。"""
-    out = []
-    for ch in s or "":
-        code = ord(ch)
-        if code == 0x3000:
-            code = 32
-        elif 0xFF01 <= code <= 0xFF5E:
-            code -= 0xFEE0
-        out.append(chr(code))
-    return "".join(out)
-
-
 def strip_anno(name):
     """去括注及内容 + 全半角统一 + 去空白 → 归一化馬名。"""
     s = re.sub(r"[（(][^）)]*[）)]", "", name or "")
-    s = full2half(s)
+    s = text.fw2hw(s)   # 全量版全角→半角（原本地逐字循环转换等价收进 core/text，R7）
     return s.replace(" ", "").replace("　", "")
 
 
-def get_hid(name="コントレイル", father="ディープインパクト"):
+def get_hid(name=None, father=None):
+    """搜馬名 → hid。name/father 缺省读 config/sire.json 的 sire.studbook（S3 配置化）；
+    显式传值（含空串）时按原行为透传（father 为空 = 不按父馬过滤）。"""
+    if name is None:
+        name = sire_config.studbook_name()
+    if father is None:
+        father = sire_config.studbook_father()
     url = (STUD + "/users/ja/SearchBameiList"
            f"?initial_forward={quote(name)}&submit=馬名検索")
     html = fetch(url)
@@ -142,7 +136,7 @@ def main():
 
     hid = get_hid()
     if not hid:
-        sys.exit("❌ studbook 未找到コントレイル")
+        sys.exit(f"❌ studbook 未找到{sire_config.studbook_name()}")
     print(f"✔ studbook hid = {hid}")
 
     fetched = 0

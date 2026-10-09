@@ -72,6 +72,39 @@ YJ.util = (function () {
     return h.性別_当前 || h.性別 || "";
   }
 
-  return { esc: esc, splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
+  /* URL query 参数取值（匹配 + decode 统一，2026-xx 收口各页手写 match/URLSearchParams）：
+   * ?horse=1 → "1"；缺省/空值 → ""。与旧 `/[?&]name=([^&]+)/` + decodeURIComponent、
+   * `new URLSearchParams(...).get(name)===…` 两种写法在取值上等值（+ 不作空格转换，与旧 horse 用法一致）。 */
+  function qs(name) {
+    var m = location.search.match(new RegExp("[?&]" + name + "=([^&]*)"));
+    if (!m) return "";
+    try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+  }
+
+  /* URL 绝对化：与 yj-cache.js 内部同名 helper 语义一致（该模块保持自包含，见其注释）；
+   * selector.js 等已依赖 YJ.util 的消费方统一走这里（B2 收口）。 */
+  function absUrl(url) {
+    try { return new URL(String(url), document.baseURI || location.href).href; }
+    catch (e) { return String(url); }
+  }
+
+  /* 赏金格式化（万円/亿）：>0 → "x,xxx万" / "x亿x万"（万段为 0 只留亿）；空/非数 → empty（缺省 ""）。
+   * 原 stats（空返 "0万"）/datechart（空返 ""）两份同构实现，2026-xx 参数化收口 —— 空值策略属页面
+   * 语义，由调用页显式传参（如 stats: YJ.util.manYen(pr, "0万")）。 */
+  function manYen(pr, empty) {
+    if (!pr) return empty === undefined ? "" : empty;
+    if (pr >= 1e8) {
+      var oku = Math.floor(pr / 1e8), man = Math.floor((pr % 1e8) / 10000);
+      return oku + "亿" + (man ? man.toLocaleString() + "万" : "");
+    }
+    return Math.round(pr / 10000).toLocaleString() + "万";
+  }
+
+  /* 编辑台草稿箱 localStorage 键（schema 版本号）：profile.html（只读叠加渲染）与 editor.js（读写）共用，
+   * 2026-xx 收口单一出处 —— 升级草稿 schema 只改这一处，防双处字符串漂移。 */
+  var DRAFT_KEY = "yj.edit.drafts.v1";
+
+  return { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen, DRAFT_KEY: DRAFT_KEY,
+    splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
     mainName: mainName, sexOf: sexOf };
 })();

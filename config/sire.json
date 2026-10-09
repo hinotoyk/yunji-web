@@ -1,0 +1,27 @@
+{
+  "sire": {
+    "name_ja": "コントレイル",
+    "name_cn": "飞机云",
+    "name_en": "Contrail",
+    "jbis_id": "0001237042",
+    "netkeiba_id": "2017101835",
+    "studbook": { "name": "コントレイル", "father": "ディープインパクト" },
+    "wins": [
+      { "date": "2019-11-16", "name": "東京スポーツ杯2歳S", "grade": "G3", "cn": "东京体育杯2岁S" },
+      { "date": "2019-12-28", "name": "ホープフルS",        "grade": "G1", "cn": "希望锦标" },
+      { "date": "2020-04-19", "name": "皐月賞",             "grade": "G1", "cn": "皋月赏" },
+      { "date": "2020-05-31", "name": "東京優駿",           "grade": "G1", "cn": "东京优骏" },
+      { "date": "2020-09-27", "name": "神戸新聞杯",         "grade": "G2", "cn": "神户新闻杯" },
+      { "date": "2020-10-25", "name": "菊花賞",             "grade": "G1", "cn": "菊花赏" },
+      { "date": "2021-11-28", "name": "ジャパンC",          "grade": "G1", "cn": "日本杯" }
+    ]
+  },
+  "site": {
+    "name": "云迹",
+    "subtitle": "云崽档案",
+    "tagline": "沿着飞机云的轨迹，记录每一匹云崽。",
+    "logo": "雲",
+    "domains": ["www.yunji.xyz"]
+  },
+  "ledger": { "url": "https://docs.google.com/spreadsheets/d/1PPasJnqqBQy_cbhXLDJ0V11CTUDJs6UBtRwe-nsCNfc/export?format=csv&gid=1454271910" }
+}

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-10-09T02:22:15",
+  "generated_at": "2026-10-09T18:56:00",
   "source": "basic.json + races/*.json",
   "stats": {
    "runs": 778,
@@ -20602,7 +20602,7 @@
    "hs": "",
    "dist": 1207,
    "s": "芝",
-   "p": "SCR",
+   "p": "取消",
    "pr": 0,
    "vt": "海外",
    "bk": "Firm",

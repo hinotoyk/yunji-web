@@ -3,7 +3,7 @@
 > 用途：验证 `run_update.py` 的 9 种更新策略在**真实联网端到端**下都正常，作为新增策略、
 > 改代码后回归、以及排查数据/流程问题时的可复用手册。
 > 实测基线来自 2026-08-31 一次完整验证（`--init` 全量重建 + 其余策略逐一真实联网）。
-> 本文件是对 `README.md`（策略表）与 `HANDOFF.md`（数据管线）的**可执行测试补充**。
+> 本文件是对 `README.md`（策略表）与 `docs/HANDOFF.md`（数据管线）的**可执行测试补充**。
 
 ---
 
@@ -49,9 +49,12 @@
 
 ### 1.3 `--horse <id>` 定向更新
 ```
-fetch_detail --id → fetch_races --id → merge_races
+fetch_detail --id → fetch_races --id → fetch_ledger → merge_races
 ```
-**成功判据**：3 步均 OK；该 id 的 `races/{id}.json` 与 `basic.json` 字段更新；本賞金/収得正确。
+**成功判据**：4 步均 OK；该 id 的 `races/{id}.json` 与 `basic.json` 字段更新；本賞金/収得正确。
+> ⚠ `--horse` 含**台账环**（2026-10 起，对齐 `--races`/`--ledger`）：海外台账马（如 id 130 大武士）
+> netkeiba 成绩页 **0 场**，若其 `races/{id}.json` 丢失，`fetch_races` 会写「页面 0 场」空标记——
+> 台账环在合并前把海外场补回，避免误伤（详见 §4「海外台账马边界」）。
 
 ### 1.4 `--ledger` 仅台账
 ```
@@ -60,8 +63,8 @@ fetch_ledger(Google Sheets CSV → 海外场) → merge_races
 **成功判据**：台账拉取 OK + 合并 OK；海外场增量并入；匹配不上馬名数应可控（可查日志）。
 
 ### 1.5 `--races --since N` 轻量时段增量
-实际走 `fetch_races --since N` + `merge_races`（**不跑详情/判变**）。
-**成功判据**：识别「最近 N 天出赛 ∪ 无文件」的马并逐匹抓成绩；合并 OK；已抓全的马新增 0（幂等）。
+实际走 `fetch_races --since N` + `fetch_ledger` + `merge_races`（**不跑详情/判变**）。
+**成功判据**：识别「最近 N 天出赛 ∪ 无文件」的马并逐匹抓成绩；台账环防海外台账马误伤（同 §1.3）；合并 OK；已抓全的马新增 0（幂等）。
 
 ### 1.6 `--basic` 基本增量
 ```
@@ -101,10 +104,10 @@ python -m py_compile run_update.py run_full_test.py scripts/basic/*.py scripts/r
 # 数据校验（只读）
 python run_update.py --check
 
-# 定向更新 1 匹（真实联网，验证 详情→成绩→本賞金→合并 链路）
+# 定向更新 1 匹（真实联网，验证 详情→成绩→台账→合并 链路）
 python run_update.py --horse 1
 
-# 轻量时段增量（真实联网，验证 fetch_races --since + 合并）
+# 轻量时段增量（真实联网，验证 fetch_races --since + 台账 + 合并）
 python run_update.py --races --since 7
 ```
 **通过标准**：全部 exit 0；`--check` 问题 0 且日期图断言 ALL PASS；`fetch_log` 无新增 403。
@@ -201,7 +204,7 @@ python scripts/races/merge_races.py --keep        # 合并（--keep 保留缓存
 新增一种策略或改动流程后，对照本清单确认没破坏既有行为：
 1. `python -m py_compile` 全部脚本通过（§2.1）。
 2. `--check` 问题 0（数据一致性不回归）。
-3. `--horse 1` 单匹链路 OK（详情→成绩→本賞金→合并）。
+3. `--horse 1` 单匹链路 OK（详情→成绩→台账→合并）。
 4. 若改了增量/判变逻辑：`--races --since 7` + `--basic` 幂等（无多余新增）。
 5. 若改了合并/収得：跑 `--races-force --limit 3` 或局部 `merge_races.py --keep` 验证幂等。
 6. 若改了入口分派（`run_update.py` main）：分别冒烟 1 个增量 + 1 个只读策略，确认分派与参数传递正确。
@@ -211,8 +214,7 @@ python scripts/races/merge_races.py --keep        # 合并（--keep 保留缓存
 
 ## 6. 参考
 
-- 策略设计说明：根 `README.md`（更新策略表）、`HANDOFF.md`（数据管线/架构）
-- 前端 UI 决策：`front/UI优化记录.md`
-- 基础部分实现：`scripts/basic/README.md`
-- 竞赛部分实现：`scripts/races/README.md`
-- 请求·数据流路径图：`request-path.html`
+- 策略设计说明：根 `README.md`（更新策略表）、`docs/HANDOFF.md`（数据管线/架构）
+- 管线实现细节：`docs/pipeline.md`（总览 / basic 管线 / races 管线 / 校验编排 / 离线红线）
+- 前端 UI 决策：`docs/UI优化记录.md`
+- 请求·数据流路径图：`docs/request-path.html`

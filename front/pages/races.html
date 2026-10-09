@@ -2,16 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>比赛记录 · 云迹</title>
+<title>比赛记录 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -114,11 +107,12 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 
 <script src="../data-config.js"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../race-bundle.js?v=1"></script>
 <script src="../i18n.js?v=1"></script>
+<script src="../site-config.js"></script>
 <script src="../race-rows.js?v=7"></script>
-<script src="../selector.js?v=7"></script>
+<script src="../selector.js?v=9"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../device.js"></script>
 <script>
@@ -127,7 +121,7 @@ var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官�
 
 var EMBED = /[?&]embed=1/.test(location.search);
 /* 从基本信息「在比赛记录中查看详情」跳转带来的 ?horse=id：独立模式预置出走马筛选 */
-var URL_HORSE = (function(){ var m=location.search.match(/[?&]horse=([^&]+)/); return m?decodeURIComponent(m[1]):""; })();
+var URL_HORSE = YJ.util.qs("horse");
 var PAGE = document.getElementById("page");
 if (EMBED) PAGE.classList.add("embed");
 var lastR = null;  /* 最近一次成功渲染的 {hh, races}，供设备 pc/mb 切换时免请求重渲染 */
@@ -156,13 +150,13 @@ function resultCode(n){
 }
 
 /* 单马 KPI 统计（computeStats）与「独立单马 22 列表 / 过滤条」一起，随表格渲染收口删除
- * （其唯一调用点 renderRaces 非内嵌分支本就不可达，见 UI优化记录 §53） */
+ * （其唯一调用点 renderRaces 非内嵌分支本就不可达，见 docs/UI优化记录.md §53） */
 
 /* ---- 排序比较器：日期降序（新→旧）；同日按発走降序（大→小），无発走视为最大（同日排最前）----
  * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
  * 内嵌单马表（renderHorse 加载后）与独立跨马表（renderResults）共用；
  * PC 表与 mb 卡片渲染同一份有序列表，一份排序四处（内嵌/独立 × pc/mb）同时生效。
- * ★ 末位比较键（UI优化记录 §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
+ * ★ 末位比较键（docs/UI优化记录.md §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
  *   稳定排序只能保持「并入顺序」，而全库 276 个文件是 16 并发逐个 push 进 entries 的（顺序 = 到达时序）
  *   → 最终行序不唯一（实测同键组 135 个 / 298 行）。故同键后一律按数据字段定序：
  *   着顺升序（未完走殿后，与日期统计明细同口径）→ race_id（不同场次不交错）→ 馬番升序 → 馬名。
@@ -192,7 +186,7 @@ function raceTieCmp(a, b){
 }
 
 /* ===== 单马 22 列独立表 / 22 列 mb 卡片：已随「全库跨马查询」上线而失效（renderRaces 只在
- * 内嵌模式被调用，内嵌走 embed 列集），2026-09-18 随表格渲染收口删除（见 UI优化记录 §53）。
+ * 内嵌模式被调用，内嵌走 embed 列集），2026-09-18 随表格渲染收口删除（见 docs/UI优化记录.md §53）。
  * 需要旧形态可从 git 历史取回 ===== */
 function isMb(){ return YJ.device.isMb(); }
 
@@ -347,8 +341,9 @@ var SEX_OPTS = [
 ];
 
 /* 级别：单级 G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3/L/OP + 聚合重赏(G1-3+JG1-3+Jpn1-3) + 班赛(1/2/3胜) + 新马/未胜利 */
+var GRADED_BADGES = { g1: 1, g2: 1, g3: 1 };   /* 重赏 = 徽章类 ∈ {g1,g2,g3}（单源 = config/grade-table.json，经 window.YJ_GRADE；C7 收口原硬编码 9 格码） */
 function gradeMatches(g, opt){
-  if(opt==="重赏") return g==="GI"||g==="GII"||g==="GIII"||g==="JGI"||g==="JGII"||g==="JGIII"||g==="JpnI"||g==="JpnII"||g==="JpnIII";
+  if(opt==="重赏"){ var bk=YJ.raceRows.G[g]; return !!(bk && GRADED_BADGES[bk]); }
   if(opt==="G1") return g==="GI";
   if(opt==="G2") return g==="GII";
   if(opt==="G3") return g==="GIII";

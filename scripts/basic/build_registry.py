@@ -12,7 +12,7 @@
 提取字段：jbis_id, 生年, 馬名, 母名 → basic.json。
 
 用法:
-    python build_registry.py [--year 2023,2024] [--dry-run]
+    python build_registry.py [--year 2023,2024] [--dry-run] [--print-urls]
 """
 import argparse
 import re
@@ -44,6 +44,21 @@ def is_unnamed(name):
     """未命名占位判定：如 ＿＿＿＿＿＿＿＿＿（全角下划线）。返回 True 表示无意义，应存空 "". """
     s = (name or "").replace("＿", "").replace("_", "").strip()
     return s == ""
+
+
+def print_urls():
+    """C4 真离线验证（docs/REFACTOR.md §6.3）：换种马 ID 后离线核对産駒列表 URL 拼装。
+
+    按 fetch_progeny（JBIS，含 .replace("#","") 剥锚点 + &page= 追加）与
+    fetch_nk_id.fetch_list_all（netkeiba）的真实首页拼装形态打印，打印后直接返回，
+    不联网、不写盘。"""
+    jbis_first = (common.JBIS_PROGENY_URL.format(sid=common.JBIS_SIRE_ID, year="2023")
+                  .replace("#", "") + "&page=1")
+    nk_first = common.NK_LIST_URL.format(sid=common.NK_SIRE_ID, page=1)
+    print("JBIS 産駒一覧（fetch_progeny 首页形态）:")
+    print(f"  {jbis_first}")
+    print("netkeiba 産駒列表（fetch_nk_id.fetch_list_all 首页形态）:")
+    print(f"  {nk_first}")
 
 
 def parse_progeny_page(soup):
@@ -133,7 +148,12 @@ def main():
     ap.add_argument("--year", default=",".join(YEARS_DEFAULT),
                     help="年份数组，逗号分隔，如 2023,2024")
     ap.add_argument("--dry-run", action="store_true", help="只打印不写入")
+    ap.add_argument("--print-urls", action="store_true",
+                    help="只打印 JBIS/netkeiba 産駒列表 URL 拼装样例后返回（离线核对，不联网不写盘）")
     args = ap.parse_args()
+    if args.print_urls:
+        print_urls()
+        return
     years = [y.strip() for y in args.year.split(",") if y.strip()]
     build(years, dry_run=args.dry_run)
 

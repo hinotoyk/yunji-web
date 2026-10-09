@@ -2,16 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<script>
-/* §82.13 独立打开 = 自动回壳：站内页一律经外壳（index.html）带侧边栏运行；
- * 被外壳 iframe 内嵌时 window.top !== window.self，原样不动。embed 模式同理不回壳。 */
-if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
-  var rel = location.pathname.split("/").slice(-2).join("/") + location.search;
-  location.replace("../index.html?page=" + encodeURIComponent(rel));
-}
-</script>
+<script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>血统图 · 云迹</title>
+<title>血统图 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -26,11 +19,12 @@ if (window.top === window.self && location.search.indexOf("embed=1") < 0) {
   <div id="body"><div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">↑ 请在上方选择一匹马，查看其血统</div></div>
 </div>
 
+<script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
-<script src="../yj-util.js?v=2"></script>
+<script src="../yj-util.js?v=4"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="../yj-cache.js?v=1"></script>
-<script src="../selector.js?v=7"></script>
+<script src="../selector.js?v=9"></script>
 <script src="../bus.js?v=1"></script>
 <script src="../pedigree.js?v=1"></script>
 <script>

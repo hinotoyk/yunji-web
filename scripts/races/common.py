@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""竞赛管线共享工具：本管线特有的站点/比赛记录约定 + 将中立层注入本管线口径。
+"""竞赛管线共享工具：再导出 core 常量 + 本管线限速口径注入 + 比赛记录约定。
 
-与基础管线（scripts/basic/）互不 import，二者只共用中立层 scripts/core；
-设计原则与并发架构见 scripts/README.md，比赛记录字段契约见 data/SCHEMA.md。
+2026-xx（用户决策）：路径/站点/颜色等字面量常量全部收进 core/constants.py，本文件只做
+薄再导出；本管线特有的风控口径（DOMAIN_SLEEP / STRIP_BASES）仍由这里持有并以形参注入
+中立层 net（net 不含管线概念）。业务隔离：races 不 import basic 的任何业务模块，
+共享逻辑统一下沉 core。
+
+设计原则与并发架构见 docs/pipeline.md，比赛记录字段契约见 docs/SCHEMA.md。
 """
 import functools
-import io
 import sys
 from pathlib import Path
 
@@ -14,44 +17,31 @@ from pathlib import Path
 # common.requests / common.BeautifulSoup 使用（PEP 562 __getattr__ 兜底），import common
 # 本身不再触发第三方依赖，离线/CI 场景不被 runner 预装包变化连坐。
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))   # 直跑脚本时 scripts/ 不在 sys.path
-from core import basic_io, manual, net, paths, text    # noqa: E402
+from core import basic_io, constants, manual, net, runtime, text    # noqa: E402
 
 import racelib  # noqa: E402  name_key 用于跨源去重键
 
+__getattr__ = runtime.install_lazy_http()
 
-def __getattr__(name):
-    if name == "requests":
-        import requests
-        return requests
-    if name == "BeautifulSoup":
-        from bs4 import BeautifulSoup
-        return BeautifulSoup
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+runtime.install_utf8_stdout()
 
-if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+# ---- 路径 / 颜色 / 站点：单一出处 = core/constants.py（只再导出） ----
+ROOT = constants.ROOT
+DATA_DIR = constants.DATA_DIR                                  # 全部数据统一放根 data/
+RACES_DATA_DIR = constants.RACES_DATA_DIR                      # 每匹逐场成绩文件 data/races/{id}.json
+TMP_DIR = constants.tmp_dir("races")                           # 竞赛环节缓存（merge 后删除）
+BASIC_JSON = constants.BASIC_JSON                              # 共享数据源
+OVERRIDES_JSON = constants.OVERRIDES_JSON                      # 人工维护表（文件名带 manual，脚本永不写入）
 
-# ---- 路径 ----
-ROOT = paths.ROOT
-DATA_DIR = paths.DATA_DIR                                  # 全部数据统一放根 data/
-RACES_DATA_DIR = DATA_DIR / "races"                        # 每匹逐场成绩文件 data/races/{id}.json
-TMP_DIR = paths.tmp_dir("races")                           # 竞赛环节缓存（merge 后删除）
-BASIC_JSON = paths.BASIC_JSON                              # 共享数据源
-OVERRIDES_JSON = paths.OVERRIDES_JSON                      # 人工维护表（文件名带 manual，脚本永不写入）
+COLORS = constants.COLORS
+HEADERS = constants.HEADERS
+DEFAULT_SLEEP = constants.DEFAULT_SLEEP
 
-# ---- 站点/常量（仅竞赛管线消费） ----
-NK = "https://db.netkeiba.com"
-NK_HORSE_URL = NK + "/horse/{nk_id}/"                       # 马详情页（EUC-JP）
-NK_RESULT_URL = NK + "/horse/result/{nk_id}/"               # 成绩页（EUC-JP）
-RACE_SP_URL = "https://race.netkeiba.com/race/result.html?race_id={race_id}"    # 中央/海外 比赛结果页（SP 域）
-RACE_SP_URL_NAR = "https://nar.netkeiba.com/race/result.html?race_id={race_id}" # 地方 比赛结果页（SP 域）
-
-COLORS = net.COLORS
-HEADERS = net.HEADERS
-DEFAULT_SLEEP = net.DEFAULT_SLEEP
+NK = constants.NK
+NK_HORSE_URL = constants.NK_HORSE_URL                          # 马详情页（EUC-JP）
+NK_RESULT_URL = constants.NK_RESULT_URL                        # 成绩页（EUC-JP）
+RACE_SP_URL = constants.RACE_SP_URL                            # 中央/海外 比赛结果页（SP 域）
+RACE_SP_URL_NAR = constants.RACE_SP_URL_NAR                    # 地方 比赛结果页（SP 域）
 
 # ---- 本管线的网络口径（以形参注进中立层：net 不含管线概念） ----
 # netkeiba 对高频抓取敏感；SP 域（race/nar result 页）相对宽松。
@@ -63,12 +53,13 @@ DOMAIN_SLEEP = {
 }
 STRIP_BASES = (NK, "https://race.netkeiba.com", "https://nar.netkeiba.com")
 
+_NET = net.bind(DOMAIN_SLEEP, STRIP_BASES)
 domain_of = net.domain_of
-sleep_for = functools.partial(net.sleep_for, domain_sleep=DOMAIN_SLEEP)
-jitter = functools.partial(net.jitter, domain_sleep=DOMAIN_SLEEP)
-fetch = functools.partial(net.fetch, domain_sleep=DOMAIN_SLEEP, strip_bases=STRIP_BASES)
-soup_of = functools.partial(net.soup_of, domain_sleep=DOMAIN_SLEEP, strip_bases=STRIP_BASES)
-log_fetch = functools.partial(net.log_fetch, strip_bases=STRIP_BASES)
+sleep_for = _NET["sleep_for"]
+jitter = _NET["jitter"]
+fetch = _NET["fetch"]
+soup_of = _NET["soup_of"]
+log_fetch = _NET["log_fetch"]
 
 norm = text.norm
 
@@ -81,19 +72,13 @@ write_cache = functools.partial(basic_io.write_cache, tmp_dir=TMP_DIR)
 read_cache = functools.partial(basic_io.read_cache, tmp_dir=TMP_DIR)
 clean_cache_all = functools.partial(basic_io.clean_cache_all, tmp_dir=TMP_DIR)
 
-# ---------------- 人工维护表 data/manual_overrides.json（契约见 data/SCHEMA.md） ----------------
+# ---------------- 人工维护表 data/manual_overrides.json（契约见 docs/SCHEMA.md） ----------------
 load_overrides = manual.load_overrides
 apply_overrides = manual.apply_overrides
 
 
 # ---------------- 比赛记录 ----------------
-def race_key(r):
-    """比赛唯一键：优先 race_id（全局稳定），否则 (日付, 場名, R)。
-    用于增量去重：新增记录 = 键不在已有文件里。"""
-    rid = str(r.get("race_id") or "").strip()
-    if rid:
-        return "race:" + rid
-    return "slot:{}|{}|{}".format(r.get("日付", ""), r.get("場名", ""), r.get("R", ""))
+race_key = racelib.race_key   # 比赛唯一键单源（防御版，docs/REFACTOR.md §5.1 R2 / §9 D4），common 只再导出
 
 
 def record_keys(r):

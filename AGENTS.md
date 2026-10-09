@@ -5,9 +5,9 @@
 ## 0. Git 协作（最高优先级）
 
 - **commit**：仅在用户明确要求提交时执行；未要求不得自行 `git commit`。
-  —— `HANDOFF.md`「Git 协作约定」
+  —— `docs/HANDOFF.md`「Git 协作约定」
 - **push**：永远不执行 `git push`；推送只能由用户本人操作。
-  —— `HANDOFF.md`「Git 协作约定」
+  —— `docs/HANDOFF.md`「Git 协作约定」
 - `dist/` 在 `.gitignore` 中，构建产物不入库，由 CI/本地构建生成。
 
 ## 1. 工作流程
@@ -15,7 +15,7 @@
 - 正式源码在 `front/`（Vite 多页 + Tailwind）；修改 → `npm run build` → 产物到项目根 `dist/` → 验证 `dist/` 生效。
 - **每次改样式/类名后必须构建并核对** `dist/assets/theme-*.css` 含新类——编译期框架最大坑：改了类但没编译 → 页面无变化。
 - 探索/候选版放项目根 `tests/`，废案放 `tests/_trash/`；旧 `testpage/` 已归档 `tests/_trash/testpage-snapshot`，只读勿直接改。
-- UI 优化：每改一个模块，先把「最终思路 + 当前成果」写进 `front/UI优化记录.md`（不展开废案），再合并进正式页面。
+- UI 优化：每改一个模块，先把「最终思路 + 当前成果」写进 `docs/UI优化记录.md`（不展开废案），再合并进正式页面。
 
 ## 2. 前端架构（必须遵守，不得退回旧方式）
 
@@ -28,16 +28,16 @@
 - i18n：日文字段/枚举 → 中文全部走 `front/public/i18n.js` 字典（`YJ.i18n.t/e/g`），**不改后端 JSON**。
 - 数据语义色（全站一致）：1着/胜=`primary` 青绿、2着=`chart-2` 青、3着=`chart-3` 橙、未完走（中止/取消/除外/失格）=`destructive` 红、重赏徽章（GI/GII/GIII/L/OP）用 `primary`/`chart-*` 分级。
 - 跨页联动走 `bus.js`（postMessage + localStorage），不另起机制。
-- **复用抽离（硬性约定，UI优化记录 §48 定稿）**：公共工具（esc 等）单一出处 `front/public/yj-util.js`（`YJ.util.*`，页面薄别名，禁止复制函数体）；比赛行/徽章/格式化/格级映射一律复用 `front/public/race-rows.js`；着顺浅色三件套 JS 侧 = `race-rows.js` 的 `PLACE_BG`（CSS 侧 = theme.css `.yj-nkm*`，两处互指、改色同步）。**只有全站统一语义或 ≥3 处使用才抽离，仅 2 处不动**；收口只做等值搬移/纯删除，改后照常 build+dist 核对。theme.css `@layer components` 里**不放 JS 动态拼类名、content 无字面量的类**（会被 Tailwind 按候选裁剪，如 `.yj-g*` 必须在 @layer 之外）。细则见 `front/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
+- **复用抽离（硬性约定，docs/UI优化记录.md §48 定稿）**：公共工具（esc 等）单一出处 `front/public/yj-util.js`（`YJ.util.*`，页面薄别名，禁止复制函数体）；比赛行/徽章/格式化/格级映射一律复用 `front/public/race-rows.js`；着顺浅色三件套 JS 侧 = `race-rows.js` 的 `PLACE_BG`（CSS 侧 = theme.css `.yj-nkm*`，两处互指、改色同步）。**只有全站统一语义或 ≥3 处使用才抽离，仅 2 处不动**；收口只做等值搬移/纯删除，改后照常 build+dist 核对。theme.css `@layer components` 里**不放 JS 动态拼类名、content 无字面量的类**（会被 Tailwind 按候选裁剪，如 `.yj-g*` 必须在 @layer 之外）。细则见 `docs/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
 
 ## 3. 数据与路径
 
-- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `data/SCHEMA.md`**（生成脚本文件头只留一行指路），管线说明见 `scripts/README.md`。
+- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `docs/SCHEMA.md`**（生成脚本文件头只留一行指路），管线说明见 `docs/pipeline.md`。
 - 服务器服务**项目根**（如 `python -m http.server 8090 --directory 项目根`）或直接服务 `dist/` 均可（dist 已自包含数据副本），务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
 - **前端数据一律走统一缓存控制器 `front/public/yj-cache.js`（`YJ.cache.fetch(name[, opts])`）**：注册表按产物给 TTL（当前全 12h，可按产品覆写），禁止页面绕过控制器直连 fetch 数据产物（编辑台 no-store 语义除外）。**改数据目录/位置时同步核对 `yj-cache.js` 注册表的 `url/prefix`**。
-- `data/races-bundle.json`（比赛压缩包，契约 = `data/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
-- 数据更新：`scripts/basic` 与 `scripts/races` 代码隔绝（各自 `common.py` **互不 import**，但可共用中立层 `scripts/core`——中立层不得出现管线概念，管线差异用形参注入），数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `TESTING.md` §4.3）。
+- `data/races-bundle.json`（比赛压缩包，契约 = `docs/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
+- 数据更新：`scripts/basic` 与 `scripts/races` **业务隔离、代码抽离复用**——两管线共享逻辑统一下沉中立层 `scripts/core`（路径/站点/颜色等字面量常量单源 = `core/constants.py`，两个 `common.py` 只做薄再导出，不再各持一份拷贝）；中立层不得出现管线概念，各管线风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`；业务模块互不 import 对方。数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `docs/TESTING.md` §4.3）。
 
 ## 4. 已删除 / 不要复活
 

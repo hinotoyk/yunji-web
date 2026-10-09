@@ -1,6 +1,6 @@
 # 云迹 · 云崽档案
 
-「云迹 · 云崽档案」是**单一种马产驹**的个人查阅/检索资料库（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `REFACTOR.md` §1），以 **GitHub Pages 静态站**形式部署。数据由 Python 管线从 JBIS / netkeiba / studbook.jp 抓取维护，前端为 Vite 多页 + Tailwind CSS 构建，全站离线自包含。
+「云迹 · 云崽档案」是**单一种马产驹**的个人查阅/检索资料库（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `docs/REFACTOR.md` §1），以 **GitHub Pages 静态站**形式部署。数据由 Python 管线从 JBIS / netkeiba / studbook.jp 抓取维护，前端为 Vite 多页 + Tailwind CSS 构建，全站离线自包含。
 
 ## 功能页
 
@@ -27,23 +27,19 @@
 
 ```
 yunji-web/
+├── config/                # 站点/种马配置（sire.json · grade-table.json）
 ├── data/                  # ★ 全部数据产物（basic.json / pedigree/ / races/ / timeline.json / datechart.json / stats.json）
-│   └── SCHEMA.md          # 数据产物字段契约（单一出处）
-├── scripts/               # Python 数据管线（basic 建档 / races 竞赛 / timeline / datechart / stats / check_data）
-│   ├── README.md          # 管线总说明（怎么跑 / 设计原则 / 中立层边界）
-│   ├── basic/README.md    # 基础部分（建档 + 基本信息）
-│   └── races/README.md    # 竞赛部分（逐场成绩 + 収得賞金）
+├── docs/                  # ★ 全部人工文档（索引见 docs/README.md，逐篇说明见下表「文档导航」）
+├── scripts/               # Python 数据管线（core 中立层 / basic 建档 / races 竞赛 / timeline / datechart / stats / check_data）
 ├── front/                 # ★ 前端正式源码（Vite 多页 + Tailwind）
 │   ├── index.html         # 外壳：左侧导航 + iframe 内容区
 │   ├── pages/             # 功能子页面 + theme.css（Tailwind 输入）
 │   ├── public/            # 共享 JS（i18n / selector / race-rows / yj-cache / yj-util / bus / device / pedigree / editor …）
-│   └── UI优化记录.md      # 各模块 UI 优化的最终方案与当前成果
+│   └── scripts/           # 构建期工具（gen-font.mjs / gen-site-config.mjs / build-races-bundle.mjs）
 ├── dist/                  # 构建产物（gitignore，CI 现场构建）
 ├── run_update.py          # 数据更新统一入口（9 种策略）
 ├── run_full_test.py       # 从 0 全量自测
-├── request-path.html      # 请求·数据流路径图
-├── TESTING.md             # 更新策略的测试与排查手册
-├── HANDOFF.md             # 交接文档（架构 / 规范 / 关键决策）
+├── AGENTS.md              # AI 助手工作规则（硬性约定汇总）
 └── README.md              # 本文件
 ```
 
@@ -63,6 +59,18 @@ python -m http.server 8091 --directory dist   # 或直接服务 dist → http://
 > 必须用 http 访问（file:// 下 fetch 失败）；Vite dev server（`:5173`）取不到数据，仅开发热更新用。
 > 每次改 `front/` 后 `npm run build` 再刷新验证；改数据后同样需重新构建才会进 `dist/data/`。
 
+## 新项目：换种马（单配置源）
+
+本站是**单一种马参数化**的通用资料库：复制仓库后，种马/品牌/台账全部由 `config/sire.json` 一处定义
+（字段契约见 `docs/REFACTOR.md` §3.3），**不改代码**即可跑新种马：
+
+1. 复制仓库，编辑 `config/sire.json`：`jbis_id` / `netkeiba_id` / `sire.name_*`（`name_ja`/`name_cn` 均不可为空，否则父子制覇徽章整体关闭）/ `studbook` / `wins`（可空数组 = 不启用父子制覇徽章）/ `site`（`name`/`subtitle`/`tagline`/`logo`/`domains` 统计域名白名单）/ `ledger.url`（**空 = 台账环节跳过**，不联网不失败）。
+2. 离线核对抓取 URL 拼装（**不联网**）：`python scripts/basic/build_registry.py --print-urls`，确认新 ID 拼出的 JBIS / netkeiba 列表页 URL 正确。
+3. `python run_update.py --init` 全量重建数据（需联网抓取；`--init` 会删空 `data/`）。
+4. `cd front && npm run build` 构建站点（品牌文案构建期注入，`dist/site-config.js` 由 `front/scripts/gen-site-config.mjs` 自动生成）。
+5. **手动替换品牌资产**（不在配置范围）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`，并更新 `front/package.json` 的 `name`/`description` 元数据。
+6. 本地 `python -m http.server 8090` 冒烟 8 页后推送部署。
+
 ## 数据更新
 
 ```bash
@@ -80,7 +88,7 @@ python run_update.py <策略>
 | `--ledger` | 只拉台账海外并入 |
 | `--ci [--year …]` | 基本+比赛+校验+git 提交（GitHub Actions 每日） |
 
-详细验证点 / 回归清单 / 排查指南见 `TESTING.md`；管线内部流程见 `scripts/*/README.md`。
+详细验证点 / 回归清单 / 排查指南见 `docs/TESTING.md`；管线内部流程见 `docs/pipeline.md`。
 
 ## 部署
 
@@ -92,9 +100,11 @@ python run_update.py <策略>
 
 | 文档 | 内容 |
 |---|---|
-| `HANDOFF.md` | 交接文档：当前状态 / 架构 / 编码规范 / 关键决策 |
-| `front/UI优化记录.md` | 各模块 UI 优化的最终方案与当前成果（含文首全站编码约定） |
-| `data/SCHEMA.md` | 数据产物字段契约（单一出处） |
-| `scripts/README.md` | 管线总说明（怎么跑 / 设计原则） |
-| `TESTING.md` | 更新策略的测试验证点与排查手册 |
-| `request-path.html` | 请求·数据流路径图 |
+| `docs/HANDOFF.md` | 交接文档：当前状态 / 架构 / 编码规范 / 关键决策 |
+| `docs/UI优化记录.md` | 各模块 UI 优化的最终方案与当前成果（含文首全站编码约定） |
+| `docs/SCHEMA.md` | 数据产物字段契约（单一出处） |
+| `docs/pipeline.md` | 后端数据管线说明（怎么跑 / 两管线流程 / 设计原则 / 离线红线） |
+| `docs/TESTING.md` | 更新策略的测试验证点与排查手册 |
+| `docs/REFACTOR.md` | 重构方案（种马配置化 / 复用收口 / docs 目录整理） |
+| `docs/request-path.html` | 请求·数据流路径图 |
+| `docs/README.md` | docs/ 目录索引 |

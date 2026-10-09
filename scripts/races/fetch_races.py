@@ -15,7 +15,7 @@
 增量只增不覆盖；--force 时对已有记录回填缺失字段并另写 races_full.json（整体替换用）。
 未出赛/结构异常 → 空列表缓存（标记已检查，不阻塞后续环节）；详情字段由 merge_races 统一回填 basic.json。
 
-字段口径见 data/SCHEMA.md §2，流程与限速见 scripts/races/README.md。
+字段口径见 docs/SCHEMA.md §2，流程与限速见 docs/pipeline.md。
 用法: python fetch_races.py [--limit N] [--force] [--id 1,2] [--since N]
 """
 import argparse
