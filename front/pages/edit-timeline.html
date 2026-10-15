@@ -7,10 +7,42 @@
 <title>航迹线编辑 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="stylesheet" href="theme.css">
+<style>
+/* ===== 实时预览（docs/UI优化记录.md §91）：航迹线页同款人工节点卡渲染 =====
+ * 样式复制自 pages/timeline.html 页内 <style>（人工节点用到的子集），scoped 在 .yj-pv 下仅作用于预览区。
+ * ★ 单一出处仍是 timeline.html —— 那边改卡片结构/六色，这里必须同步（同 TL_CATS 的「改色同步」约定）。 */
+.yj-pv .tl-item{display:grid;grid-template-columns:auto 26px minmax(0,1fr);grid-template-areas:"date node card";align-items:center}
+.yj-pv .tl-date{grid-area:date;font-size:13px;font-weight:600;color:#8a9096;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;padding-right:2px}
+.yj-pv .tl-node{grid-area:node;justify-self:center;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px #fff;position:relative;z-index:1;background-color:#8a9096}   /* 人工节点恒 manual 灰（build_timeline.to_manual_event 硬编码） */
+.yj-pv .tl-cardwrap{grid-area:card;min-width:0;width:min(480px,100%);justify-self:start}
+.yj-pv .tl-card{display:flex;overflow:hidden;min-width:0}
+.yj-pv .tl-photo{flex:none;align-self:center;width:50%;margin:10px;aspect-ratio:297/210;background:#f5f5f5;overflow:hidden;border-radius:4px}
+.yj-pv .tl-photo img{display:block;width:100%;height:100%;object-fit:cover}
+.yj-pv .tl-photo.empty{display:flex;align-items:center;justify-content:center}
+.yj-pv .tl-photo.empty span{font-size:34px;opacity:.3;line-height:1}
+.yj-pv .tl-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 16px}
+.yj-pv .tl-tag{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:2px 9px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap;position:relative}
+.yj-pv .tl-tag.manual{background-color:rgba(138,144,150,.14);color:#5c636a}
+.yj-pv .tl-tag.first{background-color:rgba(10,167,160,.12);color:#0b6b64}
+.yj-pv .tl-tag.graded{background-color:rgba(10,59,126,.09);color:#0a3b7e}
+.yj-pv .tl-tag.gen{background-color:rgba(232,116,42,.13);color:#b4530c}
+.yj-pv .tl-tag.sire{background-color:rgba(213,48,42,.1);color:#b02a25}
+.yj-pv .tl-tag.award{background-color:rgba(220,160,38,.16);color:#8f6408}
+/* §92 比赛样式人工节点：KPI 条 + 格/着顺徽章（同 timeline.html 页内变体：格不缩进、着顺 22px） */
+.yj-pv .yj-grade{margin-left:0}
+.yj-pv .yj-no{width:22px;height:22px;font-size:12px}
+.yj-pv .tl-kpis{display:flex;flex-wrap:wrap}
+.yj-pv .tl-kpi{padding:0 16px;border-left:1px solid #ececec}
+.yj-pv .tl-kpi:first-child{padding-left:2px;border-left:0}
+.yj-pv .tl-kpi .k{font-size:10.5px;font-weight:600;letter-spacing:.5px;color:#9aa0a6}
+.yj-pv .tl-kpi .v{margin-top:1px;font-size:13.5px;font-variant-numeric:tabular-nums;color:#171717}
+.yj-pv .tl-kpi .v.hi{color:#0aa7a0;font-weight:700}
+</style>
 </head>
 <body class="bg-muted/50 text-foreground antialiased">
 
-<!-- 2026-09 定稿（docs/UI优化记录.md §82/§82.4 · B 稿）：时间线人工节点独立编辑页。
+<!-- 2026-10 v3「工作台」改版（docs/UI优化记录.md §90）：页首「编辑」分段导航与基本信息页同构；
+     空态 = 「引用比赛 / 自填荣誉」两张入口邀请卡（signature），有节点后工具条 + 盒装列表。
      全站一份 timeline_manual.json；草稿箱提交后 CI 自动 merge + build_timeline 重算（约 2 分钟）。
      人工节点两种入口：引用比赛（选马选场自动填 date/title/link）· 自填荣誉（自由卡片）。
      §82.13：mb 端不开放编辑——应用容器 max-md 隐藏，只留电脑端提示。 -->
@@ -20,10 +52,24 @@
   <div class="mt-1.5 text-[12.5px] leading-[1.7] text-muted-foreground">手机端只浏览：页面上的编辑入口在窄屏下一律隐藏。</div>
 </div>
 
-<div class="mx-auto w-full max-w-[880px] px-4 pt-5 pb-[108px] max-md:px-3 max-md:pt-3 max-md:pb-[132px] max-md:hidden">
+<div class="mx-auto w-full max-w-[880px] px-4 pt-6 pb-[108px] max-md:px-3 max-md:pt-3 max-md:pb-[132px] max-md:hidden">
 
   <header class="rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
-    <div id="mast" class="flex flex-wrap items-center gap-x-3 gap-y-2"></div>
+    <nav class="yj-ed-tabs" aria-label="编辑">
+      <a class="yj-ed-tab" href="edit.html" title="字段 / 图片（manual_overrides.json）">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        基本信息
+      </a>
+      <a class="yj-ed-tab" aria-current="page" href="edit-timeline.html" title="时间线人工节点（timeline_manual.json）">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+        航迹线
+      </a>
+      <a class="yj-ed-tab" href="edit-drafts.html" title="跨页草稿查询 / 提交">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>
+        草稿箱
+      </a>
+    </nav>
+    <div id="mast" class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2"></div>
   </header>
 
   <section class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">
@@ -32,15 +78,14 @@
 </div>
 
 <div id="savebar" class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur max-md:hidden">
-  <div class="relative mx-auto flex max-w-[880px] flex-wrap items-center gap-2 px-4 py-2.5 max-md:px-3 max-md:pb-[calc(10px+env(safe-area-inset-bottom))]">
+  <div class="relative mx-auto flex max-w-[880px] flex-wrap items-center gap-2.5 px-4 py-2.5">
     <div id="box"></div>
-    <span class="flex items-center gap-1.5 text-[10px] font-bold tracking-[.4px] text-muted-foreground">
-      <i class="inline-block h-[7px] w-[7px] flex-none rounded-full bg-chart3"></i>草稿箱模式 · 提交后约 2 分钟生效
+    <span class="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground">
+      <i class="yj-ed-chipdot bg-chart3"></i>草稿箱模式 · 提交后约 2 分钟生效
     </span>
     <div id="report" class="order-last w-full max-md:max-h-[60px] max-md:overflow-y-auto"></div>
-    <span id="count" class="whitespace-nowrap text-[10.5px] font-semibold tabular-nums text-muted-foreground"></span>
-    <span class="ml-auto flex flex-wrap items-center justify-end gap-2">
-      <button id="save" class="yj-ed-op yj-ed-op--primary h-8 px-3.5 text-[12.5px] font-bold" type="button" disabled>提交到 GitHub</button>
+    <span class="ml-auto flex flex-none items-center justify-end gap-2">
+      <button id="save" class="yj-ed-op yj-ed-op--primary h-8 px-4 text-[12.5px] font-bold" type="button" disabled>提交到 GitHub</button>
       <button id="boxBtn" class="yj-ed-op h-8 px-3" type="button">草稿箱</button>
     </span>
   </div>
@@ -49,17 +94,18 @@
 <script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=4"></script>
-<script src="../i18n.js?v=1"></script>
+<script src="../i18n.js?v=3"></script>
 <script src="../device.js"></script>
 <script src="../yj-cache.js?v=1"></script>
 <script src="../selector.js?v=9"></script>
+<script src="../race-rows.js?v=7"></script>
 <script src="../race-bundle.js?v=1"></script>
-<script src="../editor.js?v=10"></script>
+<script src="../editor.js?v=19"></script>
 <script>
 YJ.editor.init({
   mode: "timeline",
   mast: "mast", tl: "tl",
-  report: "report", save: "save", count: "count",
+  report: "report", save: "save",
   box: "box", boxBtn: "boxBtn"
 });
 </script>

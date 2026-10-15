@@ -290,6 +290,17 @@ def to_manual_event(e):
         ev["note"] = str(e["note"])
     if e.get("link"):
         ev["link"] = str(e["link"])
+    # §92 比赛样式可选字段（引用比赛自动预填）：同名单透传，空值不写；grade → 徽章标记由同一 grade-table 派生
+    # （前端 preview 口径一致：editor.js 经 race-rows.GRADE = window.YJ_GRADE 同源派生）
+    for k in ("rank", "time", "agari", "pop", "jockey", "trainer", "grade", "meta", "hero", "hero_cn"):
+        v = str(e.get(k) or "").strip()
+        if v:
+            ev[k] = v
+    if ev.get("grade"):
+        gbadge = GBADGE.get(ev["grade"], "")
+        if gbadge:
+            ev["gbadge"] = gbadge
+            ev["glabel"] = GLBL.get(ev["grade"], ev["grade"])
     return ev
 
 

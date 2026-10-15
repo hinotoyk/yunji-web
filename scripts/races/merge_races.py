@@ -172,7 +172,14 @@ def main():
         if not h:
             continue
         for k in VOLATILE_FIELDS:
-            h[k] = d.get(k, "")
+            v = d.get(k, "")
+            if k == "登録状態":
+                cur = h.get(k, "")
+                # netkeiba 对已移籍地方的马不写状态词（空）、对移籍事实长期残留「現役」——
+                # 两者都不覆盖已有非空值：抹消状态由 scripts/status 任务 / 人工表维护（2026-10）
+                if not v or (v == "現役" and cur and cur != "現役"):
+                    v = cur
+            h[k] = v
         for k in STABLE_FIELDS:
             if d.get(k):
                 h[k] = d[k]

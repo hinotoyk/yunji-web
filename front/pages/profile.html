@@ -43,7 +43,7 @@
 <script src="../data-config.js"></script>
 <script src="../yj-util.js?v=4"></script>
 <script src="../loading.js?v=2"></script>
-<script src="../i18n.js?v=1"></script>
+<script src="../i18n.js?v=3"></script>
 <script src="../yj-cache.js?v=1"></script>
 <script src="../selector.js?v=9"></script>
 <script src="../bus.js?v=1"></script>
@@ -75,7 +75,7 @@ function draftFieldCount(id){
 function sexBadge(v){
   if(v==="牡") return '<span class="inline-flex items-center rounded-full bg-[#C9EFFE] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#0B5A8C]">♂ 牡</span>';
   if(v==="牝") return '<span class="inline-flex items-center rounded-full bg-[#FFDBD5] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#B03A30]">♀ 牝</span>';
-  if(v==="セ") return '<span class="inline-flex items-center rounded-full bg-[#EFEFEF] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#5A5A5A]">⚲ セン</span>';
+  if(v==="セ") return '<span class="inline-flex items-center rounded-full bg-[#EFEFEF] px-2 py-0.5 text-[11px] font-bold leading-[1.6] text-[#5A5A5A]">⚲ 骟</span>';
   return esc(v||"—");
 }
 
@@ -282,10 +282,9 @@ function render(h){
       ? '<span class="flex-none rounded bg-chart3/15 px-1 py-px text-[9.5px] font-bold text-chart3" title="编辑台草稿 · 未提交">草稿</span>' : '';
     return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+dm+'</div>';
   };
-  var stBadge=hv.登録状態 ? (hv.登録状態==="現役"
-    ? '<span class="inline-flex items-center rounded-full bg-accent px-2 py-[2px] text-[11.5px] font-semibold text-accent-foreground">现役</span>'
-    : '<span class="inline-flex items-center rounded-full bg-muted px-2 py-[2px] text-[11.5px] font-medium text-muted-foreground">'+esc(YJ.i18n.e("登録状態",hv.登録状態))+'</span>')
-    : '<span class="text-muted-foreground">—</span>';
+  /* JRA 登录状态箭头链（2026-10 去向调查）：渲染单一出处 = public/yj-util.js statusChain
+   * （编辑台预览共用 §48）。草稿预览时 hv 已被 draftOv 逐键叠加 → 自动反映草稿值。 */
+  var stBadge=YJ.util.statusChain(hv);
   /* 当前性别（YJ.util.sexOf：后端 性別_当前 优先，回退官方 性別）。官方 性別 是「登录性别」，
    * 无 JRA 登录的海外马去势后 netkeiba/JBIS 都不回写，逐场记录才是当期事实 → 只展示当期值。 */
   var info='<div class="grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border">'+

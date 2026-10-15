@@ -143,14 +143,42 @@ function photoHTML(ev){
 function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在左），"left"=卡片在轴左侧；图位恒贴时间轴一侧 */
   var card = '<div class="tl-card card">'+photoHTML(ev)+'<div class="tl-body">';
   if (ev.type === "manual"){   /* 人工节点：来自 timeline_manual.json（manual:true），无 horse；标题/副题/说明/可选跳转 */
+    /* §92 比赛样式（可选）：人工节点带任一比赛字段（rank/time/agari/pop/jockey/trainer/gbadge/meta/hero）时，
+     * 按 race 分支同款结构渲染（格徽章/场次行/着顺+馬名行/KPI 条/騎手調教師；📌 只留给素格式）。
+     * gbadge/glabel 由 build_timeline.to_manual_event 从 grade 派生（同一 grade-table）。 */
+    var rich = ev.gbadge || ev.rank || ev.hero || ev.time || ev.agari || ev.pop || ev.jockey || ev.trainer || ev.meta;
+    if (rich) {
+      var rttl = ev.link
+        ? '<a class="hjump text-[15px] font-semibold" href="'+esc(ev.link)+'">'+esc(ev.title||"")+'</a>'
+        : '<span class="text-[15px] font-semibold">'+esc(ev.title||"")+'</span>';
+      card += '<div class="tl-racename-row">'+
+                (ev.gbadge ? '<span class="yj-grade yj-'+esc(ev.gbadge)+'">'+esc(ev.glabel||"")+'</span>' : '')+
+                '<span class="tl-racename">'+rttl+'</span></div>'+
+              (ev.cn ? '<div class="text-[12px] text-muted-foreground">〈'+esc(ev.cn)+'〉</div>' : '')+
+              (ev.meta ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.meta)+'</div>' : '')+
+              (ev.hero ? '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">'+
+                  (ev.rank ? '<span class="yj-no '+
+                    (ev.rank==="1"?"yj-no1":ev.rank==="2"?"yj-no2":ev.rank==="3"?"yj-no3":"")+'">'+esc(ev.rank)+'</span>' : '')+
+                  '<span class="text-[15px] font-semibold">'+esc(ev.hero)+'</span>'+
+                  (ev.hero_cn ? '<span class="text-[12.5px] text-muted-foreground">〈'+esc(ev.hero_cn)+'〉</span>' : '')+
+                '</div>' : '')+
+              ((ev.time||ev.agari||ev.pop) ? '<div class="tl-kpis">'+
+                  kpi("タイム", ev.time||"—", true) + kpi("上り", ev.agari||"—") + kpi("人気", ev.pop||"—")+
+                '</div>' : '')+
+              ((ev.jockey||ev.trainer) ? '<div class="text-[12px] text-muted-foreground space-y-0.5">'+
+                  (ev.jockey?'<div>騎手 '+esc(ev.jockey)+'</div>':'')+
+                  (ev.trainer?'<div>調教師 '+esc(ev.trainer)+'</div>':'')+'</div>' : '')+
+              (ev.note ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.note)+'</div>' : '');
+    } else {
     var ttl = ev.link
       ? '<a class="hjump text-[15px] font-semibold" href="'+esc(ev.link)+'">📌 '+esc(ev.title||"")+'</a>'
       : '<span class="text-[15px] font-semibold">📌 '+esc(ev.title||"")+'</span>';
     card += '<div class="flex flex-wrap items-baseline gap-x-2">'+ttl+
               (ev.cn ? '<span class="text-[12px] text-muted-foreground">〈'+esc(ev.cn)+'〉</span>' : '')+
             '</div>'+
-            (ev.note ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.note)+'</div>' : '')+
-            (ev.tags && ev.tags.length ? '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>' : '');
+            (ev.note ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.note)+'</div>' : '');
+    }
+    card += (ev.tags && ev.tags.length ? '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>' : '');
   } else {
   var hero = '<a class="hjump text-[16px] font-semibold" href="profile.html?horse='+encodeURIComponent(ev.horse.id)+'">'+esc(ev.horse.name)+'</a>'+
              (ev.horse.cn ? '<span class="text-[12.5px] text-muted-foreground">〈'+esc(ev.horse.cn)+'〉</span>' : "");

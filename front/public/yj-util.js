@@ -100,11 +100,37 @@ YJ.util = (function () {
     return Math.round(pr / 10000).toLocaleString() + "万";
   }
 
+  /* JRA 登录状态箭头链（2026-10 去向调查 · 用户定稿）：登録状態 + 抹消组三键 → 徽章串。
+   * §48 收口单一出处：profile.html 行内 + 编辑台实时预览共用，禁止第三份拷贝。
+   * 落库规则：只有「确认去向」才写 種別/場所（推定/猜测绝不落库，不确定只留抹消日）
+   * → 有去向徽章必是确认済，一律实线；无去向只显 [抹消 日期]，无箭头。
+   * 配色 = theme.css .yj-stb*；文案走 i18n 枚举（抹消_去向種別），未收录回退原值。 */
+  function statusChain(h) {
+    if (!h || !h.登録状態) return '<span class="text-muted-foreground">—</span>';
+    var b = function (cls, txt, sub) {
+      return '<span class="yj-stb ' + cls + '"><span class="yj-stb-t">' + esc(txt) + "</span>" +
+        (sub ? '<span class="yj-stb-d">' + esc(sub) + "</span>" : "") + "</span>";
+    };
+    var out = '<span class="yj-stb-chain">';
+    out += h.登録状態 === "現役"
+      ? b("yj-stb--live", "现役")
+      : b("yj-stb--erased", "抹消", h.抹消日 || "");
+    if (h.登録状態 !== "抹消" || !h.抹消_去向種別) return out + "</span>";
+    var place = h.抹消_去向場所 || "";
+    var i18n = (window.YJ && YJ.i18n && YJ.i18n.e) ? YJ.i18n.e : null;
+    var word = i18n ? (i18n("抹消_去向種別", h.抹消_去向種別) || h.抹消_去向種別) : h.抹消_去向種別;
+    if (place) word += "·" + place;        /* 紧凑 ·：窄列（档案页三列值区 ~88px）尺寸预算内 */
+    var cls = { "地方競馬": "yj-stb--local", "繁殖": "yj-stb--breed", "乗馬": "yj-stb--ride",
+      "死亡": "yj-stb--dead", "海外": "yj-stb--overseas" }[h.抹消_去向種別];
+    if (!cls) return out + "</span>";
+    return out + '<span class="yj-stb-arr">→</span>' + b(cls, word) + "</span>";
+  }
+
   /* 编辑台草稿箱 localStorage 键（schema 版本号）：profile.html（只读叠加渲染）与 editor.js（读写）共用，
    * 2026-xx 收口单一出处 —— 升级草稿 schema 只改这一处，防双处字符串漂移。 */
   var DRAFT_KEY = "yj.edit.drafts.v1";
 
   return { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen, DRAFT_KEY: DRAFT_KEY,
     splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
-    mainName: mainName, sexOf: sexOf };
+    mainName: mainName, sexOf: sexOf, statusChain: statusChain };
 })();

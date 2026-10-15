@@ -22,6 +22,14 @@ DATA_DIR = ROOT / "data"                            # 全部数据统一放根 d
 BASIC_JSON = DATA_DIR / "basic.json"
 OVERRIDES_JSON = DATA_DIR / "manual_overrides.json"  # 人工维护表（脚本只读，人/编辑服务写）
 
+# 抹消组三键（2026-10 去向调查）：无任何抓取来源。双写入者（用户定稿）：
+# - scripts/status 任务（NAR/抹消馬簿/近況履歴）直写 data/basic.json —— 唯一自动写入层
+# - manual_overrides.json 人工表 —— 唯一人工写入层
+# apply_overrides 语义：人工表有条目 → 重置+重放（空覆盖即清空）；无条目 → basic.json
+# 已有值原样保留（任务值持久化）。只有「确认去向」才落库（推定/猜测绝不写入，
+# 不确定就只留抹消日）；人工表删掉整匹的条目 → 键消失，前端降级为只显 [抹消]。
+MASYO_GROUP_KEYS = ("抹消日", "抹消_去向種別", "抹消_去向場所")
+
 
 def tmp_dir(pipeline):
     """管线缓存目录：data/_tmp/<pipeline>/（merge 后清空）。"""

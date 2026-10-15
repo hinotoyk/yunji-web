@@ -24,6 +24,7 @@ scripts/
     grade.py      load_grade() 读 config/grade-table.json（格→显示文案/徽章类单源，GRADED 由徽章类派生，R6）
   basic/          基础管线：build_registry → fetch_pedigree / fetch_nk_id / fetch_studbook → fetch_detail → merge_basic
   races/          竞赛管线：fetch_detail / fetch_races / fetch_ledger → merge_races（racelib = 解析与规则库）
+  status/         登録状態任务（2026-10，独立日频）：run_status.py —— NAR + keibabook 抹消馬簿 → 直写 basic.json 抹消组
   timeline/       build_timeline.py  → data/timeline.json
   datechart/      build_datechart.py → data/datechart.json
   stats/          build_stats.py     → data/stats.json
@@ -33,7 +34,8 @@ scripts/
 ### 1.2 怎么跑
 
 - 直跑即可，不需要 `python -m`：`python scripts/basic/merge_basic.py`、`python scripts/races/merge_races.py`、
-  `python scripts/timeline/build_timeline.py`、`python scripts/check_data.py`。
+  `python scripts/status/run_status.py`（可加 `--dry-run` 只出报告不落库）、`python scripts/timeline/build_timeline.py`、
+  `python scripts/check_data.py`。
   各 `common.py` 头部有一行 `sys.path` 注入（把 `scripts/` 放进去），所以 `python scripts/<管线>/xxx.py`
   这种直跑方式零改动就能 `from core import …`——**不要**改成 `python -m`（会动 `run_update.py` 的调用语义）。
 - 日常/定时更新统一走项目根 `python run_update.py <策略>`（9 种策略表见根 `README.md`，验证与排查见
@@ -77,7 +79,9 @@ scripts/
 ### 1.5 人工值（脚本永不写）
 
 人工钉住的字段只活在 `data/manual_overrides.json`（时间线节点在 `data/timeline_manual.json`）；
-直接改 `data/basic.json` 会被第二天 CI 抹掉。两条管线的合并收尾**都**要套一次
+直接改 `data/basic.json` 会被第二天 CI 抹掉。**唯一例外 = `scripts/status` 任务**（§4）：它是
+`basic.json` 抹消组的授权自动写入层，合并语义配套改为抹消组逐键合并（人工键覆盖/清空，其余保留任务值）。
+两条管线的合并收尾**都**要套一次
 `manual.apply_overrides`（`merge_basic.py` 写回前、`merge_races.py` 全部派生之后），否则只跑 `--basic`
 就会把人工的 `馬主` / `調教師` / `登録状態` 抓取值整片覆盖。契约与 `_` 前缀键（`_orig` / `_note`）口径见
 [`docs/SCHEMA.md`](SCHEMA.md) §3。
@@ -344,7 +348,57 @@ python merge_races.py --keep       # 单独合并（保留缓存调试）
 
 ---
 
-## 4. 校验与编排
+## 4. status 任务（登録状態 · JRA 抹消/去向追踪）
+
+2026-10 新增（用户定稿）：**独立于 basic/races 两管线的日频任务**（不进 `run_update` 编排），
+是 `basic.json` 抹消组四键 + `kb_id` 的授权自动写入层（唯一例外，见 §1.5）。
+
+### 4.1 目录结构与命令
+
+```
+scripts/status/
+├── common.py        # 共享：限速口径（keibabook / keiba.go.jp）+ 本任务 URL + basic.json 读写
+└── run_status.py    # NAR（翻页）+ 抹消馬簿 → 比对 → 調教師/kinkyo 补齐 → 直写 basic.json + 报告
+```
+
+- `python scripts/status/run_status.py`（落库）；`--dry-run` 只出报告不写 basic.json。
+- 报告：`tests/status_task_report.md`（覆盖式，每次运行重写；证据明细只进报告，不进 basic.json）。
+
+### 4.2 数据链与落库规则（用户定稿）
+
+1. **NAR 竞走馬一覧**（父名=种马，免登录，50 行/页 + 「次の50頭」锚翻页跟随 `k_pageNum`；
+   `k_activeCode=1` 实测 = NAR 在册 + JRA 抹消全集）：
+   - 所属場=地方 → 确认去向落库：`登録状態=抹消` + `種別=地方競馬` + `場所=所属場原文`
+     （兵庫/北海道/高知/金沢/大井/船橋/浦和/愛知/岩手…**不做映射，同 美浦/栗東 一个道理**）；
+   - 所属場=JRA → **一律跳过**（用户定稿：含「抹消」标的也不深挖，仅报告列出）。
+2. **NAR 馬详情页 RaceHorseInfo**（按需，仅地方马，1 请求/匹）→ 調教師：
+   原文「長　倉　　　　功（兵庫）」→ 压名字里的全角空格、**保留（所属）尾缀** →「長倉功（兵庫）」，
+   **直接覆盖 basic 的 調教師**（人工表钉了調教師则跳过）。
+3. **keibabook 抹消馬簿**（栗東=1 / 美浦=2 共 2 请求，约 2 周滚动窗口 → 必须日频跑才不漏）：
+   命中即落全套 `抹消日` + 事由（地方/乗馬/繁殖/斃死→死亡 → `種別`）+ 行き先（未定 → 場所留空）。
+4. NAR-地方 但库里无抹消日（如未出走移籍）→ 馬検索（**必带 `masyof%5B%5D=1`**，否则只回現役）
+   拿 `kb_id` → 近況履歴补日期；未出走马本无中央登録可抹，kinkyo 无条目属正常（报告列待办）。
+5. **keibabook 补查**（用户定稿触发）：`登録状態 ∈ {抹消, 空}` 且 无去向 且 人工无值 → 馬検索拿 kb_id →
+   马页(kanzen) + 近況履歴。产出：中央抹消标 = 确凿抹消证据（补 `登録状態`/`抹消日`）；
+   抹消标 + 厩舎栏非中央地名（栗東/美浦以外，如 西脇/園田）= 地方去向证据（`種別=地方競馬` + `場所=厩舎地名原文`）；
+   无抹消标（未登录/未出走）→ 仅观察留痕。乗馬/繁殖去向免费页无记录（马页厩舎栏仍显示旧 JRA 厩舎），靠抹消馬簿窗口。
+6. **落库守则**：只有「确认去向」才写 種別/場所——推定/猜测绝不入库，不确定就只留抹消日；
+   人工表钉了 種別/場所 → 任务不碰该马去向（防乒乓），钉了抹消日 → 日期不碰，钉了調教師 → 調教師不碰，
+   钉了 kb_id → 技术键不碰（且补查优先用人工值）。
+   报告分「变更 / JRA跳过 / 人工钉 / **观察**（未登录·未出走·海外等正常终态留痕）/ 待办（仅真正需人工）」五段。
+
+### 4.3 合并语义（双写入者，配套改两处）
+
+- `core/manual.apply_overrides` 对抹消组改为**逐键合并**：人工表条目里出现的键人工值覆盖
+  （值为空 = 显式清空）；条目里没有的键 → basic.json 已有值原样保留（任务值跨合并存活；
+  旧语义「有条目即整组重置」会把任务补的 種別/場所 一并洗掉，弃用）。
+- `merge_races` 的 VOLATILE 回填对 `登録状態` 加守卫：netkeiba 对已移籍地方的马**不写状态词（空）**、
+  对移籍事实**长期残留「現役」**——两者都不覆盖已有非空值（抹消状态由本任务/人工表维护）。
+- 抹消组进编辑台人工键不受影响（登録状態=抹消 时展开，契约见 `docs/SCHEMA.md` §3）。
+
+---
+
+## 5. 校验与编排
 
 - **门禁**：`python scripts/check_data.py`（退出码 0）+ 四个断言脚本
   `node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` /
@@ -357,7 +411,7 @@ python merge_races.py --keep       # 单独合并（保留缓存调试）
 
 ---
 
-## 5. 离线脚本零第三方依赖（红线，2026-10-01 定稿）
+## 6. 离线脚本零第三方依赖（红线，2026-10-01 定稿）
 
 requests/bs4 只在真正发请求处惰性导入（`core/net.py` 的 `fetch()`/`soup_of()` 函数内、
 两个 `common.py` 走 PEP 562 `__getattr__` 重导出——统一收口见 `core/runtime.py::install_lazy_http`）——

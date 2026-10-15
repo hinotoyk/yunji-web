@@ -47,13 +47,32 @@ YJ.editor = (function () {
    * labels 只改显示不改存库值（存库「セ」，表单按 races 口径显示「セン」）。
    * 行序 = 台账定稿（2026-09-21 改案）的顺序：状态 → 马主 → 调教师 →（毛色 → 性別）；
    * 全部下拉/输入（§82.5 用户定稿：登録状態 瓦片改回下拉，与其它字段一致）。 */
+  /* §94 字段拓展（用户定稿）：核心 4 字段 + 名号 2（自译/港译）+ 赏金成绩 5。毛色（2026-10-13 第二次修正：
+   * 禁止修改）与 马名含义/出生年月/产地/母名/生产牧场 等档案字段不放开；kb_id 等技术键一律不开放
+   * （2026-10 用户定稿：不开放 kb_id）。 */
   var FIELDS = [
     { key: "登録状態", kind: "select" },
+    /* 抹消组（2026-10 去向调查）：登録状態=抹消 时才展开（formHTML 条件渲染）+ 实时预览行；
+     * 用户定稿：只有确认去向才落库 → 只收 抹消日/種別/場所（推定/猜测不写入，不确定就只留抹消日）；
+     * 種別 走 static 固定枚举（controlHTML），値契约 = docs/SCHEMA.md §1/§3（basic_io.py BASIC_FIELDS 同序）。
+     * 下拉（2026-10 定稿）＝ 地方競馬/繁殖/乗馬/種馬（新增 种马）；死亡/海外 移出人工下拉——
+     * 死亡=抹消馬簿斃死自动映射、海外=预留；展示枚举仍全量，现值不在下拉时 controlHTML 追加显示。 */
+    { key: "抹消日", kind: "text" },
+    { key: "抹消_去向種別", kind: "select", static: ["地方競馬", "繁殖", "乗馬", "種馬"] },
+    { key: "抹消_去向場所", kind: "text", list: true },
     { key: "馬主", kind: "text", list: true },
     { key: "調教師", kind: "text", list: true },
-    { key: "毛色", kind: "select" },
-    { key: "性別", kind: "select", labels: { "セ": "セン" } }
+    { key: "性別", kind: "select" },
+    { key: "香港馬名", kind: "text" },
+    { key: "自译馬名", kind: "text" },
+    { key: "通算成績", kind: "text" },
+    { key: "セリ取引価格", kind: "text" },
+    { key: "獲得賞金 (中央)", kind: "text" },
+    { key: "獲得賞金 (地方)", kind: "text" },
+    { key: "総賞金", kind: "text" }
   ];
+  /* 抹消组键清单：登録状態=抹消 时才进表单（formHTML），改动时联动刷新预览行（softRefreshRow） */
+  var MASYO_SUB = ["抹消日", "抹消_去向種別", "抹消_去向場所"];
 
   /* ?tab= 直达（horse 页只有 fields 段；timeline 页无折叠段） */
   var SECS = ["fields"];
@@ -73,6 +92,9 @@ YJ.editor = (function () {
   var BADGE_DIRTY = "yj-ed-state yj-ed-state--dry";
   var BADGE_WARN = "yj-ed-state yj-ed-state--dry";
   var TIP = "text-[11px] text-muted-foreground";
+  /* v3 空态入口卡图标（内联 SVG，stroke=currentColor；与页首分段导航同一套线条语言） */
+  var ICO_FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>';
+  var ICO_AWARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>';
   /* 台账形态（profile 式）：一行一字段 + 照片位；类名一律完整字面量（content 扫得到 → @layer 不裁） */
   var VBADGE = "yj-ed-vbadge";
   var ROWEDIT_FOOT = "mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted/40 px-3 py-2";
@@ -659,9 +681,8 @@ YJ.editor = (function () {
 
   function optLabel(f, v) {
     if (!v) return "（空）";
-    var shown = (f.labels && f.labels[v]) || v;
-    var cn = YJ.i18n.e(f.key, v);
-    return cn && cn !== shown ? shown + "（" + cn + "）" : shown;
+    /* §94 中文单显：枚举字典命中 → 只显中文（黑鹿毛/现役/母），未收录回退原值；不再「原值（中文）」双写 */
+    return YJ.i18n.e(f.key, v) || (f.labels && f.labels[v]) || v;
   }
 
   function fieldOf(key) {
@@ -713,11 +734,14 @@ YJ.editor = (function () {
     if (st === "pending") return state.mode === "draft" ? "草稿" : "待保存";
     return "与官方一致";
   }
-  /* 保存清单里 photo 的显示（数组直接 String() 会糊成一长串路径） */
+  /* 保存清单里 photo 的显示（数组直接 String() 会糊成一长串路径）；§94 枚举值中文单显（毛色/性別/登録状態） */
   function pinValueText(k, v) {
-    if (k !== "photo") return (v === "" || v === null || v === undefined) ? "（空）" : String(v);
-    var l = normList(v);
-    return l.length ? l.length + " 张（" + photoName(l[0]) + (l.length > 1 ? "…" : "") + "）" : "确无图片";
+    if (k === "photo") {
+      var l = normList(v);
+      return l.length ? l.length + " 张（" + photoName(l[0]) + (l.length > 1 ? "…" : "") + "）" : "确无图片";
+    }
+    var s = (v === "" || v === null || v === undefined) ? "（空）" : String(v);
+    return s === "（空）" ? s : (YJ.i18n.e(k, s) || s);
   }
   function noteOf(id) { var e = entryOf(id); return e && e._note ? String(e._note) : ""; }
   function noteChanged() { return !!state.note && state.note !== noteOf(state.horse && state.horse.id); }
@@ -725,8 +749,12 @@ YJ.editor = (function () {
   function controlHTML(f) {
     var v = currentValue(f);
     if (f.kind === "select") {
+      /* f.static：固定枚举（抹消组 2026-10）；否则现值去重（登録状態/性別 等既有行为不变）。
+       * 现值不在固定枚举（存量 地方競馬，下拉 2026-10 收窄）→ 追加为选项，防保存误写空值。 */
+      var opts = f.static ? [""].concat(f.static) : distinct(f.key, false);
+      if (f.static && v && opts.indexOf(v) < 0) opts = opts.concat(v);
       return '<select data-f="' + esc(f.key) + '" class="' + INPUT + ' font-normal">' +
-        distinct(f.key, false).map(function (x) {
+        opts.map(function (x) {
           return '<option value="' + esc(x) + '"' + (x === v ? " selected" : "") + ">" + esc(optLabel(f, x)) + "</option>";
         }).join("") + "</select>";
     }
@@ -753,21 +781,29 @@ YJ.editor = (function () {
     if (f.key === "性別") {
       if (v === "牡") return '<span class="' + VBADGE + ' bg-[#C9EFFE] text-[#0B5A8C]">♂ 牡</span>';
       if (v === "牝") return '<span class="' + VBADGE + ' bg-[#FFDBD5] text-[#B03A30]">♀ 牝</span>';
-      if (v === "セ" || v === "セン") return '<span class="' + VBADGE + ' bg-[#EFEFEF] text-[#5A5A5A]">⚲ ' + esc(shown) + "</span>";
+      if (v === "セ" || v === "セン") return '<span class="' + VBADGE + ' bg-[#EFEFEF] text-[#5A5A5A]">⚲ 骟</span>';
     }
     return esc(shown);
+  }
+
+  /* §93 备注简显：取「YYYY-MM-DD 短标题：」前缀（时间 + 冒号前的短语）作一行摘要，全文放 title 悬停可看。
+   * 备注正文不动（提交时仍整段入库）——只是清单/抽屉里不再整段铺开；写备注时也建议一行说完。 */
+  function noteBrief(note) {
+    var s = String(note || "").trim();
+    var m = s.match(/^(\d{4}-\d{2}-\d{2})\s*([^\n：:]{2,24})[：:]/);
+    return m ? m[1] + " " + m[2] : (s.length > 42 ? s.slice(0, 42) + "…" : s);
   }
 
   /* 编辑备注（_note）：整匹马一条，可选（留空保留旧备注）；故「同时只开一行」的台账里最多出现一个 #noteInput */
   function noteInputHTML() {
     var note = state.note !== "" ? state.note : noteOf(String(state.horse.id));
     return '<input id="noteInput" value="' + esc(note) + '" class="' + INPUT + ' font-normal" autocomplete="off" ' +
-      'placeholder="备注（可选）：为什么不信官方值？例：netkeiba 滞后，2026-05 起已去势">';
+      'placeholder="可选：一句话即可（何时引入了什么照片 / 为什么不信官方值）">';
   }
   /* 备注行：常显（只改图片也要能写备注）；故 #noteInput 全表唯一 */
   function noteRowHTML() {
     return '<div class="yj-ed-row" data-row="_note">' +
-      '<span class="yj-ed-row-k">编辑备注<code class="yj-ed-lbl mt-0.5 block">_note</code></span>' +
+      '<span class="yj-ed-row-k">备注</span>' +
       '<span class="min-w-0 flex-1">' + noteInputHTML() + "</span></div>";
   }
 
@@ -788,11 +824,12 @@ YJ.editor = (function () {
     var pin = pinned(id, key);
     var st = fieldState(key);
     var undo = st === "pending" && state.draft[key] === null;
+    /* v3 状态沉默化：沉默 = 与官方一致（不亮牌）；仅「已保存 / 待保存」出 chip（§90） */
     var pill = st === "saved" ? '<span class="' + BADGE_PIN + '">已保存</span>'
       : st === "pending" ? '<span class="' + BADGE_DIRTY + '">' + (undo ? "待恢复官方值" : stateWord(st)) + "</span>"
-        : '<span class="yj-ed-state">与官方一致</span>';
-    var head = '<span class="yj-ed-row-k">' + esc(key) +
-      '<span class="yj-ed-lbl mt-0.5 block">' + esc(YJ.i18n.t(key)) + "</span></span>";
+        : "";
+    /* 行标签 §94：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写） */
+    var head = '<span class="yj-ed-row-k">' + esc(YJ.i18n.t(key)) + "</span>";
     /* 「改」角标已删（§82.5 用户定稿：不清爽）——待保存状态由行尾 chip + 控件青绿描边承担 */
     var ctl = '<span class="relative block min-w-0 flex-1">' + controlHTML(f) + "</span>";
     var unpin = pin !== undefined
@@ -809,7 +846,25 @@ YJ.editor = (function () {
     var othersHTML = others.length ? '<div class="yj-ed-row-orig mt-2 rounded-lg border border-border bg-card px-3 py-2">' +
       "本马另有非本表单字段 " + others.map(function (k) { return "<b>" + esc(k) + "</b>=" + esc(String(e[k])); }).join("、") +
       "（保存会原样保留）</div>" : "";
-    return '<div class="yj-ed-ledger">' + FIELDS.map(rowHTML).join("") + noteRowHTML() + "</div>" + othersHTML;
+    /* 抹消组（2026-10 去向调查 · 用户定稿）：登録状態=抹消 时展开抹消组子字段，预览行紧跟组尾（视觉稿位）；
+     * select 改动走 change 全量 render（bind），条件展开随之自动出现/收起 */
+    var st = currentValue(fieldOf("登録状態"));
+    var rows = [];
+    FIELDS.forEach(function (f) {
+      if (st !== "抹消" && MASYO_SUB.indexOf(f.key) >= 0) return;   /* 非抹消：整组隐藏 */
+      rows.push(rowHTML(f));
+      if (st === "抹消" && f.key === "抹消_去向場所") rows.push(previewRowHTML());   /* 预览行 = 组尾插入（插入点曾误绑已废弃的 確認 字段导致预览行永不渲染，2026-10 修正） */
+    });
+    return '<div class="yj-ed-ledger">' + rows.join("") + noteRowHTML() + "</div>" + othersHTML;
+  }
+
+  /* 抹消组实时预览（2026-10）：草稿 ?? 已存人工值 ?? 生效值 合成 → statusChain（与档案页同一渲染出处 §48） */
+  function previewRowHTML() {
+    var h = Object.assign({}, state.horse);
+    FIELDS.forEach(function (f) { h[f.key] = currentValue(f); });
+    return '<div class="yj-ed-row" data-row="_preview">' +
+      '<span class="yj-ed-row-k">预览</span>' +
+      '<span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">' + YJ.util.statusChain(h) + "</span></div>";
   }
 
   /* 报头内容（B 稿）：卡片壳在页面静态层（edit.html 壳内含 #mast + #selector 挂载点）。
@@ -818,13 +873,11 @@ YJ.editor = (function () {
   function mastHTML() {
     var _site = window.YJ_SITE || {};   /* site-config.js 万一未加载：编辑台不依赖品牌也能用，兜底空对象 */
     if (state.page === "timeline") {
+      /* v3：两页互达由页首「编辑」分段导航承担（壳层静态），报头不再放「回马匹编辑」 */
       return '<span class="yj-ed-mk" style="border-radius:10px">航</span>' +
         '<div class="min-w-0">' +
           '<div class="text-[19px] font-bold leading-tight tracking-[-.3px]">航迹线 · 人工节点</div>' +
-          '<div class="mt-0.5 text-[11px] text-muted-foreground">全站一份 <b class="font-semibold text-secondary-foreground">timeline_manual.json</b> · date/title 必填 · 引用比赛或自填荣誉</div>' +
-        "</div>" +
-        '<div class="ml-auto flex flex-none items-center gap-1.5">' +
-          '<a class="' + BTN + '" href="edit.html" target="_self">‹ 回马匹编辑</a>' +
+          '<div class="mt-0.5 text-[11.5px] text-muted-foreground">全站一份 <b class="font-semibold text-secondary-foreground">timeline_manual.json</b> · date/title 必填 · 提交后 CI 自动重算</div>' +
         "</div>";
     }
     if (!state.horse) {
@@ -889,7 +942,7 @@ YJ.editor = (function () {
     return '<div class="yj-ed-lbl">变更摘要 · 本匹<span class="ml-1.5 font-normal normal-case tracking-normal">' +
       (rows.length ? rows.length + " 处待保存" : "无改动") + "</span></div>" +
       (rows.length ? '<div class="mt-1.5 space-y-1">' + rows.join("") + "</div>"
-        : '<div class="mt-1 text-[11.5px] leading-[1.5] text-muted-foreground">五个字段与图片都跟官方值一致，改一行台账或照片位才会进这里。</div>');
+        : '<div class="mt-1 text-[11.5px] leading-[1.5] text-muted-foreground">各字段与图片都跟官方值一致，改一行台账或照片位才会进这里。</div>');
   }
 
   function pinIds() {
@@ -934,7 +987,7 @@ YJ.editor = (function () {
         "</div>";
       var body = open
         ? '<div class="mt-1.5 flex flex-wrap gap-y-1">' + chips + "</div>" +
-          (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground"><b class="yj-ed-lbl mr-1">备注</b>' + esc(String(e._note)) + "</div>" : "") +
+          (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground" title="' + esc(String(e._note)) + '"><b class="yj-ed-lbl mr-1">备注</b>' + esc(noteBrief(e._note)) + "</div>" : "") +
           (orig ? '<div class="mt-0.5 text-[11px] leading-[1.5] text-muted-foreground/80"><b class="yj-ed-lbl mr-1">原值</b>' + orig + "</div>" : "")
         : "";
       return '<div class="yj-ed-entry' + (cur ? " bg-accent/45" : "") + '">' + head + body + "</div>";
@@ -1443,9 +1496,12 @@ YJ.editor = (function () {
       })
     };
   }
+  /* §92 比赛样式可选字段（引用比赛自动预填；build_timeline.to_manual_event 同名单透传，空值不写落表） */
+  var RACE_KEYS = ["rank", "time", "agari", "pop", "jockey", "trainer", "grade", "meta", "hero", "hero_cn"];
   function tlToStore(ev) {                     /* 编辑对象 → 落表形状（空字段不写，契约里 photo 可为串或数组） */
     var o = { date: String(ev.date || "").trim(), title: String(ev.title || "").trim() };
     ["cn", "note", "link"].forEach(function (k) { if (String(ev[k] || "").trim()) o[k] = String(ev[k]).trim(); });
+    RACE_KEYS.forEach(function (k) { if (String(ev[k] || "").trim()) o[k] = String(ev[k]).trim(); });
     var ph = String(ev.photo || "").trim();
     if (ph) o.photo = ph.indexOf(",") >= 0 ? ph.split(/\s*,\s*/) : ph;
     var tags = (ev.tags || []).map(function (t) {
@@ -1534,9 +1590,25 @@ YJ.editor = (function () {
     var rows = refRaceRows(), r = rows && rows[Number(key)];
     if (!r) return;
     var ev = editEV();
+    var rr = window.YJ.raceRows, h = state.byId[String(state.tl.refHorse)] || {};
     ev.date = String(r.日付 || "");
-    ev.title = String(r.レース名 || "");
+    /* §92：比赛样式字段自动预填（全部可选、可改可清）；合成口径与 build_timeline.to_render_event 同源 */
+    ev.title = rr ? rr.raceNameText(r) : String(r.レース名 || "");   /* 剥「徽章代劳」的格级尾缀（同比赛卡口径） */
     ev.link = raceLinkOf(r);
+    ev.rank = r.結果 == null ? "" : String(r.結果);
+    ev.time = String(r.タイム || "");
+    ev.agari = String(r.上り || "");
+    ev.pop = (r.人気 == null || r.人気 === "") ? "" : String(r.人気) + "番";
+    ev.jockey = [String(r.騎手 || ""), (r.斤量 == null || r.斤量 === "" ? "" : String(r.斤量) + "kg")].filter(Boolean).join(" · ");
+    ev.trainer = String(r.調教師 || "");
+    ev.grade = String(r.格 || "");
+    ev.meta = [
+      String(r.場名 || "") + (r.R == null || r.R === "" ? "" : String(r.R) + "R"),
+      String(r.芝ダ || "") + (r.距離 == null || r.距離 === "" ? "" : String(r.距離) + "m"),
+      String(r.馬場 || "")
+    ].filter(Boolean).join(" · ");
+    ev.hero = String(h.馬名 || "");
+    ev.hero_cn = String(h.香港馬名 || h.自译馬名 || "");
     state.tl.refRace = String(key);
     state.tl.err = "";
     renderTL();
@@ -1745,7 +1817,7 @@ YJ.editor = (function () {
   function tlEventHTML(ev, i) {
     var store = tlToStore(ev);
     var ph = Array.isArray(store.photo) ? store.photo[0] : store.photo;
-    return '<div class="border-b border-border px-4 py-2.5 last:border-b-0">' +
+    return '<div class="border-b border-border px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/40">' +
       '<div class="flex flex-wrap items-baseline gap-2">' +
         '<span class="flex-none font-semibold tabular-nums text-primary">' + esc(store.date || "（无日期）") + "</span>" +
         '<span class="min-w-0 flex-1 truncate text-[13px] font-semibold">' +
@@ -1764,14 +1836,85 @@ YJ.editor = (function () {
   function tagChipsHTML(tags, key) {
     return (tags || []).map(function (t, j) { return tagChip(t, key + "-" + j); }).join(" ");
   }
+  /* ---- 实时预览（§91）：把「将要落表」的节点（tlToStore 形状）按 timeline.html 同款结构渲染 ----
+   * 标记 = timeline.html eventHTML 的人工节点分支；样式副本在 edit-timeline.html 的 .yj-pv 块
+   * （★ 单一出处 = timeline.html，改卡片/六色两处同步）。节点圆点恒 manual 灰
+   * （build_timeline.to_manual_event 硬编码，不受标签影响）。 */
+  function rankNoCls(rank) {                   /* 着顺徽章色（数据语义色全站口径：1/2/3 三件套，其余无底色） */
+    return rank === "1" ? "yj-no1" : rank === "2" ? "yj-no2" : rank === "3" ? "yj-no3" : "";
+  }
+  function tlCardHTML(ev) {
+    var store = tlToStore(ev);
+    /* 坑（§91 修复）：tlToStore 空 tags 时不写 o.tags 键 → 预览必须兜底，否则「＋ 新建」一打开就崩 */
+    var tags = store.tags || [];
+    var ph = Array.isArray(store.photo) ? store.photo[0] : store.photo;
+    /* §92 比赛样式：有任一比赛字段 → 按真实比赛卡渲染（结构对齐 timeline.html race 分支；📌 只留给素格式）。
+     * 格徽章 = window.YJ_GRADE 单一出处（经 race-rows.GRADE，与后端 GBADGE/GLBL 同源 config/grade-table.json）。 */
+    var gb = store.grade && window.YJ.raceRows ? window.YJ.raceRows.GRADE[store.grade] : null;
+    var rich = gb || store.rank || store.hero || store.time || store.agari || store.pop || store.jockey || store.trainer || store.meta;
+    var body;
+    if (rich) {
+      var rttl = store.title
+        ? (store.link
+            ? '<a class="hjump text-[15px] font-semibold" href="' + esc(store.link) + '" target="_blank" rel="noopener">' + esc(store.title) + "</a>"
+            : '<span class="text-[15px] font-semibold">' + esc(store.title) + "</span>")
+        : '<span class="text-[15px] font-semibold text-muted-foreground/60">（标题未填）</span>';
+      body = '<div class="tl-racename-row">' +
+          (gb ? '<span class="yj-grade yj-' + esc(gb[1]) + '">' + esc(gb[0]) + "</span>" : "") +
+          '<span class="tl-racename">' + rttl + "</span></div>" +
+        (store.cn ? '<div class="text-[12px] text-muted-foreground">〈' + esc(store.cn) + "〉</div>" : "") +
+        (store.meta ? '<div class="text-[12px] text-muted-foreground">' + esc(store.meta) + "</div>" : "") +
+        (store.hero ? '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">' +
+            (store.rank ? '<span class="yj-no ' + rankNoCls(store.rank) + '">' + esc(store.rank) + "</span>" : "") +
+            '<span class="text-[15px] font-semibold">' + esc(store.hero) + "</span>" +
+            (store.hero_cn ? '<span class="text-[12.5px] text-muted-foreground">〈' + esc(store.hero_cn) + "〉</span>" : "") +
+          "</div>" : "") +
+        ((store.time || store.agari || store.pop) ? '<div class="tl-kpis">' +
+            '<div class="tl-kpi"><div class="k">タイム</div><div class="v hi">' + esc(store.time || "—") + "</div></div>" +
+            '<div class="tl-kpi"><div class="k">上り</div><div class="v">' + esc(store.agari || "—") + "</div></div>" +
+            '<div class="tl-kpi"><div class="k">人気</div><div class="v">' + esc(store.pop || "—") + "</div></div></div>" : "") +
+        ((store.jockey || store.trainer) ? '<div class="text-[12px] text-muted-foreground space-y-0.5">' +
+            (store.jockey ? "<div>騎手 " + esc(store.jockey) + "</div>" : "") +
+            (store.trainer ? "<div>調教師 " + esc(store.trainer) + "</div>" : "") + "</div>" : "");
+    } else {
+      var title = store.title
+        ? (store.link
+            ? '<a class="hjump text-[15px] font-semibold" href="' + esc(store.link) + '" target="_blank" rel="noopener">📌 ' + esc(store.title) + "</a>"
+            : '<span class="text-[15px] font-semibold">📌 ' + esc(store.title) + "</span>")
+        : '<span class="text-[15px] font-semibold text-muted-foreground/60">📌（标题未填）</span>';
+      body = '<div class="flex flex-wrap items-baseline gap-x-2">' + title +
+          (store.cn ? '<span class="text-[12px] text-muted-foreground">〈' + esc(store.cn) + "〉</span>" : "") + "</div>" +
+        (store.note ? '<div class="text-[12px] text-muted-foreground">' + esc(store.note) + "</div>" : "");
+    }
+    return '<div class="tl-item">' +
+        '<div class="tl-date">' + esc(store.date || "YYYY-MM-DD") + "</div>" +
+        '<div class="tl-node"></div>' +
+        '<div class="tl-cardwrap"><div class="tl-card card">' +
+          (ph
+            ? '<div class="tl-photo"><img src="' + esc(photoSrc(ph)) + '" alt="" loading="lazy" decoding="async" width="297" height="210"></div>'
+            : '<div class="tl-photo empty"><span>🐎</span></div>') +
+          '<div class="tl-body">' + body +
+            (tags.length ? '<div class="flex flex-wrap gap-1.5">' + tags.map(function (t) {
+              return '<span class="tl-tag ' + esc(t.cat) + '"' + (t.tip ? ' title="' + esc(t.tip) + '"' : "") + ">" + esc(t.label) + "</span>";
+            }).join("") + "</div>" : "") +
+          "</div>" +
+        "</div></div>" +
+      "</div>";
+  }
+  /* 预览只换卡片、不重绘表单（打字不丢焦点；输入委托里逐键调） */
+  function pvSync() {
+    if (!els.tl || !state.tl.edit) return;
+    var pv = els.tl.querySelector("[data-tlpreview]");
+    if (pv) pv.innerHTML = tlCardHTML(editEV());
+  }
   function tlFormHTML() {
     var ed = state.tl.edit;
     if (!ed) return "";
     var ev = ed.ev;
     var dis = state.tl.busy ? " disabled" : "";
     function row(lab, key, ph, type) {
-      return '<div class="grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-1.5 text-[12.5px] font-semibold text-secondary-foreground">' + lab + '</div>' +
+      return '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
+        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">' + lab + '</div>' +
         '<div class="min-w-0"><input data-tf="' + key + '" type="' + (type || "text") + '" value="' + esc(ev[key] || "") +
           '" class="' + INPUT + '" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></div></div>";
     }
@@ -1779,22 +1922,22 @@ YJ.editor = (function () {
     var rows = isRace ? refRaceRows() : null;
     var picking = isRace && !rows;
     function refRow(lab, inner) {
-      return '<div class="grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-1.5 text-[12.5px] font-semibold text-secondary-foreground">' + lab + "</div>" +
+      return '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
+        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">' + lab + "</div>" +
         '<div class="min-w-0">' + inner + "</div></div>";
     }
     var refBlock = "";
     if (isRace) {
       /* STEP1 选马 = 基本信息报头同款 selector 搜索组件（§82.10）：renderTL 后挂载，挂载点每次重建 → 实例无残留 */
       var horseSel = '<span data-refselmount class="inline-block w-[380px] max-w-full align-top"></span>' +
-        '<div class="mt-1 ' + TIP + '">比赛清单来自 races-bundle（与比赛页同一解码器，构建期产物）。</div>';
+        '<div class="mt-1 ' + TIP + '">比赛清单来自 races-bundle（构建期产物，与比赛页同一解码器）。</div>';
       var raceSel;
       if (!state.tl.refHorse) raceSel = '<select class="' + SEL_CMP + ' w-[380px] max-w-full" disabled><option>先选马</option></select>';
       else if (picking) raceSel = '<select class="' + SEL_CMP + ' w-[380px] max-w-full" disabled><option>比赛清单加载中…</option></select>';
       else {
         var rs = rows || [];
         raceSel = '<select data-refrace class="' + SEL_CMP + ' w-[380px] max-w-full">' +
-          '<option value="">选一场比赛（自动填日期/标题/链接）…</option>' +
+          '<option value="">选一场比赛（自动填日期 / 标题 / 链接）…</option>' +
           rs.map(function (r, i) {
             var one = String(r.日付 || "") + " " + String(r.レース名 || "") +
               (r.格 ? "（" + String(r.格) + "）" : "") + (r.venue_type ? " · " + String(r.venue_type) : "");
@@ -1802,29 +1945,44 @@ YJ.editor = (function () {
           }).join("") + "</select>" +
           '<div class="mt-1 ' + TIP + '">选后可改；无 race_id 的台账场不出链接（可手填 link）。</div>';
       }
-      refBlock = refRow("引用比赛 <span class='yj-ed-lbl'>STEP 1·2</span>", horseSel) +
-        refRow("选比赛 <span class='yj-ed-lbl'>STEP 2·2</span>", raceSel);
+      refBlock = refRow("选马", horseSel) +
+        refRow("选比赛", raceSel);
     }
-    return '<div class="border-y border-border bg-muted/20 px-4 py-3">' +
+    /* §92 比赛样式字段：显示条件 = 引用比赛（isRace）或编辑已含此类字段的节点（素格式老节点不受打扰） */
+    var showRace = isRace || RACE_KEYS.some(function (k) { return String((ev && ev[k]) || "").trim(); });
+    function cell(k, lab, ph) {
+      return '<label class="block min-w-0"><span class="block text-[10.5px] font-medium text-muted-foreground">' + lab + '</span>' +
+        '<input data-tf="' + k + '" type="text" value="' + esc(ev[k] || "") + '" class="' + INPUT + ' mt-1" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></label>";
+    }
+    /* v3：编辑中的节点表单 = 青绿描边卡（本页唯一「进行中」区域，与列表的工具条在视觉上分离） */
+    return '<div class="mt-3 rounded-xl border border-primary/35 bg-accent/25 px-4 py-3">' +
       '<div class="flex flex-wrap items-baseline gap-2 text-[13px] font-bold">' + (isNew
-        ? (isRace ? "＋ 引用比赛" : "＋ 自填荣誉")
-        : "编辑 events[" + ed.idx + "]") +
-        '<span class="' + TIP + ' font-normal">契约：date/title 必填，cn/note/link/photo/tags 可选（build_timeline.py 文件头）</span></div>' +
+        ? (isRace ? "引用比赛" : "自填荣誉")
+        : "编辑节点") +
+        '<span class="' + TIP + ' font-normal">date / title 必填 · 其余可选（cn / note / link / photo / tags）</span></div>' +
       refBlock +
       row("日期 date *", "date", "YYYY-MM-DD", "date") +
       row("标题 title *", "title", "节点标题（必填）") +
       row("副题 cn", "cn", "可选中文副题") +
       row("说明 note", "note", "可选一行补充") +
       row("链接 link", "link", "可选：http(s) 或站内相对路径") +
-      row("图片 photo", "photo", "站内 ../data/photos/xxx.webp 或 http(s)；留空=无图") +
-      '<div class="grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-1.5 text-[12.5px] font-semibold text-secondary-foreground">图片上传</div>' +
+      /* §92 比赛样式字段（全部可选）：引用比赛自动预填；仅引用比赛或编辑已含此类字段的节点时出现 */
+      (showRace ? refRow("成績", '<div class="grid grid-cols-[76px_minmax(0,1fr)_76px_76px] gap-x-3 max-md:grid-cols-2">' +
+            cell("rank", "着順", "1 / 2 / 中") + cell("time", "タイム", "2:23.0") + cell("agari", "上り", "33.4") + cell("pop", "人気", "4番") + "</div>") +
+          refRow("陣営", '<div class="grid grid-cols-2 gap-x-3">' + cell("jockey", "騎手", "武豊 · 57kg") + cell("trainer", "調教師", "—") + "</div>") +
+          refRow("赛事", '<div class="grid grid-cols-[76px_minmax(0,1fr)] gap-x-3">' + cell("grade", "格", "GI") + cell("meta", "场次", "東京11R · 芝2400m · 良") + "</div>") +
+          refRow("馬名", '<div class="grid grid-cols-2 gap-x-3">' + cell("hero", "馬名", "马名（日/英原名）") + cell("hero_cn", "副名", "中文译名") + "</div>") +
+          '<div class="mt-1 ' + TIP + '">以上按比赛样式渲染（与自动比赛卡同款，可留空走素格式）。</div>'
+        : "") +
+      row("图片 photo", "photo", "站内 ../data/photos/xxx.webp 或 http(s)；留空 = 无图") +
+      '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
+        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">图片上传</div>' +
         '<div class="min-w-0 flex flex-wrap items-center gap-2">' +
           '<label class="' + BTN + ' cursor-pointer select-none' + (dis ? " opacity-40" : "") + '">压缩并上传' +
             '<input id="tlPhotoFile" type="file" accept="image/*" class="hidden"' + dis + "></label>" +
-          '<span class="' + TIP + '">同 M2b 通道：canvas 压到 ≤100KB 后入库，文件名服务端生成（timeline-<n>.webp）</span></div></div>' +
-      '<div class="grid grid-cols-[104px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-1.5 text-[12.5px] font-semibold text-secondary-foreground">标签 tags</div>' +
+          '<span class="' + TIP + '">浏览器内压到 ≤100KB 后入库，文件名自动生成（timeline-N.webp）</span></div></div>' +
+      '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
+        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">标签 tags</div>' +
         '<div class="min-w-0">' +
           (ev.tags.length ? ev.tags.map(function (t, i) {
             return '<div class="mb-1.5 flex flex-wrap items-center gap-2">' +
@@ -1837,11 +1995,17 @@ YJ.editor = (function () {
           '<button data-tl-atag="1" class="' + BTN_DIS + ' mt-1" type="button"' + dis + ">＋ 加一个标签</button>" +
           '<div class="mt-1 text-[11px] leading-[1.7] text-muted-foreground">类别六色取自时间线页现有 tag 配色（D9）。</div>' +
         "</div></div>" +
-      '<div class="mt-1 flex flex-wrap items-center gap-2">' +
+      /* §91 实时预览：表单下方全宽（卡片按真实页 min(480px,100%) 渲染，桌面比例不失真） */
+      '<div class="mt-3 rounded-lg border border-border/60 bg-card/60 p-3">' +
+        '<div class="yj-ed-lbl">实时预览 · 航迹线页同款</div>' +
+        '<div data-tlpreview class="yj-pv mt-2">' + tlCardHTML(ev) + "</div>" +
+        '<div class="mt-1.5 text-[10.5px] leading-[1.6] text-muted-foreground">按「加入节点表」的落表形状渲染 · 图位 297:210 · 圆点恒人工节点灰（与航迹线页一致）</div>' +
+      "</div>" +
+      '<div class="mt-2 flex flex-wrap items-center gap-2">' +
         '<button data-tlapply="1" class="' + BTN_PRIMARY + '" type="button"' + dis + ">" +
           (ed.idx < 0 ? "加入节点表" : "更新该节点") + "</button>" +
         '<button data-tlcancel="1" class="' + BTN + '" type="button">取消</button>' +
-        '<span class="' + TIP + '">只改本页草稿，仍需「保存时间线表」落盘</span></div>' +
+        '<span class="' + TIP + '">只改本页草稿 ·「提交到 GitHub」后才落盘生效</span></div>' +
       (state.tl.log && state.tl.log.length ? '<div class="mt-1 text-[11.5px] text-primary">' + esc(state.tl.log.join("；")) + "</div>" : "") +
       "</div>";
   }
@@ -1853,23 +2017,39 @@ YJ.editor = (function () {
   function tlHTML() {
     if (!state.tl.loaded) return '<div class="hint-empty">时间线表加载中…</div>';
     var evs = state.tl.events;
-    var draft = state.mode === "draft";
     var dis = state.tl.busy ? " disabled" : "";
-    return '<div class="px-4 py-3">' +
-      '<div class="flex flex-wrap items-center gap-2">' +
+    var toolbar = '<div class="flex flex-wrap items-center gap-2">' +
         '<button data-tlnew="race" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 引用比赛</button>" +
         '<button data-tlnew="free" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 自填荣誉</button>" +
         '<button data-rmtoggle="1" class="' + BTN_DIS + '" type="button"' + dis + ">比赛配图</button>" +
-        '<button data-tlreset="1" class="' + BTN_DIS + '" type="button"' + dis + ">放弃修改</button>" +
-        (state.tl.dirty ? '<span class="' + BADGE_DIRTY + '">时间线草稿 · 未提交</span>' : "") +
-        '<span class="' + TIP + ' ml-auto">现 ' + evs.length + " 条人工节点 · 表 " + esc(TL_PATH) + "</span>" +
-      "</div>" +
+        '<button data-tlreset="1" class="' + BTN_DIS + ' yj-ed-op--ghost" type="button"' + dis + ">放弃修改</button>" +
+        (state.tl.dirty ? '<span class="' + BADGE_DIRTY + '">草稿 · 未提交</span>' : "") +
+        '<span class="' + TIP + ' ml-auto">' + evs.length + " 个节点 · " + esc(TL_PATH) + "</span>" +
+      "</div>";
+    /* v3 signature：空态 = 两张入口邀请卡（图标 + 标题 + 一句说明），与页首分段导航同一分组语言；
+     * 工具条保留同款入口（有节点后从这里加），空态卡只负责「第一次来就懂」 */
+    var empty = evs.length ? "" :
+      '<div class="mx-auto mb-2 mt-8 flex max-w-[620px] flex-col items-center gap-3">' +
+        '<div class="text-[13px] font-semibold text-secondary-foreground">还没有人工节点</div>' +
+        '<div class="flex w-full items-stretch gap-3">' +
+          '<button data-tlnew="race" type="button" class="yj-ed-card"' + dis + ">" +
+            '<span class="yj-ed-card-ico">' + ICO_FLAG + "</span>" +
+            "<b>引用比赛</b>" +
+            "<span>选马选场，自动填日期 / 标题 / 链接；说明与标签仍可手改</span></button>" +
+          '<button data-tlnew="free" type="button" class="yj-ed-card"' + dis + ">" +
+            '<span class="yj-ed-card-ico">' + ICO_AWARD + "</span>" +
+            "<b>自填荣誉</b>" +
+            "<span>自由登记受赏、纪念节点；date / title 必填</span></button>" +
+        "</div>" +
+        '<div class="' + TIP + '">节点存进 ' + esc(TL_PATH) + " · 提交后 CI 自动重算航迹线（约 2 分钟）</div>" +
+      "</div>";
+    return toolbar +
       (state.tl.err ? '<div class="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-[12px] text-destructive">' + esc(state.tl.err) + "</div>" : "") +
       racePanelHTML() +
       tlFormHTML() +
-      (evs.length ? evs.map(tlEventHTML).join("") : '<div class="mt-2 rounded-md border border-dashed border-input px-4 py-5 text-center text-[12.5px] text-muted-foreground">还没有人工节点：点「＋ 引用比赛」或「＋ 自填荣誉」。</div>') +
-      tlReportHTML() +
-      "</div>";
+      empty +
+      (evs.length ? '<div class="mt-3 overflow-hidden rounded-[10px] border border-border">' + evs.map(tlEventHTML).join("") + "</div>" : "") +
+      tlReportHTML();
   }
   /* STEP1 选马统一复用基本信息（profile 左栏）同款 selector 组件：compact 搜索 + doubleName 双名
    * （主名日文 + 副名 港译→自译，§82.11）。挂载点在 renderTL 重建的动态表单里，每次渲染重新 init ——
@@ -1933,7 +2113,8 @@ YJ.editor = (function () {
   var els = {};
 
   /* ---------------- 草稿箱抽屉（保存条上方弹出）：本匹/跨马草稿 + 已保存人工值 + GitHub 连接 ---------------- */
-  function boxHTML() {
+  /* §93 抽屉/查询页共用的未提交草稿条目：ov+ph 按马合并 → 时间线快照 → 比赛配图草稿 */
+  function draftEntriesHTML() {
     var d = draftRead();
     var ids = {};
     Object.keys(d.ov || {}).forEach(function (k) { ids[k] = 1; });
@@ -1956,7 +2137,7 @@ YJ.editor = (function () {
           '<button data-discard="' + esc(id) + '" class="' + BTN_DANGER + ' ml-auto flex-none" type="button">放弃</button>' +
         "</div>" +
         (chips.length ? '<div class="mt-1.5 flex flex-wrap gap-y-1">' + chips.join("") + "</div>" : "") +
-        (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground"><b class="yj-ed-lbl mr-1">备注</b>' + esc(String(e._note)) + "</div>" : "") +
+        (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground" title="' + esc(String(e._note)) + '"><b class="yj-ed-lbl mr-1">备注</b>' + esc(noteBrief(e._note)) + "</div>" : "") +
         "</div>";
     });
     if (d.tl && d.tl.table) {
@@ -1983,6 +2164,10 @@ YJ.editor = (function () {
         "</div>" +
         '<div class="mt-1.5 text-[11px] text-muted-foreground">' + esc(what) + " · 提交后 build_timeline 自动重算生效</div></div>");
     });
+    return draftRows;
+  }
+  function boxHTML() {
+    var draftRows = draftEntriesHTML();
     var savedN = pinIds().length;
     var savedSec = savedN ? (
       '<div class="border-t border-border bg-muted/20 px-3 py-2">' +
@@ -2041,6 +2226,33 @@ YJ.editor = (function () {
     els.box.innerHTML = boxHTML();
   }
 
+  /* ---------------- §93 草稿箱查询页（edit-drafts.html）：未提交草稿 + 已保存人工值一页通览 ----------------
+   * 与抽屉共用 draftEntriesHTML / pinsHTML / state.savedQ 检索；跳转 = edit 页定位，放弃 = 共用 discardOne。 */
+  function draftsHTML() {
+    var entries = draftEntriesHTML();
+    var pinN = pinIds().length;
+    return '<div class="rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+        '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
+          '<span class="text-[13px] font-bold">未提交草稿</span>' +
+          '<span class="' + TIP + '">各编辑页的改动都在这里攒着 · 「提交到 GitHub」一次性原子生效</span>' +
+          '<span class="ml-auto text-[11px] font-semibold tabular-nums text-muted-foreground">' + entries.length + " 处</span>" +
+        "</div>" +
+        '<div class="mt-3 space-y-1.5">' +
+          (entries.length ? entries.join("")
+            : '<div class="py-2 text-[12px] leading-[1.7] text-muted-foreground">草稿箱是空的。在基本信息 / 航迹线页里改字段 / 图片 / 时间线都会自动进这里，攒够一次性提交。</div>') +
+        "</div>" +
+      "</div>" +
+      '<div class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+        '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
+          '<span class="text-[13px] font-bold">已保存人工表值</span>' +
+          '<span class="' + TIP + '">线上生效中的人工值（已叠加本浏览器未提交草稿）</span>' +
+          '<span class="ml-auto text-[11px] font-semibold tabular-nums text-muted-foreground">' + pinN + " 匹</span>" +
+        "</div>" +
+        '<input data-draftq type="text" value="' + esc(state.savedQ) + '" placeholder="按马名 / NK-ID 检索改了什么…" autocomplete="off" class="' + INPUT + ' mt-3 w-full font-normal">' +
+        '<div class="mt-2">' + (pinsHTML() || '<div class="py-2 text-[12px] text-muted-foreground">还没有已保存的人工值。</div>') + "</div>" +
+      "</div>";
+  }
+
   /* ---------------- 分段折叠 + ?tab= 直达（§4.6 改案：fields = 字段+图片段 / timeline = 人工节点段） ----------------
    * 段的静态骨架在 pages/edit.html（#sec-<段名> + [data-sechead] + .yj-ed-caret）；
    * 收起态由 theme.css 的 .yj-ed-sec[data-open="false"] > .yj-ed-secbody 表达，JS 只换属性与箭头字符。 */
@@ -2081,6 +2293,7 @@ YJ.editor = (function () {
   function render() {
     persistHorse();   /* 每次重渲染 = 草稿自动落箱（幂等小写入；mode 恒为 draft，§82.4 本机直连已下线） */
     renderMast();
+    if (els.drafts) els.drafts.innerHTML = draftsHTML();   /* §93 查询页 */
     if (els.form) els.form.innerHTML = formHTML();
     if (els.photos) renderPhotos();
     if (els.tl) renderTL();
@@ -2126,6 +2339,15 @@ YJ.editor = (function () {
     if (again && again.tagName === "INPUT") {
       again.focus();
       try { again.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
+    }
+    /* 抹消组文本改动（抹消日/場所）→ 同步刷新预览行（select 走 change 全量 render，无需此步） */
+    if (MASYO_SUB.indexOf(key) >= 0) {
+      var pv = els.form.querySelector('[data-row="_preview"]');
+      if (pv) {
+        var bx = document.createElement("div");
+        bx.innerHTML = previewRowHTML();
+        pv.parentNode.replaceChild(bx.firstChild, pv);
+      }
     }
     renderMast();
     renderSummary();
@@ -2236,29 +2458,7 @@ YJ.editor = (function () {
         renderBox(); render();
         return;
       }
-      if (b.dataset.discard !== undefined) {
-        var did = b.dataset.discard;
-        if (did === "__tl") {
-          tlDrop();
-          state.tl.dirty = false; state.tl.err = ""; state.tl.report = null; state.tl.del = -1;
-          loadTimeline().then(function () { renderTL(); render(); });
-        } else if (did.indexOf("__race:") === 0) {
-          var rrid = did.slice(7);
-          var rc = rmGet()[rrid];
-          if (rc && rc.mode === "set" && rc.item && rc.item.ref) blobDel(rc.item.ref);
-          rmPut(rrid, null);
-          delete state.tl.racePhUrl[rrid];
-          renderTL(); render();
-        } else {
-          draftDropHorse(did);
-          if (state.horse && String(state.horse.id) === did) {
-            state.draft = {}; state.note = ""; state.editing = "";
-            state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {};
-          }
-          render();
-        }
-        return;
-      }
+      if (b.dataset.discard !== undefined) { discardOne(b.dataset.discard); return; }
       var id = b.dataset.goto, h = state.byId[id];
       if (state.page === "timeline") {                     /* 时间线页点马名 → 跳马匹编辑页定位 */
         location.href = "edit.html?id=" + encodeURIComponent(id);
@@ -2267,6 +2467,51 @@ YJ.editor = (function () {
       if (h && YJ.selector && YJ.selector.select) YJ.selector.select(h);
       else setHorse({ id: /^\d+$/.test(id) ? Number(id) : id });
       if (els.form) els.form.scrollIntoView({ block: "start" });
+    });
+    /* §93 放弃一条草稿（抽屉 / 查询页共用）：__tl 整表快照 / __race: 配图草稿 / 其余 = 按马整条 */
+    function discardOne(did) {
+      if (did === "__tl") {
+        tlDrop();
+        state.tl.dirty = false; state.tl.err = ""; state.tl.report = null; state.tl.del = -1;
+        loadTimeline().then(function () { renderTL(); render(); });
+      } else if (did.indexOf("__race:") === 0) {
+        var rrid = did.slice(7);
+        var rc = rmGet()[rrid];
+        if (rc && rc.mode === "set" && rc.item && rc.item.ref) blobDel(rc.item.ref);
+        rmPut(rrid, null);
+        delete state.tl.racePhUrl[rrid];
+        renderTL(); render();
+      } else {
+        draftDropHorse(did);
+        if (state.horse && String(state.horse.id) === did) {
+          state.draft = {}; state.note = ""; state.editing = "";
+          state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {};
+        }
+        render();
+      }
+    }
+    /* §93 草稿箱查询页：检索逐键过滤（保焦点）/ 跳马编辑 / 放弃该条 / 已保存条目展开 */
+    if (els.drafts) els.drafts.addEventListener("input", function (ev) {
+      if (ev.target && ev.target.dataset.draftq !== undefined) {
+        state.savedQ = ev.target.value;
+        var pos = ev.target.selectionStart;
+        render();
+        var inp = els.drafts.querySelector("[data-draftq]");
+        if (inp) { inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) { /* ignore */ } }
+      }
+    });
+    if (els.drafts) els.drafts.addEventListener("click", function (ev) {
+      var b = ev.target.closest
+        ? ev.target.closest("button[data-goto],button[data-discard],button[data-savetoggle],button[data-rmgoto]") : null;
+      if (!b) return;
+      if (b.dataset.rmgoto !== undefined) { location.href = "edit-timeline.html"; return; }
+      if (b.dataset.savetoggle !== undefined) {
+        var sd = b.dataset.savetoggle;
+        if (state.savedExp[sd]) delete state.savedExp[sd]; else state.savedExp[sd] = 1;
+        render(); return;
+      }
+      if (b.dataset.discard !== undefined) { discardOne(b.dataset.discard); return; }
+      location.href = "edit.html?id=" + encodeURIComponent(b.dataset.goto);
     });
     if (els.boxBtn) els.boxBtn.addEventListener("click", function () {
       state.boxOpen = !state.boxOpen;
@@ -2335,15 +2580,16 @@ YJ.editor = (function () {
     /* ---------------- M2c 时间线区（仅 timeline 页 / 或 horse 页保留段时有 #tl） ---------------- */
     if (els.tl) els.tl.addEventListener("input", function (ev) {
       var d = ev.target.dataset;
-      if (d.tf !== undefined) { editEV()[d.tf] = ev.target.value; return; }
+      if (d.tf !== undefined) { editEV()[d.tf] = ev.target.value; pvSync(); return; }   /* §91：预览逐键刷新（不重绘表单、不丢焦点） */
       if (d.tlLabel !== undefined) {
         var i = Number(d.tlLabel);
         editEV().tags[i].label = ev.target.value;
         var chip = els.tl.querySelector('[data-tl-chip="e' + i + '"]');
         if (chip && chip.lastChild) chip.lastChild.nodeValue = ev.target.value || "（空标签）";
+        pvSync();
         return;
       }
-      if (d.tlTip !== undefined) editEV().tags[Number(d.tlTip)].tip = ev.target.value;
+      if (d.tlTip !== undefined) { editEV().tags[Number(d.tlTip)].tip = ev.target.value; pvSync(); }
     });
     if (els.tl) els.tl.addEventListener("change", function (ev) {
       var t = ev.target, d = t.dataset;
@@ -2453,10 +2699,10 @@ YJ.editor = (function () {
 
   function init(opts) {
     ["form", "report", "save", "reset", "count", "photos", "tl", "selector",
-      "mast", "summary", "box", "boxBtn"].forEach(function (k) {
+      "mast", "summary", "box", "boxBtn", "drafts"].forEach(function (k) {
       els[k] = opts[k] ? document.getElementById(opts[k]) : null;
     });
-    state.page = opts.mode === "timeline" ? "timeline" : "horse";
+    state.page = opts.mode === "timeline" ? "timeline" : (opts.mode === "drafts" ? "drafts" : "horse");
     var qid = state.page === "horse" ? new URLSearchParams(location.search).get("id") : null;
     /* 编辑台只认盘上真值：先失效路 D 的 basic.json 共享缓存（§82.4 起编辑台恒为草稿箱模式，
      * 不再探测/依赖 edit_server；线上提交统一走 GitHub API → CI） */
@@ -2506,9 +2752,9 @@ YJ.editor = (function () {
       var ready = state.online ? refresh(false) : Promise.resolve();
       return ready.then(function () {
         var start = (qid && state.byId[String(qid)]) || state.horses[0] || null;
-        if (start) setHorse(start);                          /* ?id= 优先；无效/缺省 = 台账第一匹 */
+        if (state.page !== "drafts" && start) setHorse(start);   /* 查询页不选马（§93），其余照旧 */
         render();
-        applyTab();      /* horse 页 ?tab= 兼容保留；无参数 = 现状 */
+        if (state.page !== "drafts") applyTab();      /* horse 页 ?tab= 兼容保留；无参数 = 现状 */
         return state;
       });
     });

@@ -1,0 +1,51 @@
+name: status-task
+
+# 登録状态日频任务（scripts/status，业务独立于 run_update 管线，编排层单独编排）：
+# NAR 竞走馬一覧(翻页) + keibabook 抹消馬簿/馬検索/近況履歴/馬详情 → 抹消/去向/調教師/kb_id 直写 basic.json
+# → merge_basic 套人工表 → 有变化才 commit+push（push 自动触发 deploy.yml Pages 部署）。
+# 前置要求：仓库 Settings → Actions → Workflow permissions → "Read and write permissions"
+# （update-data 同款，仓库已配置）；无任何 secrets（数据源全免登录）。
+# 抹消馬簿是 ~2 周滚动窗口 → 本任务必须日频不漏跑。
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 每天 UTC 22:30（北京 06:30）：错开 update-data(22:00)，NAR/抹消馬簿当日更新已就位
+  workflow_dispatch:        # 手动触发（首跑验证用）
+
+permissions:
+  contents: write
+
+concurrency:
+  group: status-task
+  cancel-in-progress: false
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20     # 全程 ~110 请求 × 1.5s 限速 ≈ 3 分钟，留足余量
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install requests beautifulsoup4 lxml
+
+      - name: 运行 status 任务 + 合并
+        run: |
+          python scripts/status/run_status.py
+          python scripts/basic/merge_basic.py
+
+      - name: 提交数据（有变化才提交）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if ! git diff --cached --quiet; then
+            git commit -m "data: status update $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase --autostash
+            git push
+          else
+            echo "无数据变化，跳过提交"
+          fi
