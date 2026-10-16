@@ -3,13 +3,18 @@ name: status-task
 # 登録状态日频任务（scripts/status，业务独立于 run_update 管线，编排层单独编排）：
 # NAR 竞走馬一覧(翻页) + keibabook 抹消馬簿/馬検索/近況履歴/馬详情 → 抹消/去向/調教師/kb_id 直写 basic.json
 # → merge_basic 套人工表 → 有变化才 commit+push（push 自动触发 deploy.yml Pages 部署）。
+# 触发模型（2026-10-16 由独立定时改为串联，消除与 update-data 并发抢同一批文件）：
+#   update-data 跑完（conclusion=success）后由 workflow_run 自动触发 → 严格排在 update-data 之后，
+#   且触发时 main 已含其刚 push 的数据 → 天然拿到最新数据；两流程不再同时提交，fetch_log/basic 不再撞车。
+#   另保留 workflow_dispatch 手动兜底（如某天 update-data 未触发时可单独补跑 status）。
 # 前置要求：仓库 Settings → Actions → Workflow permissions → "Read and write permissions"
 # （update-data 同款，仓库已配置）；无任何 secrets（数据源全免登录）。
-# 抹消馬簿是 ~2 周滚动窗口 → 本任务必须日频不漏跑。
+# 抹消馬簿是 ~2 周滚动窗口 → 本任务必须日频不漏跑（若连续多日未跑，请手动 dispatch 补）。
 on:
-  schedule:
-    - cron: '30 22 * * *'   # 每天 UTC 22:30（北京 06:30）：错开 update-data(22:00)，NAR/抹消馬簿当日更新已就位
-  workflow_dispatch:        # 手动触发（首跑验证用）
+  workflow_run:
+    workflows: ["update-data"]   # 按 update-data.yml 的 name 匹配
+    types: [completed]
+  workflow_dispatch:             # 手动触发（首跑验证 / 未触发日兜底）
 
 permissions:
   contents: write
@@ -20,6 +25,8 @@ concurrency:
 
 jobs:
   status:
+    # 只在上游 update-data 成功结束后触发；失败/取消不跑（避免在旧数据上白跑）。手动 dispatch 时无 workflow_run 事件 → 放行。
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20     # 全程 ~110 请求 × 1.5s 限速 ≈ 3 分钟，留足余量
     steps:
