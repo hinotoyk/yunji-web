@@ -1,0 +1,55 @@
+name: diag-studbook
+# 临时诊断（跑完即删）：确认 GitHub Actions runner 上 studbook.jp 的 403 是 IP 段封锁
+# 还是请求指纹。三个探针：curl 根域名 / curl SearchBameiList / python-requests（与管线同栈）。
+# 结果回写 data/diag_studbook.txt 并 push 回仓库（仅此文件），方便直接读，不需登录。
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diag-studbook.yml']
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 探针1+2：curl 根域名 / SearchBameiList
+        run: |
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+          ROOT_URL='https://www.studbook.jp/'
+          SEARCH_URL='https://www.studbook.jp/users/ja/SearchBameiList?initial_forward=%E3%82%B3%E3%83%B3%E3%83%88%E3%83%AC%E3%82%A4%E3%83%AB&submit=%E9%A6%AC%E5%90%8D%E6%A4%9C%E7%B4%A2'
+          root=$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$ROOT_URL")
+          search=$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" "$SEARCH_URL")
+          echo "root_curl=$root"
+          echo "search_curl=$search"
+          {
+            echo "root_curl=$root"
+            echo "search_curl=$search"
+          } > data/diag_studbook.txt
+
+      - name: 探针3：python-requests 复现（与 fetch_studbook 同栈）
+        run: |
+          python3 -m pip install -q requests
+          python3 - <<'PYEOF'
+          import requests
+          UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+          url = 'https://www.studbook.jp/users/ja/SearchBameiList?initial_forward=%E3%82%B3%E3%83%B3%E3%83%88%E3%83%AC%E3%82%A4%E3%83%AB&submit=%E9%A6%AC%E5%90%8D%E6%A4%9C%E7%B4%A2'
+          r = requests.get(url, headers={'User-Agent': UA}, timeout=25)
+          print('search_pyrequests=' + str(r.status_code))
+          with open('data/diag_studbook.txt', 'a', encoding='utf-8') as f:
+              f.write('search_pyrequests=' + str(r.status_code) + '\n')
+          PYEOF
+
+      - name: 回写结果到仓库（仅 data/diag_studbook.txt）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/diag_studbook.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "diag: studbook runner http codes"
+            git push
+          else
+            echo "无变化（与上次结果相同），跳过提交"
+          fi
