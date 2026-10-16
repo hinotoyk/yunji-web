@@ -1,3 +1,0 @@
-root_curl=403
-search_curl=403
-search_pyrequests=403
