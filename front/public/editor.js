@@ -52,13 +52,14 @@ YJ.editor = (function () {
    * （2026-10 用户定稿：不开放 kb_id）。 */
   var FIELDS = [
     { key: "登録状態", kind: "select" },
-    /* 抹消组（2026-10 去向调查）：登録状態=抹消 时才展开（formHTML 条件渲染）+ 实时预览行；
+    /* 抹消组（2026-10 去向调查）：登録状態=抹消 或 为空（未登録/空值）时才展开（formHTML 条件渲染）+ 实时预览行；
      * 用户定稿：只有确认去向才落库 → 只收 抹消日/種別/場所（推定/猜测不写入，不确定就只留抹消日）；
      * 種別 走 static 固定枚举（controlHTML），値契约 = docs/SCHEMA.md §1/§3（basic_io.py BASIC_FIELDS 同序）。
-     * 下拉（2026-10 定稿）＝ 地方競馬/繁殖/乗馬/種馬（新增 种马）；死亡/海外 移出人工下拉——
-     * 死亡=抹消馬簿斃死自动映射、海外=预留；展示枚举仍全量，现值不在下拉时 controlHTML 追加显示。 */
+     * 下拉（2026-10 定稿）＝ 地方競馬/繁殖/乗馬/種馬（新增 种马）；海外 移出人工下拉——预留；
+     * 2026-xx 用户决策：死亡 加回人工下拉（此前移出=抹消馬簿斃死自动映射，现允许空状态马手工选）。
+     * 展示枚举仍全量，现值不在下拉时 controlHTML 追加显示。 */
     { key: "抹消日", kind: "text" },
-    { key: "抹消_去向種別", kind: "select", static: ["地方競馬", "繁殖", "乗馬", "種馬"] },
+    { key: "抹消_去向種別", kind: "select", static: ["地方競馬", "繁殖", "乗馬", "種馬", "死亡"] },
     { key: "抹消_去向場所", kind: "text", list: true },
     { key: "馬主", kind: "text", list: true },
     { key: "調教師", kind: "text", list: true },
@@ -71,7 +72,7 @@ YJ.editor = (function () {
     { key: "獲得賞金 (地方)", kind: "text" },
     { key: "総賞金", kind: "text" }
   ];
-  /* 抹消组键清单：登録状態=抹消 时才进表单（formHTML），改动时联动刷新预览行（softRefreshRow） */
+  /* 抹消组键清单：登録状態=抹消 或 为空 时才进表单（formHTML），改动时联动刷新预览行（softRefreshRow） */
   var MASYO_SUB = ["抹消日", "抹消_去向種別", "抹消_去向場所"];
 
   /* ?tab= 直达（horse 页只有 fields 段；timeline 页无折叠段） */
@@ -604,6 +605,11 @@ YJ.editor = (function () {
           tlDrop();
         }
         if (rmIds.length) rmDropAll();   /* 比赛配图草稿清箱（含 IndexedDB 二进制） */
+        /* 提交成功 → 清空本页内存草稿（2026-xx 修）：上面只删了 localStorage 里的草稿，
+         * state.draft / state.note / state.photos 仍留着 → 紧接着 render() 里 persistHorse()
+         * 会把当前马草稿原样写回 localStorage，草稿箱永远删不掉（commit 已推远端却还挂着）。 */
+        state.draft = {}; state.note = ""; state.err = ""; state.editing = "";
+        state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {}; state.photos.open = false;
         state.ghBusy = false;
         state.gh = {
           ok: true, secs: (Date.now() - t0) / 1000,
@@ -846,14 +852,15 @@ YJ.editor = (function () {
     var othersHTML = others.length ? '<div class="yj-ed-row-orig mt-2 rounded-lg border border-border bg-card px-3 py-2">' +
       "本马另有非本表单字段 " + others.map(function (k) { return "<b>" + esc(k) + "</b>=" + esc(String(e[k])); }).join("、") +
       "（保存会原样保留）</div>" : "";
-    /* 抹消组（2026-10 去向调查 · 用户定稿）：登録状態=抹消 时展开抹消组子字段，预览行紧跟组尾（视觉稿位）；
-     * select 改动走 change 全量 render（bind），条件展开随之自动出现/收起 */
+    /* 抹消组（2026-10 去向调查 · 用户定稿）：登録状態=抹消 或 为空（未登録/空值）时展开抹消组子字段，
+     * 预览行紧跟组尾（视觉稿位）；select 改动走 change 全量 render（bind），条件展开随之自动出现/收起 */
     var st = currentValue(fieldOf("登録状態"));
+    var showMasyo = st === "抹消" || st === "";
     var rows = [];
     FIELDS.forEach(function (f) {
-      if (st !== "抹消" && MASYO_SUB.indexOf(f.key) >= 0) return;   /* 非抹消：整组隐藏 */
+      if (!showMasyo && MASYO_SUB.indexOf(f.key) >= 0) return;   /* 非抹消且非空：整组隐藏 */
       rows.push(rowHTML(f));
-      if (st === "抹消" && f.key === "抹消_去向場所") rows.push(previewRowHTML());   /* 预览行 = 组尾插入（插入点曾误绑已废弃的 確認 字段导致预览行永不渲染，2026-10 修正） */
+      if (showMasyo && f.key === "抹消_去向場所") rows.push(previewRowHTML());   /* 预览行 = 组尾插入（插入点曾误绑已废弃的 確認 字段导致预览行永不渲染，2026-10 修正） */
     });
     return '<div class="yj-ed-ledger">' + rows.join("") + noteRowHTML() + "</div>" + othersHTML;
   }

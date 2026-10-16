@@ -106,24 +106,28 @@ YJ.util = (function () {
    * → 有去向徽章必是确认済，一律实线；无去向只显 [抹消 日期]，无箭头。
    * 配色 = theme.css .yj-stb*；文案走 i18n 枚举（抹消_去向種別），未收录回退原值。 */
   function statusChain(h) {
-    if (!h || !h.登録状態) return '<span class="text-muted-foreground">—</span>';
+    if (!h) return '<span class="text-muted-foreground">—</span>';
+    var st = h.登録状態 || "", dest = h.抹消_去向種別 || "";
+    if (!st && !dest) return '<span class="text-muted-foreground">—</span>';
     var b = function (cls, txt, sub) {
       return '<span class="yj-stb ' + cls + '"><span class="yj-stb-t">' + esc(txt) + "</span>" +
         (sub ? '<span class="yj-stb-d">' + esc(sub) + "</span>" : "") + "</span>";
     };
     var out = '<span class="yj-stb-chain">';
-    out += h.登録状態 === "現役"
-      ? b("yj-stb--live", "现役")
-      : b("yj-stb--erased", "抹消", h.抹消日 || "");
-    if (h.登録状態 !== "抹消" || !h.抹消_去向種別) return out + "</span>";
-    var place = h.抹消_去向場所 || "";
-    var i18n = (window.YJ && YJ.i18n && YJ.i18n.e) ? YJ.i18n.e : null;
-    var word = i18n ? (i18n("抹消_去向種別", h.抹消_去向種別) || h.抹消_去向種別) : h.抹消_去向種別;
-    if (place) word += "·" + place;        /* 紧凑 ·：窄列（档案页三列值区 ~88px）尺寸预算内 */
-    var cls = { "地方競馬": "yj-stb--local", "繁殖": "yj-stb--breed", "乗馬": "yj-stb--ride",
-      "死亡": "yj-stb--dead", "海外": "yj-stb--overseas" }[h.抹消_去向種別];
-    if (!cls) return out + "</span>";
-    return out + '<span class="yj-stb-arr">→</span>' + b(cls, word) + "</span>";
+    if (st === "現役") out += b("yj-stb--live", "现役");
+    else if (st) out += b("yj-stb--erased", "抹消", h.抹消日 || "");
+    /* 去向徽章：登録状態=抹消 或 为空（未登録/空值）且有确认去向时显示（2026-xx：空状态马也可记录去向，如 死亡）；
+     * 空状态无前置状态徽章 → 不带箭头，单显去向。 */
+    if ((st === "抹消" || st === "") && dest) {
+      var place = h.抹消_去向場所 || "";
+      var i18n = (window.YJ && YJ.i18n && YJ.i18n.e) ? YJ.i18n.e : null;
+      var word = i18n ? (i18n("抹消_去向種別", dest) || dest) : dest;
+      if (place) word += "·" + place;        /* 紧凑 ·：窄列（档案页三列值区 ~88px）尺寸预算内 */
+      var cls = { "地方競馬": "yj-stb--local", "繁殖": "yj-stb--breed", "乗馬": "yj-stb--ride",
+        "種馬": "yj-stb--sire", "死亡": "yj-stb--dead", "海外": "yj-stb--overseas" }[dest];
+      if (cls) out += (st ? '<span class="yj-stb-arr">→</span>' : "") + b(cls, word);
+    }
+    return out + "</span>";
   }
 
   /* 编辑台草稿箱 localStorage 键（schema 版本号）：profile.html（只读叠加渲染）与 editor.js（读写）共用，

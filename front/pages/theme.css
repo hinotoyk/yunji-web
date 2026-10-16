@@ -235,6 +235,7 @@
   .yj-stb--ride { @apply border-[1.5px] border-neutral-400 text-muted-foreground; }
   .yj-stb--dead { @apply border-[1.5px] border-destructive text-destructive; }
   .yj-stb--overseas { @apply border-[1.5px] border-primary text-primary; }
+  .yj-stb--sire { @apply border-[1.5px] border-chart5 text-chart5; }   /* 种马：chart5 浅青绿（海外=primary 青绿，同族不同色） */
 
   /* 照片位（左列：有图显示图、无图占位 🐎）+ 其下缩略图行 */
   .yj-ed-slot { @apply relative flex min-h-[190px] w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 transition-colors hover:border-primary max-md:min-h-[150px]; }
