@@ -134,6 +134,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 | `_tmp/basic/pedigree.json` | `{id: "data/pedigree/{id}.json"}` |
 | `_tmp/basic/nk_id.json` | `{id: nk_id}` |
 | `_tmp/basic/studbook.json` | `{id: 馬名意味}` |
+| `_tmp/basic/studbook_eu.json` | `{id: 欧字馬名}`（2026-10 起：studbook Honba 兜底，merge 只在 netkeiba 缺失时写入） |
 | `_tmp/basic/detail.json` | `{id: {登録状態, 性別, ..., 欧字馬名, ...}}` |
 
 #### 1. 建档 `build_registry.py`
@@ -157,7 +158,7 @@ python build_registry.py --year 2025,2026 --dry-run   # 后续加年份（预览
 |------|------|------|------|
 | 1 | `fetch_pedigree.py` | JBIS `/horse/{jbis_id}/pedigree/` | `data/pedigree/{id}.json` + `_tmp/basic/pedigree.json` 引用 |
 | 2 | `fetch_nk_id.py` | netkeiba `list.html?sire_id=...&sort=age-asc` | `_tmp/basic/nk_id.json`（按生年数组过滤 + 罗马数字归一化匹配）；另写 `_tmp/basic/总赏金.json`（列表页 `総賞金(万円)` 列） |
-| 3 | `fetch_studbook.py` | studbook.jp `Honba?sid=` | `_tmp/basic/studbook.json`（按归一化馬名匹配） |
+| 3 | `fetch_studbook.py` | studbook.jp `Honba?sid=` | `_tmp/basic/studbook.json`（按归一化馬名匹配，意味・由来）+ `_tmp/basic/studbook_eu.json`（欧字馬名兜底） |
 
 > 并发2：netkeiba 列表不能指定生年，需翻遍全部分页，只取生年在数组的马；
 > 匹配键 `(母名归一化, 生年)` —— 建档时母名已统一拉丁，两端天然一致。
@@ -187,7 +188,7 @@ python run_all.py --skip-detail       # 只做阶段1 + merge（不抓详情）
 
 - 建档填：`id, jbis_id, 馬名, 母名, 生年`
 - 并发2 填：`nk_id`；并发3 填：`馬名意味`；并发1 填：`pedigree_file`
-- 阶段四 填：`登録状態…セリ取引価格` 及 `欧字馬名`（netkeiba 英文名）
+- 阶段四 填：`登録状態…セリ取引価格` 及 `欧字馬名`（netkeiba 英文名；缺失时由并发3 studbook Honba 兜底，见 §2.2 表）
 - `香港馬名` / `自译馬名`：手工补充字段（建档为空，待人工填写）
 - `races_file` / `収得賞金` 由竞赛部分（§3）回填；`photo` 可人工钉住。
 
@@ -266,6 +267,7 @@ data/basic.json (id, nk_id)
    │  ① fetch_detail：db.netkeiba.com/horse/{nk_id}/（EUC-JP）
    │     会变化字段无条件覆盖：登録状態/性別/馬齢/馬主/調教師/通算成績/獲得賞金 (中央)/獲得賞金 (地方)
    │     稳定字段非空才覆盖：毛色/生年月日/産地/生産牧場/欧字馬名/セリ取引価格
+   │     （欧字馬名 另可由 studbook Honba 兜底，merge_basic 只在 netkeiba 缺失时写入，不覆盖）
    │     通算成績 判变（两侧去空白后精确比较）→ _tmp/races/changed.json
    ▼
    ② fetch_races：db.netkeiba.com/horse/result/{nk_id}/（EUC-JP）

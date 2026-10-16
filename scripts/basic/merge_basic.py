@@ -11,6 +11,7 @@
   _tmp/nk_id.json     {id: nk_id}
   _tmp/馬名.json      {id: 馬名}（列表页；未命名=空，空值不覆盖已有名）
   _tmp/studbook.json  {id: 馬名意味}
+  _tmp/studbook_eu.json  {id: 欧字馬名}（studbook 兜底：仅当 netkeiba 缺失时写入，不覆盖已有值）
   _tmp/detail.json    {id: {登録状態, 性別, ..., 欧字馬名, ...}}
 
 用法:
@@ -70,6 +71,7 @@ def main():
     nk = common.read_cache("nk_id")         # {id: nk_id}
     names = common.read_cache("馬名")       # {id: 馬名}（列表页，未命名=空）
     stud = common.read_cache("studbook")    # {id: 馬名意味}
+    stud_eu = common.read_cache("studbook_eu")  # {id: 欧字馬名}（studbook 兜底）
     total = common.read_cache("总赏金")     # {id: 総賞金(万円)}（列表页）
     det = common.read_cache("detail")       # {id: {详情字段}}
 
@@ -104,6 +106,15 @@ def main():
         h["馬名"] = val
         n_name += 1
     n_stud = apply(stud, "馬名意味")
+    # 欧字馬名（studbook 兜底）：只补 netkeiba 缺失的（已有值保留，防覆盖），空值不写入
+    n_stud_eu = 0
+    for id_s, val in (stud_eu or {}).items():
+        h = by_id.get(id_s)
+        if not h or not val:
+            continue
+        if not h.get("欧字馬名", ""):
+            h["欧字馬名"] = val
+            n_stud_eu += 1
     # 総賞金：0 也需写入（不能走 apply 的真值过滤），单独处理
     n_total = 0
     for id_s, val in (total or {}).items():
@@ -141,6 +152,7 @@ def main():
     print(f"   - nk_id:         {n_nk}")
     print(f"   - 馬名:          {n_name}")
     print(f"   - 馬名意味:      {n_stud}")
+    print(f"   - 欧字馬名兜底:  {n_stud_eu}")
     print(f"   - 総賞金:        {n_total}")
     print(f"   - 详情字段:      {n_det}")
     print(f"   - 母父(血统图):  {n_mps}")

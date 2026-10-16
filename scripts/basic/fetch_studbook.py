@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""并发3：studbook.jp 意味・由来 → basic.json 的「馬名意味」字段。
+"""并发3：studbook.jp 意味・由来/欧字馬名 → basic.json 的「馬名意味」字段。
 
 链路（复用探针验证过的完整链路）：
   Step2: SearchBameiList 搜コントレイル → 选出 父=ディープインパクト 的那匹 → hid
   Step1: SearchChichiKettouList2?hid=..&birthYear=.. 各年产駒列表（翻页）→ 每匹 sid + 馬名
-  Step3: Honba?sid=.. → 读取 意味・由来
+  Step3: Honba?sid=.. → 读取 意味・由来（写 _tmp/studbook.json）+ 欧字馬名（写 _tmp/studbook_eu.json）
 
 匹配：studbook 无母名，只能按「馬名」关联 basic.json。
   归一化：去（ＪＰＮ）等括注 + 全半角统一 + 去空白，匹配 basic.json 的馬名。
   匹配不上（馬名未登録/未命名仔/名字差异）→ 留空，记入报告。
 
 独立链路，尽力而为：抓不到某匹不影响其他。--force 强制重抓。
+
+⚠ 403（CI 出口 IP 被 studbook 拦，2026-09 起）：优雅退出（exit=1，不写缓存），
+  不再抛裸 traceback；本机直连正常时可本地补抓后 merge_basic。
 
 用法:
     python fetch_studbook.py [--sleep 0.5] [--force] [--limit N]
@@ -41,6 +44,14 @@ def strip_anno(name):
     s = re.sub(r"[（(][^）)]*[）)]", "", name or "")
     s = text.fw2hw(s)   # 全量版全角→半角（原本地逐字循环转换等价收进 core/text，R7）
     return s.replace(" ", "").replace("　", "")
+
+
+def norm_eu(name):
+    """欧字馬名归一化：去（ＪＰＮ）等括注 + 全半角统一 + 空白压单空格。
+    例：Ｊｅｗｅｌｒｙ　Ｌｅｗｉｓ（ＪＰＮ） → Jewelry Lewis"""
+    s = re.sub(r"[（(][^）)]*[）)]", "", name or "")
+    s = text.fw2hw(s)
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def get_hid(name=None, father=None):
@@ -99,17 +110,26 @@ def get_progeny_paged(hid, birth_year, sleep=0.4):
     return out
 
 
-def get_honba_meaning(sid):
-    """Honba?sid=.. → 意味・由来文本。"""
+def get_honba_fields(sid):
+    """Honba?sid=.. → (意味・由来, 归一化欧字馬名)。
+
+    欧字馬名同一页面就有（2026-10 定案：netkeiba 详情页缺英文名时兜底），
+    写 _tmp/studbook_eu.json，由 merge_basic 只在目标字段为空时写入。"""
     url = STUD + f"/users/ja/Honba?sid={sid}"
     html = fetch(url)
     soup = common.BeautifulSoup(html, "lxml")
+    meaning, eu_raw = "", ""
     for th in soup.find_all("th"):
-        if "意味" in th.get_text() and "由来" in th.get_text():
+        t = th.get_text(" ", strip=True)
+        if "意味" in t and "由来" in t:
             td = th.find_next("td")
             if td:
-                return td.get_text(" ", strip=True)
-    return ""
+                meaning = td.get_text(" ", strip=True)
+        elif t == "欧字馬名":
+            td = th.find_next("td")
+            if td:
+                eu_raw = td.get_text(" ", strip=True)
+    return meaning, norm_eu(eu_raw) if eu_raw else ""
 
 
 def main():
@@ -134,43 +154,58 @@ def main():
             by_name.setdefault(n, []).append(h)
     print(f"✔ 待抓 馬名意味 {len(todo)} 匹（可匹配 {len(by_name)} 匹已登録名）")
 
-    hid = get_hid()
-    if not hid:
-        sys.exit(f"❌ studbook 未找到{sire_config.studbook_name()}")
-    print(f"✔ studbook hid = {hid}")
-
     fetched = 0
     empty = []
     cache = {}                          # {id: 馬名意味} 写独立缓存，不碰 basic.json
-    for y in years:
-        prog = get_progeny_paged(hid, y, args.sleep)
-        print(f"  {y} studbook 产驹 {len(prog)} 匹")
-        for sid, (name, sex) in prog.items():
-            sn = strip_anno(name)
-            hits = by_name.get(sn)
-            if not hits:
-                continue
-            try:
-                meaning = get_honba_meaning(sid)
-            except Exception as e:
-                print(f"    ❌ {name}: {e}")
+    cache_eu = {}                       # {id: 欧字馬名}（netkeiba 缺失时兜底）
+    try:
+        hid = get_hid()
+        if not hid:
+            sys.exit(f"❌ studbook 未找到{sire_config.studbook_name()}")
+        print(f"✔ studbook hid = {hid}")
+
+        for y in years:
+            prog = get_progeny_paged(hid, y, args.sleep)
+            print(f"  {y} studbook 产驹 {len(prog)} 匹")
+            for sid, (name, sex) in prog.items():
+                sn = strip_anno(name)
+                hits = by_name.get(sn)
+                if not hits:
+                    continue
+                try:
+                    meaning, eu = get_honba_fields(sid)
+                except Exception as e:
+                    print(f"    ❌ {name}: {e}")
+                    time.sleep(common.sleep_for(STUD + f"/users/ja/Honba?sid={sid}"))
+                    continue
+                for h in hits:
+                    cache[str(h["id"])] = meaning
+                    if eu:
+                        cache_eu[str(h["id"])] = eu
+                fetched += 1
+                if meaning:
+                    print(f"  ✔ {name} → {meaning[:30]}")
+                else:
+                    empty.append((name, sid))
                 time.sleep(common.sleep_for(STUD + f"/users/ja/Honba?sid={sid}"))
-                continue
-            for h in hits:
-                cache[str(h["id"])] = meaning
-            fetched += 1
-            if meaning:
-                print(f"  ✔ {name} → {meaning[:30]}")
-            else:
-                empty.append((name, sid))
-            time.sleep(common.sleep_for(STUD + f"/users/ja/Honba?sid={sid}"))
+                if args.limit and fetched >= args.limit:
+                    break
             if args.limit and fetched >= args.limit:
                 break
-        if args.limit and fetched >= args.limit:
-            break
+    except common.requests.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response is not None else "?"
+        if status == 403:
+            # CI 出口 IP 被 studbook 拦（2026-09 起每天如此）：明确退出，不写半截缓存
+            print(f"❌ studbook.jp 拒绝访问（HTTP 403，疑似出口 IP 被拦）→ 已停止，未写缓存。")
+            print(f"   {e}")
+            print("   本机直连正常时可本地补抓：python scripts/basic/fetch_studbook.py && python scripts/basic/merge_basic.py")
+            sys.exit(1)
+        raise
 
     common.write_cache("studbook", cache)
-    print(f"\n✔ 完成：写入意味・由来 {fetched} 匹，空值 {len(empty)} 匹（缓存 _tmp/studbook.json）")
+    common.write_cache("studbook_eu", cache_eu)
+    print(f"\n✔ 完成：写入意味・由来 {fetched} 匹，空值 {len(empty)} 匹；"
+          f"欧字馬名兜底 {len(cache_eu)} 匹（缓存 _tmp/studbook.json + _tmp/studbook_eu.json）")
     if empty:
         rep = common.DATA_DIR / "studbook_report.md"
         rep.write_text("\n".join(
