@@ -40,6 +40,10 @@ console.log("[A] data/datechart.json 产物断言");
   ok(st.prize_total === RUNS.reduce((a, r) => a + r.pr, 0), "meta.stats.prize_total = " + st.prize_total.toLocaleString() + " 円");
   ok(st.first_date === RUNS[0].d && st.last_date === RUNS[RUNS.length - 1].d, "first/last_date = " + st.first_date + " ~ " + st.last_date);
 }
+/* 数据末月/末日从产物推导（勿硬编码：数据推进到新月份即过期，2026-10 实测踩坑） */
+const LAST_D = RUNS.length ? RUNS[RUNS.length - 1].d : "";
+const LAST_MONTH = LAST_D.slice(0, 7);                                   // "2026-10"
+const LAST_MONTH_CN = Number(LAST_MONTH.slice(0, 4)) + "年" + Number(LAST_MONTH.slice(5, 7)) + "月";  // "2026年10月"
 let badKeys = 0, badField = 0, badSort = 0;
 const rawOk = v => v === "" || typeof v === "number" || typeof v === "string";   // ki/nk/bw 原样透传（斤量可 55.5/"121lb"）
 for (let i = 0; i < RUNS.length; i++) {
@@ -410,10 +414,10 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === "2025年7月", "选 2025年7月 → " + els["winLabel"].textContent);
   dpTrigger();
   dpClick({ name: "data-latest", v: "1" });
-  ok(els["winLabel"].textContent === "2026年9月", "「回最新」→ " + els["winLabel"].textContent + "（数据末月）");
+  ok(els["winLabel"].textContent === LAST_MONTH_CN, "「回最新」→ " + els["winLabel"].textContent + "（数据末月）");
 
   console.log("[C5] 点格下钻 + ‹ › 步进（含空日归零）");
-  const dayInCur = [...new Set(sMonth("2026-09").map(r => r.d))].sort()[0];
+  const dayInCur = [...new Set(sMonth(LAST_MONTH).map(r => r.d))].sort()[0];
   calClick({ name: "data-d", v: dayInCur });
   ok(els["winLabel"].textContent === dayInCur.replace(/-/g, "/") + "（" + weekdayCn(dayInCur) + "）", "点格 → " + els["winLabel"].textContent);
   els["navPrev"].handlers.click[0]();

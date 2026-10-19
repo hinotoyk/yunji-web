@@ -9,6 +9,8 @@
   --horse id    定向更新：只处理指定 id 的马（详情更新 + 成绩增量 + 台账海外 + 合并；
                 台账环防「海外台账马 races 文件丢失后被成绩页 0 场误判为空」——见 docs/TESTING.md §4 边界）
   --races-force 比赛全量刷新：全部马重抓成绩页（覆盖式重建，历史数据修正用；已有记录缺失字段一并回填）
+  --day YYYYMMDD[,..]  按指定日期快速更新：当天全部比赛(SP 结果页)→按 nk_id 匹配库内马→抓命中场并入库。
+                       比 --races 快（不依赖 netkeiba 马匹成绩页滞后，当天出结果即抓）；支持多日期、--jra-only。
   --check       数据校验：引用完整性 + 通算战数 vs 文件出赛数（--fix 自动补跑）+ 日期图断言(node)
   --since N     轻量时段增量：只抓最近 N 天内出赛的马的成绩（不跑详情/判变，需配合 --races；
                 含台账环防海外台账马误伤）
@@ -31,6 +33,7 @@
 import argparse
 import datetime
 import json
+import re
 import subprocess
 import sys
 import time
@@ -151,6 +154,7 @@ def main():
     g.add_argument("--races", action="store_true", help="比赛数据增量")
     g.add_argument("--horse", help="定向：逗号分隔的指定 id")
     g.add_argument("--races-force", action="store_true", help="比赛全量刷新")
+    g.add_argument("--day", help="按指定日期快速更新：YYYYMMDD 或逗号分隔多个")
     g.add_argument("--check", action="store_true", help="数据校验")
     g.add_argument("--ledger", action="store_true", help="仅台账海外并入")
     g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+日期图/统计/下钻断言+git 提交")
@@ -158,9 +162,10 @@ def main():
     ap.add_argument("--since", type=int, default=0, help="时段增量天数（配 --races，轻量模式）")
     ap.add_argument("--fix", action="store_true", help="配 --check：校验后自动补跑修复")
     ap.add_argument("--limit", type=int, default=0, help="调试：每环只处理前 n")
+    ap.add_argument("--jra-only", action="store_true", help="配 --day：跳过 NAR 地方")
     args = ap.parse_args()
 
-    log(f"══ 更新开始 {TS} · 策略: {next(k for k in ('init','basic','races','horse','races-force','check','ledger','ci') if getattr(args, k.replace('-', '_')))} ══ 日志: {LOG_FILE}")
+    log(f"══ 更新开始 {TS} · 策略: {next(k for k in ('init','basic','races','horse','races-force','day','check','ledger','ci') if getattr(args, k.replace('-', '_')))} ══ 日志: {LOG_FILE}")
 
     def lim():
         return ["--limit", str(args.limit)] if args.limit else []
@@ -197,6 +202,16 @@ def main():
         run_step("统计·数据预计算", STATS)
     elif args.races_force:
         run_step("比赛·全量刷新", RACES / "run_all.py", "--force")
+        run_step("时间线·事件预计算", TIMELINE)
+        run_step("日期图·数据预计算", DATECHART)
+        run_step("统计·数据预计算", STATS)
+    elif args.day:
+        dates = [d for d in re.split(r"[,，]", args.day) if re.match(r"^\d{8}$", d or "")]
+        if not dates:
+            sys.exit("--day 需要 YYYYMMDD 或逗号分隔多个")
+        day_args = ["--jra-only"] if args.jra_only else []
+        run_step("比赛·按日快速更新", RACES / "fetch_day.py", ",".join(dates), *day_args)
+        run_step("比赛·合并", RACES / "merge_races.py")
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
         run_step("统计·数据预计算", STATS)

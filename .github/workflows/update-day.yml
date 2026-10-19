@@ -1,0 +1,70 @@
+name: update-day
+
+# 数据快速更新（按天）：每天北京时间 21:00 跑「当天」产驹出赛（SP 结果页，更新快、不依赖 netkeiba 马匹成绩页滞后）。
+# 与 update-data.yml（每天北京 06:00，全量 CI）并存：本任务用 --day 快速补当天，06:00 CI 继续做全量判变+校验；
+# 两者落库按 race_id/馬名+日付 幂等去重，互不覆盖。
+# 前置要求：仓库 Settings → Actions → Workflow permissions → 勾选 "Read and write permissions"
+on:
+  schedule:
+    - cron: '0 13 * * *'          # 每天 UTC 13:00（北京时间 21:00）跑当天
+  workflow_dispatch:              # 手动触发：可指定任意日期（含历史补数据）
+    inputs:
+      dates:
+        description: 日期（YYYYMMDD 或逗号分隔多个；留空=今天）
+        required: false
+        type: string
+        default: ''
+      jra_only:
+        description: 只扫中央 JRA（跳过 NAR 地方）
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install requests beautifulsoup4 lxml
+
+      - name: 组装 --day 参数（定时跑今天，北京时区；手动可指定任意日期）
+        id: args
+        run: |
+          D="${{ inputs.dates }}"
+          D="${D:-$(TZ=Asia/Shanghai date +%Y%m%d)}"
+          J=""
+          [ "${{ inputs.jra_only }}" = "true" ] && J="--jra-only"
+          echo "cmd=--day $D $J" >> "$GITHUB_OUTPUT"
+
+      - name: 运行按天更新
+        run: python run_update.py ${{ steps.args.outputs.cmd }}
+
+      - name: 提交数据（有变化才提交）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ ':!data/fetch_log.csv'
+          if ! git diff --cached --quiet; then
+            git commit -m "data: day update $(date -u +%Y-%m-%dT%H:%MZ)"
+            git checkout -- data/fetch_log.csv || true
+            git pull --rebase origin main || { git rebase --abort; echo "::error::远端冲突，本次数据提交放弃（下次调度自动重算）"; exit 1; }
+            git push origin "HEAD:$GITHUB_REF_NAME"
+            echo "::notice::data/ 已按天更新并推送"
+          else
+            echo "::notice::data/ 无变化，跳过提交"
+          fi
+
+      - name: 上传运行日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-day-log-${{ github.run_id }}
+          path: test-logs/
+          retention-days: 14

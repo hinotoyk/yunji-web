@@ -21,6 +21,7 @@ on:
           - ledger        # 仅台账海外并入
           - init          # 初始化：删空 data/ 从 0 全量
           - horse         # 定向更新指定 id 的马
+          - day           # 按指定日期快速更新（SP 结果页，快、不依赖马匹成绩页滞后）
       year:
         description: 建档年份（basic / ci 用，逗号分隔，如 2025,2026）
         required: false
@@ -33,6 +34,11 @@ on:
         default: 7
       horse_ids:
         description: 定向 id（horse 用，逗号分隔）
+        required: false
+        type: string
+        default: ''
+      day_dates:
+        description: 日期（day 用，YYYYMMDD 或逗号分隔多个）
         required: false
         type: string
         default: ''
@@ -78,7 +84,10 @@ jobs:
             ledger)     CMD="--ledger" ;;
             init)       CMD="--init" ;;
             horse)      CMD="--horse ${{ inputs.horse_ids }}" ;;
+            day)        CMD="--day $(TZ=Asia/Shanghai date +%Y%m%d)" ;;
           esac
+          # --day 支持任意日期（含历史补数据）；留空则跑今天（北京时区）
+          [ "$S" = "day" ] && [ -n "${{ inputs.day_dates }}" ] && CMD="--day ${{ inputs.day_dates }}"
           [ -n "${{ inputs.year }}" ] && [ "$S" = "basic" -o "$S" = "ci" ] && CMD="$CMD --year ${{ inputs.year }}"
           [ "${{ inputs.since }}" != "0" ] && [ "$S" = "races" ] && CMD="$CMD --since ${{ inputs.since }}"
           [ "${{ inputs.fix_check }}" = "true" ] && [ "$S" = "check" ] && CMD="$CMD --fix"
