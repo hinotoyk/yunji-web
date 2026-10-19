@@ -100,6 +100,7 @@
 | 84 | 钉住标记（📌）移除 | ✅ | 行尾 📌 机制整块删除，浏览页零直跳编辑入口 |
 | 85 | 侧栏页脚访问统计（不蒜子） | ✅ | 只统计线上 `www.yunji.xyz`（本地/其它域不加载），页脚回填站点 PV/UV |
 | 86 | 编辑台照片提交孤儿图修复 | ✅ | photo 条目写入脱离 d.ov 循环，纯传照片也能正确提交（§89） |
+| 87 | 访问统计双线：Vercount 计数 + GoatCounter 展示 | ✅ | 页脚数字改 GoatCounter 公开端点回填并即后台链接；Vercount 保留计数不展示（§97） |
 
 ---
 
@@ -636,6 +637,17 @@
 - **追記5（同日）**：编辑台拓展（用户定稿，含一次修正）：① 種別下拉 = `地方競馬|繁殖|乗馬|種馬`（新增 种马 枚举；死亡/海外 移出人工下拉——死亡=抹消馬簿斃死自动映射、海外=预留；展示枚举仍全量）；② **kb_id 不开放**（修正：技术键保持任务唯一写入层，任务侧 pinned 守卫保留——直接改 JSON 的人工钉仍被尊重且补查优先用人工值）；③ controlHTML 现值不在固定枚举时追加选项（防存量值保存误写空）；④ 抹消日/去向場所 維持既有开放（登録状態=抹消 时展开）。
 - **追記6（同日）**：死代码清理 + **预览行回归修复**：`MASYO_DROP_KEYS`/`抹消_去向確認` 全链清除（constants/manual.py 两处死防御——库里早已无此键）；顺带发现编辑台抹消组**实时预览行从未渲染过**（formHTML 插入点误绑已废弃的 確認 字段 → 永假，联动刷新也找不到目标行）——插入点改到组尾 `抹消_去向場所`，切到「抹消」即见预览行，文本改动联动恢复工作。
 - **追記7（2026-xx 用户决策）**：编辑台抹消组**空状态展开** + **死亡加回下拉**——① `登録状態` 为空（未登録/空值）时同样展开抹消组三字段（原仅 `=抹消` 才展开；formHTML 改 `showMasyo = st==="抹消" || st===""`）；② 種別下拉补 `死亡`（`地方競馬|繁殖|乗馬|種馬|死亡`；海外仍预留不入下拉）；③ `statusChain` 展示同步——空状态 + 有去向 → 单显去向徽章（无前置状态徽章故不带箭头，如 `[死亡]`），档案页与编辑台预览行一致。
+
+### §97 · 访问统计双线：Vercount 保留计数（不展示）+ GoatCounter 计数/展示（2026-10-19）
+- **动因**：Vercount 只给页脚两个数字、无任何详情维度（页面/来源/地区/时段全没有）；用户定稿「双线执行」——Vercount 继续计数（历史连续 + 冗余对照）但不展示，引入 GoatCounter 作展示端与详情后台（账号 code = `yunji`）。
+- **最终落地**：
+  1. **`public/yj-visit.js` 重写为双线注入**：① Vercount 照旧加载——页脚已无 `busuanzi_*` 容器，其脚本取不到 DOM → 只计数不展示（计数走 API POST，与 DOM 无关）；② 注入 GoatCounter `count.js`（`data-goatcounter` → `yunji.goatcounter.com/count`，上报）+ **自写页脚回填**：`GET https://yunji.goatcounter.com/counter/TOTAL.json` → `{"count":"1,234"}`（官方 Visitor counter 端点；`TOTAL`=全站合计、大小写敏感无前导斜杠；服务端缓存最长 4h → 数字非实时）。成功才 hidden→inline，超时 5s（AbortController）/失败/被拦截 → 一直隐藏（口径同 §85 第 4 条）；`index.html` 引 `yj-visit.js?v=3` 绕缓存。
+  2. **`index.html` 页脚**：两个 `busuanzi_*` span → 单个链接容器 `gc_container_site_pv`（「总访问 N 次」**本身即后台链接** → `yunji.goatcounter.com`，title 提示详情维度）；**「访客 N 人」撤下**——GoatCounter 公开端点只有 PV（`count_unique` 已废弃、恒等于 count），UV 去后台看。所用类均为既有类（hidden/font-medium/text-foreground/80），theme.css 无新候选。
+- **前置（用户操作）**：GoatCounter 后台开启 **Settings →「Allow adding visitor counts on your website」**（默认关；关着时端点 403 HTML 错误页——2026-10-19 Node 探针实测 `TOTAL.json`/`//.json` 三变体全 403，探针存 `tests/_trash/probe-gc.mjs`）。**开启后同日复验**：`TOTAL.json` → **200 + `access-control-allow-origin: *`** + `{"count_unique":"0","count":"0"}`（千分位字符串，与官方文档一致，count_unique≡count 已亲证）；对照 `//.json`（路径 `/`）→ 404（路径无数据时官方即回 404）→ **TOTAL 是唯一正确取数形态**（本站入口路径不定，全站合计天然规避）；上线后 count.js 开始上报，数字从 0 起算。
+- **已知局限**：公开端点数字最长滞后 4h；无 UV；无「今日/近 7 天」页脚维度（后台有）；`count` 为千分位格式化字符串（按字符串回填展示，解析仅作有效性校验）。
+- **关键结论**：官方 count.js 的 `visit_count()` 渲染块（200×80 带品牌框）不适配迷你页脚 → 走 `.json` 端点自建回填才是正解；Vercount 的「计数」与「展示」本就解耦（计数 POST 与 DOM 无关），删容器即得「只计数不展示」，双线互不干扰零 hack。
+- **追記（同日，计数口径实测）**：页脚数字口径 = **会话去重访问数（visits），非原始页面加载**。官方 Sessions 文档「GoatCounter only counts visits」（会话 = siteID+UA+IP，内存 8h 窗口，窗口内同路径重复访问折叠）+ 合成实验坐实：同会话 7 次命中（`/`×3 + 3 条测试路径各 ×2）→ TOTAL 仅 **4** = 每路径恰 1 次。与「自然日去重」的差异：①8h 窗口跨段（早晚各一次 = 2）；②IP/浏览器变化 = 新会话；③不同入口路径（`/`、`/dist/`…）各算 1。**严格自然日去重 GC 不支持**（窗口固定 8h 不可配，要则自建 CF Worker/KV 或换 Umami 类）。用户侧「不统计自己」可用官方 `#toggle-goatcounter` 开关（count.js 内置，写 localStorage `skipgc`）。
+- **追記2（同日，counter 端点缓存陷阱 + 探针法）**：`/counter/*.json` 同 URL 重复读会吃到**最长 4h 的服务端缓存**（实测连读全是 0 假象）；换正式参数（如 `?start=year`）即换缓存键读到真值——页脚数字滞后 ≤4h 属预期、低流量站更明显。探针法沉淀：①合成上报必须走**真实客户端形状**（sendBeacon + 全参数 query `p/r/t/e/s/b/q/rnd`；手搓 POST JSON 被 400 拒）；②count.js 客户端丢 localhost/file://（`data-goatcounter-settings='{"allow_local":true}'` 正当解开）+ bot 标记（headless 需 `--user-agent` 遮 UA，`navigator.webdriver` 不能开）；③counter 读路径用字面量双斜杠 `/counter//path.json`（%2F 编码形式路由 404）；④counter 响应有缓存，验证必须换缓存键。探针存 `tests/_trash/probe-gc*.mjs` + `gc-probe/`。**测试残留待清理**：账号含 4 条探针路径（合计 4 次访问），上线前后台删除归零起算。
 
 
 
