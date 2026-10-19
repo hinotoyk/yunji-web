@@ -1,7 +1,7 @@
 {
  "_meta": {
   "schema": "basic/v1",
-  "updated": "2026-10-19 14:20:55",
+  "updated": "2026-10-19 08:02:42",
   "count": 277
  },
  "horses": [
@@ -4575,7 +4575,7 @@
    "kb_id": "",
    "馬名": "マジョレルブルー",
    "欧字馬名": "Majorelle Bleu",
-   "香港馬名": "",
+   "香港馬名": "摩洛哥蓝",
    "自译馬名": "摩洛哥蓝",
    "母名": "ブルーミングアレー",
    "母父": "シンボリクリスエス(USA)",
@@ -4612,7 +4612,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/94-1.webp"
+   ],
    "races_file": "data/races/94.json",
    "pedigree_file": "data/pedigree/94.json",
    "受賞歴": []
