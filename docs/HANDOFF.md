@@ -82,7 +82,7 @@ yunji-web/
 - **两条管线业务隔离、代码抽离复用**：`scripts/basic/` 与 `scripts/races/` 的**业务模块互不 import 对方**，但共享逻辑统一下沉中立层 `scripts/core`——路径/站点/颜色等字面量常量单源 = `core/constants.py`（原 `paths.py` 扩展），两个 `common.py` 只做薄再导出；限速表/剥前缀等风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`（net 不认识管线）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
 - **线性单链**（无跨源来回兜底）：基础 = JBIS 建档 → 血统/nk_id/意味 并发 → netkeiba 详情 → merge；竞赛 = 详情+判变 → 成绩增量（SP 页一次回填 格/条件/調教師/本賞金）→ 台账海外 → merge。
 - **缓存 + 合并模式**：抓取脚本只写 `data/_tmp/{basic,races}/` 独立缓存，merge 时统一写 basic.json 并删缓存 → 可并发、无覆盖。
-- **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.csv` 统一日志（含 host 列），据此调间隔。
+- **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.jsonl` 统一日志（含 host 字段，逐行 JSON），据此调间隔。
 - **离线脚本零第三方依赖**（硬规）：`core/*` 与 `common.py` 模块顶层**禁止 import 第三方包**（requests/bs4 只在真正发请求处惰性导入，PEP 562 `__getattr__` 重导出）——GitHub runner 不再预装 requests，顶层导入会炸掉 Pages deploy 的 merge 步。
 - **人工值**：`data/manual_overrides.json`（马字段钉住）、`data/timeline_manual.json`（时间线人工节点）、`data/races_manual.json`（比赛人工配图）——两条管线的合并收尾都套 `manual.apply_overrides`，直接改 basic.json 会被次日 CI 抹掉。
 - **判变 = 变化 ∪ 缺失**：成绩抓取目标 = 通算成績变化 ∪ 无 races 文件 ∪ 数据缺失（文件出赛 < 通算战数），自动补拉，杜绝盲区。

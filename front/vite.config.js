@@ -59,7 +59,7 @@ async function copyData() {
       const s = path.join(srcDir, ent.name);
       const d = path.join(dstDir, ent.name);
       if (ent.isDirectory()) { await walk(s, d, rel + ent.name + '/'); continue; }
-      if (/\.(md|csv)$/.test(ent.name)) continue;
+      if (/\.(md|csv|jsonl)$/.test(ent.name)) continue;
       if (/\.json$/i.test(ent.name)) {
         try {
           const txt = (await fs.readFile(s, 'utf8')).replace(/^\uFEFF/, '');

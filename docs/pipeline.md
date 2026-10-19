@@ -52,7 +52,7 @@ scripts/
 ### 1.3 设计原则（线性流）
 
 - 每个脚本只负责一条独立业务链路，无跨源来回兜底。
-- 请求统一走 `fetch()`：重试 + 风控日志（`data/fetch_log.csv`）+ 按域名限速（`DOMAIN_SLEEP`，带 0.8~1.2 抖动）。
+- 请求统一走 `fetch()`：重试 + 风控日志（`data/fetch_log.jsonl`）+ 按域名限速（`DOMAIN_SLEEP`，带 0.8~1.2 抖动）。
 - `basic.json` 是唯一「前合并」数据源，各并发脚本**不直接碰它**，只写自己的独立缓存
   `data/_tmp/<管线>/<name>.json`（键均为 `str(id)`），因此可真正并行、互不覆盖；
   最后由该管线的 `merge_*.py` 统一合并进 `basic.json` 并删除缓存（`--keep` 保留缓存调试）。
@@ -118,7 +118,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 ├── basic.json           # 唯一「前合并」数据源（建档 + 基本信息）
 ├── pedigree/{id}.json   # 每匹马 5 代血统文件（id 引用）
 ├── _tmp/basic/          # 基础并发脚本的独立缓存（merge 后自动删除）
-└── fetch_log.csv        # 风控请求日志（基础+竞赛统一记录，script 列区分）
+└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON）
 ```
 
 ### 2.2 业务流程（线性）
@@ -206,7 +206,7 @@ DEFAULT_SLEEP = 2.0              # 未匹配域名的兜底
 ```
 
 - 脚本里 `time.sleep(common.sleep_for(url))` 自动按 URL 的 host 查表取间隔。
-- **风控观测**：每次请求写 `data/fetch_log.csv`（含 `host` 列），运行后可统计各域名的 403/失败率，据此调整上面的值。
+- **风控观测**：每次请求写 `data/fetch_log.jsonl`（含 `host` 字段），运行后可统计各域名的 403/失败率，据此调整上面的值。
 
 ### 2.5 常用命令
 
@@ -257,7 +257,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 ├── races/{id}.json      # 每匹逐场成绩（持久，增量只增不覆盖）
 ├── _tmp/races/          # 各环独立缓存（merge 后自动删除）
 ├── races_report.md      # 每次合并的更新报告（脚本生成产物，留 data/）
-└── fetch_log.csv        # 风控请求日志（基础+竞赛统一记录，script 列区分）
+└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON）
 ```
 
 ### 3.2 线性主链（单链，不来回退）
@@ -336,7 +336,7 @@ python merge_races.py --keep       # 单独合并（保留缓存调试）
 | race.netkeiba.com | 2.0s | 中央 比赛结果页（SP 域，格/条件/厩舎/本賞金） |
 | nar.netkeiba.com | 2.0s | 地方 比赛结果页（SP 域） |
 
-每次请求写 `data/fetch_log.csv`（含 host 列），可统计各域名 403/失败率后调整间隔。
+每次请求写 `data/fetch_log.jsonl`（含 host 字段），可统计各域名 403/失败率后调整间隔。
 
 ### 3.6 边界 / 纪律
 

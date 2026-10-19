@@ -20,7 +20,6 @@
           第二部分约 55 分钟（详情 276×6s + 成绩 276×6s），全程约 1.5 小时。
 """
 import argparse
-import csv
 import datetime
 import io
 import json
@@ -127,10 +126,10 @@ def summary():
     else:
         lines.append("  ⚠ basic.json 未生成（第一部分失败）")
 
-    fclog = DATA / "fetch_log.csv"
+    fclog = DATA / "fetch_log.jsonl"
     if fclog.exists():
-        rows = list(csv.DictReader(open(fclog, encoding="utf-8")))
-        lines += ["", "风控日志 fetch_log.csv:"]
+        rows = [json.loads(line) for line in fclog.read_text(encoding="utf-8").splitlines() if line.strip()]
+        lines += ["", "风控日志 fetch_log.jsonl:"]
         lines.append(f"  总请求 {len(rows)} 条")
         for host, grp in __import__("itertools").groupby(sorted(rows, key=lambda x: x["host"]), key=lambda x: x["host"]):
             grp = list(grp)

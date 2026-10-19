@@ -45,7 +45,7 @@ RACE_SP_URL_NAR = constants.RACE_SP_URL_NAR                    # 地方 比赛�
 
 # ---- 本管线的网络口径（以形参注进中立层：net 不含管线概念） ----
 # netkeiba 对高频抓取敏感；SP 域（race/nar result 页）相对宽松。
-# 运行后可在 data/fetch_log.csv 里按 host 观察 403/失败率，按需调整。
+# 运行后可在 data/fetch_log.jsonl 里按 host 观察 403/失败率，按需调整。
 DOMAIN_SLEEP = {
     "db.netkeiba.com": 6.0,      # 详情 / 成绩页（风控严，保守）
     "race.netkeiba.com": 2.0,    # 中央/海外 比赛结果页（SP 域）

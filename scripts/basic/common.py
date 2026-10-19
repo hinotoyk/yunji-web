@@ -47,7 +47,7 @@ NK_SIRE_ID = sire_config.netkeiba_id()             # 种马 netkeiba id（config
 
 # ---- 本管线的网络口径（以形参注进中立层：net 不含管线概念） ----
 # 值参考实际风控表现：netkeiba 对高频抓取敏感（间隔需大），JBIS/studbook 相对宽松。
-# 运行后可在 data/fetch_log.csv 里按 host 观察，按需调整这里。
+# 运行后可在 data/fetch_log.jsonl 里按 host 观察，按需调整这里。
 DOMAIN_SLEEP = {
     "www.jbis.or.jp": 1.5,       # JBIS 建档/血统
     "db.netkeiba.com": 6.0,      # netkeiba 列表/详情（风控严，保守）

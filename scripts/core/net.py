@@ -6,8 +6,8 @@
 两管线差异（basic 含 JBIS·studbook，races 含 race·nar 域）的风控口径不写死在这里，
 由各自 common.py 用 domain_sleep / strip_bases 形参注入（见下方 bind()）。
 """
-import csv
 import functools
+import json
 import random
 import re
 import sys
@@ -71,22 +71,29 @@ def fetch(url, retries=3, encoding="utf-8", session=None, sleep_on_403=20,
 
 
 def log_fetch(url, status, dur, retries, note="", strip_bases=None):
-    """风控观测：记录 域名 + 最小必要请求信息，失败不影响抓取。"""
+    """风控观测：记录 域名 + 最小必要请求信息，失败不影响抓取。
+
+    逐行 append JSONL（`data/fetch_log.jsonl`）：每行自包含、免 header、无 CSV 引号/逗号转义坑；
+    path 字段常含逗号，JSON 字符串转义更规范。进 dist 前由 vite copy-data 跳过 *.jsonl，不进仓库。"""
     try:
-        log = constants.DATA_DIR / "fetch_log.csv"
+        log = constants.DATA_DIR / "fetch_log.jsonl"
         constants.DATA_DIR.mkdir(parents=True, exist_ok=True)   # 首次运行目录可能还不存在
         bases = STRIP_BASES if strip_bases is None else strip_bases
         path = url.split("?")[0]
         for base in bases:
             path = path.replace(base, "")
-        new = not log.exists()
-        with open(log, "a", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            if new:
-                w.writerow(["ts", "script", "host", "path", "status", "dur_s", "retries", "note"])
-            w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        Path(sys.argv[0]).name, domain_of(url), path,
-                        status, round(dur, 2), retries, note])
+        record = {
+            "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "script": Path(sys.argv[0]).name,
+            "host": domain_of(url),
+            "path": path,
+            "status": str(status),
+            "dur_s": round(dur, 2),
+            "retries": retries,
+            "note": note,
+        }
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
     except Exception:
         pass
 
