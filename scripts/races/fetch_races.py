@@ -441,6 +441,7 @@ def main():
     args = ap.parse_args()
 
     horses = common.load_basic()["horses"]
+    done_racing = sum(1 for h in horses if common.is_done_racing(h))
 
     want_ids = {str(x) for x in args.id.split(",") if x.strip()} if args.id else None
 
@@ -453,6 +454,8 @@ def main():
                 continue
             if want_ids is not None and str(h["id"]) not in want_ids:
                 continue
+            if want_ids is None and common.is_done_racing(h):
+                continue          # 更新停止环：已确认退役去向 → 不再出赛，跳过（--id 定向可强制）
             recs = load_existing(h["id"])
             if recs is None:
                 no_file.append(h)
@@ -471,6 +474,8 @@ def main():
             id_s = str(h["id"])
             if want_ids is not None and id_s not in want_ids:
                 continue
+            if want_ids is None and common.is_done_racing(h):
+                continue          # 更新停止环：已确认退役去向 → 不再出赛，跳过（--id 定向可强制）
             recs = load_existing(id_s)
             missing = recs is None or actual_starts(recs) < expected_starts(h)
             if recs is None:
@@ -484,6 +489,8 @@ def main():
     if args.limit:
         targets = dict(list(targets.items())[:args.limit])
     print(f"✔ 成绩页目标 {len(targets)} 匹（{note}）")
+    if done_racing:
+        print(f"✔ 更新停止环：已确认退役去向跳过 {done_racing} 匹（乗馬/繁殖/種馬/死亡）")
     return _fetch(targets, args.force)
 
 

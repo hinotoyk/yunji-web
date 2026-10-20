@@ -31,9 +31,12 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # 跨平台（CI ubuntu 无反斜杠）
 import common
+from core import constants, sire_config, text  # noqa: E402（status 只吃中立层 core，不 import basic/races 业务模块）
 
 # masyoba 事由 → 抹消_去向種別（未收录事由 → 不落種別，仅日期；展示文案走 i18n）
 JIYU_MAP = {"地方": "地方競馬", "乗馬": "乗馬", "繁殖": "繁殖", "斃死": "死亡"}
+# studbook 繁殖登録列表页标题（用于区分 多结果列表页 / 单结果档案页 / 零结果搜索页）
+_STB_TITLE_LIST = {"父馬別繁殖登録馬", "父馬別繁殖登録馬 産駒一覧"}
 MASYO_DATE_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日付けで中央登録を抹消")
 # (?!/)：排除 sire 链接的 /sanku、马页 /kanzen 等 /db/uma/NNNNNNN/xxx 形态，只认裸马页链接
 # keibabook 马页 id 实测 7 位（0954298），放宽 \d{6,8} 防位数变化
@@ -170,6 +173,71 @@ def kinkyo_date(kb_id):
     return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
 
 
+# ---------------- 状态环：studbook 繁殖登録确认（2026-10 命名环定稿） ----------------
+def _stb_name_key(s):
+    """归一化馬名（与 basic/fetch_studbook.strip_anno 同口径：去括注 + 全半角统一 + 去空白）。"""
+    s = re.sub(r"[（(][^）)]*[）)]", "", s or "")
+    s = text.fw2hw(s)
+    return s.replace(" ", "").replace("　", "")
+
+
+def _stb_mare_key(s):
+    """母名归一（studbook 侧 → basic 建档侧口径）：（ＵＳＡ）→ 去括注、Ⅱ→II。"""
+    return text.norm_mare(text.fw2hw(s or ""))
+
+
+def fetch_studbook_breeding():
+    """父馬別繁殖登録馬 kubun=1(牡→種馬)+2(牝→繁殖) → {(馬名归一): 種馬|繁殖, (母名,生年): 種馬|繁殖}。
+
+    服务端解析现行 hid（规避 studbook hid 重编号后的旧 hid 死链）。返回形态三态：
+      - 多结果 → List2 列表页（行 = 馬名|生年|性|父名|母名）
+      - 单结果 → 302 到该马档案页（<title> = 繁殖登録马名；行内是血统表，需排除 sire 行）
+      - 零结果 → SearchChichiShushi 搜索页（跳过）
+    403/网络/解析异常 → None（调用方降级，只留报告，不中断任务）。
+    """
+    try:
+        import requests as _req
+        sess = _req.Session()
+        sess.headers.update(constants.HEADERS)
+    except Exception:
+        return None
+    out = {}
+    for kubun, label in (("1", "種馬"), ("2", "繁殖")):
+        url = (common.STUD + "/users/ja/SearchChichiShushiList"
+               f"?kubun={kubun}&initial={common.quote(sire_config.studbook_name())}")
+        try:
+            html = common.fetch(url, session=sess, retries=1)   # 403 快失败（CI 出口 IP 被拦）
+        except Exception as e:
+            print(f"  ⚠ studbook 繁殖登録检查（{label}）失败：{e} → 本轮降级")
+            return None
+        soup = common.BeautifulSoup(html, "lxml")
+        title_m = re.search(r"<title>\s*(.*?)\s*公益", html)
+        title = title_m.group(1).strip() if title_m else ""
+        sire_key = _stb_name_key(sire_config.studbook_name())
+        rows = []
+        for tr in soup.find_all("tr"):
+            tds = tr.find_all("td")
+            a = tr.find("a", href=True)
+            if len(tds) < 5 or not a or ("sid=" not in a["href"] and "hid=" not in a["href"]):
+                continue
+            n0 = tds[0].get_text(" ", strip=True)
+            if not n0 or _stb_name_key(n0) == sire_key:      # 排除 sire 自身血统行
+                continue
+            rows.append((tds[0].get_text(" ", strip=True),
+                         tds[1].get_text(" ", strip=True),
+                         tds[4].get_text(" ", strip=True)))
+        if rows:
+            for nm, yr, mare in rows:
+                out[_stb_name_key(nm)] = label
+                mk, y = _stb_mare_key(mare), yr.strip()
+                if mk and y:
+                    out[(mk, y)] = label
+        elif title and title not in _STB_TITLE_LIST:
+            out[_stb_name_key(title)] = label                # 单结果：<title> = 繁殖登録马名
+        time.sleep(common.sleep_for(common.STUD + "/users/ja/SearchChichiShushiList"))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="JRA 抹消/去向/地方调教师 → 直写 basic.json")
     ap.add_argument("--dry-run", action="store_true", help="只出报告，不写 basic.json")
@@ -234,7 +302,11 @@ def main():
         if r["code"] and not pinned(h, "調教師"):
             t = nar_trainer(r["code"])
             if t:
-                set_val(h, "調教師", t, "NAR")
+                # 防格式乒乓（2026-10 用户定稿）：同训马师（仅 全半角括号/所属/空格 差异）不写，
+                # 保留现值；现值空或真换人 → 规范化写入。三写者统一走 text.trainer_guard。
+                g = text.trainer_guard(h.get("調教師", ""), t)
+                if g is not None:
+                    set_val(h, "調教師", g, "NAR")
             time.sleep(common.sleep_for(common.NAR_INFO_URL))
         if not h.get("抹消日") and not pinned(h, "抹消日"):
             kb = (ov_of(h).get("kb_id") or masyo_by_name.get(name, {}).get("kb_id")
@@ -319,6 +391,42 @@ def main():
         elif not h.get("登録状態"):
             observe.append(f"{nm}：keibabook 无中央登録记录（未登录/未出走属正常）")
 
+    # ---- 3.5) studbook 繁殖登録确认（状态环：空/抹消 + 无去向 → 确认 繁殖/種馬；CI 403 降级） ----
+    stb = fetch_studbook_breeding()
+    if stb is None:
+        observe.append("studbook 繁殖登録检查不可用（403/网络/解析；CI 出口 IP 被拦属正常，"
+                       "本机可补跑 python scripts/studbook_sync.py）")
+    else:
+        for h in horses:
+            if pinned(h, "抹消_去向種別"):
+                continue
+            nm = (h.get("馬名") or "").strip()
+            label = stb.get(_stb_name_key(nm))
+            if label is None:
+                mk, yr = _stb_mare_key(h.get("母名", "")), str(h.get("生年", "") or "").strip()
+                if mk and yr:
+                    label = stb.get((mk, yr))
+            if label is None:
+                continue
+            st = h.get("登録状態", "")
+            if st not in ("抹消", ""):
+                # 现役/其他 却已繁殖登録 → 库内状态疑似滞后，仅报告待人工核（不擅自改 登録状態）
+                todos.append((h.get("id"), nm,
+                              f"studbook 已繁殖登録({label}) 但库内登録状態={st or '空'}，需人工核（应已退役）"))
+                continue
+            cur = h.get("抹消_去向種別", "")
+            if cur and cur != label:
+                todos.append((h.get("id"), nm,
+                              f"去向冲突：库内={cur} vs studbook 繁殖登録={label}，需人工核对"))
+                continue
+            if cur == label:
+                observe.append(f"{nm}：studbook 繁殖登録确认（{label}），去向已一致")
+                continue
+            if st == "":
+                set_val(h, "登録状態", "抹消", "studbook繁殖登録")   # 空登録 → 繁殖登録即退役证据
+            set_val(h, "抹消_去向種別", label, "studbook繁殖登録")
+            observe.append(f"{nm}：studbook 繁殖登録确认 → 抹消_去向種別={label}")
+
     # ---- 4) 报告 + 落库 ----
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     lines = [
@@ -327,6 +435,7 @@ def main():
         f"- NAR 快照：{len(nar)} 匹（地方 {n_local} / JRA 跳过 {len(skips_jra)} / 库外 {len(offsite)}）",
         f"- 抹消馬簿：栗東+美浦 {len(masyo)} 行",
         f"- keibabook 补查（抹消/空白·无去向）：{kb_checked} 匹",
+        f"- studbook 繁殖登録：{'可用' if stb is not None else '降级（403/不可达）'}",
         f"- 变更 {len(changes)} 项 / 人工钉跳过 {len(skips_pinned)} / 待办 {len(todos)}",
         "",
         "## 变更明细",

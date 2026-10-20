@@ -99,12 +99,15 @@ def main():
         want = {int(x) for x in args.id.split(",") if x.strip()}
         todo = [h for h in horses if h["id"] in want and h.get("nk_id")]
     else:
-        todo = [h for h in horses if h.get("nk_id")]
+        # 更新停止环：已确认退役去向（乗馬/繁殖/種馬/死亡）→ 不再出赛，跳过详情抓取
+        todo = [h for h in horses if h.get("nk_id") and not common.is_done_racing(h)]
     no_nk = [h for h in horses if not h.get("nk_id")]
+    skipped_done = [h for h in horses if common.is_done_racing(h) and h.get("nk_id")]
     if args.limit:
         todo = todo[:args.limit]
 
-    print(f"✔ 需抓详情 {len(todo)} 匹（无 nk_id 跳过 {len(no_nk)} 匹）")
+    print(f"✔ 需抓详情 {len(todo)} 匹（无 nk_id 跳过 {len(no_nk)} 匹，"
+          f"已确认退役去向跳过 {len(skipped_done)} 匹）")
     detail = {}
     changed = {}
     failures = common.read_cache("failures") or {}

@@ -22,6 +22,37 @@ def norm_mare(s):
     return s
 
 
+# ── 調教師 写前守卫（2026-10 用户定稿：防 merge_races↔状态环 格式乒乓） ──
+# 根因：同一训马师，netkeiba 写「前川恭子 (栗東)」半角、NAR 写「長倉功（兵庫）」全角，
+# 两侧都「字符串不等即覆盖」→ 每周期互踩。定案：按「训马师身份」判等，不按字符串判等。
+_TRAINER_PAREN_RE = re.compile(r"[（(][^）)]*[）)]")
+
+
+def trainer_core(s):
+    """調教師 判等键：剥掉（所属）括号与全部空白，只留人名。
+    例：前川恭子 (栗東) / 長倉功（兵庫） → 前川恭子 / 長倉功。"""
+    t = _TRAINER_PAREN_RE.sub("", s or "")
+    return re.sub(r"\s+", "", t)
+
+
+def norm_trainer(s):
+    """調教師 落库规范格式：去全部空白（含全角空格）、所属括号统一全角。
+    例：前川恭子 (栗東) → 前川恭子（栗東）；長　倉　　　　功（兵庫） → 長倉功（兵庫）。"""
+    t = re.sub(r"\s+", "", s or "")
+    return t.replace("(", "（").replace(")", "）")
+
+
+def trainer_guard(cur, new):
+    """調教師 写前守卫：同一训马师（仅格式/所属差异）→ 不写（返回 None，保留现值）；
+    现值空或真换人 → 规范化写入（norm_trainer(new)）。
+    三个写者（merge_races / merge_basic / 状态环 NAR）统一走这里，杜绝乒乓。"""
+    if not new:
+        return None
+    if cur and trainer_core(cur) == trainer_core(new):
+        return None
+    return norm_trainer(new)
+
+
 # ── 全角 → 半角：双作用域（docs/REFACTOR.md §5.1 R7，v2.4 定案 R7-α/β/γ） ──
 # 必须走 str.maketrans（translate 只认 ordinal 键，直接给字符键会静默不生效）。
 # 全量版表：0x3000（全角空格）→ 空格；FF01-FF5E → ASCII 0x21-0x7E（94 字母数字标点）。

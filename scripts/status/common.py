@@ -29,13 +29,15 @@ KB_KINKYO_URL = KB + "/db/uma/{kb_id}/kinkyo"          # 近況履歴：抹消�
 NAR = "https://www.keiba.go.jp"
 NAR_LIST_URL = NAR + "/KeibaWeb/DataRoom/RaceHorseList"  # 免登录；k_activeCode=1 实测=NAR在册+JRA抹消全集
 NAR_INFO_URL = NAR + "/KeibaWeb/DataRoom/RaceHorseInfo?k_lineageLoginCode={code}"  # 详情页：調教師
+STUD = constants.STUD                                    # studbook.jp（状态环：繁殖登録确认；CI 出口 IP 被拦 → 403 容错）
 
 # ---- 本任务的网络口径（以形参注进中立层：net 不含任务概念） ----
 DOMAIN_SLEEP = {
     "p.keibabook.co.jp": 1.5,
     "www.keiba.go.jp": 1.5,
+    "www.studbook.jp": 1.2,       # 状态环繁殖登録检查（本机直连正常；CI 403 降级）
 }
-STRIP_BASES = (KB, NAR)   # log_fetch 记 path 时剥掉的站点根
+STRIP_BASES = (KB, NAR, STUD)   # log_fetch 记 path 时剥掉的站点根
 
 _NET = net.bind(DOMAIN_SLEEP, STRIP_BASES)
 sleep_for = _NET["sleep_for"]

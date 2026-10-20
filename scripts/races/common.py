@@ -77,6 +77,16 @@ load_overrides = manual.load_overrides
 apply_overrides = manual.apply_overrides
 
 
+# ---------------- 更新停止环（2026-10 用户定稿） ----------------
+DONE_RACING = {"乗馬", "繁殖", "種馬", "死亡"}   # 已确认退役去向且不再出赛 → 跳过比赛数据更新
+
+
+def is_done_racing(h):
+    """已确认退役去向（乗馬/繁殖/種馬/死亡）→ 不再出赛，跳过 races/detail 抓取。
+    地方競馬 除外（仍会出赛）；去向为空/未确认 → 不跳过（避免漏抓）。"""
+    return h.get("抹消_去向種別", "") in DONE_RACING
+
+
 # ---------------- 比赛记录 ----------------
 race_key = racelib.race_key   # 比赛唯一键单源（防御版，docs/REFACTOR.md §5.1 R2 / §9 D4），common 只再导出
 

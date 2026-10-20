@@ -42,6 +42,7 @@ from datetime import datetime
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
 import common  # noqa: E402
 import racelib  # noqa: E402
+from core import text  # noqa: E402（調教師 格式守卫：防 状态环 NAR ↔ netkeiba 乒乓）
 
 # 会变化字段：无条件覆盖；稳定字段：抓取值非空才覆盖（与 fetch_detail 定义一致）
 VOLATILE_FIELDS = ["登録状態", "性別", "馬齢", "馬主", "調教師", "通算成績", "獲得賞金 (中央)", "獲得賞金 (地方)"]
@@ -179,6 +180,13 @@ def main():
                 # 两者都不覆盖已有非空值：抹消状态由 scripts/status 任务 / 人工表维护（2026-10）
                 if not v or (v == "現役" and cur and cur != "現役"):
                     v = cur
+            if k == "調教師":
+                # 防格式乒乓（2026-10 用户定稿）：同训马师（仅 全半角括号/所属/空格 差异）不写，
+                # 保留现值；现值空或真换人 → 规范化写入。三写者统一走 text.trainer_guard。
+                g = text.trainer_guard(h.get(k, ""), v)
+                if g is None:
+                    continue        # 同一人 → 不写（保留现值）
+                v = g
             h[k] = v
         for k in STABLE_FIELDS:
             if d.get(k):
