@@ -11,6 +11,9 @@
      抹消日 + 事由（地方/乗馬/繁殖/斃死 → 種別映射）+ 行き先（未定 → 場所留空）
   4. NAR-地方 但库里无抹消日（如未出走移籍）→ 馬検索补 kb_id → 近況履歴补日期
   5. 直写 basic.json 五键 + kb_id；证据明细只进报告
+  6. 降级守卫（2026-10-20）：p.keibabook.co.jp 也开始封 GitHub Actions 出口 IP（同 studbook）——
+     keibabook 任一请求 403/失败 → 本轮降级（后续请求短路不再发），抹消馬簿/补查跳过、报告标「降级」，
+     由本机 scripts/studbook_sync.py 补跑；NAR / studbook 环节不受影响照常执行。
 
 落库守则（用户定稿）：
   - 只有「确认去向」才写 種別/場所——推定/猜测绝不入库，不确定就只留抹消日
@@ -55,11 +58,44 @@ def ymd(s):
     return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
 
 
+# keibabook 降级守卫（2026-10-20：p.keibabook.co.jp 也开始封 GitHub Actions 出口 IP，同 studbook）：
+# 首个 403/网络错误 → 本轮降级（_kb_ok=False），后续 keibabook 请求短路不再发（防对封禁主机无效轰炸）。
+_kb_ok = True
+
+
+def _kb_soup(url):
+    """keibabook 页面请求（403 快失败 + 降级短路）。返回 None = 不可用。"""
+    global _kb_ok
+    if not _kb_ok:
+        return None
+    try:
+        return common.soup_of(url, encoding="utf-8", retries=1)
+    except Exception as e:
+        _kb_ok = False
+        print(f"  ⚠ keibabook 请求失败：{e} → 本轮降级（抹消/去向/kb_id 由本机 scripts/studbook_sync.py 补跑）")
+        return None
+
+
+def _kb_html(url):
+    """keibabook 原文请求（403 快失败 + 降级短路）。返回 "" = 不可用。"""
+    global _kb_ok
+    if not _kb_ok:
+        return ""
+    try:
+        return common.fetch(url, encoding="utf-8", retries=1)
+    except Exception as e:
+        _kb_ok = False
+        print(f"  ⚠ keibabook 请求失败：{e} → 本轮降级")
+        return ""
+
+
 def kb_page(kb_id):
     """keibabook 马页（kanzen）→ (中央抹消标 bool, 厩舎地名, 調教師名)。
     抹消标 = <span class="cyuou_masyo">；厩舎栏 = trainer + 「厩舎(西脇)」——只反映中央/地方在籍
     厩舎（乗馬/繁殖马仍显示旧 JRA 厩舎，故仅在 抹消标+非中央地名 时构成地方证据）。"""
-    soup = common.soup_of(common.KB + f"/db/uma/{kb_id}/kanzen", encoding="utf-8")
+    soup = _kb_soup(common.KB + f"/db/uma/{kb_id}/kanzen")
+    if soup is None:
+        return False, "", ""
     erased = soup.select_one("span.cyuou_masyo") is not None
     cell = soup.select_one("table.default.uma td")          # 厩舎 = 表首格
     place = trainer = ""
@@ -136,7 +172,9 @@ def fetch_masyoba():
     rows = []
     for page in (1, 2):
         url = common.KB_MASYOBA_URL.format(page=page)
-        soup = common.soup_of(url, encoding="utf-8")
+        soup = _kb_soup(url)
+        if soup is None:
+            continue
         for a in soup.select('a[href*="/db/uma/"]'):
             tr = a.find_parent("tr")
             if tr is None:
@@ -159,14 +197,14 @@ def kb_id_by_search(name):
     """馬検索（父名+马名组合，纯名检索会漏；必带 masyof%5B%5D=1 否则只回現役）→ kb_id。"""
     url = (common.KB_SEARCH_URL + f"?sire={common.quote(common.SIRE_NAME_JA)}"
            f"&bamei={common.quote(name)}&masyof%5B%5D=1")
-    html = common.fetch(url, encoding="utf-8")
+    html = _kb_html(url)
     m = UMA_HREF_RE.search(html)
     return m.group(1) if m else ""
 
 
 def kinkyo_date(kb_id):
     """近況履歴 → 抹消日期（YYYY-MM-DD）；页面无该条目 → ""。"""
-    html = common.fetch(common.KB_KINKYO_URL.format(kb_id=kb_id), encoding="utf-8")
+    html = _kb_html(common.KB_KINKYO_URL.format(kb_id=kb_id))
     m = MASYO_DATE_RE.search(html)
     if not m:
         return ""
@@ -311,19 +349,20 @@ def main():
         if not h.get("抹消日") and not pinned(h, "抹消日"):
             kb = (ov_of(h).get("kb_id") or masyo_by_name.get(name, {}).get("kb_id")
                   or h.get("kb_id") or "")
-            if not kb:
+            if not kb and _kb_ok:
                 kb = kb_id_by_search(name)
                 time.sleep(common.sleep_for(common.KB_SEARCH_URL))
             if kb:
                 if not pinned(h, "kb_id"):
                     set_val(h, "kb_id", kb, "keibabook")
-                time.sleep(common.sleep_for(common.KB_KINKYO_URL))
-                d = kinkyo_date(kb)
-                if d:
-                    set_val(h, "抹消日", d, "keibabook")
-                else:
-                    observe.append(f"{name}：近況履歴无抹消条目（kb={kb}；未出走属正常）")
-            else:
+                if _kb_ok:
+                    time.sleep(common.sleep_for(common.KB_KINKYO_URL))
+                    d = kinkyo_date(kb)
+                    if d:
+                        set_val(h, "抹消日", d, "keibabook")
+                    else:
+                        observe.append(f"{name}：近況履歴无抹消条目（kb={kb}；未出走属正常）")
+            elif _kb_ok:
                 observe.append(f"{name}：馬検索未命中 kb_id（海外/名义差异等）")
         elif not h.get("kb_id") and not pinned(h, "kb_id"):
             kb = masyo_by_name.get(name, {}).get("kb_id")
@@ -355,6 +394,8 @@ def main():
     #       无抹消标（未登录/未出走）→ 仅观察报告。乗馬/繁殖去向免费页无记录，靠抹消馬簿窗口。
     kb_checked = 0
     for h in horses:
+        if not _kb_ok:
+            break           # keibabook 降级：跳过补查（由本机 scripts/studbook_sync.py 补跑）
         nm = (h.get("馬名") or "").strip()
         if not nm or h.get("登録状態", "") not in ("抹消", ""):
             continue
@@ -435,6 +476,7 @@ def main():
         f"- NAR 快照：{len(nar)} 匹（地方 {n_local} / JRA 跳过 {len(skips_jra)} / 库外 {len(offsite)}）",
         f"- 抹消馬簿：栗東+美浦 {len(masyo)} 行",
         f"- keibabook 补查（抹消/空白·无去向）：{kb_checked} 匹",
+        f"- keibabook 可用性：{'可用' if _kb_ok else '降级（403/不可达，抹消/去向/kb_id 需本机补跑）'}",
         f"- studbook 繁殖登録：{'可用' if stb is not None else '降级（403/不可达）'}",
         f"- 变更 {len(changes)} 项 / 人工钉跳过 {len(skips_pinned)} / 待办 {len(todos)}",
         "",
@@ -458,7 +500,8 @@ def main():
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    print(f"✔ NAR {len(nar)} 匹（地方 {n_local} / JRA跳过 {len(skips_jra)}）｜抹消馬簿 {len(masyo)} 行")
+    print(f"✔ NAR {len(nar)} 匹（地方 {n_local} / JRA跳过 {len(skips_jra)}）｜抹消馬簿 {len(masyo)} 行"
+          f"｜keibabook {'可用' if _kb_ok else '降级'}｜studbook {'可用' if stb is not None else '降级'}")
     print(f"✔ 变更 {len(changes)} 项｜人工钉跳过 {len(skips_pinned)}｜待办 {len(todos)}")
     print(f"✔ 报告：{REPORT_PATH}")
     if args.dry_run:
