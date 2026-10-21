@@ -55,7 +55,7 @@ yunji-web/
 | **JS 动态类** | 拼接的 Tailwind 类必须能被 `content` 扫到（当前含 `./pages/**/*.js` 与 `./public/**/*.js`）；`.yj-g*` 等动态拼类名必须放 `@layer` 之外 |
 | **共享 JS** | 放 `front/public/`，Vite 原样拷到 `dist/` 根，页面用 `../xxx.js` 相对引用 |
 | **数据路径** | 一律 `YJ_DATA.url()`（`public/data-config.js` 唯一映射点，`prefix:'..'` → `../data/...`）；改数据目录只改该文件 |
-| **数据缓存** | 一律走 `front/public/yj-cache.js`（`YJ.cache.fetch(name[,opts])`）：注册表按产物 TTL（默认 12h，10min 新鲜期 0 请求 + SWR 软过期）；桶 `yj-data-v2`，字段口径升级 +1 整体作废 |
+| **数据缓存** | 一律走 `front/public/yj-cache.js`（`YJ.cache.fetch(name[,opts])`）：注册表按产物 TTL（默认 12h，10min 新鲜期 0 请求 + SWR 软过期）；桶 `yj-data-v3`，字段口径升级 +1 整体作废 |
 | **比赛数据** | 构建期由 `build-races-bundle.mjs` 打成 `dist/data/races-bundle.json`（替换式，1 请求 ~44KB gzip 替代 276 个小文件）；解码单一出处 `public/race-bundle.js` |
 | **字体** | 构建期按需全量子集（`gen-font.mjs` → `assets/fonts/noto-sc-subset.woff2` ~589KB + `noto-sc.css` 1 条 @font-face）；wght 300–700；fail-soft（CI 无 python 时沿用已提交产物）；开关 `FONT_GEN=skip|force`、严格报错 `YJ_FONT_STRICT=1` |
 | **响应式** | 单断点 768px（`max-md:`）；JS 端统一 `public/device.js`（`YJ.device.isMb/isPc/mode/onChange`，matchMedia），断点翻转可实时重渲染 |

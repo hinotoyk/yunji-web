@@ -37,6 +37,10 @@ START_RE = re.compile(r"(\d+)戦")
 
 # 本賞金阶梯 / 賞金列都是「万円」记法 → 统一换算成円（1万円 = 10000 円）
 MAN_TO_YEN = 10000
+# 上がり3F 名次色（netkeiba 成绩页 td.rank_1/2/3）→ 末脚状态。
+# 口径 = 全场「上り」按不同用时密集排名：并列共用同一名次（1 着 34.5 与 4 着 34.5 同为 rank_3）；
+# 与 SP 结果页 BgYellow/BgBlue02/BgOrange 同义。只读取已抓页面上的 class，不新增任何请求。
+AGARI_MEDALS = {"rank_1": "金", "rank_2": "银", "rank_3": "铜"}
 # 中央/海外 SP 页：`本賞金:4100,1600,1000,620,410万円`（1着~5着）
 HONSHO_RE = re.compile(r"本賞金:([\d,]+(?:,[\d,]+)*)万円")
 # 地方 NAR SP 页：`本賞金:10000.0、3500.0、2000.0万円`（十进制浮点、顿号分隔）
@@ -88,10 +92,20 @@ def actual_starts(recs):
     return n
 
 
+def agari_medal(td):
+    """上り单元格 → 末脚状态（金/银/铜）；无 rank_1/2/3 class → ""。
+    该 class 由 netkeiba 场次级计算，页面已抓即得，不额外发请求。"""
+    for cls in (td.get("class") or ()):
+        if cls in AGARI_MEDALS:
+            return AGARI_MEDALS[cls]
+    return ""
+
+
 def parse_races(html):
     """netkeiba 成绩页（/horse/result/{id}/）→ 逐场原始记录（含稳定 race_id/jockey_id）。
     列：日付/開催/天気/R/レース名/映像/頭数/枠番/馬番/オッズ/人気/着順/騎手/斤量/距離/
-    馬場(芝ダ)/状態/タイム/着差/通過/ペース/上り/馬体重/賞金。"""
+    馬場(芝ダ)/状態/タイム/着差/通過/ペース/上り/馬体重/賞金。
+    末脚 = 上り td.rank_1/2/3 → 金/银/铜（全场密集排名、并列同名次），无 class → ""。"""
     soup = common.BeautifulSoup(html, "lxml")
     tbl = soup.find("table", class_=re.compile("db_h_race_results"))
     if not tbl:
@@ -160,6 +174,7 @@ def parse_races(html):
             "距離": dist, "馬場": surf, "状態": c("馬場"),
             "タイム": c("タイム"), "着差": c("着差"), "通過": c("通過"),
             "ペース": c("ペース"), "上り": c("上り"),
+            "末脚": agari_medal(tds[idx["上り"]]) if "上り" in idx else "",
             "馬体重": bw_v, "増減": bw_d, "賞金": num(c("賞金")),
             "race_id": link_id(tds[idx["レース名"]], r"/race/([0-9A-Za-z]+)/") if "レース名" in idx else "",
             "jockey_id": link_id(tds[idx["騎手"]], r"/jockey/result/(?:recent/)?([0-9A-Za-z]+)/") if "騎手" in idx else "",
@@ -189,7 +204,8 @@ def to_contract_b(rec, horse_name):
         "斤量": rec.get("斤量", ""), "枠番": rec.get("枠番", ""), "馬番": rec.get("馬番", ""),
         "頭数": rec.get("頭数", ""),
         "人気": rec.get("人気", ""), "単勝": rec.get("オッズ", ""), "結果": result,
-        "タイム": rec.get("タイム", ""), "上り": rec.get("上り", ""), "着差": rec.get("着差", ""),
+        "タイム": rec.get("タイム", ""), "上り": rec.get("上り", ""), "末脚": rec.get("末脚", ""),
+        "着差": rec.get("着差", ""),
         "通過": rec.get("通過", ""), "ペース": rec.get("ペース", ""),
         "馬体重": rec.get("馬体重", ""), "増減": rec.get("増減", ""), "賞金": prize_yen,
         "本賞金": 0,
@@ -422,6 +438,10 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
         if ex.get(f) in (None, "") and cb.get(f) not in (None, ""):
             ex[f] = cb[f]
             changed += 1
+    # 末脚：已有记录没有该键 → 用本次成绩页上り class 回填（含「无 medal」的空串，补齐键）
+    if "末脚" not in ex:
+        ex["末脚"] = cb.get("末脚", "")
+        changed += 1
     return changed
 
 

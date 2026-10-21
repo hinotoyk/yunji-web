@@ -253,7 +253,7 @@ scripts/races/                 # 竞赛部分脚本（成绩/収得，更新频�
 ├── common.py            # 共享：请求/限速/风控日志/basic.json 读写/缓存（独立副本，指向根 data/）
 ├── racelib.py           # 竞赛域规则：场地分类/格推导/収得賞金/本賞金判定（与源无关）
 ├── fetch_detail.py      # ① 详情更新 + 通算成績判变（全部有 nk_id 的马）
-├── fetch_races.py       # ② 成绩页增量（只抓 判变/无文件 的马；SP 页一次回填 格/条件/調教師/本賞金；骑手页归一骑手名）
+├── fetch_races.py       # ② 成绩页增量（只抓 判变/无文件 的马；成绩页上り class 顺带取末脚；SP 页一次回填 格/条件/調教師/本賞金；骑手页归一骑手名）
 ├── fetch_ledger.py      # ③ 台账海外场增量（可选：按 config/sire.json 的 ledger.url 门控，见 §1.2）
 ├── merge_races.py       # ④ 合并 → data/races/{id}.json + basic.json → 删缓存
 └── run_all.py           # 编排：①→②→③→④ 线性单链

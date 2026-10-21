@@ -13,7 +13,7 @@
  *   条目 = { t:写入时间, etag, lm, data:解析后 JSON }。
  * 失效：TTL 到期自取；编辑台保存 → YJ.selector.clearBasicCache() → 本控制器 clear('basic')；
  *   排障可控制台 YJ.cache.clear()（全部）/ clear('stats')（单个）。
- * 版本：桶名 yj-data-v1 —— 字段口径/格式升级时 +1，旧条目整体自然作废。
+ * 版本：桶名 yj-data-v3 —— 字段口径/格式升级时 +1，旧条目整体自然作废。
  * 兼容性：Cache API 桌面+移动全覆盖（Safari 11.3+ / Chrome 40+ / Firefox 44+）；
  *   纯 JSON，无 DecompressionStream 等新依赖；不支持的环境自动降级直连。
  * 用法（非 module；须在 data-config.js 之后引入）：
@@ -26,10 +26,11 @@ window.YJ = window.YJ || {};
 YJ.cache = (function () {
   "use strict";
 
-  /* v2（2026-09-30）：照片本地化删除了被 basic/timeline/races 旧数据引用的 data/photos/142-1|2.jpg，
+  /* v3（2026-10-21）：races-bundle 格式 v2（马级 +末脚，23→24）——旧缓存条目解码会错位，桶 +1 作废。
+   * v2（2026-09-30）：照片本地化删除了被 basic/timeline/races 旧数据引用的 data/photos/142-1|2.jpg，
    * 旧缓存条目会让老访客 404 一张图——桶 +1 整体作废（教训：**删被引用的数据文件必须同轮 bump 桶版本**，
    * 或保留旧文件一个 TTL 周期再删）。v1（2026-09-28）：控制器首版。 */
-  var BUCKET = "yj-data-v2";
+  var BUCKET = "yj-data-v3";
   var REVAL = 10 * 60 * 1000;            /* 新鲜期：窗口内 0 请求 */
   var TTL_DEF = 12 * 60 * 60 * 1000;     /* 默认 12h（用户 2026-09-28 定）；注册表可按产品覆写 */
 
