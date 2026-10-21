@@ -82,6 +82,8 @@ def build_runs(horses):
                 "ki": _raw(r.get("斤量")),
                 "nk": _raw(r.get("人気")),
                 "tm": str(r.get("タイム") or ""),
+                "ag": str(r.get("上り") or ""),      # 後3F（明细列 §101；''=未完走等）
+                "ms": str(r.get("末脚") or ""),      # 末脚 金/银/铜（后3F 徽章配色判断用，§100/§101）
                 "bw": _raw(r.get("馬体重")),
                 "dz": str(r.get("増減") or ""),
                 "jk": str(r.get("騎手") or ""),

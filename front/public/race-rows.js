@@ -80,6 +80,17 @@ YJ.raceRows = (function () {
     return null;
   }
 
+  /* ---- 上り 值徽章化（§100 用户定稿）：金银铜 → 直接套用人気/着順徽章样式（yj-no 底座 + 同色 1/2/3 浅底彩边黑字）----
+   * 金→yj-no1（1着黄）银→yj-no2（2着蓝）铜→yj-no3（3着橙），值原样放进徽章；无 medal / 台账缺键 → 纯文本。
+   * inline width:auto 押过档位 .yj-lib.fs* .yj-no 的定宽方块（值 4 字符放不进 26px），高/字号/圆角仍随徽章与档位。 */
+  function agariBadge(r) {
+    var v = num(r.上り);
+    var m = r.末脚;
+    var cls = (m === "金") ? "yj-no1" : (m === "银") ? "yj-no2" : (m === "铜") ? "yj-no3" : null;
+    if (!v || !cls) return v;
+    return '<span class="yj-no ' + cls + '" style="width:auto;padding:0 5px">' + v + '</span>';
+  }
+
   /* ---- 赛事名去冗余尾缀 ----
    * 数据里重赏/L/OP 的赛事名自带等级尾缀：「東京優駿(GI)」「野路菊S(OP)」。
    * 已用等级徽章表达同一信息 → 尾缀重复占宽，渲染前去掉；
@@ -190,9 +201,9 @@ YJ.raceRows = (function () {
     o = opt(o);
     if (val == null || val === "") return "";   /* 空值整项不出现（与老独立表 item() 同口径） */
     var wrap = o.wrap || "yj-mb-item";
-    var inner = o.raw ? val
-      : (label ? '<i>' + esc(label) + '：</i>' : '') +
-        '<b' + (o.cls ? ' class="' + o.cls + '"' : '') + '>' + val + '</b>' + (o.after || "");
+    var inner = (label ? '<i>' + esc(label) + '：</i>' : '') +   /* label 对 raw 也生效（§101.2 後3F chip 需要标签；既有 raw 用点均无 label 或不在分组） */
+      (o.raw ? val
+        : '<b' + (o.cls ? ' class="' + o.cls + '"' : '') + '>' + val + '</b>' + (o.after || ""));
     return '<span class="' + wrap + '">' + inner + '</span>';
   }
   /* 该行是否未完走（无着顺行 → 整行淡化 / 时间着差显示「—」） */
@@ -310,9 +321,13 @@ YJ.raceRows = (function () {
     },
     agari: {
       th: "上り", cls: TC, clsLib: TCL, mbLabel: "上り",
-      pc: function (r) { return num(r.上り); },
-      mbItem: function (r, en, o, lb) { return mbi(lb, num(r.上り)); },
-      min: function (ctx) { return ctx.fmt("36.3"); }
+      pc: function (r) { return agariBadge(r); },   /* 金银铜 → 人気/着順同款徽章（§100） */
+      mbItem: function (r, en, o, lb) {
+        var m = r.末脚;
+        if (m !== "金" && m !== "银" && m !== "铜") return mbi(lb, num(r.上り));   /* 无 medal → 常规通道（label + <b> 值） */
+        return mbi(lb, agariBadge(r), { raw: true });   /* 金银铜 → 徽章 chip 原样嵌入（label 照常，§100/§101.2） */
+      },
+      min: function (ctx) { return ctx.fmt("36.3") + 12; }   /* 徽章化：左右 padding 5×2 + 边框 1×2 */
     },
     bw: {
       th: "馬体重", cls: TC, clsLib: TCL, mbLabel: "馬体重",
@@ -352,10 +367,10 @@ YJ.raceRows = (function () {
    * ★ 基准 = 比赛记录页（races.html）跨马主表 / mb 卡片 的字段与顺序（用户定稿，§53.5）。
    *   内嵌表（profile 下段）与日期统计明细 = 基准的**子集**：只通过 `hide` 清单隐藏字段，
    *   列序恒随基准（各视图**不再各写一份列清单**）→ 加列 / 调序 / 改列只改基准，各视图自动跟随。
-   *   lib   = 基准全量（22 列，§78 增 性齢）
-   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/上り/賠率 → 15 列（opts.horse 时含馬名，否则 14 列、
+   *   lib   = 基准全量（22 列，§78 增 性齢、§101 上り 紧随着順）
+   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/賠率 → 16 列（opts.horse 时含馬名，否则 15 列、
    *     性齢 为首列；§78.1 用户要求 profile 下段/datechart 明细也展示 性齢，
-   *     datechart 短键产物已同步补 sx/ya 字段 → 不再有空列问题）
+   *     datechart 短键产物已同步补 sx/ya 字段 → 不再有空列问题；§101 上り 解禁 → profile 内嵌/明细展示）
    * 视图差异只允许三处：① hide 隐藏清单 ② th/mbLabel 短标签覆盖 ③ mbLines mb 卡片分组
    *   （mb 分组：lib = 基准 5 行；embed = 自己的 3 行紧凑分组，但**字段顺序同样随基准**） */
   var BASE_TOP = ["date", "name", "sexage", "place"];   /* mb 顶部槽；"name" = 名称槽，见 mbCardHTML；
@@ -367,19 +382,19 @@ YJ.raceRows = (function () {
     [{ k: "bw", label: "体重" }, "odds", "prize"],
     ["jockey", "trainer"]
   ];
-  /* 基准列序（22 列，§78 增 性齢 紧随馬名）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
-     枠番 → 馬番 → 頭数 → 斤量 → 人気 → 着順 → タイム → 着差 → 上り → 体重 → 賠率 → 賞金 → 騎手 → 調教師 */
+  /* 基准列序（22 列，§78 增 性齢 紧随馬名、§101 上り 紧随着順）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
+     枠番 → 馬番 → 頭数 → 斤量 → 人気 → 着順 → 上り → タイム → 着差 → 体重 → 賠率 → 賞金 → 騎手 → 調教師 */
   var BASE_COLS = ["horse", "sexage", "date", "venue", "race", "distMerged", "tenki", "baba", "waku", "umaban", "tosu",
-                   "kinryo", "ninki", "place", "time", "chakusa", "agari", "bw", "odds", "prize", "jockey", "trainer"];
+                   "kinryo", "ninki", "place", "agari", "time", "chakusa", "bw", "odds", "prize", "jockey", "trainer"];
 
   var VIEWS = {
     embed: {
       thCls: "px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]",
-      hide: ["tenki", "waku", "umaban", "tosu", "chakusa", "agari", "odds"],
+      hide: ["tenki", "waku", "umaban", "tosu", "chakusa", "odds"],   /* §101 上り 解禁（profile 内嵌/datechart 明细展示） */
       onlyIfHorse: ["horse"],              /* 无馬名上下文（profile 下段单马）时整列不出现 */
       th: {}, mbLabel: {},
       mbLines: [
-        ["race", "distMerged", "baba", "time", "prize"],
+        ["race", "distMerged", "baba", "time", "agari", "prize"],   /* 後3F 隨 時間 相邻（同 lib 分組 time→agari 慣例，§101.2） */
         ["kinryo", "ninki", "bw"],
         ["jockey", "trainer"]
       ]

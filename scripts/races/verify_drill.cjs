@@ -288,8 +288,8 @@ setTimeout(function () {
     ok(keys.length === 22 && keys[0] === "horse" && keys[1] === "sexage",
       "lib 列集 22 列，性齢 紧随出走马（列序随基准）");
     const eCols = global.YJ.raceRows.cols("embed");
-    ok(eCols.length === 14 && eCols[0].k === "sexage",
-      "embed 无馬名上下文 14 列、性齢 首列（datechart 传 horse → 15 列 性齢 紧随馬名；§78.1）");
+    ok(eCols.length === 15 && eCols[0].k === "sexage",
+      "embed 无馬名上下文 15 列、性齢 首列（datechart 传 horse → 16 列；§78.1 + §101 上り 解禁紧随着順）");
     const en0 = global.LIB.entries.find(en => String(en.r["性"] || "").trim() && String(en.r["年齢"] || "").trim());
     ok(!!en0 && global.YJ.raceRows.rowLibHTML(en0).includes(">" + en0.r["性"] + en0.r["年齢"] + "</td>"),
       "lib 行 性齢 单元格 = " + (en0 ? en0.r["性"] + en0.r["年齢"] : "(无样本)"));

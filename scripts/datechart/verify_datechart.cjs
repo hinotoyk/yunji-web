@@ -24,7 +24,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "ag", "ms", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障", "障害", "AW"]);   /* 存放口径 = 障（racelib 归一），障害 兼容旧值 */
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -113,6 +113,8 @@ for (const h of basic.horses) {
       ki: raw(r["斤量"]),
       nk: raw(r["人気"]),
       tm: String(r["タイム"] || ""),
+      ag: String(r["上り"] || ""),
+      ms: String(r["末脚"] || ""),   /* 末脚 金/银/铜（後3F 徽章配色判断，§100/§101） */
       bw: raw(r["馬体重"]),
       dz: String(r["増減"] || ""),
       jk: String(r["騎手"] || ""),
@@ -263,16 +265,16 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
   ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
 
-  console.log("[C2] 内嵌比赛表同款明细（PC 15 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
+  console.log("[C2] 内嵌比赛表同款明细（PC 16 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
-  /* 字段基准（§53.5/§78）= 比赛记录页跨马主表 22 列；明细 = 隐藏 性齢/天候/枠番/馬番/頭数/着差/上り/賠率 后的 14 列，
-   * 且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
+  /* 字段基准（§53.5/§78/§101）= 比赛记录页跨马主表 22 列；明细 = 隐藏 天候/枠番/馬番/頭数/着差/賠率 后的 16 列
+   * （§101 上り 解禁 → 上り 紧随着順），且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
   const ths = (pcHtml.match(/<th[^>]*>[\s\S]*?<\/th>/g) || [])
     .map(h => h.replace(/<[^>]+>/g, "").replace(/⇄/g, "").trim());   /* 馬名列头含 ⇄ 切换按钮 → 取纯文案 */
   /* 期望列序用 stub 自己的 i18n 生成（断言的是**顺序与字段集**，不重复断言翻译文案本身） */
-  const EXPECT_TH = ["馬名", "性齢", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "タイム", "馬体重", "賞金", "騎手", "調教師"]
+  const EXPECT_TH = ["馬名", "性齢", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "上り", "タイム", "馬体重", "賞金", "騎手", "調教師"]
     .map(k => k === "賞金" ? YJ.i18n.t(k) + "(万円)" : YJ.i18n.t(k));
-  ok(ths.length === 15, "PC 表头 15 列（基准 22 列 − 隐藏 7 列，含 性齢 §78.1）");
+  ok(ths.length === 16, "PC 表头 16 列（基准 22 列 − 隐藏 6 列，含 性齢 §78.1 + 上り §101）");
   ok(JSON.stringify(ths) === JSON.stringify(EXPECT_TH), "列序随基准：" + ths.join("|"));
   ok(ths.indexOf("性龄") === 1, "性齢 列紧随马名（列头 性龄，§78.1）");
   ok(String(els["dBody"]._html).includes("yj-mb-sexage"), "mb 明细卡片含 性齢 槽（datechart 短键产物已补 sx/ya）");
@@ -357,6 +359,12 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-nav", v: "nm" });
   const lastD = RUNS[RUNS.length - 1].d;   // 数据末日从产物推导（此前硬编码 9/12，数据更新到 9/13 即过期）
   const nextD = new Date(Date.parse(lastD) + 86400000).toISOString().slice(0, 10);
+  /* 面板步进到 末日次日 所在月（数据推进后不依赖固定步数——2026-10 数据踩坑：从 8 月 1 步只到 9 月，10-19 不在格内）；
+   * 停止条件 = 面板 HTML 已含该日格（eval 作用域隔离读不到页面 DP 状态，只能看渲染结果），上限 36 步防死循环 */
+  let guard = 0;
+  while (guard++ < 36 && !(new RegExp('data-d="' + nextD + '"')).test(String(els["dpPanel"]._html))) {
+    dpClick({ name: "data-nav", v: "nm" });
+  }
   // 类顺序无关匹配：末日次日若恰为「今天」会是 class="dc-dp-cell today dis"（2026-09-16 实测踩坑），不能硬编码子串
   const disRe = new RegExp('class="dc-dp-cell[^"]*\\bdis\\b[^"]*"[^>]*data-d="' + nextD + '"');
   ok(disRe.test(String(els["dpPanel"]._html)), "数据末日（" + lastD.slice(5) + "）之后禁用");

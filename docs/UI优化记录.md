@@ -671,6 +671,27 @@
 - **关键结论**：主胜鞍是**逐场成绩的展示精选**而非新抓取字段——层级规则沉在管线一处，前端只做渲染；「最多 4 条」是产品口径（常数在 `MAJOR_MAX`），将来放宽只改常数 + 重跑 `merge_races`。展示位置最终定在概览色带第二行：**成就信息归成就区**，且脚注行只在有胜鞍时出现，不给无胜鞍的 215 匹增加任何高度。
 - **修正（同日用户反馈，定稿）**：资料表行版「加多一列导致 table 增高、很难看」→ 主胜鞍移入数据概览色带第二行；资料表恢复 10 行、照片/血统列高度回落，色带仅在 `主勝鞍` 非空时多一行。旧截图 `tests/_shot/v99-*`（表格行版）保留作对照，现行版看 `v99b-*`。
 
+### §100 · 比赛记录 后3F：末脚金银铜 → 值直接套人気/着順徽章（2026-10-21）
+- **动因**：数据侧已落 `末脚` 字段（金/银/铜/""，docs/SCHEMA.md §2；同日另一任务补齐 801 条历史），用户要求 races.html 展示，定稿口径：「**后3F 这一列的值直接套上人気、着順的样式**，金银铜对应 1/2/3」——不加列、不改结构、不做新样式。
+- **最终落地**（共享模块 `front/public/race-rows.js` 单处，零新增 CSS 类、零新列、列数不变 22）：
+  1. **`agariBadge(r)`**：上り 值 + 末脚 → 金→`yj-no yj-no1`、银→`yj-no2`、铜→`yj-no3`（= 人気/着順徽章**原类**），值原样放进徽章；无 medal / 台账缺键 → 纯文本。
+  2. **inline `width:auto;padding:0 5px`** 押过档位 `.yj-lib.fs* .yj-no` 的定宽方块（值 4 字符放不进 26px；inline 优先级 > (0,3,0) 档位选择器），高/字号/圆角仍随徽章与档位缩放；列宽 `min` +12（左右 padding+边框）。
+  3. PC `pc` 与 mb `mbItem`（raw 通道）同一段徽章输出，两视图一致；embed 视图彼时隐藏上り → 内嵌/明细零影响（§101 已解禁展示）。
+- **验证**：探针 `tests/_tmp_probe/render_agari_probe.cjs` 9/9（金/银/铜三类徽章精确断言 + 无 medal 纯文本 + lib 22 列/embed 隐藏上り 回归）；`npm run build` 通过、dist 核对含 `agariBadge`；`verify_drill.cjs` 59/60（唯一失败仍是既有 554kg 体重档断言漂移，与本节无关）；headless 截图 `tests/_shot/v100b-*`：PC 13 行逐行核对（金 32.8/34.2 黄、银 33.6/34.7/34.6 蓝、铜 33.8 橙、其余纯文本）+ mb 卡片同款、与同卡人気徽章同色系。
+- **关键结论**：末脚是上り 的属性——**值本身徽章化即达意**，不动列结构；`yj-no` 底座类的档位定宽是唯一坑（inline style 押制，避免新增 CSS 与 specificity 纠缠）。
+- **修正（同日两次返工）**：v1 着順浅底三件套整格上色（挂 td）→ 用户否决「样式用错了」；v2 独立「末脚」列（金银铜徽章 chip）→ 用户否决（要求不动结构）。定稿 = 现行 v3（值直接套徽章）。
+
+### §101 · 后3F 列序调整 + profile 内嵌/日期统计明细解禁 + 明细分页（2026-10-21）
+- **需求（用户三条）**：① 比赛记录 后3F 移到着顺后面；② PROFILE 的 比赛记录 · RACES 内嵌表新增 后3F 列；③ 日期统计明细加 后3F 列并分页——PC 一页 100 条、mb 一页 10 条。末脚只作颜色判断，**不新增末脚列**。
+- **落地**：
+  1. **列序**：`race-rows.js` 基准 `BASE_COLS` 上り 移到 place 后（人気→着順→上り→タイム→着差）——单一出处改序，lib/mb/内嵌明细自动跟随；`BASE_LINES`（mb 分组行）不动。
+  2. **内嵌/明细解禁**：embed 视图 hide 清单去掉 `agari`（16 列 含馬名 / 15 列不含）——profile 下段 RACES 与 datechart 明细是同一份 embed 代码，同时获得 后3F（金银铜徽章随 `agariBadge` 自动生效，§100）；datechart 短键产物补 `ag`（上り）/`ms`（末脚，仅配色判断不单独成列）两字段（`scripts/datechart/build_datechart.py`，docs/SCHEMA.md §6 模板同步），页面 `toRow` 补映射。
+  3. **明细分页**：datechart.html `DETAIL_PAGE = { pc: 100, mb: 10 }`，页码状态 `st.dp.pc/mb` 各自独立（PC 表/mb 卡两套列表 CSS 断点各自显示，不引入 JS 设备判断）；口径/场地/锚点变化在 `render()` 归 1，页码点击委托在 `#dBody` 只重画明细区；页码组件 Tailwind utilities 现拼（首尾页+±2 窗口+省略号+「第 x/y 页 · 共 N 条」），本页第 2 处 pager、按「≥3 处才抽离」约定不共享 races.html 页内样式。
+  4. **embed mb 卡补 后3F**（同日追加需求）：embed 视图 mb 分组 line 1 = `race/distMerged/baba/time/agari/prize`（後3F 隨 時間 相邻，同 lib 分组 time→agari 惯例）；顺带修 `mbi()` raw 分支不渲染 label 的旧口径——label 对 raw 同样生效（既有 raw 用点：horse 不在 mb 分组、race 无 label → 零视觉影响），後3F 无 medal 走常规 `mbi(lb, v)` 通道（label + `<b>` 值），金银铜 raw 嵌 chip（label 照常）→ mb 卡「后3F：[chip]」与其他项格式一致。
+- **验证**：探针 15/15（新增 lib 上り 紧随着順、embed 解禁含徽章、embed/lib mb 徽章 + label 断言）；`verify_datechart.cjs` 112/112（EXPECTED_KEYS 25→27、PC 表头 15→16 随改；顺手修一处**既有数据漂移**——日期面板「数据末日之后禁用」原从 8 月固定走 1 步，数据推进到 10-18 后末日次日在 10 月必失败，改为步进到面板 HTML 含末日次日格为止）；`verify_drill.cjs` 59/60（唯一失败仍是既有 554kg 体重档）；`npm run build` + dist 三处核对（race-rows 列序 / datechart 分页 / 产物 ag 字段）；headless 截图 `tests/_shot/v101-*`：races 主表列序、profile RACES 内嵌（着順→后3F→时间 + 徽章）、datechart PC 明细（10 月 31 条 1 页无页码行）与 mb（37 条 4 页、页码行「第 1/4 页」）；`v102b-*` mb 卡「时间：2:02.7 后3F：[33.9] 赏金：120万」。
+- **关键结论**：列基准单一出处再次显效——改序/解禁各只动一处、三视图自动跟随；分页两视图共用同一 runs 数组、页码状态独立，CSS 断点分侧显示即可，无需设备判断。
+
+
 
 
 

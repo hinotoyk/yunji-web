@@ -270,8 +270,10 @@ function computeRange(){
 }
 
 /* ---- 状态：mode 聚合口径 + 锚点日期（天=该日；周=所在周；月=年月；年=年份）
- *      vts 场地范围（中央/地方/海外，多选，默认只统计 JRA=中央） ---- */
-var st = { mode: "month", y: 0, m: 0, d: 1, vts: ["中央"] };
+ *      vts 场地范围（中央/地方/海外，多选，默认只统计 JRA=中央）
+ *      dp 明细分页页码（§101）：PC 表 100 条/页、mb 卡 10 条/页——PC/mb 两套列表靠 CSS 断点各自显示，
+ *      页码状态也各自独立（dp.pc/dp.mb），不引入 JS 设备判断；口径/场地/锚点变化时在 render() 归 1 ---- */
+var st = { mode: "month", y: 0, m: 0, d: 1, vts: ["中央"], dp: { pc: 1, mb: 1 } };
 
 /* 锚点 → 口径键 */
 function scopeKey(mode){
@@ -335,6 +337,7 @@ function shiftAnchor(dir){
 /* ---- 渲染 ---- */
 function render(){
   var mode = st.mode, key = scopeKey(mode);
+  st.dp.pc = 1; st.dp.mb = 1;   /* 口径/场地/锚点变化 → 明细分页归 1（页码点击走 renderDetail，不经过这里） */
   renderNav(mode);
   renderKpis(mode, key);
   renderCal(mode, key);
@@ -461,7 +464,9 @@ function toRow(r){
     race_id: r.rid,         /* 赛事名 → netkeiba SP 比赛页链接（§80；'' = 台账等无 id → 纯文本） */
     venue_type: r.vt,       /* raceLink 按 中央/地方/海外 分流 SP 子域（§80.2） */
     距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 斤量: r.ki,
-    人気: r.nk, 結果: r.p, タイム: r.tm, 賞金: r.pr,
+    人気: r.nk, 結果: r.p, タイム: r.tm,
+    上り: r.ag, 末脚: r.ms, /* 後3F 列（§101）：值徽章化走共享模块 agariBadge（末脚只作配色判断） */
+    賞金: r.pr,
     馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr
   };
 }
@@ -473,6 +478,39 @@ function toRow(r){
 var NAME_VIEW = 0;
 var NAME_TIP = "点击切换马名：日文名/英文名 ⇄ 港译名/自译名";
 function horseNameOf(r){ return (NAME_VIEW && r.hc) ? r.hc : YJ.util.splitName(r.h).name; }
+
+/* ---- 明细分页（§101）：PC 表 100 条/页、mb 卡 10 条/页，页码状态 st.dp.pc/mb 各自独立。
+ * 页码组件用 Tailwind utilities 现拼（本页第二处 pager，按复用约定 ≥3 处才抽离，不共享 races.html 页内样式）；
+ * 口径/场地/锚点变化在 render() 归 1，页码点击走 renderDetail 只重画明细区。 ---- */
+var DETAIL_PAGE = { pc: 100, mb: 10 };
+function pageSeq(cur, total){
+  var set = {}, out = [], i;
+  [1, total].forEach(function(p){ set[p] = 1; });
+  for (i = cur - 2; i <= cur + 2; i++){ if (i >= 1 && i <= total) set[i] = 1; }
+  var ks = Object.keys(set).map(Number).sort(function(a, b){ return a - b; });
+  for (i = 0; i < ks.length; i++){
+    if (i > 0 && ks[i] - ks[i - 1] > 1) out.push(null);
+    out.push(ks[i]);
+  }
+  return out;
+}
+function detailPagerHTML(which, page, pages, total){
+  if (pages <= 1) return "";
+  var btn = function(p, label){
+    var disabled = p < 1 || p > pages, on = p === page;
+    return '<button type="button" data-dp="' + which + '" data-p="' + p + '"' + (disabled ? " disabled" : "") +
+      ' class="min-w-[28px] h-[26px] px-1 rounded border text-[12px] leading-none ' +
+      (on ? "bg-primary border-primary text-white" : "border-border text-secondary-foreground hover:bg-muted") +
+      (disabled ? " opacity-40 cursor-default" : "") + '">' + label + '</button>';
+  };
+  var cells = pageSeq(page, pages).map(function(p){
+    return p == null ? '<span class="px-0.5 text-[12px] text-muted-foreground">…</span>' : btn(p, p);
+  }).join("");
+  return '<div class="' + (which === "pc" ? "hidden md:flex" : "flex md:hidden") + ' mt-2 items-center justify-center gap-1">' +
+    btn(page - 1, "‹ 上一页") + cells + btn(page + 1, "下一页 ›") +
+    '<span class="ml-2 text-[11.5px] text-muted-foreground">第 ' + page + ' / ' + pages + ' 页 · 共 ' + total + ' 条</span>' +
+  '</div>';
+}
 
 function renderDetail(mode, key){
   /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
@@ -498,17 +536,26 @@ function renderDetail(mode, key){
     return;
   }
   /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义；
-   * PC 表头传 nameToggle → 「马名」列头变成切换按钮（仅 PC 列头不带 cls，mb 卡片顶部中槽显示马名） */
+   * PC 表头传 nameToggle → 「马名」列头变成切换按钮（仅 PC 列头不带 cls，mb 卡片顶部中槽显示马名）。
+   * 分页（§101）：PC 100 条/页、mb 卡 10 条/页，各自切片 + 各自页码行（CSS 断点各自显示）。 */
   var RR = YJ.raceRows;
-  var trs = runs.map(function(r){
+  var pagesPc = Math.max(1, Math.ceil(runs.length / DETAIL_PAGE.pc));
+  var pagesMb = Math.max(1, Math.ceil(runs.length / DETAIL_PAGE.mb));
+  if (st.dp.pc > pagesPc) st.dp.pc = pagesPc;
+  if (st.dp.mb > pagesMb) st.dp.mb = pagesMb;
+  var pcRows = runs.slice((st.dp.pc - 1) * DETAIL_PAGE.pc, st.dp.pc * DETAIL_PAGE.pc);
+  var mbRows = runs.slice((st.dp.mb - 1) * DETAIL_PAGE.mb, st.dp.mb * DETAIL_PAGE.mb);
+  var trs = pcRows.map(function(r){
     return RR.rowEmbedHTML(toRow(r), { horse: { id: r.id, name: horseNameOf(r) } });
   }).join("");
   var pc = RR.embedTableHTML(trs, { horse: true, cls: "hidden md:block", nameToggle: true, nameTip: NAME_TIP });
-  var mbs = runs.map(function(r){
+  var mbs = mbRows.map(function(r){
     return RR.rowEmbedMbHTML(toRow(r), { horse: { id: r.id, name: horseNameOf(r) } });
   }).join("");
   var mb = RR.mbListHTML(mbs, { cls: "md:hidden" });
-  document.getElementById("dBody").innerHTML = pc + mb;
+  document.getElementById("dBody").innerHTML =
+    pc + detailPagerHTML("pc", st.dp.pc, pagesPc, runs.length) +
+    mb + detailPagerHTML("mb", st.dp.mb, pagesMb, runs.length);
 }
 
 /* ---- 交互（事件委托） ---- */
@@ -540,6 +587,13 @@ document.getElementById("vseg").addEventListener("click", function(e){
     btn.setAttribute("data-on", "true");
   }
   render();
+});
+/* 明细分页（§101）：委托在 dBody（明细内容整体重画、容器元素不变）；点页码只重画明细区，不动日历/KPI */
+document.getElementById("dBody").addEventListener("click", function(e){
+  var b = e.target.closest("[data-dp]");
+  if (!b || b.disabled) return;
+  st.dp[b.getAttribute("data-dp")] = Math.max(1, +b.getAttribute("data-p") || 1);
+  renderDetail(st.mode, scopeKey(st.mode));
 });
 /* ---- 快速定位日期选择器（Element date-picker 风格）：
  * 面板随口径切换——天=日历面板 / 周=带周号日历面板 / 月=12 月格 / 年=十年格；
