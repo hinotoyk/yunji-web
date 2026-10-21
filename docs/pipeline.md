@@ -57,7 +57,7 @@ scripts/
   `data/_tmp/<管线>/<name>.json`（键均为 `str(id)`），因此可真正并行、互不覆盖；
   最后由该管线的 `merge_*.py` 统一合并进 `basic.json` 并删除缓存（`--keep` 保留缓存调试）。
 - 竞赛管线只消费 `basic.json` 的 `id` / `nk_id`，回填竞赛字段
-  （`races_file` / `通算成績_逐场` / `収得賞金` / `性別_当前`）。
+  （`races_file` / `通算成績_逐场` / `主勝鞍` / `収得賞金` / `性別_当前`）。
 - 派生产物（timeline / stats / datechart）在内容无变化时**跳过写入**：`generated_at` 每次都变，
   照写会让 `--ci` 每轮产生空 diff 提交。
 

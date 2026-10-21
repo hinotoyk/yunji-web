@@ -40,6 +40,7 @@ BASIC_FIELDS = [
     ("生産牧場", ""),
     ("通算成績", ""),
     ("通算成績_逐场", {}),                          # merge_races 3d 派生：全站通算战绩唯一展示源，归位在 通算成績 之后
+    ("主勝鞍", []),                                 # merge_races 3e 派生：主胜鞍精选（层级见 SCHEMA §1），归位在 通算成績_逐场 之后
     ("獲得賞金 (中央)", ""),
     ("獲得賞金 (地方)", ""),
     ("総賞金", ""),
@@ -53,7 +54,7 @@ BASIC_FIELDS = [
 # 建档不预置的列：由竞赛/合并环节写入（建档时无值可写）
 BASIC_PIPELINE_FIELDS = {"母父", "馬齢", "収得賞金"}
 # 建档占位、但不进固定列序的派生列：重排时作为「模板外键」追加，位置由 merge_races.move_after 归位
-BASIC_DERIVED_TAIL = ("性別_当前", "通算成績_逐场")
+BASIC_DERIVED_TAIL = ("性別_当前", "通算成績_逐场", "主勝鞍")
 
 BASIC_ORDER = [k for k, _ in BASIC_FIELDS if k not in BASIC_DERIVED_TAIL]
 BASIC_TEMPLATE = {k: d for k, d in BASIC_FIELDS if k not in BASIC_PIPELINE_FIELDS}
@@ -130,7 +131,7 @@ def order_horse(h, drop=()):
     reordered.update(extra)
     h.clear()
     h.update(reordered)
-    for field, anchor in (("性別_当前", "性別"), ("通算成績_逐场", "通算成績")):
+    for field, anchor in (("性別_当前", "性別"), ("通算成績_逐场", "通算成績"), ("主勝鞍", "通算成績_逐场")):
         move_after(h, field, anchor)
 
 

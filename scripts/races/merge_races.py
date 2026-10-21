@@ -122,6 +122,60 @@ def career_from_recs(recs):
             "着外": starts - w - p2 - p3, "未完走": dnf, "未出走": exc}
 
 
+# ---- 主勝鞍（2026-10-21 用户定稿的展示精选规则）----
+# 层级数字越小越优先：重赏 GI > JpnI > GII > JpnII > GIII > JpnIII ＞ OP/L ＞ 班赛 3勝 > 2勝 > 1勝 ＞ 新馬/未勝利。
+# 只在「命中的最高一级」里取：有任一级别重赏 → 只取重赏（最多 4 条，同级按日期近者优先）；无重赏有 OP/L → 只取 OP/L
+# （同样最多 4 条）；无 OP/L → 只取最高班赛 1 条；只剩新馬/未勝利 → 取最近 1 条。格 为空（地方竞马/海外台账行）
+# 不带级别信息 → 不进榜（SCHEMA §1「主勝鞍」有注明；将来要给地方/海外胜场兜底需先补 格）。
+MAJOR_TIER = {
+    "GI": 1, "JGI": 1,          # JGI = 障害 G1，与 GI 同层
+    "JpnI": 2,
+    "GII": 3, "JGII": 3,
+    "JpnII": 4,
+    "GIII": 5, "JGIII": 5,
+    "JpnIII": 6,
+    "L": 7, "OP": 8,            # 非重赏特别赛：L（リステッド）高于 OP
+    "3勝クラス": 9, "2勝クラス": 10, "1勝クラス": 11,
+    "新馬": 12, "未勝利": 13,
+}
+MAJOR_MAX = 4                   # 重赏 / OP·L 最多展示条数（同级按日期近者优先）
+
+
+def _major_item(r):
+    """逐场记录 → 主勝鞍条目（只留展示必需键，落库体积可控）。"""
+    return {"日付": r.get("日付", ""), "レース名": r.get("レース名", ""),
+            "格": r.get("格", ""), "場名": r.get("場名", "")}
+
+
+def major_wins(recs):
+    """逐场记录 → 主勝鞍（展示精选）。规则见上方注释与 SCHEMA §1。"""
+    wins = []
+    for r in recs:
+        if r.get("結果") != 1 or not r.get("日付"):
+            continue                          # 只认已出结果且带日期的胜场
+        tier = MAJOR_TIER.get(str(r.get("格") or ""))
+        if tier is not None:
+            wins.append((tier, str(r["日付"]), r))
+    if not wins:
+        return []
+    graded = [w for w in wins if w[0] <= 6]
+    if graded:
+        pool, limit = graded, MAJOR_MAX
+    elif any(w[0] in (7, 8) for w in wins):
+        pool, limit = [w for w in wins if w[0] in (7, 8)], MAJOR_MAX
+    else:
+        cls = [w for w in wins if w[0] <= 11]  # 班赛（此分支必无重赏 / OP·L）
+        if cls:
+            top = min(w[0] for w in cls)
+            pool, limit = [w for w in cls if w[0] == top], 1
+        else:
+            pool, limit = wins, 1              # 只剩新馬 / 未勝利
+    pool.sort(key=lambda w: w[1], reverse=True)   # 先日期近者优先
+    pool.sort(key=lambda w: w[0])                 # 再按层级升序（稳定排序保留层内日期序）
+    return [_major_item(r) for _, _, r in pool[:limit]]
+
+
+
 def move_after(h, field, anchor):
     """键序归位：单一出处 = core/basic_io.move_after（此处仅为文件内既有调用点的薄别名）。"""
     return common.move_after(h, field, anchor)
@@ -254,8 +308,10 @@ def main():
     sex_diff = []               # (馬名, 官方 性別, 逐场 性)
     career_diff = []            # (馬名, 官方 通算成績, 逐场推导) —— 两口径不一致即 netkeiba 未收录的场次
     manual_hits = []            # (馬名, [被套字段])
+    n_major = 0                 # 主勝鞍 非空匹数（报告用）
     for h in horses:
         id_s = str(h["id"])
+        h.setdefault("主勝鞍", [])           # 无 races 文件的马也保持契约键（空数组 = 无胜鞍）
         p = common.RACES_DATA_DIR / f"{id_s}.json"
         if not p.exists():
             continue
@@ -280,6 +336,10 @@ def main():
         #     官方 通算成績 字符串保持 netkeiba 镜像、降级为对账用（check_data 拿它比 netkeiba 源行数）。
         car = career_from_recs(recs)
         h["通算成績_逐场"] = car
+        # 5e) 主勝鞍：展示精选（重赏 > OP/L > 最高班赛 > 新馬/未勝利，规则见函数注释）
+        h["主勝鞍"] = major_wins(recs)
+        if h["主勝鞍"]:
+            n_major += 1
         m = re.search(r"(\d+)戦", h.get("通算成績") or "")
         if m and int(m.group(1)) != car["出走"]:
             career_diff.append((h.get("馬名"), h.get("通算成績"), car))
@@ -292,6 +352,7 @@ def main():
             manual_hits.append((h.get("馬名"), hit))
         move_after(h, "性別_当前", "性別")   # 派生/人工两条写入路径都归位到 性別 下面
         move_after(h, "通算成績_逐场", "通算成績")
+        move_after(h, "主勝鞍", "通算成績_逐场")
 
     common.save_basic(data)
 
@@ -305,6 +366,7 @@ def main():
         f"- 収得賞金计算: {n_prize} 匹 · 収得缺本賞金: {len(shutoku_missing)} 场",
         f"- 性別_当前 派生（官方登录 ≠ 逐场）: {len(sex_diff)} 匹 · 人工维护覆盖: {len(manual_hits)} 匹",
         f"- 通算成績 逐场推导 ≠ netkeiba 展示值: {len(career_diff)} 匹",
+        f"- 主勝鞍 非空: {n_major} 匹（派生精选，规则见 SCHEMA §1）",
         f"- 抓取失败: {len(failures)} 匹",
     ]
     if career_diff:
@@ -340,6 +402,7 @@ def main():
     print(f"   - 収得缺本賞金 {len(shutoku_missing)} 场 · 抓取失败 {len(failures)} 匹")
     print(f"   - 性別_当前 派生 {len(sex_diff)} 匹 · 人工维护覆盖 {len(manual_hits)} 匹")
     print(f"   - 通算成績 逐场推导 ≠ netkeiba 展示值 {len(career_diff)} 匹")
+    print(f"   - 主勝鞍 非空 {n_major} 匹")
     print(f"✔ 已写 {report.name}")
 
     if not args.keep:

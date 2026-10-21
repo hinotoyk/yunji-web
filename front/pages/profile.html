@@ -44,6 +44,7 @@
 <script src="../yj-util.js"></script>
 <script src="../loading.js"></script>
 <script src="../i18n.js"></script>
+<script src="../race-rows.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../selector.js"></script>
 <script src="../bus.js"></script>
@@ -229,6 +230,21 @@ function renderOverview(hs){
     '</div>';
 }
 
+/* 主胜鞍（后端 merge_races 派生精选：重赏 > OP/L > 最高班赛 > 新馬/未勝利，最多 4 条）：
+ * 展示在「数据概览」色带内的第二行（年份 + 赛名 + 等级徽章）。赛名去等级尾缀、徽章结构统一复用
+ * 共享模块 front/public/race-rows.js（raceNameText / gradeBadge 单一出处）；空数组 → 整行不渲染。 */
+function majorWinsStrip(list){
+  if(!Array.isArray(list) || !list.length) return '';
+  var rr=YJ.raceRows;
+  return '<div class="yj-ov-wins"><span class="yj-ov-k">'+esc(YJ.i18n.t("主勝鞍"))+' · MAJOR WINS</span>'+
+    list.map(function(w){
+      var y=String(w.日付||'').slice(0,4);
+      return '<span class="yj-ov-win">'+
+        (y?'<span class="yj-ov-win-y">'+esc(y)+'</span>':'')+
+        '<span class="yj-ov-win-n">'+esc(rr.raceNameText(w))+'</span>'+rr.gradeBadge(w.格)+'</span>';
+    }).join('')+'</div>';
+}
+
 function render(h){
   var t=YJ.i18n.t;
   var title = h.自译馬名 || h.欧字馬名 || YJ.util.splitName(h.馬名).name || YJ.util.fallbackName(h);
@@ -274,7 +290,17 @@ function render(h){
     return s.v ? ncol(s.lbl, s.v, i === bigIdx) : nslot(s.lbl);
   });
   var sep='<span class="mb-0.5 select-none text-[15px] font-light text-muted-foreground/45">/</span>';
-  var nameHeader='<div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>';
+  /* 马名含义（basic.json `馬名意味` = studbook 意味・由来 原文）：名字行下方弱化一行。
+   * 数据侧 268/277 有值，档案页此前从未展示；空值整行不渲染（不留「—」占位 —— 它是名字的注解，不是档案必填项）。
+   * 标签复用 i18n FIELD 既有词条（馬名意味 → 马名含义，零字典改动），正文保留日文原文并标 lang。 */
+  var meaning=String(hv.馬名意味||'').trim();
+  var meaningLine=meaning
+    ? '<div class="mt-3 flex min-w-0 items-baseline gap-2.5 max-md:mt-2 max-md:flex-col max-md:items-start max-md:gap-1">'+
+        '<span class="flex-none text-[10.5px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/80">'+esc(t("馬名意味"))+'</span>'+
+        '<span lang="ja" class="min-w-0 text-[13px] leading-relaxed text-secondary-foreground max-md:text-[12px]">'+esc(meaning)+'</span>'+
+      '</div>'
+    : '';
+  var nameHeader='<div class="flex min-w-0 flex-col"><div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>'+meaningLine+'</div>';
 
   /* ── 上段整体：照片（左，铺满占大） + 基本信息 + 血统（右，窄列，成为一体）── */
   var fi=function(k,v,field){
@@ -344,6 +370,8 @@ function render(h){
   var mC=money(h["獲得賞金 (中央)"]), mL=money(h["獲得賞金 (地方)"]), mF=money(prizeFlat);
 
   /* 色带格子：皮肤（渐变描边/径向雾/分格线/mb 堆叠）全部在 theme.css .yj-ov-*，此处只出结构 */
+  /* 主胜鞍：色带第二行；空数组整行不渲染（不占色带高度，也不留空行） */
+  var winsStrip=majorWinsStrip(hv.主勝鞍);
   var ovRate=function(v,k,hi){
     return '<div class="yj-ov-rate'+(hi?' yj-ov-hi':'')+'"><span class="yj-ov-k">'+esc(k)+'</span><b>'+esc(v)+'</b></div>';
   };
@@ -368,6 +396,7 @@ function render(h){
         ovM(t("獲得賞金 (地方)"), mL)+
         ovM(t("収得賞金"), mF, prizeSub.length?prizeSub.join(' · '):'')+
       '</div>'+
+      winsStrip+
     '</div></div></div>';
 
   /* ── 下段 · 比赛记录（内嵌 iframe 无边框）── */
