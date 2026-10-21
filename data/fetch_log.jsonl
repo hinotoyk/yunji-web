@@ -20828,3 +20828,5 @@
 {"ts": "2026-10-21 01:01:03", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0967659/kanzen", "status": "200", "dur_s": 0.82, "retries": 1, "note": ""}
 {"ts": "2026-10-21 01:01:05", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0964690/kanzen", "status": "200", "dur_s": 0.85, "retries": 1, "note": ""}
 {"ts": "2026-10-21 01:01:07", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.72, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
+{"ts": "2026-10-21 17:58:12", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.12, "retries": 1, "note": "503 Server Error: Service Temporarily Unavailable for url: https://race.netkeiba"}
+{"ts": "2026-10-21 17:58:12", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.11, "retries": 1, "note": "503 Server Error: Service Temporarily Unavailable for url: https://nar.netkeiba."}
