@@ -21194,3 +21194,8 @@
 {"ts": "2026-10-22 01:03:53", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0967659/kanzen", "status": "200", "dur_s": 0.6, "retries": 1, "note": ""}
 {"ts": "2026-10-22 01:03:55", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0964690/kanzen", "status": "200", "dur_s": 0.57, "retries": 1, "note": ""}
 {"ts": "2026-10-22 01:03:57", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.64, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
+{"ts": "2026-10-22 17:55:23", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.54, "retries": 1, "note": "400 Client Error: Bad Request for url: https://race.netkeiba.com/top/payback_lis"}
+{"ts": "2026-10-22 17:55:24", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.32, "retries": 1, "note": ""}
+{"ts": "2026-10-22 17:55:24", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.33, "retries": 1, "note": ""}
+{"ts": "2026-10-22 17:55:24", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.33, "retries": 1, "note": ""}
+{"ts": "2026-10-22 17:55:25", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
