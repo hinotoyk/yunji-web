@@ -14,6 +14,10 @@
      由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
      （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/UI优化记录.md §97（§85 不蒜子 → §87 Vercount）。 -->
 <script src="yj-visit.js?v=3"></script>
+<!-- 「友情档案」三站互跳（yunji / kzn / jbis；方案说明 = docs/友情跳转方案.md）：
+     挂载点在侧栏底部（桌面常驻 + 手机抽屉内），渲染由 public/friend-links.js 完成，
+     版本戳由 auto-version 插件自动补。脚本缺失/渲染失败时挂载点保持空白，无占位观感。 -->
+<script src="friend-links.js" defer></script>
 </head>
 <body class="overflow-hidden bg-background text-foreground antialiased">
 <div class="flex h-screen">
@@ -62,6 +66,12 @@
         </div>
       </template>
     </nav>
+
+    <!-- 「友情档案」三站互跳挂载点：public/friend-links.js 渲染（data-site 排除自身）。
+         容器边框/内距由渲染时注入，脚本缺失 = 零痕迹；位置在 nav 之后、版权块之前，
+         与版权块共用 border-t 分节（视觉 = 侧栏另一组，非外链导航混入 iframe 导航）。 -->
+    <div data-friend-links data-site="yunji" data-skin="yj"></div>
+
     <div class="border-t border-border px-4 py-3 text-[12px] text-muted-foreground">
       {{YJ_SITE_NAME}} · 数据仅供分享交流
       <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。

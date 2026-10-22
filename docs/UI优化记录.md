@@ -697,6 +697,19 @@
 - **最终状态**：✅ 已完成。
 - **关键结论**：筛选选项 = 官方全量清单，不跟随「库内有数据的场」；选中暂无记录的场 = 空结果属正常。场地名仅作筛选值透传（= 場名原值），无 i18n 改动。
 
+### §103 · 友情跳转：「友情档案」三站互跳组件（2026-10-22）
+- **动因**：用户要求给 云迹（www.yunji.xyz）/ 絆（kzn-web）/ 種牡馬ランキング（jbis-sire-rank-history，异构模板）三站做一套统一好用、各自好看的友情跳转。方案定稿 = **一个组件文件 + 各站一行挂载点**：`public/friend-links.js`（零依赖自渲染）三站同文副本，站点清单内嵌文件头 `SITES` 注册表（增删站只改这里，三站同步）；渲染按挂载点 `data-site` 排除自身。完整方案 = `docs/友情跳转方案.md`（三仓同文）。
+- **最终落地**：
+  1. **挂载点**（`front/index.html` 侧栏 `</nav>` 与版权块之间）：`<div data-friend-links data-site="yunji" data-skin="yj"></div>`，桌面常驻 + 手机抽屉内同源；`<head>` 加 `<script src="friend-links.js" defer>`（auto-version 自动打哈希戳）。挂载点不带任何样式类 → 脚本缺失/渲染异常**零痕迹**。
+  2. **yj 皮肤**（yunji/kzn 共用）：视觉 = 侧栏既有元素逐类复用 —— 分组标题同 nav 组标签（`text-[11.5px] tracking-[1.5px] text-secondary-foreground`「友情档案」）、条目同 nav-item（`hover:bg-muted/40`）+ 品牌方块（26px 缩号，雲/絆 青绿、順 墨色）+ 两行文本（站名 `truncate` + 一句话简介）+ hover 才现形的青绿 `↗`。Tailwind 类全为 JS 字面量（content 扫 `./public/**/*.js`，theme.css 已编译核对）。
+  3. **跳转语义**：一律新标签页（`_blank` + `noopener`）—— 三站都是带页内状态的查询工具，跳走不丢筛选/图表/页码状态；外站不进本站 iframe。展示名「name · sub」连写 ≤10 字（種牡馬ランキング 8 字单显），侧栏窄列不截断；装饰元素 `aria-hidden`，过渡仅颜色/透明度。
+- **验证**：`npm run build` 通过；`dist/assets/theme-*.css` 含全部新类（escaped 形态核对 `py-[7px]`/`h-[26px]`/`rounded-[7px]`/`group-hover:opacity-100` 等）；`dist/index.html` 引用 `friend-links.js?v=2e6d45f8fc`；headless Edge 本地预览截图 `tests/_shot/v103-*`（桌面侧栏渲染 + 425px 抽屉收起无布局破坏 + dump-dom 核对渲染 DOM）。
+- **过程坑（已修）**：JS 块注释里写了 `**/*.js` glob，`*/` 提前闭合注释 → 整文件 SyntaxError、脚本静默失效（挂载点空白、截图无组件）——注释内禁止再写带 `*/` 的通配符。
+- **关键结论**：跨站组件要「一套方案、各站原生」= 单文件自渲染 + 每站皮肤适配宿主设计语言（yj 用宿主 Tailwind token，jbis 用宿主 CSS 变量换肤自动跟随）；挂载点保持裸元素是容错关键（脚本挂了页面零污染）。
+- **修正（同日用户反馈，jbis 皮肤 v2 定稿）**：v1 把 jbis 入口放站头 tabs 下方胶囊 chips，用户否决「不太好」——外部友链混进 tabs/年度切换器的功能区、还占首屏。v2 改为**页脚收尾区**：挂载点移到 `site/index.html` main 之后、colophon footer 之前，形态改为站点 `.panel` 同语言的两列卡片（白底细线 8px 圆角、720px 断点单列），标题复刻 `.panel-title`（「友情档案 SISTER SITES」），hover 同表格行（`--accent-soft` 底 + `--accent` 边 + ↗ 现形）——读完排名自然到达的出口，不占首屏、不混功能区。yj 皮肤零改动。重建三站（friend-links.js 同步新哈希）+ 重截图 `tests/_shot/v103b-*`（桌面两列/ink 换肤/425px 单列/站头恢复干净）。**过程坑**：v2 重写渲染函数时卡片 `<a>` 漏写 `class="yjfr-j-card"`，CSS 选择器全落空、卡片裸奔成默认链接样式——渲染类名与 CSS 选择器必须成对核对，截图 + dump-dom 双验。
+- **定稿微调（同日用户确认，截图 `v103c-*`）**：① kzn 展示副题「高情厚意档案」→「**绊崽档案**」（对应云迹「云崽」的家族爱称；kzn 站自身名称不变，仅友链展示名）；② jbis 品牌方块弃墨色「順」→ 家族青绿 + 「**LS**」（Leading Sire）——三块方块统一 `#0aa7a0`，双拉丁字母在 26px/28px 方块内居中无溢出。SITES 注册表两行改动 + 注释例子同步，三站重建拉齐哈希。
+- **文案定稿（同日用户确认，截图 `v103d-*`）**：jbis 展示名「種牡馬ランキング」→「**JBIS LS榜**」、简介「JBIS 每日快照」→「**每日快照**」——长日文名在窄列截断且与 LS 方块不呼应，改后三条目节奏统一（短名 + 短简介），注册表 name/sub/desc 三字段同步。
+
 
 
 
