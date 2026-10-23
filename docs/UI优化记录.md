@@ -709,6 +709,7 @@
 - **修正（同日用户反馈，jbis 皮肤 v2 定稿）**：v1 把 jbis 入口放站头 tabs 下方胶囊 chips，用户否决「不太好」——外部友链混进 tabs/年度切换器的功能区、还占首屏。v2 改为**页脚收尾区**：挂载点移到 `site/index.html` main 之后、colophon footer 之前，形态改为站点 `.panel` 同语言的两列卡片（白底细线 8px 圆角、720px 断点单列），标题复刻 `.panel-title`（「友情档案 SISTER SITES」），hover 同表格行（`--accent-soft` 底 + `--accent` 边 + ↗ 现形）——读完排名自然到达的出口，不占首屏、不混功能区。yj 皮肤零改动。重建三站（friend-links.js 同步新哈希）+ 重截图 `tests/_shot/v103b-*`（桌面两列/ink 换肤/425px 单列/站头恢复干净）。**过程坑**：v2 重写渲染函数时卡片 `<a>` 漏写 `class="yjfr-j-card"`，CSS 选择器全落空、卡片裸奔成默认链接样式——渲染类名与 CSS 选择器必须成对核对，截图 + dump-dom 双验。
 - **定稿微调（同日用户确认，截图 `v103c-*`）**：① kzn 展示副题「高情厚意档案」→「**绊崽档案**」（对应云迹「云崽」的家族爱称；kzn 站自身名称不变，仅友链展示名）；② jbis 品牌方块弃墨色「順」→ 家族青绿 + 「**LS**」（Leading Sire）——三块方块统一 `#0aa7a0`，双拉丁字母在 26px/28px 方块内居中无溢出。SITES 注册表两行改动 + 注释例子同步，三站重建拉齐哈希。
 - **文案定稿（同日用户确认，截图 `v103d-*`）**：jbis 展示名「種牡馬ランキング」→「**JBIS LS榜**」、简介「JBIS 每日快照」→「**每日快照**」——长日文名在窄列截断且与 LS 方块不呼应，改后三条目节奏统一（短名 + 短简介），注册表 name/sub/desc 三字段同步。
+- **v3 四站扩展（2026-10-23）**：第 4 站 racing-calendar（出走表，与 jbis 同构 site/→_site/）接入——注册表加 rc 条目（RC 方块 / Racing Calendar / 一键生成出马表）、组标题三轮比稿定稿「**站群导航 NETWORK**」、jbis 展示名改「**JBIS LS Rank榜**」。技术要点：jbis 系皮肤**变量归一化**（--f-* fallback 链）——rc 用 shadcn 风变量命名且语义相反（--muted/--accent 是底色非前景），链序专门设计（rc 走 --muted-foreground/--primary）实现一套 CSS 双站兼容；卡片网格改 repeat(auto-fit,minmax(280px,1fr)) 自适应列宽（3 卡一行）。方案文档升四仓同文；yj 侧栏自动 3 条目零改动。
 
 
 
