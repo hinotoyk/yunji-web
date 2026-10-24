@@ -21921,3 +21921,13 @@
 {"ts": "2026-10-24 00:56:02", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0967659/kanzen", "status": "200", "dur_s": 0.91, "retries": 1, "note": ""}
 {"ts": "2026-10-24 00:56:05", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0964690/kanzen", "status": "200", "dur_s": 1.09, "retries": 1, "note": ""}
 {"ts": "2026-10-24 00:56:07", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.76, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
+{"ts": "2026-10-24 16:31:26", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:26", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.24, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:26", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.22, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:27", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:27", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.32, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:27", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.23, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:28", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.44, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:28", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.32, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:28", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.23, "retries": 1, "note": ""}
+{"ts": "2026-10-24 16:31:28", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
