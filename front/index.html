@@ -54,15 +54,26 @@
 
       <!-- 「编辑」分组：默认**完全不进 DOM**（template 不渲染），仅当外壳 URL 带 ?edit=1 时由下方脚本注入
            —— 公网访客看不到入口（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案，D6 编辑动作只此一处）。
-           data-href 不含 query：iframe load 按 pathname 后缀匹配高亮，编辑页内部切 tab 也能保持高亮；
-           data-url 才是真正要加载的地址（带 ?tab= 直达对应段）。 -->
+           data-href 不含 query：iframe load 按 pathname 后缀匹配高亮，编辑页内部跳转也能保持高亮；
+           data-url 才是真正要加载的地址（带 ?sheet= 直达对应页签）。
+           2026-10-25 用户定稿：页内页签全部撤下，导航 5 条目全收侧栏；两条批量条目共用
+           pages/edit-table.html（data-href 同、高亮靠 data-navid 区分 + ?sheet= 精确点亮）。 -->
       <template id="editNav">
         <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">编辑</div>
-        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-on="false">
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit.html" data-navid="ed-horse" data-on="false">
           <span class="w-[18px] text-center text-[14px] opacity-90">✎</span>基本信息编辑
         </div>
-        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-timeline.html" data-url="pages/edit-timeline.html" data-on="false">
-          <span class="w-[18px] text-center text-[14px] opacity-90">⧗</span>航迹线编辑
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-table.html" data-navid="etb-basic" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">⊞</span>基本信息批量编辑
+        </div>
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-table.html" data-url="pages/edit-table.html?sheet=races" data-navid="etb-races" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">▤</span>比赛记录批量编辑
+        </div>
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-timeline.html" data-url="pages/edit-timeline.html" data-navid="ed-tl" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">⧗</span>航迹线
+        </div>
+        <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-primary data-[on=true]:font-semibold data-[on=true]:text-primary-foreground" data-href="pages/edit-drafts.html" data-url="pages/edit-drafts.html" data-navid="ed-drafts" data-on="false">
+          <span class="w-[18px] text-center text-[14px] opacity-90">🗒</span>草稿箱
         </div>
       </template>
     </nav>
@@ -102,7 +113,7 @@
         class="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-border bg-background text-[15px] leading-none text-foreground shadow-[0_2px_8px_rgba(0,0,0,.08)]">☰</button>
     </div>
     <div class="min-h-0 flex-1">
-      <iframe id="frame" class="block h-full w-full border-none bg-background" src="pages/profile.html" title="内容"></iframe>
+      <iframe id="frame" class="block h-full w-full border-none bg-background" src="pages/profile.html" title="内容" allowfullscreen></iframe>
     </div>
   </div>
 </div>
@@ -177,8 +188,27 @@ document.getElementById('frame').addEventListener('load',function(){
   var path='';
   try{ path=this.contentWindow.location.pathname||''; }catch(e){}
   if(!path) return;
-  var hit=items.filter(function(it){ return path.slice(-it.dataset.href.length)===it.dataset.href; });
+  var hit;
+  if(path.slice(-'pages/edit-table.html'.length)==='pages/edit-table.html'){
+    /* 两条批量条目共用一个 pathname → 按 ?sheet= 精确点亮（直载 ?sheet=races 时高亮不落错） */
+    var srch=''; try{ srch=this.contentWindow.location.search||''; }catch(e){}
+    var navid=/(?:^|[?&])sheet=races/.test(srch)?'etb-races':'etb-basic';
+    hit=items.filter(function(it){ return it.dataset.navid===navid; });
+  } else {
+    hit=items.filter(function(it){ return path.slice(-it.dataset.href.length)===it.dataset.href; });
+  }
   light(hit.length ? (hit.indexOf(active)>=0?active:hit[0]) : null);
+});
+/* 页内页签切换不产生 iframe load（批量表格 切 基本信息/比赛记录 页签）→ 内容页 postMessage 同步高亮。
+   只认内容 iframe 自己发来的消息（e.source 比对），外域伪造无效。 */
+window.addEventListener('message',function(e){
+  var d=e&&e.data;
+  if(!d||d.type!=='yj:page'||e.source!==frameEl.contentWindow) return;
+  if(d.page==='edit-table'){
+    var navid=d.sheet==='races'?'etb-races':'etb-basic';
+    var hit=items.filter(function(it){ return it.dataset.navid===navid; });
+    if(hit.length) light(hit[0]);
+  }
 });
 </script>
 </body>

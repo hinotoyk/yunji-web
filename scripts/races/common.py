@@ -10,6 +10,7 @@
 设计原则与并发架构见 docs/pipeline.md，比赛记录字段契约见 docs/SCHEMA.md。
 """
 import functools
+import json
 import sys
 from pathlib import Path
 
@@ -75,6 +76,23 @@ clean_cache_all = functools.partial(basic_io.clean_cache_all, tmp_dir=TMP_DIR)
 # ---------------- 人工维护表 data/manual_overrides.json（契约见 docs/SCHEMA.md） ----------------
 load_overrides = manual.load_overrides
 apply_overrides = manual.apply_overrides
+
+
+# ---------------- 人工比赛编辑表 data/races_edits.json（§104 批量表格；契约 = docs/SCHEMA.md §9） ----------------
+# {del:[{id,race_id,日付,馬名}], mod:[{id,race_id,日付,馬名,set:{字段:值|null}}], add:[{…全字段记录}]}
+# 编辑台（GitHub API）唯一写入者；merge_races 每轮 fetch 合并后、派生前重新套用（del/mod 不落死在文件里）。
+RACE_EDITS_JSON = DATA_DIR / "races_edits.json"
+
+
+def load_race_edits():
+    """读比赛记录人工编辑表；缺失/坏 JSON → 空表（结构容错，管线不因人工表坏而断）。"""
+    if not RACE_EDITS_JSON.exists():
+        return {}
+    try:
+        d = json.loads(RACE_EDITS_JSON.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return d if isinstance(d, dict) else {}
 
 
 # ---------------- 更新停止环（2026-10 用户定稿） ----------------

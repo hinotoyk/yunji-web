@@ -711,6 +711,22 @@
 - **文案定稿（同日用户确认，截图 `v103d-*`）**：jbis 展示名「種牡馬ランキング」→「**JBIS LS榜**」、简介「JBIS 每日快照」→「**每日快照**」——长日文名在窄列截断且与 LS 方块不呼应，改后三条目节奏统一（短名 + 短简介），注册表 name/sub/desc 三字段同步。
 - **v3 四站扩展（2026-10-23）**：第 4 站 racing-calendar（出走表，与 jbis 同构 site/→_site/）接入——注册表加 rc 条目（RC 方块 / Racing Calendar / 一键生成出马表）、组标题三轮比稿定稿「**站群导航 NETWORK**」、jbis 展示名改「**JBIS LS Rank榜**」。技术要点：jbis 系皮肤**变量归一化**（--f-* fallback 链）——rc 用 shadcn 风变量命名且语义相反（--muted/--accent 是底色非前景），链序专门设计（rc 走 --muted-foreground/--primary）实现一套 CSS 双站兼容；卡片网格改 repeat(auto-fit,minmax(280px,1fr)) 自适应列宽（3 卡一行）。方案文档升四仓同文；yj 侧栏自动 3 条目零改动。
 
+### §104 · 编辑台 · 批量表格「键盘电子表格流」（基本信息 + 比赛记录 批量增删改，2026-10-24）
+- **动因**：用户要求「基本信息和比赛都能通过类似 Excel 的表格形式批量新增、修改、删除」。出 A（键盘电子表格流）/B（批量选择流）/C（变更台账流）三个候选原型对比（`tests/_trash/edit-table-cand/` 归档，截图 `tests/_shots/et-*`），用户拍板 **A 案**：整页密表 + 单元格就地编辑 + Enter↓/Tab→/方向键 + Ctrl+Z·Y 撤销重做 + 行首勾选批量删除。
+- **定稿结构**：新页 `front/pages/edit-table.html`（编辑导航第 2 项「批量表格」，电脑端专用）+ 新共享模块 `front/public/editor-table.js`（表格引擎）；编辑链路全部复用 `editor.js`——草稿箱、GitHub 连接、一次性原子提交、`_orig` 快照、报告语言零改动。三候选均真实数据验证过（277 匹 / 818 条），A 转正后 B/C 归档废案。
+- **编辑范围（口径）**：
+  - **基本信息页签**：可改字段 = 编辑台字段白名单（`editor.js::FIELDS` 单一出处，14 字段）+ photo；馬名/派生列/技术键只读。**增删行不开放**——建档/移除走抓取管线（JBIS 白名单注册表），人工表管不了（与 §94 口径一致）。
+  - **比赛记录页签**：增/删/改全开放。日付/场名/赛事名等为场次级字段（同组多驹联动改），出走马名/人気/タイム等为马级字段；删除行 = 删该驹该场记录；新增行 馬名 从档案马名 datalist 解析出 id，匹配不到则该行不进草稿（防脏数据）。
+- **落库契约（新增白名单 4）**：`data/races_edits.json`（`{del:[{id,race_id,日付,馬名}], mod:[{…,set:{字段:值|null}}], add:[{…全字段记录, 來源:"人工"}]}`，id=马 id；匹配键 = `record_keys` 对称双键）——**merge_races 每轮 fetch 合并后、派生前重新套用**（del/mod 不烙死在文件里，重抓回来会被再删/再改），套用在派生前 → 収得/通算/主勝鞍/性別_当前 自动跟随。契约 = `docs/SCHEMA.md` §9。
+- **草稿模型**：基本信息批量编辑直写草稿箱 `d.ov`（与编辑台同契约：值=钉住、null=恢复官方值、空值且无钉=不产生条目）；比赛编辑进新草稿段 `d.rc`（同上三段），提交时叠加远端 `races_edits.json`（同组键覆盖、del 连带清 mod、重建行自动撤 del、add 双键去重）。撤销/重做 = 内存日志逐条回滚并同步草稿箱；「放弃修改」按会话快照只回滚本页产生的改动（不碰其它页面的草稿）。
+- **关键结论**：批量表格不另起提交链路——**它就是编辑台的第 4 个入口**，草稿箱/提交/PAT/报告全共享；后端只加一个「编辑表套用」纯函数步骤。Excel 交互（键盘流 + 粘贴导入 TSV + 导出 TSV + 列显隐）负责输入效率，数据一致性交还给既有 merge/派生管线。
+- **验证（2026-10-24）**：`npm run build` 通过（edit-table.html 8.42kB 入包；bundle 818 条 round-trip 对账过）；`theme-*.css` 新类 13/13 编译核对；后端 `apply_race_edits` 隔离单测 6/6（mod 双键命中 / del 台账同日多场组 / add 去重 + 人工缺省 / null 删键 / 空表 no-op）；浏览器 E2E 自测 18/18 全过（`tests/et-selftest.html` 真实 DOM 驱动 dist 页：格编辑→d.ov、追加行→馬名解析 id→rc.add、场次级同组联动→rc.mod、勾选删除→rc.del、撤销/重做/放弃修改全回滚、箱无残留）；headless 截图（`tests/_shots/et-formal-{basic,races}.png`）钉住青绿格 / GI 徽章 / sticky 列 / 4-tab 导航全就位。
+- **补充（2026-10-25 用户反馈 2 条）**：① 外壳侧栏「编辑」组加「**比赛信息编辑**」（基本信息编辑正下方，`data-url="pages/edit-table.html?sheet=races"` 直达比赛页签；data-href 后缀匹配 → 页内切 tab 高亮不错位）；② 批量表格工具条加「**⛶ 全屏**」——初版用 Fullscreen API，实机在 iframe/内嵌环境点击无反应（`allowfullscreen` 权限链被拦），**定稿改 CSS 伪全屏**：表格卡 `#fsTarget` 切 `fixed inset-0 z-[70]` 盖满视口（类切换全部为 JS 字面量 → 编译期扫到），表区限高 `calc(100vh - 200px)`、section 自身 overflow-auto 兜底，ESC / 按钮退出复原；全屏态 = 工具条 + 表格 + 行数脚注（保存条让位，退出后提交）。E2E 自测扩到 20/20（进/出全屏断言各一）。
+- **打磨三连（2026-10-25 用户反馈）**：① **双高亮**——提交上一格时 `applyCell` 会给它补光标环，紧接着开新格编辑器 → 旧环残留；定稿 `startEdit` 开编辑器前 `setCursor(null)` 清环（编辑中位置由输入框自身指示，提交/取消后才落环）。② **编辑态跳表**——`w-full` 输入框在 auto 表格布局里以固有宽度(~170px)参与列宽计算，窄格（抹消日等）被撑开、整表抖动；**定稿编辑控件 `absolute left-0 top-0 h-full w-full` 盖满本格**（absolute 不参与表格布局 → 格子多大框多大，全屏/非全屏一致、窄格零撑开）+ `invisible whitespace-pre` 占位文本保列宽（本格可能是该列最宽者）+ sticky 格不动 `position`（relative 会破坏吸左，sticky 自身即 containing block）。③ **侧栏高亮跟随页签**——页内切页签不产生 iframe load，外壳 load 监听管不到；内容页 `switchSheetUI` postMessage `{type:"yj:page", page, sheet}`（仅认 `e.source === frameEl.contentWindow`）。E2E 21/21（含 absolute 盖满断言）。
+- **导航收拢（2026-10-25 用户定稿）**：编辑台 4 页的**页内页签全部撤下**（edit.html / edit-table.html / edit-timeline.html / edit-drafts.html 的 `.yj-ed-tabs` 块，theme.css 组件类一并删除勿复活），导航**统一收进外壳侧栏「编辑」组 5 条目**：✎ 基本信息编辑（edit.html）/ ⊞ 基本信息批量编辑 / ▤ 比赛记录批量编辑（两条批量共用 `pages/edit-table.html`，`data-navid` 区分；后者 `data-url` 带 `?sheet=races`）/ ⧗ 航迹线 / 🗒 草稿箱。高亮三路齐发：外壳 load 按 `?sheet=` 精确点亮 navid、页内切页签 postMessage 同步、页内跳转（草稿箱跳马/跳场）走 pathname 后缀匹配。独立打开的内容页由 rehome 回壳 → 侧栏导航兜底。E2E 回归 20/20。
+- **小打磨（2026-10-25 用户反馈 2 条）**：① 「⬇ 导出 TSV」撤下（编辑流闭环只进不出，按钮与 `exportTsv`/`tsvBtn` 全链路移除）；② 比赛页签「格（级别）」改**下拉框**——选项 = `racelib.GRADE_ORDER`（GI/JpnI/GII/JpnII/GIII/JpnIII/L/OP）+ 障害 JGI/JGII/JGIII + 班赛 3勝/2勝/1勝クラス + 新馬/未勝利（与 `merge_races` 的 `normalize_grade` 归一、`MAJOR_TIER` 展示层级同口径；现值不在枚举时下拉自动追加保真）。
+
+
 
 
 

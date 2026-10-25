@@ -16,6 +16,8 @@
      无条件覆盖；稳定字段只在抓取值非空时覆盖。
   2. 新增成绩/台账记录合并进 data/races/{id}.json（按比赛键去重，已有记录不动）。
      新记录本賞金已由 fetch_races 的 SP 页解析写好，台账记录按映射附调教师 id。
+  4b. 人工比赛编辑表 data/races_edits.json（§104 批量表格）：del/mod/add 套用到 races 文件
+      （每轮 fetch 合并后重新套用，位置在派生之前）。
   3. 由合并后的完整履历统一计算 収得賞金（中央 compute_shutoku + 地方 Jpn
      compute_shutoku_jpn，纯规则无网络），写 basic.json 新字段（円 → 'xx万円'/'xx億xx万円'，零值保留 0）。
   3b. 派生 性別_当前：取最近一场的 性（只有台账海外记录带），与官方 性別 不同才写入。
@@ -201,6 +203,63 @@ def save_races_file(id_s, recs):
         json.dumps(recs, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+# ---- 4b) 比赛记录人工编辑表（data/races_edits.json，§104 批量表格；契约 = docs/SCHEMA.md §9）----
+# del/mod 匹配键 = record_keys 对称双键（race:{race_id} / horse:{馬名}|{日付}）；del/mod 命中组内全部
+# 记录（台账同日多场同组）；mod set 值 null = 删键；add 按双键去重（与已有/本表 add 重复即跳过）。
+# 每轮 fetch 合并后重新套用（编辑表是持久事实源，重抓回来的被删/被改行会被再删/再改）。
+
+
+def apply_race_edits(recs, ed):
+    """单马编辑表套用（纯函数不落盘）：ed = {"del": [...], "mod": [...], "add": [...]}（该马条目）。
+    返回 (新 recs, 统计 {"del": n, "mod": n, "add": n})。"""
+    del_sets, mod_pairs = [], []
+    for t in ed.get("del") or []:
+        if isinstance(t, dict):
+            ks = common.record_keys(t)
+            if ks:
+                del_sets.append(ks)
+    for t in ed.get("mod") or []:
+        if isinstance(t, dict) and isinstance(t.get("set"), dict):
+            ks = common.record_keys(t)
+            if ks:
+                mod_pairs.append((ks, t["set"]))
+    out, del_n, mod_n = [], 0, 0
+    for r in recs:
+        rk = common.record_keys(r)
+        if any(ks & rk for ks in del_sets):
+            del_n += 1
+            continue
+        hit = False
+        for ks, setmap in mod_pairs:
+            if ks & rk:
+                for k, v in setmap.items():
+                    if v is None:
+                        r.pop(k, None)
+                    else:
+                        r[k] = v
+                hit = True
+        if hit:
+            mod_n += 1
+        out.append(r)
+    exist = set()
+    for r in out:
+        exist |= common.record_keys(r)
+    add_n = 0
+    for r in ed.get("add") or []:
+        if not isinstance(r, dict):
+            continue
+        r = dict(r)
+        r.pop("id", None)                      # id 只是路由键，不进记录
+        if common.record_keys(r) & exist:
+            continue
+        r.setdefault("來源", "人工")
+        r.setdefault("本賞金", 0)
+        out.append(r)
+        exist |= common.record_keys(r)
+        add_n += 1
+    return out, {"del": del_n, "mod": mod_n, "add": add_n}
+
+
 def main():
     ap = argparse.ArgumentParser(description="合并竞赛缓存 → races 文件 + basic.json")
     ap.add_argument("--keep", action="store_true", help="合并后保留缓存（默认删除）")
@@ -299,6 +358,26 @@ def main():
         if added:
             save_races_file(id_s, recs)
 
+    # 4b) 比赛记录人工编辑表（data/races_edits.json，§104）：del/mod/add 套用后重写文件。
+    #     位置在派生之前 → 収得/通算成績_逐场/主勝鞍/性別_当前 全部按编辑后履历计算。
+    edits = common.load_race_edits()
+    edit_hits = []                     # (馬名, {"del":n,"mod":n,"add":n})
+    if edits:
+        by_edit = {}
+        for op in ("del", "mod", "add"):
+            for t in edits.get(op) or []:
+                if not isinstance(t, dict):
+                    continue
+                id_s = str(t.get("id", ""))
+                if id_s in by_id:
+                    by_edit.setdefault(id_s, {"del": [], "mod": [], "add": []})[op].append(t)
+        for id_s, ed in by_edit.items():
+            recs = load_races_file(id_s)
+            recs, st = apply_race_edits(recs, ed)
+            if st["del"] or st["mod"] or st["add"]:
+                save_races_file(id_s, recs)
+                edit_hits.append((by_id[id_s].get("馬名", id_s), st))
+
     # 5) 収得賞金：由合并后的完整履历统一计算（纯规则）
     # 5b) 性別_当前（派生）：官方 性別 是「登录性别」——无 JRA 登录的海外马去势后
     #     netkeiba / JBIS 两边都长期停在去势前的值，逐场记录的 性 才是当期事实。
@@ -365,6 +444,7 @@ def main():
         f"- 新增成绩记录: {n_new} 条 · 台账海外新增: {n_led} 条 · force 全量回填: {n_full} 匹",
         f"- 収得賞金计算: {n_prize} 匹 · 収得缺本賞金: {len(shutoku_missing)} 场",
         f"- 性別_当前 派生（官方登录 ≠ 逐场）: {len(sex_diff)} 匹 · 人工维护覆盖: {len(manual_hits)} 匹",
+        f"- 比赛人工编辑表: {len(edit_hits)} 匹（增 {sum(s['add'] for _, s in edit_hits)} · 改 {sum(s['mod'] for _, s in edit_hits)} · 删 {sum(s['del'] for _, s in edit_hits)}）",
         f"- 通算成績 逐场推导 ≠ netkeiba 展示值: {len(career_diff)} 匹",
         f"- 主勝鞍 非空: {n_major} 匹（派生精选，规则见 SCHEMA §1）",
         f"- 抓取失败: {len(failures)} 匹",
@@ -384,6 +464,11 @@ def main():
         lines += ["", "## 人工维护覆盖（data/manual_overrides.json，优先级最高）", ""]
         for name, hit in manual_hits:
             lines.append(f"- {name}: {', '.join(hit)}")
+    if edit_hits:
+        lines += ["", "## 比赛人工编辑（data/races_edits.json，§104 批量表格）", ""]
+        for name, st in edit_hits:
+            parts = [f"{k} {st[k]}" for k in ("add", "mod", "del") if st.get(k)]
+            lines.append(f"- {name}: {' · '.join(parts)}")
     if shutoku_missing:
         lines += ["", "## 収得缺本賞金（重赏 1/2着，按 0 暂计）", "", "| 馬名 | 日付 | レース名 | 結果 |", "|---|---|---|---|"]
         for name, d, rn, res in shutoku_missing:

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<script src="../rehome.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量表格 · {{YJ_SITE_NAME}}</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body class="bg-muted/50 text-foreground antialiased">
+
+<!-- 2026-10 v3「工作台」改版（docs/UI优化记录.md §90）+ §104 批量表格：编辑导航第 2 项。
+     键盘电子表格流：整页密表 + 单元格就地编辑 + Enter↓/Tab→/方向键 + Ctrl+Z·Y 撤销重做。
+     编辑链路复用 editor.js（草稿箱 / GitHub 连接 / 一次性原子提交 / 报告语言零改动）：
+     基本信息 → manual_overrides.json（d.ov）；比赛记录 → races_edits.json（d.rc，SCHEMA §9）。
+     §82.13：mb 端不开放编辑——应用容器 max-md 隐藏，只留电脑端提示。 -->
+<div class="hidden max-md:block mx-auto w-full max-w-[880px] px-4 pt-16 pb-[60px] text-center">
+  <div class="text-[42px] leading-none">🖥️</div>
+  <div class="mt-3 text-[15px] font-bold">编辑台请在电脑端使用</div>
+  <div class="mt-1.5 text-[12.5px] leading-[1.7] text-muted-foreground">手机端只浏览：页面上的编辑入口在窄屏下一律隐藏。</div>
+</div>
+
+<div class="mx-auto w-full max-w-[1280px] px-4 pt-6 pb-[108px] max-md:px-3 max-md:pt-3 max-md:pb-[132px] max-md:hidden">
+
+  <header class="rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+    <!-- 页内页签已撤下（2026-10-25 用户定稿）：编辑台导航统一收进外壳侧栏「编辑」组（front/index.html #editNav） -->
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+      <span class="text-[13.5px] font-bold text-secondary-foreground">批量表格</span>
+      <span class="text-[11.5px] text-muted-foreground">点单元格就地改 · Enter 下移 / Tab 右移 / 方向键移动 · Ctrl+Z 撤销 / Ctrl+Y 重做 · Delete 清格</span>
+    </div>
+    <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-chart3"></i>待保存（本页改动）</span>
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-accent"></i>已保存（人工钉住值）</span>
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-primary"></i>新增行</span>
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-destructive"></i>删除行（提交前可撤销）</span>
+    </div>
+  </header>
+
+  <!-- 工具条 + 表格卡（fsTarget = ⛶全屏的覆盖目标：CSS 伪全屏 fixed inset-0，不依赖 Fullscreen API 权限链） -->
+  <section id="fsTarget" class="mt-3 rounded-[14px] border border-border bg-card shadow-sm">
+    <div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+      <div id="sheets" class="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
+        <button type="button" data-sheet="basic" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">基本信息</button>
+        <button type="button" data-sheet="races" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">比赛记录</button>
+      </div>
+      <span class="mx-1 h-5 w-px bg-border"></span>
+      <button id="addBtn" class="yj-ed-op h-7 px-2.5 text-[11.5px]" type="button">＋ 追加行</button>
+      <button id="delBtn" class="yj-ed-op yj-ed-op--danger h-7 px-2.5 text-[11.5px]" type="button" disabled>删除所选</button>
+      <span class="mx-1 h-5 w-px bg-border"></span>
+      <button id="undoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↶ 撤销</button>
+      <button id="redoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↷ 重做</button>
+      <button id="pasteBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">📋 粘贴导入</button>
+      <span class="relative ml-auto flex items-center gap-2">
+        <input id="search" type="text" placeholder="筛选行…"
+               class="h-7 w-[180px] rounded-md border border-input bg-background px-2.5 text-[12px] text-foreground placeholder:text-muted-foreground/70">
+        <button id="fsBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">⛶ 全屏</button>
+        <button id="colBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">列 ▾</button>
+        <div id="colMenu" class="absolute right-0 top-8 z-40 hidden max-h-[420px] w-[200px] overflow-y-auto rounded-lg border border-border bg-card p-1.5 shadow-lg"></div>
+      </span>
+    </div>
+    <div class="max-h-[calc(100vh-330px)] min-h-[320px] overflow-auto rounded-b-[14px]">
+      <table id="grid" class="w-max min-w-full border-collapse text-[12px] leading-[1.5]">
+        <thead class="sticky top-0 z-20"></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="flex items-center gap-3 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+      <span id="meta">加载中…</span>
+      <span>比赛页签支持 增 / 删 / 改；基本信息页签只改字段（建档/移除走抓取管线）</span>
+    </div>
+  </section>
+</div>
+
+<datalist id="et-name-list"></datalist>
+<div id="toast" class="pointer-events-none fixed left-1/2 top-4 z-[60] hidden -translate-x-1/2 rounded-full border border-border bg-card px-4 py-1.5 text-[12px] font-medium text-foreground shadow-lg"></div>
+
+<!-- 固定底部保存条：#box 抽屉（草稿箱 / 已保存 / GitHub 连接）锚在这里，向上弹出（mb 不开放编辑） -->
+<div id="savebar" class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur max-md:hidden">
+  <div class="relative mx-auto flex max-w-[1280px] flex-wrap items-center gap-2.5 px-4 py-2.5">
+    <div id="box"></div>
+    <span class="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground">
+      <i class="yj-ed-chipdot bg-chart3"></i>草稿箱模式 · 提交后约 2 分钟生效
+    </span>
+    <span id="summary" class="text-[11.5px]"></span>
+    <div id="report" class="order-last w-full max-md:max-h-[60px] max-md:overflow-y-auto"></div>
+    <span class="ml-auto flex flex-none items-center justify-end gap-2">
+      <button id="reset" class="yj-ed-op yj-ed-op--ghost h-8 px-3" type="button">放弃修改</button>
+      <button id="boxBtn" class="yj-ed-op h-8 px-3" type="button">草稿箱</button>
+      <button id="save" class="yj-ed-op yj-ed-op--primary h-8 px-4 text-[12.5px] font-bold" type="button" disabled>提交到 GitHub</button>
+    </span>
+  </div>
+</div>
+
+<script src="../site-config.js"></script>
+<script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
+<script src="../i18n.js"></script>
+<script src="../device.js"></script>
+<script src="../yj-cache.js"></script>
+<script src="../race-bundle.js"></script>
+<script src="../selector.js"></script>
+<script src="../editor.js"></script>
+<script src="../editor-table.js"></script>
+<script>
+YJ.editor.init({
+  mode: "table",
+  report: "report", save: "save",
+  box: "box", boxBtn: "boxBtn"
+}).then(function () {
+  return YJ.editorTable.init({
+    grid: "grid", search: "search", meta: "meta",
+    addBtn: "addBtn", delBtn: "delBtn", undoBtn: "undoBtn", redoBtn: "redoBtn",
+    pasteBtn: "pasteBtn", colBtn: "colBtn", colMenu: "colMenu",
+    resetBtn: "reset", summary: "summary", sheets: "sheets", toast: "toast",
+    nameList: "et-name-list", fsBtn: "fsBtn", fsTarget: "fsTarget"
+  });
+});
+</script>
+</body>
+</html>

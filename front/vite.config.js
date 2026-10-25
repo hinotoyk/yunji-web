@@ -4,9 +4,11 @@ const { defineConfig } = require('vite');
 
 // 多页应用：外壳 + 各功能子页（iframe 架构，每页独立入口）
 // edit = 编辑页（D6 独立入口，§82.4 起恒为草稿箱模式：线上提交走 GitHub API → CI，无本机服务依赖）
+// edit-table = 批量表格编辑页（§104 键盘电子表格流：基本信息 manual_overrides + 比赛 races_edits）
 // edit-timeline = 航迹线人工节点编辑页（2026-09 从 edit.html 拆出，同为独立入口）
 // edit-drafts = 草稿箱查询页（§93：未提交草稿 + 已保存人工值一页通览，与抽屉共用渲染/检索）
-const PAGES = ['profile', 'races', 'pedigree', 'stats', 'datechart', 'timeline', 'edit', 'edit-timeline', 'edit-drafts'];
+const PAGES = ['profile', 'races', 'pedigree', 'stats', 'datechart', 'timeline',
+  'edit', 'edit-table', 'edit-timeline', 'edit-drafts'];
 
 const input = { main: resolve(__dirname, 'index.html') };
 PAGES.forEach(function (p) {

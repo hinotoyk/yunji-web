@@ -3,7 +3,9 @@
  * mode "draft" = 其余情况（线上打开 / 本地没开服务），编辑进浏览器草稿箱（字段 localStorage + 图片 IndexedDB），
  * 攒够一次性走 GitHub API 提交（Git Data API 单原子 commit，PAT 存 localStorage）→ push main 触发 CI（deploy.yml
  * 里 merge_basic + build_timeline）约 2 分钟生效。备注 _note 可选；时间线不再依赖本地手动重算（CI 自动）。
- * 图片（D8）：压缩全部在浏览器 canvas 里做完再入库 —— 本地 POST /photo；草稿态存 IndexedDB，提交时上传。 */
+ * 图片（D8）：压缩全部在浏览器 canvas 里做完再入库 —— 本地 POST /photo；草稿态存 IndexedDB，提交时上传。
+ * §104（2026-10-24）：白名单 4 = data/races_edits.json（比赛记录人工编辑，新页 edit-table.html +
+ * public/editor-table.js 写入；本文件提供草稿段 d.rc / 提交合并 mergeRaceEdits / 公共草稿 API）。 */
 window.YJ = window.YJ || {};
 YJ.editor = (function () {
   "use strict";
@@ -12,6 +14,7 @@ YJ.editor = (function () {
   var TABLE_PATH = "data/manual_overrides.json";   /* 白名单 1：字段 + photo */
   var TL_PATH = "data/timeline_manual.json";       /* 白名单 2：时间线人工节点（M2c） */
   var RM_PATH = "data/races_manual.json";          /* 白名单 3：比赛人工配图（§82.9：race.photo 是人工配置的产物，抓取永不写它） */
+  var RE_PATH = "data/races_edits.json";           /* 白名单 4：比赛记录人工编辑（§104 批量表格写入；契约 = docs/SCHEMA.md §9） */
   var PHOTO_API = "/photo";                        /* M2b：multipart，服务端生成文件名（仅 local 形态） */
   var PHOTO_OWNER_TL = "timeline";                 /* 时间线节点图的文件名前缀（落盘 timeline-<n>.webp） */
   var DEFAULT_PORT = 8090;                          /* D13：单端口，静态服务同进程 */
@@ -223,6 +226,22 @@ YJ.editor = (function () {
     draftWrite(d);
     state.tl.racePhUrl = {}; state.tl.raceLog = [];
   }
+  /* 比赛记录人工编辑（§104 批量表格）：{add:[记录], mod:[{id,race_id,日付,馬名,set:{字段:值|null}}], del:[…]}
+   * 提交时叠加远端 data/races_edits.json（mergeRaceEdits），merge_races 每轮 fetch 合并后、派生前套用（SCHEMA §9） */
+  function rcGet() {
+    var d = draftRead(), r = d.rc;
+    return (r && typeof r === "object" && !Array.isArray(r)) ? r : { add: [], mod: [], del: [] };
+  }
+  function rcPut(rc) {
+    var d = draftRead();
+    var has = rc && ((rc.add && rc.add.length) || (rc.mod && rc.mod.length) || (rc.del && rc.del.length));
+    if (has) d.rc = rc; else delete d.rc;
+    draftWrite(d);
+  }
+  function rcN() {
+    var r = rcGet();
+    return (r.add ? r.add.length : 0) + (r.mod ? r.mod.length : 0) + (r.del ? r.del.length : 0);
+  }
   function draftDropHorse(id) {
     id = String(id);
     var d = draftRead(), items = [];
@@ -239,6 +258,7 @@ YJ.editor = (function () {
     ["ov", "ph"].forEach(function (k) { if (d[k]) n += Object.keys(d[k]).length; });
     if (d.tl && d.tl.table) n++;
     if (d.racePh) n += Object.keys(d.racePh).length;
+    if (d.rc) n += rcN();
     return n;
   }
   function draftHasHorse(id) { return !!(ovGet(id) || phGet(id)); }
@@ -383,6 +403,56 @@ YJ.editor = (function () {
   /* ---------------- 一次性提交：把草稿箱叠到远端最新表上 → 单原子 commit 推 main ----------------
    * 步骤：ref → 远端两表（contents，拿 sha）→ 图片 blob 上传（<owner>-<n>.<ext> 与本地服务同命名法）
    * → 合并草稿（首次人工补 _orig 快照）→ tree → commit → update ref（422 冲突整链重试一次）。 */
+  /* 比赛编辑表合并（§104）：远端 races_edits + 草稿 rc → 提交表。
+   * 规则：同组键（id + race_id/日付）草稿覆盖远端；del 连带清同键 mod；草稿 add 与远端 add 双键
+   * 同键 → 草稿替换；草稿重建了远端已删的行 → 自动撤那条 del（否则后端会先把重加的行删掉）。 */
+  function mergeRaceEdits(remote, rc) {
+    var out = { _readme: "比赛记录人工编辑表（编辑台·批量表格写入；契约 = docs/SCHEMA.md §9；merge_races 每轮 fetch 合并后、派生前套用）", del: [], mod: [], add: [] };
+    var delK = {}, modK = {}, addK = {};
+    function gk(t) {
+      return String(t && t.id != null ? t.id : "") + "|" + (t && t.race_id ? "r" + t.race_id : "d" + String((t && t.日付) || ""));
+    }
+    function rks(r) {
+      var ks = [];
+      if (r && r.race_id) ks.push("r:" + String(r.race_id));
+      var nm = String((r && r.出走馬名) || "").trim(), dt = String((r && r.日付) || "").trim();
+      if (nm && dt) ks.push("h:" + nm + "|" + dt);
+      return ks;
+    }
+    function putDel(t) {
+      var k = gk(t);
+      if (!delK[k]) { delK[k] = 1; out.del.push(t); }
+      if (modK[k] !== undefined) { out.mod.splice(modK[k], 1); delete modK[k]; }   /* 删连带清同键 mod */
+    }
+    function putMod(t) {
+      var k = gk(t);
+      if (delK[k]) return;
+      if (modK[k] !== undefined) out.mod[modK[k]] = t;
+      else { modK[k] = out.mod.length; out.mod.push(t); }
+    }
+    function putAdd(r) {
+      var ks = rks(r), hit = -1;
+      Object.keys(addK).forEach(function (k) { if (hit < 0 && ks.indexOf(k) >= 0) hit = addK[k]; });
+      if (hit >= 0) { out.add[hit] = r; return; }
+      addK[ks[0] || "row:" + out.add.length] = out.add.length;
+      out.add.push(r);
+      for (var i = out.del.length - 1; i >= 0; i--) {   /* 重建行 → 撤同键 del */
+        if (rks(out.del[i]).some(function (x) { return ks.indexOf(x) >= 0; })) {
+          delete delK[gk(out.del[i])];
+          out.del.splice(i, 1);
+        }
+      }
+    }
+    var rem = (remote && typeof remote === "object" && !Array.isArray(remote)) ? remote : {};
+    (rem.del || []).forEach(function (t) { if (t && typeof t === "object") putDel(t); });
+    (rem.mod || []).forEach(function (t) { if (t && typeof t === "object" && t.set) putMod(t); });
+    (rem.add || []).forEach(function (r) { if (r && typeof r === "object") putAdd(r); });
+    (rc.del || []).forEach(function (t) { if (t && typeof t === "object") putDel(t); });
+    (rc.mod || []).forEach(function (t) { if (t && typeof t === "object" && t.set) putMod(t); });
+    (rc.add || []).forEach(function (r) { if (r && typeof r === "object") putAdd(r); });
+    return out;
+  }
+
   function submitDrafts() {
     if (state.ghBusy) return Promise.resolve();
     if (!ghToken()) {
@@ -396,6 +466,7 @@ YJ.editor = (function () {
     function run(remaining) {
       var baseSha, treeSha, tableSha, tlSha, remoteTable, seqs, uploads = [], committed = {};
       var rmSha, rmRemote, rmOut = {}, rmIds = [], rmCommitted = false;   /* 比赛人工配图（§82.9） */
+      var reRemote, reN = 0, reCommitted = false;                         /* 比赛人工编辑表（§104） */
       return gh("/repos/" + GH_REPO + "/git/ref/heads/" + GH_BRANCH).then(function (r) {
         if (!r.ok) throw new Error("读分支失败：" + ((r.body && r.body.message) || "HTTP " + r.status));
         baseSha = r.body.object.sha;
@@ -413,6 +484,9 @@ YJ.editor = (function () {
         return ghContents(RM_PATH);
       }).then(function (c) {
         rmSha = c.sha; rmRemote = c.json || {};
+        return ghContents(RE_PATH);
+      }).then(function (c) {
+        reRemote = c.json || {};
         state.gh.log = ["清点图片命名…"]; render();
         return ghPhotoSeqs();
       }).then(function (s) {
@@ -560,13 +634,27 @@ YJ.editor = (function () {
               rmCommitted = true;
             });
           }
-          if (!(d.tl && d.tl.table)) return rmCommit();
+          function reCommit() {   /* 比赛编辑表（§104）：远端 races_edits 叠加草稿 rc，有改动才进 tree */
+            var dNow = draftRead();
+            if (!dNow.rc) return null;
+            var reTable = mergeRaceEdits(reRemote, dNow.rc);
+            reN = (reTable.add || []).length + (reTable.mod || []).length + (reTable.del || []).length;
+            if (!reN) return null;
+            return gh("/repos/" + GH_REPO + "/git/blobs", {
+              method: "POST", body: { content: btoa(unescape(encodeURIComponent(JSON.stringify(reTable)))), encoding: "base64" }
+            }).then(function (r4) {
+              if (!r4.ok) throw new Error("比赛编辑表上传失败：" + ((r4.body && r4.message) || "HTTP " + r4.status));
+              tree.push({ path: RE_PATH, mode: "100644", type: "blob", sha: r4.body.sha });
+              reCommitted = true;
+            });
+          }
+          if (!(d.tl && d.tl.table)) return rmCommit().then(reCommit);
           return gh("/repos/" + GH_REPO + "/git/blobs", {
             method: "POST", body: { content: btoa(unescape(encodeURIComponent(JSON.stringify(d.tl.table)))), encoding: "base64" }
           }).then(function (r2) {
             if (!r2.ok) throw new Error("时间线表上传失败：" + ((r2.body && r2.message) || "HTTP " + r2.status));
             tree.push({ path: TL_PATH, mode: "100644", type: "blob", sha: r2.body.sha });
-          }).then(rmCommit);
+          }).then(rmCommit).then(reCommit);
         });
         return jobs2.then(function () {
           /* 照片 blob 装进 tree（2026-10-01 审计补）：此前 uploads 只进成功报告、从不进 tree，
@@ -583,7 +671,8 @@ YJ.editor = (function () {
           var nH = Object.keys(d.ov || {}).length;
           var nP = Object.keys(d.ph || {}).filter(function (k) { return d.ph[k].mode === "set"; }).length;
           var msg = "edit: 编辑台草稿一次性提交（" + nH + " 匹人工值" + (nP ? " · " + nP + " 匹图片" : "") +
-            (d.tl && d.tl.table ? " · 时间线表" : "") + (rmIds.length ? " · 比赛配图 " + rmIds.length : "") + "）";
+            (d.tl && d.tl.table ? " · 时间线表" : "") + (rmIds.length ? " · 比赛配图 " + rmIds.length : "") +
+            (reN ? " · 比赛编辑 " + reN : "") + "）";
           return gh("/repos/" + GH_REPO + "/git/commits", {
             method: "POST", body: { message: msg, tree: r.body.sha, parents: [baseSha] }
           });
@@ -605,6 +694,10 @@ YJ.editor = (function () {
           tlDrop();
         }
         if (rmIds.length) rmDropAll();   /* 比赛配图草稿清箱（含 IndexedDB 二进制） */
+        if (reCommitted) {               /* 比赛编辑草稿清箱（§104）+ 通知批量表格页重新水合 */
+          var dRe = draftRead(); delete dRe.rc; draftWrite(dRe);
+          document.dispatchEvent(new CustomEvent("yj-rc-dropped"));
+        }
         /* 提交成功 → 清空本页内存草稿（2026-xx 修）：上面只删了 localStorage 里的草稿，
          * state.draft / state.note / state.photos 仍留着 → 紧接着 render() 里 persistHorse()
          * 会把当前马草稿原样写回 localStorage，草稿箱永远删不掉（commit 已推远端却还挂着）。 */
@@ -616,6 +709,7 @@ YJ.editor = (function () {
           url: "https://github.com/" + GH_REPO + "/commit/" + commit.sha,
           files: uploads.map(function (u) { return u.path; })
             .concat([TABLE_PATH]).concat(hadTL ? [TL_PATH] : []).concat(rmCommitted ? [RM_PATH] : [])
+            .concat(reCommitted ? [RE_PATH] : [])
         };
         state.tl.dirty = false;
         return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
@@ -2147,6 +2241,18 @@ YJ.editor = (function () {
         (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground" title="' + esc(String(e._note)) + '"><b class="yj-ed-lbl mr-1">备注</b>' + esc(noteBrief(e._note)) + "</div>" : "") +
         "</div>";
     });
+    if (d.rc) {
+      var rcD = d.rc;
+      draftRows.unshift('<div class="yj-ed-entry">' +
+        '<div class="flex items-baseline gap-2 min-w-0">' +
+          '<a href="edit-table.html" class="min-w-0 truncate text-[12.5px] font-bold text-accent-foreground">比赛记录 · 批量表格</a>' +
+          '<span class="flex-none rounded bg-chart3/15 px-1 py-px text-[9.5px] font-bold text-chart3">草稿</span>' +
+          '<button data-discard="__rc" class="' + BTN_DANGER + ' ml-auto flex-none" type="button">放弃</button>' +
+        "</div>" +
+        '<div class="mt-1.5 text-[11px] text-muted-foreground">增 ' + (rcD.add || []).length +
+          " 行 · 改 " + (rcD.mod || []).length + " 处 · 删 " + (rcD.del || []).length +
+          " 行 → races_edits.json（CI 合并 + 派生重算）</div></div>");
+    }
     if (d.tl && d.tl.table) {
       var n = (d.tl.table.events || []).length;
       draftRows.unshift('<div class="yj-ed-entry">' +
@@ -2481,6 +2587,10 @@ YJ.editor = (function () {
         tlDrop();
         state.tl.dirty = false; state.tl.err = ""; state.tl.report = null; state.tl.del = -1;
         loadTimeline().then(function () { renderTL(); render(); });
+      } else if (did === "__rc") {
+        rcPut(null);
+        document.dispatchEvent(new CustomEvent("yj-rc-dropped"));   /* 批量表格页监听 → 重新水合表格 */
+        render();
       } else if (did.indexOf("__race:") === 0) {
         var rrid = did.slice(7);
         var rc = rmGet()[rrid];
@@ -2709,7 +2819,7 @@ YJ.editor = (function () {
       "mast", "summary", "box", "boxBtn", "drafts"].forEach(function (k) {
       els[k] = opts[k] ? document.getElementById(opts[k]) : null;
     });
-    state.page = opts.mode === "timeline" ? "timeline" : (opts.mode === "drafts" ? "drafts" : "horse");
+    state.page = opts.mode === "timeline" ? "timeline" : (opts.mode === "drafts" ? "drafts" : (opts.mode === "table" ? "table" : "horse"));
     var qid = state.page === "horse" ? new URLSearchParams(location.search).get("id") : null;
     /* 编辑台只认盘上真值：先失效路 D 的 basic.json 共享缓存（§82.4 起编辑台恒为草稿箱模式，
      * 不再探测/依赖 edit_server；线上提交统一走 GitHub API → CI） */
@@ -2759,9 +2869,9 @@ YJ.editor = (function () {
       var ready = state.online ? refresh(false) : Promise.resolve();
       return ready.then(function () {
         var start = (qid && state.byId[String(qid)]) || state.horses[0] || null;
-        if (state.page !== "drafts" && start) setHorse(start);   /* 查询页不选马（§93），其余照旧 */
+        if (state.page !== "drafts" && state.page !== "table" && start) setHorse(start);   /* 查询/批量表格页不选马（§93/§104），其余照旧 */
         render();
-        if (state.page !== "drafts") applyTab();      /* horse 页 ?tab= 兼容保留；无参数 = 现状 */
+        if (state.page !== "drafts" && state.page !== "table") applyTab();      /* horse 页 ?tab= 兼容保留；无参数 = 现状 */
         return state;
       });
     });
@@ -2771,6 +2881,10 @@ YJ.editor = (function () {
     init: init, probe: probe, FIELDS: FIELDS, state: state,
     /* 台账形态：行内编辑 + 分段折叠（?tab= 直达）；渲染态就是 state.editing / state.photos.open */
     openSec: openSec, applyTab: applyTab, render: render,
+    /* 草稿箱公共访问（§104 批量表格页复用同一条提交链路）：ov=人工字段草稿，rc=比赛编辑草稿 */
+    draftRead: draftRead, draftWrite: draftWrite,
+    ovGet: ovGet, ovPut: ovPut, rcGet: rcGet, rcPut: rcPut, rcN: rcN,
+    submitDrafts: submitDrafts, mergeRaceEdits: mergeRaceEdits,
     /* M2b：压缩 + 入库链路（门禁/夹具直接调这些） */
     compressImage: compressImage, fetchRemote: fetchRemote, webpEncodable: webpEncodable,
     uploadFiles: uploadQueue, uploadURL: uploadURL,

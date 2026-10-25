@@ -181,11 +181,8 @@
   .yj-ed-mk { @apply grid h-[22px] w-[22px] flex-none place-items-center rounded-md bg-primary text-[11.5px] font-bold text-primary-foreground; }
   .yj-ed-lbl { @apply text-[10.5px] font-semibold text-muted-foreground; }
 
-  /* 页首「编辑」分段导航：当前项白底浮起（aria-current="page" 由静态壳写死） */
-  .yj-ed-tabs { @apply inline-flex flex-none items-center gap-0.5 rounded-lg bg-muted/80 p-[3px]; }
-  .yj-ed-tab { @apply inline-flex h-[30px] items-center gap-1.5 rounded-[7px] px-3 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground; }
-  .yj-ed-tab[aria-current="page"] { @apply bg-card text-foreground shadow-sm; }
-  .yj-ed-tab svg { @apply h-[13px] w-[13px] flex-none; }
+  /* 页首「编辑」分段导航（.yj-ed-tabs/.yj-ed-tab）：2026-10-25 用户定稿撤下——编辑台导航
+     统一收进外壳侧栏「编辑」组（front/index.html #editNav），类随之删除，勿复活。 */
 
   /* 报头「上一匹 / 下一匹」 */
   .yj-ed-nav { @apply h-7 w-7 flex-none rounded-md border border-input bg-card text-[15px] leading-none text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40; }

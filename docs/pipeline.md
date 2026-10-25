@@ -294,6 +294,8 @@ data/basic.json (id, nk_id)
    ④ merge_races：
      合并新增记录进 data/races/{id}.json（按比赛键去重，已有不动）
      台账海外记录与调教师映射比对，一致则附 调教师_id（不一致直接用台账值）
+     套用比赛人工编辑表 data/races_edits.json（§104 批量表格：del/mod/add，每轮 fetch 合并后
+       派生前重套，契约 = docs/SCHEMA.md §9 → 収得/通算/主勝鞍 按编辑后履历计算）
      由完整履历统一计算 収得賞金（racelib 规则，无网络，円 → 'xx万円'/'xx億xx万円'，零值保留 0）
      回填 basic.json（通算成績/獲得賞金 (中央)/獲得賞金 (地方)/収得賞金/races_file）→ 写报告 → 删缓存
 ```
