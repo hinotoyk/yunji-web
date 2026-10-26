@@ -62,8 +62,8 @@ var EDIT_MODE = YJ.util.qs("edit") === "1";
 /* ── 编辑台草稿叠加（2026-09 预览定稿）：读 editor.js 草稿箱（localStorage，键同源）──
  * 把本马未提交的五字段改动叠加在 basic 值上渲染 + 页顶「草稿预览」提示条；
  * 图片草稿是 IndexedDB 二进制，不内嵌显示，只在提示条报张数。读不到 = 原样渲染、零开销。 */
-var DRAFT_KEY = YJ.util.DRAFT_KEY, DRAFT = {};   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 editor.js 共用） */
-try { var _dj = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); DRAFT = (_dj && typeof _dj === "object") ? _dj : {}; } catch (e) { DRAFT = {}; }
+var DRAFT = {};   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 editor.js 共用；取值时求值，§105） */
+try { var _dj = JSON.parse(localStorage.getItem(YJ.util.DRAFT_KEY) || "{}"); DRAFT = (_dj && typeof _dj === "object") ? _dj : {}; } catch (e) { DRAFT = {}; }
 function draftOv(id){ var e = DRAFT.ov && DRAFT.ov[String(id)]; return (e && typeof e === "object") ? e : null; }
 function draftPh(id){ var e = DRAFT.ph && DRAFT.ph[String(id)]; return (e && typeof e === "object" && Array.isArray(e.list)) ? e : null; }
 function draftHas(id){ return !!(draftOv(id) || draftPh(id)); }

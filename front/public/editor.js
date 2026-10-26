@@ -21,11 +21,14 @@ YJ.editor = (function () {
   var PROBE_MS = 1800;
   /* 线上一次性提交（GitHub writer）：单仓库单分支，PAT 由编辑台「连接 GitHub」面板写入 localStorage */
   var GH_REPO = "hinotoyk/yunji-web", GH_BRANCH = "main";
-  var GH_TOKEN_KEY = "yj.gh.token";
   var GH_API = "https://api.github.com";
+  /* §105 站点前缀键：同源本地双站（kzn/yunji）不串。**一律调用时求值**——加载期读 YJ_SITE 可能还是
+   * undefined（页面脚本顺序），会静默退回旧共享键；改后任何加载顺序都安全。 */
+  function tokenKey() { return YJ.util.storeKey("gh.token"); }
+  function blobDbName() { return YJ.util.storeKey("edit-blobs"); }
   /* 草稿箱：字段/备注/图片清单/时间线表快照 → localStorage；图片二进制 → IndexedDB（localStorage 存不了 Blob） */
-  var DRAFT_KEY = YJ.util.DRAFT_KEY;   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 profile 页共用） */
-  var BLOB_DB = "yj-edit-blobs", BLOB_STORE = "blobs";
+  function draftKey() { return YJ.util.DRAFT_KEY; }   /* 草稿键单一出处 = YJ.util.DRAFT_KEY（2026-xx 收口，与 profile 页共用） */
+  var BLOB_STORE = "blobs";
 
   /* D8 压缩口径：最大边缩进 1280px（profile 头像大图位 / 时间线图位都够清晰），目标 ≤100KB。
    * 质量先用两档扫描（0.93 高清档 / 0.72 常见分界）命中，未命中再在区间内二分，最多 7 次编码；
@@ -177,12 +180,12 @@ YJ.editor = (function () {
    * 提交前这些改动只活在浏览器里，页面随便关；「提交到 GitHub」一次性打包成单个原子 commit。 */
   function draftRead() {
     try {
-      var o = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+      var o = JSON.parse(localStorage.getItem(draftKey()) || "{}");
       return (o && typeof o === "object") ? o : {};
     } catch (e) { return {}; }
   }
   function draftWrite(d) {
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) { /* 隐身模式等存不进就静默 */ }
+    try { localStorage.setItem(draftKey(), JSON.stringify(d)); } catch (e) { /* 隐身模式等存不进就静默 */ }
   }
   function ovGet(id) {
     var d = draftRead(), e = d.ov && d.ov[String(id)];
@@ -267,7 +270,7 @@ YJ.editor = (function () {
   function blobDB() {
     return new Promise(function (resolve, reject) {
       if (!window.indexedDB) { reject(new Error("浏览器不支持 IndexedDB")); return; }
-      var rq = indexedDB.open(BLOB_DB, 1);
+      var rq = indexedDB.open(blobDbName(), 1);
       rq.onupgradeneeded = function () { rq.result.createObjectStore(BLOB_STORE); };
       rq.onsuccess = function () { resolve(rq.result); };
       rq.onerror = function () { reject(rq.error || new Error("IndexedDB 打不开")); };
@@ -300,10 +303,21 @@ YJ.editor = (function () {
 
   /* ---------------- GitHub 一次性提交（Git Data API：blobs → tree → commit → update ref，单原子 commit） ---------------- */
   function ghToken() {
-    try { return (localStorage.getItem(GH_TOKEN_KEY) || "").trim(); } catch (e) { return ""; }
+    try { return (localStorage.getItem(tokenKey()) || "").trim(); } catch (e) { return ""; }
   }
-  function ghSaveToken(t) { try { localStorage.setItem(GH_TOKEN_KEY, String(t || "").trim()); } catch (e) { /* ignore */ } }
-  function ghClearToken() { try { localStorage.removeItem(GH_TOKEN_KEY); } catch (e) { /* ignore */ } }
+  function ghSaveToken(t) { try { localStorage.setItem(tokenKey(), String(t || "").trim()); } catch (e) { /* ignore */ } }
+  function ghClearToken() { try { localStorage.removeItem(tokenKey()); } catch (e) { /* ignore */ } }
+  /* §105 切换说明：旧版把 PAT 记在无前缀的 yj.gh.token（两站共用一份，可能存的是另一站仓库的令牌）。
+   * 站点前缀上线后**不自动继承**——避免把 kzn 的 PAT 装进 yunji（推送会 403/Action 失败）；
+   * 有旧值且当前站未配时，在「连接 GitHub」面板提示重贴一次。 */
+  function legacyTokenNote() {
+    if (ghToken()) return "";
+    var old = "";
+    try { old = localStorage.getItem("yj.gh.token") || ""; } catch (e) { return ""; }
+    if (!old.trim()) return "";
+    return '<div class="mt-1 text-[10.5px] leading-[1.5] text-muted-foreground">' +
+      "检测到旧版共享键里的令牌（§105 起存储按站点隔离，未自动继承，避免把另一站仓库的 PAT 带过来）：请重新粘贴本站仓库的 PAT，旧值不再被读取。</div>";
+  }
   function gh(path, opts) {
     opts = opts || {};
     opts.headers = Object.assign({
@@ -729,11 +743,11 @@ YJ.editor = (function () {
     return run(1);
   }
 
-  /* 端口可配：?port= > localStorage['yj.edit.port'] > 8090 */
+  /* 端口可配：?port= > localStorage[storeKey('edit.port')] > 8090 */
   function resolvePort() {
     var q = new URLSearchParams(location.search).get("port");
     var ls = null;
-    try { ls = localStorage.getItem("yj.edit.port"); } catch (e) { /* 禁 storage 时忽略 */ }
+    try { ls = localStorage.getItem(YJ.util.storeKey("edit.port")); } catch (e) { /* 禁 storage 时忽略 */ }
     var p = q || ls;
     return (p && /^\d{2,5}$/.test(p)) ? p : DEFAULT_PORT;
   }
@@ -2317,6 +2331,7 @@ YJ.editor = (function () {
               "</div>" +
               ((state.gh && state.gh.msg) ? '<div class="mt-1 text-[11px] ' + (state.gh.msgOk ? "text-primary" : "text-destructive") + '">' + esc(state.gh.msg) + "</div>" : "") +
               '<div class="mt-1 text-[10.5px] leading-[1.5] text-muted-foreground">token 只存本浏览器 localStorage，提交动作 = 你本人在 GitHub 上的操作；提交后 push main 自动触发 CI。</div>' +
+              legacyTokenNote() +
             "</div>"
           : "") +
       "</div>";

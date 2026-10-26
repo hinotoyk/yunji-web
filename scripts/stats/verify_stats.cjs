@@ -715,9 +715,11 @@ setTimeout(function () {
   ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
   ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");
   ok(gl.includes('target="_blank"'), "重赏明细马名 → 档案新标签页（§80 跳转统一）");
-  const tdesc = [...byv["中央"].scopes.all.trophies].sort((a, b) => (a.d > b.d ? -1 : a.d < b.d ? 1 : 0));
-  ok(gl.indexOf("profile.html?horse=" + tdesc[0].id) < gl.indexOf("profile.html?horse=" + tdesc[tdesc.length - 1].id),
-    "明细按日期降序（最新 " + tdesc[0].d + " 在最上）");
+  /* 2026-10-26：改按**行内日期序列**断言降序——原实现对首尾两行的马链接 indexOf 比较，
+   * 同一匹马拿下多场重赏（如 id40 04-25 GGII + 10-25 GGI）时首尾 indexOf 相等 → 恒假。 */
+  const glDates = gl.match(/\d{4}-\d{2}-\d{2}/g) || [];
+  ok(glDates.length === byv["中央"].scopes.all.trophies.length && glDates.every((d, i) => i === 0 || glDates[i - 1] >= d),
+    "明细按日期降序（" + glDates.length + " 行：" + glDates.join("→") + "）");
   ok(gl.includes("profile.html?horse=" + byv["中央"].scopes.all.trophies[0].id), "重赏明细跳档案链接");
   const ab = String(els["aboutNote"]._html);
   ok(ab.includes("集計期間") && ab.includes("口径：") && ab.includes("样本少") && ab.includes("比率分母=出走"), "口径说明（工具条口径文案并入 + 分母=出走）");

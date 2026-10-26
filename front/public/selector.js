@@ -87,7 +87,7 @@ YJ.selector = (function () {
 
   /* URL 绝对化：单一出处 public/yj-util.js（B2 收口；yj-cache.js 内部保留自包含副本，见其注释） */
   var absUrl = YJ.util.absUrl;
-  function basicKey(url) { return "yj:basic:" + BASIC_V + ":" + absUrl(url); }
+  function basicKey(url) { return YJ.util.storeKey("basic:" + BASIC_V) + ":" + absUrl(url); }   /* §105 站点前缀：sessionStorage 同标签跨站导航会残留，键必须分站 */
   function readStore(url) {
     if (!SS) return null;
     const key = basicKey(url);
@@ -412,7 +412,7 @@ YJ.selector = (function () {
     cachePromise = null;
     if (typeof window !== "undefined" && window.YJ && window.YJ.cache) window.YJ.cache.clear("basic");
     if (!SS) return;
-    const pre = "yj:basic:" + BASIC_V + ":";
+    const pre = YJ.util.storeKey("basic:" + BASIC_V) + ":";   /* §105：与 basicKey 同一前缀口径 */
     try {
       for (let i = SS.length - 1; i >= 0; i--) {
         const k = SS.key(i);

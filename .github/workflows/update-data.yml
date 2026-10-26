@@ -114,16 +114,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # fetch_log.csv 是 basic/races 与 status 共用的抓取观测日志（追加写、不入产品数据）：
-          # 排除出 update-data 提交（本地保留），否则与 status 并发时 rebase 必冲突
-          # （2026-10-16 #63 实测 `CONFLICT in data/fetch_log.csv`，旧裸 push 表现为 fetch first 被拒）。
-          git add data/ ':!data/fetch_log.csv' front/assets/fonts/noto-sc.css front/assets/fonts/noto-sc-subset.woff2
+          # fetch_log.jsonl（抓取观测日志）随提交入库、滚动只留 60 天（scripts/core/net.py::trim_fetch_log
+          # 在每次 log_fetch 后自动裁剪）；并发任务对同一文件的追加由 .gitattributes merge=union 在
+          # rebase 时自动并集合并（2026-10-16 CSV 冲突的根治，不再靠排除规避）。
+          git add data/ front/assets/fonts/noto-sc.css front/assets/fonts/noto-sc-subset.woff2
           if ! git diff --cached --quiet; then
             git commit -m "data: auto update $(date -u +%Y-%m-%dT%H:%MZ)"
             # 运行期间 main 可能被 status-task / 编辑台 / deploy 推进 → push 前先 rebase。
-            # 丢弃本地抓取日志行（不入库，避免 autostash 弹回冲突）；冲突（罕见：basic/timeline
-            # 与 deploy 落库重叠）则放弃本次提交并显式失败，下次调度自动重算。
-            git checkout -- data/fetch_log.csv || true
+            # 冲突（罕见：basic/timeline 与 deploy 落库重叠）则放弃本次提交并显式失败，下次调度自动重算。
             git pull --rebase origin main || { git rebase --abort; echo "::error::远端冲突，本次数据提交放弃（下次调度自动重算）"; exit 1; }
             git push origin "HEAD:$GITHUB_REF_NAME"
             echo "::notice::data/ 已更新并推送"

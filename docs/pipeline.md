@@ -118,7 +118,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 ├── basic.json           # 唯一「前合并」数据源（建档 + 基本信息）
 ├── pedigree/{id}.json   # 每匹马 5 代血统文件（id 引用）
 ├── _tmp/basic/          # 基础并发脚本的独立缓存（merge 后自动删除）
-└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON）
+└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON；入库可追踪 merge=union，滚动约 60 天）
 ```
 
 ### 2.2 业务流程（线性）
@@ -263,7 +263,7 @@ data/                      # 统一数据根（根目录，两部分的共同产
 ├── races/{id}.json      # 每匹逐场成绩（持久，增量只增不覆盖）
 ├── _tmp/races/          # 各环独立缓存（merge 后自动删除）
 ├── races_report.md      # 每次合并的更新报告（脚本生成产物，留 data/）
-└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON）
+└── fetch_log.jsonl      # 风控请求日志（基础+竞赛统一记录，script 字段区分；逐行 JSON；入库可追踪 merge=union，滚动约 60 天）
 ```
 
 ### 3.2 线性主链（单链，不来回退）

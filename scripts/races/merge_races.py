@@ -209,18 +209,29 @@ def save_races_file(id_s, recs):
 # 每轮 fetch 合并后重新套用（编辑表是持久事实源，重抓回来的被删/被改行会被再删/再改）。
 
 
+def entry_match_keys(t):
+    """del/mod 条目 → 匹配键（键名归一，2026-10-26 双仓同改）：条目形状 {id,race_id,日付,馬名}
+    的 馬名 是人读标识，记录字段名是 出走馬名——台账行（race_id 空）没有 race 键，必须靠
+    马级键 出走馬名+日付 命中（SCHEMA §9），故归一后再算 record_keys；条目自带 出走馬名 优先。
+    纯函数：复制后再改，不污染调用方条目。"""
+    t = dict(t)
+    if not t.get("出走馬名") and t.get("馬名"):
+        t["出走馬名"] = t["馬名"]
+    return common.record_keys(t)
+
+
 def apply_race_edits(recs, ed):
     """单马编辑表套用（纯函数不落盘）：ed = {"del": [...], "mod": [...], "add": [...]}（该马条目）。
     返回 (新 recs, 统计 {"del": n, "mod": n, "add": n})。"""
     del_sets, mod_pairs = [], []
     for t in ed.get("del") or []:
         if isinstance(t, dict):
-            ks = common.record_keys(t)
+            ks = entry_match_keys(t)
             if ks:
                 del_sets.append(ks)
     for t in ed.get("mod") or []:
         if isinstance(t, dict) and isinstance(t.get("set"), dict):
-            ks = common.record_keys(t)
+            ks = entry_match_keys(t)
             if ks:
                 mod_pairs.append((ks, t["set"]))
     out, del_n, mod_n = [], 0, 0

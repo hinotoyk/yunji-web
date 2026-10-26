@@ -130,11 +130,24 @@ YJ.util = (function () {
     return out + "</span>";
   }
 
-  /* 编辑台草稿箱 localStorage 键（schema 版本号）：profile.html（只读叠加渲染）与 editor.js（读写）共用，
-   * 2026-xx 收口单一出处 —— 升级草稿 schema 只改这一处，防双处字符串漂移。 */
-  var DRAFT_KEY = "yj.edit.drafts.v1";
+  /* ---------------- 站点命名空间（2026-10-26 §105 双仓同改） ----------------
+   * 动因：localStorage/Cache API/IndexedDB 全按 origin（协议+域名+端口，路径无关）隔离，而两仓
+   * （kzn/yunji）编辑台键名相同 → 本地同端口（如 127.0.0.1:8090）先后服务两站 = 同源共用一份存储，
+   * PAT/草稿/数据缓存互相串（实测：kzn 编辑台回显出贴在 yunji 侧的 PAT）。定稿：站点级键全部加
+   * 站点 id 前缀，单源 = site-config 的 YJ_SITE.id（config/sire.json site.id）；缺省回退 "yj"（旧无
+   * 前缀键，站点配置缺失时的兜底）。
+   * ⚠ 必须调用时求值：yj-util 在 stats/datechart/races 页先于 site-config.js 执行，加载期读
+   * YJ_SITE 恒 undefined → 一律走 siteId()/storeKey() 函数，禁止模块加载期算好存 const。 */
+  function siteId() { return (window.YJ_SITE && YJ_SITE.id) || "yj"; }
+  function storeKey(k) { return siteId() + "." + k; }
 
-  return { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen, DRAFT_KEY: DRAFT_KEY,
+  /* 编辑台草稿箱 localStorage 键（schema 版本号）：profile.html（只读叠加渲染）与 editor.js（读写）共用，
+   * 2026-xx 收口单一出处 —— 升级草稿 schema 只改这一处，防双处字符串漂移。
+   * defineProperty getter 惰性求值（理由见上），保持 YJ.util.DRAFT_KEY 属性形态 → 调用点零改动。 */
+  var api = { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen,
+    siteId: siteId, storeKey: storeKey,
     splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
     mainName: mainName, sexOf: sexOf, statusChain: statusChain };
+  Object.defineProperty(api, "DRAFT_KEY", { get: function () { return storeKey("edit.drafts.v1"); } });
+  return api;
 })();

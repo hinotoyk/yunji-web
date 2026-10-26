@@ -64,7 +64,7 @@ python -m http.server 8091 --directory dist   # 或直接服务 dist → http://
 本站是**单一种马参数化**的通用资料库：复制仓库后，种马/品牌/台账全部由 `config/sire.json` 一处定义
 （字段契约见 `docs/REFACTOR.md` §3.3），**不改代码**即可跑新种马：
 
-1. 复制仓库，编辑 `config/sire.json`：`jbis_id` / `netkeiba_id` / `sire.name_*`（`name_ja`/`name_cn` 均不可为空，否则父子制覇徽章整体关闭）/ `studbook` / `wins`（可空数组 = 不启用父子制覇徽章）/ `site`（`name`/`subtitle`/`tagline`/`logo`/`domains` 统计域名白名单）/ `ledger.url`（**空 = 台账环节跳过**，不联网不失败）。
+1. 复制仓库，编辑 `config/sire.json`：`jbis_id` / `netkeiba_id` / `sire.name_*`（`name_ja`/`name_cn` 均不可为空，否则父子制覇徽章整体关闭）/ `studbook` / `wins`（可空数组 = 不启用父子制覇徽章）/ `site`（**`id` 站点存储命名空间前缀，必须改成自己的唯一标识**——PAT/草稿/缓存/IndexedDB 键都用它前缀，与其他站同源部署时不串；`name`/`subtitle`/`tagline`/`logo`/`domains` 统计域名白名单）/ `ledger.url`（**空 = 台账环节跳过**，不联网不失败）。
 2. 离线核对抓取 URL 拼装（**不联网**）：`python scripts/basic/build_registry.py --print-urls`，确认新 ID 拼出的 JBIS / netkeiba 列表页 URL 正确。
 3. `python run_update.py --init` 全量重建数据（需联网抓取；`--init` 会删空 `data/`）。
 4. `cd front && npm run build` 构建站点（品牌文案构建期注入，`dist/site-config.js` 由 `front/scripts/gen-site-config.mjs` 自动生成）。

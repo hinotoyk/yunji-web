@@ -175,6 +175,8 @@ yunji-web/
     ]
   },
   "site": {                          // F1-F4 —— 前端品牌（构建期注入）
+    "id": "yunji",                   // §105 —— 站点存储命名空间前缀（PAT/草稿/缓存桶/IndexedDB 库名），
+                                     //        全库唯一；换新项目必须改（缺省 → 回退共享 "yj"，同源多站会互串）
     "name": "云迹",
     "subtitle": "云崽档案",
     "tagline": "沿着飞机云的轨迹，记录每一匹云崽。",
@@ -187,7 +189,7 @@ yunji-web/
 ```
 
 **新项目操作手册（写进 README/文档）**：复制仓库 → 改 `config/sire.json` 的
-`jbis_id` / `netkeiba_id` / `sire.name_*` / `studbook` / `wins` / `site`（含 `domains`）→
+`jbis_id` / `netkeiba_id` / `sire.name_*` / `studbook` / `wins` / `site`（含 `id` 与 `domains`）→
 `python run_update.py --init` → `npm run build` → **手动替换** `front/public/favicon.svg` / `apple-touch-icon.png`
 并更新 `front/package.json` 元数据 → 完成。
 

@@ -14,7 +14,9 @@ window.YJ = window.YJ || {};
 YJ.bus = (function () {
   "use strict";
 
-  const KEY = "yj:currentHorse";
+  /* §105 站点前缀键：**必须调用时求值**——site-config.js 在部分页面晚于本脚本执行，
+   * 加载期算好会静默退回旧共享键 yj.currentHorse（不报错，但跨站又开始串）。 */
+  function key() { return YJ.util.storeKey("currentHorse"); }
   let last = null;
 
   function store() {
@@ -23,14 +25,14 @@ YJ.bus = (function () {
 
   function readLocal() {
     const s = store();
-    return s ? s.getItem(KEY) : null;
+    return s ? s.getItem(key()) : null;
   }
 
   /* 广播选中马 id */
   function broadcast(id) {
     last = String(id);
     const s = store();
-    if (s) { try { s.setItem(KEY, last); } catch (e) {} }
+    if (s) { try { s.setItem(key(), last); } catch (e) {} }
     try {
       window.postMessage({ type: "yj:horse", id: Number(id) }, "*");
     } catch (e) {}
@@ -49,7 +51,7 @@ YJ.bus = (function () {
       if (d && d.type === "yj:horse") handle(d.id);
     }
     function onStorage(e) {
-      if (e.key === KEY) handle(e.newValue);
+      if (e.key === key()) handle(e.newValue);
     }
     window.addEventListener("message", onMsg);
     window.addEventListener("storage", onStorage);

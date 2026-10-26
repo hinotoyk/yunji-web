@@ -247,10 +247,12 @@ setTimeout(function () {
     "体重 下拉挂载点 + URL 预置 470-480 tag + 实例（统计页体重维度下钻落点）");
   const wSel = selOf("搜索体重添加…");
   const wIdx = v => ["<400"].concat(Array.from({ length: 15 }, (_, i) => (400 + i * 10) + "-" + (410 + i * 10))).concat([">550"]).indexOf(v);
-  /* §77：体重候选 = 档位全集补零 —— 当前数据无 540-550 / >550 出走，这两档也必须保留（n=0） */
+  /* §77：体重候选 = 档位全集（17 档）+ 按档位升序，空档必须补零保留（n=0），不因当前数据没有该档就裁掉。
+   * ⚠ 断言不绑定「哪一档为空」：数据会长胖（2026-10 起已有 554kg → >550 不再空），只要求全集/升序/仍有空档补零。 */
+  const wEmpty = wSel ? wSel.items.filter(it => it.n === 0).length : -1;
   ok(!!wSel && wSel.items.length === 17 && wSel.items.every((it, i) => wIdx(it.v) === i)
-    && wSel.items.some(it => it.v === "540-550" && it.n === 0) && wSel.items.some(it => it.v === ">550" && it.n === 0),
-    "体重候选 17 档全集升序（空档 540-550 / >550 补零保留，n=0）：" + (wSel && wSel.items.map(it => it.v).join("→")));
+    && wSel.items.every(it => typeof it.n === "number") && wEmpty >= 1,
+    "体重候选 17 档全集升序（空档补零保留：" + wEmpty + " 档 n=0）：" + (wSel && wSel.items.map(it => it.v).join("→")));
   ok(f.includes('id="fDimSel_breeder"') && !!selOf("搜索生产牧场添加…"), "生产牧场 下拉挂载点（统计页生产牧场维度下钻落点）");
   ok(f.includes('id="fDimSel_owner"') && !!selOf("搜索马主添加…"), "马主 下拉挂载点（统计页马主维度下钻落点）");
   ok(f.includes("性别") && f.includes(">セン<"), "筛选行 性别（牡/牝/セン）");

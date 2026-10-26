@@ -55,7 +55,7 @@ yunji-web/
 | **JS 动态类** | 拼接的 Tailwind 类必须能被 `content` 扫到（当前含 `./pages/**/*.js` 与 `./public/**/*.js`）；`.yj-g*` 等动态拼类名必须放 `@layer` 之外 |
 | **共享 JS** | 放 `front/public/`，Vite 原样拷到 `dist/` 根，页面用 `../xxx.js` 相对引用 |
 | **数据路径** | 一律 `YJ_DATA.url()`（`public/data-config.js` 唯一映射点，`prefix:'..'` → `../data/...`）；改数据目录只改该文件 |
-| **数据缓存** | 一律走 `front/public/yj-cache.js`（`YJ.cache.fetch(name[,opts])`）：注册表按产物 TTL（默认 12h，10min 新鲜期 0 请求 + SWR 软过期）；桶 `yj-data-v3`，字段口径升级 +1 整体作废 |
+| **数据缓存** | 一律走 `front/public/yj-cache.js`（`YJ.cache.fetch(name[,opts])`）：注册表按产物 TTL（默认 12h，10min 新鲜期 0 请求 + SWR 软过期）；桶 `yunji.data-v3`（§105 站点前缀——同源本地双站不串存储），字段口径升级 +1 整体作废 |
 | **比赛数据** | 构建期由 `build-races-bundle.mjs` 打成 `dist/data/races-bundle.json`（替换式，1 请求 ~44KB gzip 替代 276 个小文件）；解码单一出处 `public/race-bundle.js` |
 | **字体** | 构建期按需全量子集（`gen-font.mjs` → `assets/fonts/noto-sc-subset.woff2` ~589KB + `noto-sc.css` 1 条 @font-face）；wght 300–700；fail-soft（CI 无 python 时沿用已提交产物）；开关 `FONT_GEN=skip|force`、严格报错 `YJ_FONT_STRICT=1` |
 | **响应式** | 单断点 768px（`max-md:`）；JS 端统一 `public/device.js`（`YJ.device.isMb/isPc/mode/onChange`，matchMedia），断点翻转可实时重渲染 |
@@ -82,7 +82,7 @@ yunji-web/
 - **两条管线业务隔离、代码抽离复用**：`scripts/basic/` 与 `scripts/races/` 的**业务模块互不 import 对方**，但共享逻辑统一下沉中立层 `scripts/core`——路径/站点/颜色等字面量常量单源 = `core/constants.py`（原 `paths.py` 扩展），两个 `common.py` 只做薄再导出；限速表/剥前缀等风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`（net 不认识管线）。`basic.json` 是两管线共同产物（唯一「前合并」数据源），引用零跨目录。
 - **线性单链**（无跨源来回兜底）：基础 = JBIS 建档 → 血统/nk_id/意味 并发 → netkeiba 详情 → merge；竞赛 = 详情+判变 → 成绩增量（SP 页一次回填 格/条件/調教師/本賞金）→ 台账海外 → merge。
 - **缓存 + 合并模式**：抓取脚本只写 `data/_tmp/{basic,races}/` 独立缓存，merge 时统一写 basic.json 并删缓存 → 可并发、无覆盖。
-- **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.jsonl` 统一日志（含 host 字段，逐行 JSON），据此调间隔。
+- **风控**：按域名限速（`DOMAIN_SLEEP`，0.8~1.2 抖动）+ `data/fetch_log.jsonl` 统一日志（含 host 字段，逐行 JSON），据此调间隔。日志**入库可追踪**：并发 rebase 由 `.gitattributes` merge=union 自动合并，滚动**约** 60 天（`scripts/core/net.py::trim_fetch_log`，由 `TRIM_CHECK_EVERY` 计数门控、全量按 ts 过滤；merge 后可能多留几行，下次裁剪清掉）。
 - **离线脚本零第三方依赖**（硬规）：`core/*` 与 `common.py` 模块顶层**禁止 import 第三方包**（requests/bs4 只在真正发请求处惰性导入，PEP 562 `__getattr__` 重导出）——GitHub runner 不再预装 requests，顶层导入会炸掉 Pages deploy 的 merge 步。
 - **人工值**：`data/manual_overrides.json`（马字段钉住）、`data/timeline_manual.json`（时间线人工节点）、`data/races_manual.json`（比赛人工配图）——两条管线的合并收尾都套 `manual.apply_overrides`，直接改 basic.json 会被次日 CI 抹掉。
 - **判变 = 变化 ∪ 缺失**：成绩抓取目标 = 通算成績变化 ∪ 无 races 文件 ∪ 数据缺失（文件出赛 < 通算战数），自动补拉，杜绝盲区。

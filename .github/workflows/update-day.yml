@@ -50,10 +50,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/ ':!data/fetch_log.csv'
+          git add data/
           if ! git diff --cached --quiet; then
             git commit -m "data: day update $(date -u +%Y-%m-%dT%H:%MZ)"
-            git checkout -- data/fetch_log.csv || true
             git pull --rebase origin main || { git rebase --abort; echo "::error::远端冲突，本次数据提交放弃（下次调度自动重算）"; exit 1; }
             git push origin "HEAD:$GITHUB_REF_NAME"
             echo "::notice::data/ 已按天更新并推送"

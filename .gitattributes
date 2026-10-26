@@ -1,0 +1,6 @@
+# 抓取观测日志（data/fetch_log.jsonl）：append-only。并发任务（status / update-data / update-day）
+# 都会追加同一文件 → rebase 时两侧追加行由 union 驱动自动并集合并，免手工解冲突
+# （2026-10-16 CSV 版冲突实测；union 可能重复/交错个别行，对观测日志无害）。
+# 滚动只留最近 60 天（近似值：merge 后可能多留几行，下次裁剪清掉）：
+# scripts/core/net.py::trim_fetch_log 由 log_fetch 计数门控（TRIM_CHECK_EVERY）触发，全量按 ts 过滤。
+data/fetch_log.jsonl merge=union

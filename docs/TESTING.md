@@ -44,6 +44,11 @@
 
 ### 1.2 `--check` 数据校验
 校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑四段断言（`node scripts/…`，见 §2）：**日期图**（`scripts/datechart/verify_datechart.cjs`，84 断言）/ **统计总览**（`scripts/stats/verify_stats.cjs`，168 断言）/ **比赛记录下钻冒烟**（`scripts/races/verify_drill.cjs`，31 断言）/ **比赛记录结果对账**（`scripts/races/verify_result.cjs`，全库三态闭合）。
+
+### 1.2.1 离线单测（不碰 `data/`、不联网，2026-10-26 追补）
+- `python scripts/verify_fetch_log.py` —— log_fetch 写入/读取一致 + 滚动裁剪（窗口外丢弃 / 坏行丢弃 / 幂等 / `TRIM_CHECK_EVERY` 计数门控）。
+- `python scripts/races/verify_races_edits.py` —— `apply_race_edits`/`entry_match_keys` 13 断言（含台账行键名归一、add 去重/缺省、null 删键、条目不污染）。
+- `node scripts/verify_yj-cache.cjs` —— 缓存控制器 16 例（SWR/304/回退/清除）。
 **成功判据**：`data/check_report.md` 中「问题合计: 0」，且可修复项均为 0（`nk_id` 可修复 1 是已知未命名仔，非缺陷）；日期图断言输出 `ALL PASS`。
 **`--fix` 模式**：对可修复项自动补跑对应脚本（pedigree / nk_id / races）。
 

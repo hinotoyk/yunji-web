@@ -13,7 +13,7 @@
  *   条目 = { t:写入时间, etag, lm, data:解析后 JSON }。
  * 失效：TTL 到期自取；编辑台保存 → YJ.selector.clearBasicCache() → 本控制器 clear('basic')；
  *   排障可控制台 YJ.cache.clear()（全部）/ clear('stats')（单个）。
- * 版本：桶名 yj-data-v3 —— 字段口径/格式升级时 +1，旧条目整体自然作废。
+ * 版本：桶名 = <site>.data-v3（§105 站点前缀，惰性求值）—— 字段口径/格式升级时 +1，旧条目整体自然作废。
  * 兼容性：Cache API 桌面+移动全覆盖（Safari 11.3+ / Chrome 40+ / Firefox 44+）；
  *   纯 JSON，无 DecompressionStream 等新依赖；不支持的环境自动降级直连。
  * 用法（非 module；须在 data-config.js 之后引入）：
@@ -26,11 +26,13 @@ window.YJ = window.YJ || {};
 YJ.cache = (function () {
   "use strict";
 
-  /* v3（2026-10-21）：races-bundle 格式 v2（马级 +末脚，23→24）——旧缓存条目解码会错位，桶 +1 作废。
-   * v2（2026-09-30）：照片本地化删除了被 basic/timeline/races 旧数据引用的 data/photos/142-1|2.jpg，
-   * 旧缓存条目会让老访客 404 一张图——桶 +1 整体作废（教训：**删被引用的数据文件必须同轮 bump 桶版本**，
-   * 或保留旧文件一个 TTL 周期再删）。v1（2026-09-28）：控制器首版。 */
-  var BUCKET = "yj-data-v3";
+  /* 桶名 = <site>.data-v3（§105 站点命名空间）：本模块在 races/datechart 页先于 site-config/yj-util
+   * 加载，禁止加载期求值 —— openBucket 运行期才取站点 id（彼时 yj-util 必已就绪）。旧「yj-data-v3」
+   * 桶不再读写，首次开桶时由 cleanLegacyBucket 删掉（只占配额、不会再被命中）。v3（2026-10-21）：races-bundle 格式 v2（马级 +末脚，23→24）——旧缓存条目解码
+   * 会错位，桶 +1 作废。v2（2026-09-30）：照片本地化删除了被 basic/timeline/races 旧数据引用的
+   * data/photos/142-1|2.jpg，旧缓存条目会让老访客 404 一张图——桶 +1 整体作废（教训：**删被引用的数据
+   * 文件必须同轮 bump 桶版本**，或保留旧文件一个 TTL 周期再删）。v1（2026-09-28）：控制器首版。 */
+  function bucket() { return YJ.util.storeKey("data-v3"); }
   var REVAL = 10 * 60 * 1000;            /* 新鲜期：窗口内 0 请求 */
   var TTL_DEF = 12 * 60 * 60 * 1000;     /* 默认 12h（用户 2026-09-28 定）；注册表可按产品覆写 */
 
@@ -65,7 +67,19 @@ YJ.cache = (function () {
    * 网络调用必须经此包装（调用时解析 window.fetch，测试换桩也随之生效），否则 fetchFull/revalidate
    * 会把 URL 当产品名递归调回控制器。 */
   function nativeFetch(u, o) { return window.fetch(u, o); }
-  function openBucket() { return COK ? caches.open(BUCKET) : Promise.reject(new Error("no-caches")); }
+  /* 旧共享桶清理（§105 收尾）：切换后不再读写 "yj-data-v3"，但它会在访客/本机里永久占配额。
+   * 首次开桶时惰性删一次（Cache 条目是可再生的全量数据，删掉只等于下次重取）。 */
+  var legacyCleaned = false;
+  function cleanLegacyBucket() {
+    if (legacyCleaned || !COK) return;
+    legacyCleaned = true;
+    try { caches.delete("yj-data-v3").catch(function () { /* 不存在/被禁 → 忽略 */ }); } catch (e) { /* ignore */ }
+  }
+  function openBucket() {
+    if (!COK) return Promise.reject(new Error("no-caches"));
+    cleanLegacyBucket();
+    return caches.open(bucket());
+  }
 
   function readEnv(urlAbs) {
     if (mem[urlAbs]) return Promise.resolve(mem[urlAbs]);
