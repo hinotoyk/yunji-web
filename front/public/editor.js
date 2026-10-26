@@ -194,7 +194,9 @@ YJ.editor = (function () {
   function ovPut(id, entry) {
     var d = draftRead(); d.ov = d.ov || {};
     var keys = Object.keys(entry || {}).filter(function (k) { return k !== "_note"; });
-    if (keys.length) d.ov[String(id)] = entry; else delete d.ov[String(id)];
+    /* 2026-10-26 修：只写备注（无字段改动）也是合法草稿——此前 keys.length===0 连 _note 一起删，
+     * 备注永远进不了草稿箱（改完刷新即丢，还因 draftCount 不计数而无法提交）。 */
+    if (keys.length || (entry && entry._note)) d.ov[String(id)] = entry; else delete d.ov[String(id)];
     draftWrite(d);
   }
   function phGet(id) {
@@ -380,15 +382,33 @@ YJ.editor = (function () {
   function persistHorse() {
     if (state.mode !== "draft" || !state.horse) return;
     var id = String(state.horse.id);
+    /* 2026-10-26 修（§107）：字段草稿**叠加落箱**而非整条替换——打底 = 箱里现值（可能含别的
+     * 标签页新写的键），本页 state 覆盖其上。旧逻辑整条替换，双开编辑页时后写的一方会把
+     * 先写方该匹的字段草稿整条抹掉（「修改信息莫名消失」的跨页形态）。 */
     var entry = {};
+    var base = ovGet(id);
+    if (base) Object.keys(base).forEach(function (k) { entry[k] = base[k]; });
     Object.keys(state.draft).forEach(function (k) { entry[k] = state.draft[k]; });
     var note = String(state.note || "").trim();
     if (note) entry._note = note;
+    else if (base && base._note) entry._note = base._note;   /* 备注留空 = 保留旧备注（与 buildPayload 同口径） */
     ovPut(id, entry);
+    persistPhotosOf(id);
+  }
+  /* 图片草稿单独落箱（2026-10-26 修，§107）：上传/删图后链路里只有 renderPhotos（不触发 render→
+   * persistHorse），state.photos 的改动一度只活在内存——此刻切马/关页/iframe 换页 = 图片草稿凭空
+   * 消失（IndexedDB 里只剩孤儿 blob）。每次图片态变更立即写；**内容没变不写**（快照去重，防别的
+   * 标签页刚写进箱的新图被本页的旧镜像盖回去）。 */
+  function persistPhotosOf(id) {
+    if (state.mode !== "draft") return;
+    if (String(state.horse && state.horse.id) !== String(id)) return;
     var ph = null;
     if (state.photos.mode === "set") ph = { mode: "set", list: state.photos.draft.slice() };
     else if (state.photos.mode === "remove") ph = { mode: "remove", list: [] };
-    phPut(id, ph);
+    var snap = JSON.stringify(ph);
+    if (state.photos._saved === snap) return;
+    state.photos._saved = snap;
+    phPut(String(id), ph);
   }
   function hydrateHorse() {
     if (state.mode !== "draft" || !state.horse) return;
@@ -401,6 +421,7 @@ YJ.editor = (function () {
     state.photos.mode = ph ? ph.mode : "";
     state.photos.draft = (ph && ph.mode === "set") ? ph.list.slice() : [];
     state.photos.meta = {};
+    state.photos._saved = JSON.stringify((ph && ph.mode) ? ph : null);   /* 落箱去重基线（§107） */
     hydratePhotoURLs();
   }
   function hydratePhotoURLs() {   /* 草稿新图 → objectURL（进 meta 内存缓存），缩略图才有 src */
@@ -467,6 +488,38 @@ YJ.editor = (function () {
     (rc.mod || []).forEach(function (t) { if (t && typeof t === "object" && t.set) putMod(t); });
     (rc.add || []).forEach(function (r) { if (r && typeof r === "object") putAdd(r); });
     return out;
+  }
+
+  /* 提交成功 → 盯 CI 发布（Deploy run 跑完）→ 本页自动拉最新数据重渲染（2026-10-26，§106）。
+   * 30s × 12 次（6min）封顶；页面关了即止（下次打开 init 本来就拿最新）。runs API 不可用
+   * （限流等）退回看 main 是否出现新提交（CI 重算落库）。 */
+  function watchCI(pushSha) {
+    if (watchCI.timer) clearInterval(watchCI.timer);
+    var tries = 0;
+    function finish() {
+      clearInterval(watchCI.timer); watchCI.timer = null;
+      if (window.YJ && window.YJ.cache && YJ.cache.bust) YJ.cache.bust();   /* 此刻线上产物才真正变 */
+      refresh(true).then(function () {
+        if (state.gh && state.gh.ok) state.gh.ci = "CI 已发布 · 本页数据已自动刷新（全站数据缓存已失效重取）";
+        render();
+      });
+    }
+    watchCI.timer = setInterval(function () {
+      if (++tries > 12 || state.ghBusy) { clearInterval(watchCI.timer); watchCI.timer = null; return; }
+      gh("/repos/" + GH_REPO + "/actions/runs?per_page=5").then(function (r) {
+        var runs = (r.ok && r.body && r.body.workflow_runs) || [];
+        var hit = runs.filter(function (w) {
+          return String(w.head_sha || "").indexOf(pushSha) === 0 && String(w.name || "").indexOf("Deploy") >= 0;
+        })[0];
+        if (hit && hit.status === "completed" && hit.conclusion === "success") { finish(); return; }
+        if (!r.ok || r.status === 0) {   /* runs 拿不到 → 退回 commits 探测 */
+          gh("/repos/" + GH_REPO + "/commits/main").then(function (r2) {
+            var sha = r2.ok && r2.body && r2.body.sha;
+            if (sha && sha !== pushSha) finish();
+          });
+        }
+      });
+    }, 30000);
   }
 
   function submitDrafts() {
@@ -609,7 +662,8 @@ YJ.editor = (function () {
           });
           if (d.ov[id]._note) ent._note = d.ov[id]._note;
           var hasPin = Object.keys(ent).some(function (k) { return k[0] !== "_"; });
-          if (hasPin) table[id] = ent; else delete table[id];
+          /* 2026-10-26 修：纯备注草稿（无字段/图片改动）也要落表，否则提交即丢备注 */
+          if (hasPin || ent._note) table[id] = ent; else delete table[id];
         });
         /* 照片（d.ph）独立于人工字段循环（2026-10-08 修）：此前嵌在 d.ov 循环里，只传照片
          * 不存任何人工字段的马 → 图片文件入库但 manual_overrides 无 photo 条目（孤儿图，
@@ -732,6 +786,10 @@ YJ.editor = (function () {
             .concat(reCommitted ? [RE_PATH] : [])
         };
         state.tl.dirty = false;
+        /* 2026-10-26 修（§106）：提交成功即盖全站缓存失效戳——各浏览页的数据缓存（yj-cache 12h /
+         * selector 路 D 1h）立刻作废，CI 发布完刷新页面即得最新数据，不再吃最长半天的旧值。 */
+        if (window.YJ && window.YJ.cache && YJ.cache.bust) YJ.cache.bust();
+        watchCI(commit.sha);
         return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
           state.table = r[0] || {};
           render();
@@ -1134,7 +1192,8 @@ YJ.editor = (function () {
     if (g.err) return '<div class="rounded-md bg-destructive/10 px-3 py-2 text-[12px] text-destructive">' + esc(g.err) + "</div>";
     if (g.ok) return '<div class="rounded-md bg-primary/10 px-3 py-2 text-[12px]"><b class="text-primary">✔ 已提交</b> · ' +
       '<a class="underline underline-offset-2" href="' + esc(g.url) + '" target="_blank" rel="noopener">查看 commit ↗</a> · ' +
-      "CI 构建约 2 分钟后线上生效（" + (g.files || []).length + " 个文件 · " + (g.secs || 0).toFixed(1) + "s）。</div>";
+      "CI 构建约 2 分钟后线上生效（" + (g.files || []).length + " 个文件 · " + (g.secs || 0).toFixed(1) + "s）。</div>" +
+      (g.ci ? '<div class="mt-1 rounded-md bg-primary/10 px-3 py-2 text-[12px] text-primary">↻ ' + esc(g.ci) + "</div>" : "");
     return "";
   }
 
@@ -1388,7 +1447,7 @@ YJ.editor = (function () {
     if (state.photos.mode !== "set") { state.photos.draft = photoBase().slice(); state.photos.mode = "set"; }
     return state.photos.draft;
   }
-  function setDraft(list) { state.photos.draft = list.slice(); state.photos.mode = "set"; }
+  function setDraft(list) { state.photos.draft = list.slice(); state.photos.mode = "set"; if (state.horse) persistPhotosOf(state.horse.id); }
   function addPhoto(path) {
     var d = ensureDraft();
     if (d.indexOf(path) < 0) d.push(path);
@@ -1401,8 +1460,8 @@ YJ.editor = (function () {
     var ref = draftRefOf(it);                 /* 草稿新图顺手清掉 IndexedDB 里的 blob */
     if (ref) blobDel(ref);
   }
-  function markNoPhoto() { state.photos.draft = []; state.photos.mode = "set"; }
-  function unpinPhoto() { state.photos.mode = "remove"; state.photos.draft = []; }
+  function markNoPhoto() { state.photos.draft = []; state.photos.mode = "set"; if (state.horse) persistPhotosOf(state.horse.id); }
+  function unpinPhoto() { state.photos.mode = "remove"; state.photos.draft = []; if (state.horse) persistPhotosOf(state.horse.id); }
   function movePhoto(from, to) {
     var list = workingPhotos();
     if (from < 0 || from >= list.length || from === to) return;
@@ -1432,7 +1491,17 @@ YJ.editor = (function () {
           var it = { ref: ref, ext: extOf(r.type), name: name, bytes: r.toBytes, from: r.fromBytes,
             w: r.w, h: r.h, q: r.quality, over: r.over, kept: r.kept };
           state.photos.meta["draft:" + ref] = { url: URL.createObjectURL(r.blob), bytes: r.toBytes, name: name };
-          addPhoto(it);
+          if (!owner || !state.horse || String(state.horse.id) === String(owner)) {
+            addPhoto(it);
+          } else {
+            /* 上传队列进行中切了马（2026-10-26 修，§107）：这张图直写**开始上传那匹**的草稿箱，
+             * 不再错挂到当前马头上（旧路径 addPhoto 只认 state.horse，队列里剩下的图全部跟错人）。 */
+            var ph = phGet(owner) || { mode: "set", list: [] };
+            if (ph.mode !== "set") ph = { mode: "set", list: [] };
+            ph.list.push(it);
+            phPut(String(owner), ph);
+            photoLog(name + "：已切到别的马，这张图记回原马（" + owner + "）的草稿", "ok");
+          }
           photoLog(name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
             " " + mimeShort(r.type) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) +
             " → 草稿箱", "ok");
@@ -2445,7 +2514,12 @@ YJ.editor = (function () {
   }
 
   function setHorse(h) {
+    /* 2026-10-26 修（§107）：切走前先落箱——上传队列进行中切马，已压缩完还没等 render 的图
+     * 此前会随 state.photos 重置一起消失（切马 = 唯一不经过 render 的状态清空点）。 */
+    persistHorse();
     state.horse = (h && state.byId[String(h.id)]) || h;
+    /* 选中马进 bus（sessionStorage currentHorse）：同标签页的 预览/资料页 跟随，重开编辑台也回到这匹 */
+    try { if (window.YJ && YJ.bus && YJ.bus.broadcast && state.horse) YJ.bus.broadcast(state.horse.id); } catch (e) { /* ignore */ }
     state.draft = {};
     state.note = "";
     state.err = "";
@@ -2896,7 +2970,13 @@ YJ.editor = (function () {
        * 开机再走一次带 cache-buster 的 no-store 读取，保证行内「生效值」= 上一次保存 merge 后的真值。 */
       var ready = state.online ? refresh(false) : Promise.resolve();
       return ready.then(function () {
-        var start = (qid && state.byId[String(qid)]) || state.horses[0] || null;
+        /* 起始马：?id= > bus 记忆（2026-10-26 补，§107——此前每次打开都从第 1 匹开始，
+         * 回到编辑台找不到刚改的那匹，也是「改了没回显」体感的一部分）> 第 1 匹 */
+        var remembered = null;
+        try { if (window.YJ && YJ.bus && YJ.bus.readLocal) remembered = YJ.bus.readLocal(); } catch (e) { /* ignore */ }
+        var start = (qid && state.byId[String(qid)]) ||
+          (remembered != null && String(remembered) !== "" && state.byId[String(remembered)]) ||
+          state.horses[0] || null;
         if (state.page !== "drafts" && state.page !== "table" && start) setHorse(start);   /* 查询/批量表格页不选马（§93/§104），其余照旧 */
         render();
         if (state.page !== "drafts" && state.page !== "table") applyTab();      /* horse 页 ?tab= 兼容保留；无参数 = 现状 */

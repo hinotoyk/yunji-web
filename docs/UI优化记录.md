@@ -747,6 +747,20 @@
 - **验证**：`node --check` 过；`npm run build` 过（races-bundle round-trip 对账通过）；dist/editor.js 含两处修复、页面引用 `?v=` 哈希随内容自动更新（强刷即得）。用户当前挂着的「图片=草稿 2 张」草稿在 localStorage/IndexedDB 原样保留，修复生效后直接再点提交即可。
 - **关键结论**：promise 链里「有时返回 promise 有时返回 null」的函数**不能被无条件 `.then`**——早退分支一律 `Promise.resolve()` 兜底；外部服务的「校验」要把**网络层失败**与**凭据被拒**分开处置，前者不该惩罚用户已输入的凭据。
 
+### §107 · 编辑台持久化与缓存四修：图片/信息莫名消失 · 改后不及时回显 · 提交后缓存不刷新（2026-10-26）
+
+- **动因（用户实测）**：「信息编辑和提交 GitHub 这一块还有很多问题，本地模拟多测几次」——① 上传图片莫名消失；② 改过的信息莫名消失；③ 修改过的信息不及时回显；④ 更新后浏览器缓存应立即失效、自动拉最新。
+- **根因 1（图片消失）**：上传/删图后链路里只有 `renderPhotos`，**不经过** `render → persistHorse`，`state.photos` 的改动只活在内存——此刻切马（`setHorse` 会整块重置 `state.photos`）/ 关页 / shell 里 iframe 换页 = 草稿凭空消失，IndexedDB 里只剩孤儿 blob；上传队列进行中切马更会把已压好的图直接吞掉。
+- **修法 1（editor.js）**：① 新增 `persistPhotosOf(id)`，图片态一变（`setDraft`/`addPhoto`/`delPhoto`/`markNoPhoto`/`unpinPhoto`）**立即落箱**，不再等下一次全量 render；② `setHorse` 第一行先 `persistHorse()`（连同图片草稿）再切；③ `uploadOne` 压缩完成时若已切马，按队列入队时的 `owner` 归属直接 `phPut` 记回**原马**草稿（不再挂错马/丢失）。
+- **根因 2（信息消失）**：`persistHorse` 用 `state.draft` 整条**替换**草稿箱条目，双开编辑页时后写方会把先写方该匹新写的键整条抹掉；备注-only 的条目（`keys.length === 0 && _note`）更是被 `ovPut` 直接当空删掉——「只写备注」从未真正落箱。
+- **修法 2**：① `persistHorse` 改**叠加落箱**：打底 = 箱里现值（`ovGet`），本页 `state` 覆盖其上（备注留空 = 保留旧备注，与 `buildPayload` 同口径）；`ovPut` 保持原语替换语义不动（editor-table.js 批量页的 syncOv/pruneEmpty 依赖它）；② `ovPut` 保留条件放宽为 `keys.length || entry._note`。
+- **根因 3（回显不及时）**：编辑台初始马永远 = 马表第 1 匹，重开页面丢上下文；且提交成功后页面数据要等用户手动刷新。
+- **修法 3**：① `setHorse` 选马写入 bus（`sessionStorage currentHorse` + postMessage），同标签页的预览/资料页跟随；`init` 起始马优先级 = URL `?h=` → bus 记忆马 → 第 1 匹；② 提交成功挂 `watchCI`：轮询 Actions（30s × 12），Deploy run 对 `head_sha` 成功完成后自动 `YJ.cache.bust() + refresh(true)` 刷新本页马表，报告条提示「CI 已发布 · 本页数据已自动刷新」。
+- **根因 4（缓存不刷新）**：全站数据走 `yj-cache`（Cache API + TTL 12h + SWR）+ `selector.js` 的 sessionStorage 1h 路 D；编辑台提交的只是 GitHub 仓库，线上 `basic.json` 要等 CI 重算落库（约 2 分钟）才变——现有缓存层没有任何「外部数据已更新」的失效入口，旧数据最长吃满 12h。
+- **修法 4**：① `yj-cache` 新增 `bust()`：`localStorage` 落失效时间戳（`storeKey("data-bust-ts")`）+ 清 Cache API 桶；`fetch()` 读到时间戳后 15 分钟内强制回源且 `cache:"no-store"`（跳过浏览器 HTTP 缓存，GitHub Pages `max-age=600` 也在内），过期条目无视新鲜窗直接硬刷；② `selector.js` 路 D 读到时间戳即弃 sessionStorage 副本；③ 提交成功即 `bust()` + `watchCI` 发布后二次 `bust()`，双保险。
+- **验证**：新增 `tests/editor-sim.mjs`（node vm 直跑真 public 六模块 + 打桩 DOM/IndexedDB/fetch/GitHub API，可双页上下文共享存储）：27 断言全绿——T1 上传即落箱+换页回显；T2 备注-only 落箱+回显；T3 字段叠加落箱（外部新键不被抹）+切马往返保留；T4 上传队列中途切马 2 张全记回原马；T5 无 tl/racePh 提交不炸+草稿清空+photo/字段落 blob+tree；T6 bust 后本页与「另一标签页」均立即回源 no-store；T7 watchCI 触发自动刷新；T8 重开回到上次那匹。仓库自带冒烟全绿（yj-cache 16/16 · stats 205/205 · datechart 112 · drill 60/60）；`node --check` 过；`npm run build` 过（字体子集因 public/*.js 注释语料 +5 字重算 2129→2134，属正常连带）。
+- **关键结论**：「消失」类症状的共同根源是**持久化只挂在 render 一条链上**——任何旁路（renderPhotos、切马重置、iframe 换页）都能绕过它；存储写入要么在状态变更点即时做（图片），要么先并箱再写（字段）。外部数据更新（CI 发布）要主动向缓存层喊话：失效戳 + 窗口内 no-store 是比改 TTL/加随机参数更可控的失效通道。
+
 
 
 

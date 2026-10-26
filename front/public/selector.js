@@ -97,6 +97,11 @@ YJ.selector = (function () {
       const nl = raw.indexOf("\n");                 /* 存储格式 = 写入时间戳 + \n + 原文；无之前缀=旧格式一并作废 */
       const t = nl > 0 ? Number(raw.slice(0, nl)) : NaN;
       if (!isFinite(t) || Date.now() - t > BASIC_TTL) { SS.removeItem(key); return null; }
+      /* 编辑台提交成功 → yj-cache.bust() 盖全站失效戳（§106）：路 D 副本写在戳之前 → 立即作废，
+       * 同标签页 iframe 也不吃旧马表（此前只能等 1h TTL 或刷新，回显跟不上提交）。 */
+      if (window.YJ && window.YJ.cache && typeof window.YJ.cache.bustTs === "function" && t <= window.YJ.cache.bustTs()) {
+        SS.removeItem(key); return null;
+      }
       const horses = parseHorses(raw.slice(nl + 1));
       if (!horses) SS.removeItem(key);   /* 结构不合法（截断/旧格式）→ 作废重取 */
       return horses;

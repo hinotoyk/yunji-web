@@ -100,8 +100,11 @@ YJ.cache = (function () {
   /* fetchFull 刻意不带 cache:"no-store"（审计 3.3）：首访/硬过期允许浏览器 HTTP 缓存直接命中
    * 全量（ETag/Last-Modified 照常入 env）；Cache API 才是控制器唯一事实源，条件校验（revalidate）
    * 才强制 no-store 回源。日后勿"顺手补"no-store——那等于关掉一层合法缓存。 */
-  function fetchFull(urlAbs) {
-    return nativeFetch(urlAbs).then(function (r) {
+  function fetchFull(urlAbs, noStore) {
+    /* noStore = 显式失效（bust）后的回源：GitHub Pages max-age=600，普通 fetch 可能命中
+     * HTTP 缓存拿到旧产物——用户刚提交完要"立刻拉最新"，这层必须跳过（audit 3.3 的
+     * 「刻意不带 no-store」只针对日常全量，不约束显式失效）。 */
+    return nativeFetch(urlAbs, noStore ? { cache: "no-store" } : undefined).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json().then(function (data) {
         return { t: Date.now(), etag: hdr(r, "ETag"), lm: hdr(r, "Last-Modified"), data: data };
@@ -140,14 +143,25 @@ YJ.cache = (function () {
     try { urlAbs = abs(opts.url || reg.url(opts.arg)); }        /* 求址失败（YJ_DATA 缺席等）→ 归一为拒绝， */
     catch (e) { return Promise.reject(e); }                     /* 不让调用方吃到同步 throw（.catch 接不住） */
     if (inflight[urlAbs]) return inflight[urlAbs];   /* 去重含 cb：首个调用的 opts.onUpdate 生效，后续调用者不再注册 */
+    var bt = bustTs();                               /* 显式失效时刻（编辑台提交成功后设置） */
+    var noStore = bt && Date.now() - bt < NOSTORE_WIN;   /* 失效后 15min 内回源一律跳过 HTTP 缓存 */
     var p = readEnv(urlAbs).then(function (env) {
       var age = env ? Date.now() - env.t : Infinity;
+      if (env && env.t <= bt) {                      /* 条目写在 bust 之前 → 视同硬过期，立即回源最新 */
+        return fetchFull(urlAbs, noStore).then(function (env2) {
+          writeEnv(env2, urlAbs);
+          return env2.data;
+        }).catch(function (e) {
+          if (env) return env.data;
+          throw e;
+        });
+      }
       if (env && age < REVAL) return env.data;                       /* ① 新鲜期：0 请求 */
       if (env && age < reg.ttl) {                                    /* ② 软过期：秒开 + 后台 SWR */
         revalidate(urlAbs, env, opts.onUpdate);
         return env.data;
       }
-      return fetchFull(urlAbs).then(function (env2) {                /* ③ 硬过期/首访：同步全量 */
+      return fetchFull(urlAbs, noStore).then(function (env2) {                /* ③ 硬过期/首访：同步全量 */
         writeEnv(env2, urlAbs);
         return env2.data;
       }).catch(function (e) {                                        /* ④ 取新失败 → 回退旧缓存 */
@@ -186,5 +200,23 @@ YJ.cache = (function () {
     }).catch(function () {});
   }
 
-  return { fetch: fetch, clear: clear, REVAL_MS: REVAL };
+  /* ---- 显式失效（2026-10-26）：编辑台提交成功后调用 → 全站立即弃用旧数据 ----
+   * 机制 = localStorage 盖时间戳（跨标签页/iframe 立即可见）+ 本上下文 clear()。
+   * fetch 读到「条目写入时间 ≤ 戳」视同硬过期立即回源；戳后 NOSTORE_WIN 内回源再跳过
+   * HTTP 缓存（GitHub Pages max-age=600，不跳会拿到发布前旧产物）。selector.js 的
+   * sessionStorage 路 D 同读此戳（bustTs 导出），保同一标签页内 iframe 也不吃旧马表。 */
+  function bustKey() {
+    try { return YJ.util.storeKey("data-bust-ts"); }
+    catch (e) { return "yj.data-bust-ts"; }   /* yj-util 缺席的怪环境：退共享键，失效仍生效 */
+  }
+  function bustTs() {
+    try { return Number(localStorage.getItem(bustKey())) || 0; } catch (e) { return 0; }
+  }
+  var NOSTORE_WIN = 15 * 60 * 1000;
+  function bust() {
+    try { localStorage.setItem(bustKey(), String(Date.now())); } catch (e) { /* 隐私模式 → 只清本上下文 */ }
+    return clear();
+  }
+
+  return { fetch: fetch, clear: clear, bust: bust, bustTs: bustTs, REVAL_MS: REVAL };
 })();
