@@ -761,6 +761,14 @@
 - **验证**：新增 `tests/editor-sim.mjs`（node vm 直跑真 public 六模块 + 打桩 DOM/IndexedDB/fetch/GitHub API，可双页上下文共享存储）：27 断言全绿——T1 上传即落箱+换页回显；T2 备注-only 落箱+回显；T3 字段叠加落箱（外部新键不被抹）+切马往返保留；T4 上传队列中途切马 2 张全记回原马；T5 无 tl/racePh 提交不炸+草稿清空+photo/字段落 blob+tree；T6 bust 后本页与「另一标签页」均立即回源 no-store；T7 watchCI 触发自动刷新；T8 重开回到上次那匹。仓库自带冒烟全绿（yj-cache 16/16 · stats 205/205 · datechart 112 · drill 60/60）；`node --check` 过；`npm run build` 过（字体子集因 public/*.js 注释语料 +5 字重算 2129→2134，属正常连带）。
 - **关键结论**：「消失」类症状的共同根源是**持久化只挂在 render 一条链上**——任何旁路（renderPhotos、切马重置、iframe 换页）都能绕过它；存储写入要么在状态变更点即时做（图片），要么先并箱再写（字段）。外部数据更新（CI 发布）要主动向缓存层喊话：失效戳 + 窗口内 no-store 是比改 TTL/加随机参数更可控的失效通道。
 
+### §108 · 草稿箱「ov-only 箱」崩溃：draftRead 统一补形（2026-10-26，双仓同改）
+
+- **动因（用户在 kzn-web 实测，yunji 同款隐患）**：批量表格改值后点「草稿箱」无反应，控制台 `Cannot read properties of undefined (reading '868')`（draftEntriesHTML 的 `d.ph[id]`），草稿箱弹不出来——PAT 都贴不了，整个提交流程卡死。
+- **根因**：`draftRead()` 原样返回箱里 JSON——批量表格页只写 `ov`（从未有图片草稿）时箱里**没有 `ph`/`racePh` 键**；渲染/提交侧多处 `d.ph[id]` 直接下标访问，缺键即 `undefined["868"]`。yunji 一直没炸只是箱里恰好一直有图片草稿（`ph` 键存在），隐患相同。
+- **修法**：`draftRead()` 读出即补形——`ov`/`ph`/`racePh` 缺失或类型不对一律补默认空对象（`blank()` 每次新对象、不复用引用）；读侧全部安全，下次 `draftWrite` 顺手把旧箱补成完整形态。一处收口覆盖全部下游，比在每个调用点加 `d.ph || {}` 更稳。
+- **验证**：`tests/editor-sim.mjs` 新增 T9（预置 `{"ov":{"868":{...}}}` 无 `ph` 键的箱 → 打开草稿箱不炸、未知马以 `#868` 兜底显示、读侧补形后写回即补全键）；模拟台加 `SIM_PUB`/`SIM_REPO` 参数后可直跑另一仓 public——yunji 与 kzn 各 30 断言全绿；`node --check` 过；`npm run build` 过（dist 含「统一补形」标记）。kzn 侧同轮同步了 yunji §106/§107 全量（详见 kzn 仓 `docs/UI优化记录.md` §106）。
+- **关键结论**：双仓同源的模块一处修 bug 必须同步另一处；「箱里缺键」属于**形状假设缺陷**，修在读入口一处即可覆盖全部下游下标访问。
+
 
 
 

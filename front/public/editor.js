@@ -179,10 +179,18 @@ YJ.editor = (function () {
    * list 元素：串 = 盘上已有站内图；对象 = 草稿新图 {ref,ext,name,bytes,from,to,w,h,q,over}（ref = IndexedDB 键）。
    * 提交前这些改动只活在浏览器里，页面随便关；「提交到 GitHub」一次性打包成单个原子 commit。 */
   function draftRead() {
+    /* 2026-10-26 修（§108）：统一补形——批量表格页只写 ov（从未有图片草稿）时，箱里可能没有
+     * ph/racePh 键；渲染/提交侧有多处 d.ph[id] 直接下标访问，缺键即 TypeError（草稿箱打不开）。
+     * 读出即补默认空对象，读侧全部安全；下次 draftWrite 顺手把旧箱补成完整形态。 */
+    function blank() { return { ov: {}, ph: {}, racePh: {} }; }
     try {
       var o = JSON.parse(localStorage.getItem(draftKey()) || "{}");
-      return (o && typeof o === "object") ? o : {};
-    } catch (e) { return {}; }
+      if (!o || typeof o !== "object") return blank();
+      if (!o.ov || typeof o.ov !== "object") o.ov = {};
+      if (!o.ph || typeof o.ph !== "object") o.ph = {};
+      if (!o.racePh || typeof o.racePh !== "object") o.racePh = {};
+      return o;
+    } catch (e) { return blank(); }
   }
   function draftWrite(d) {
     try { localStorage.setItem(draftKey(), JSON.stringify(d)); } catch (e) { /* 隐身模式等存不进就静默 */ }
