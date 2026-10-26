@@ -334,7 +334,9 @@ YJ.editor = (function () {
   }
   function ghTestToken() {
     return gh("/user").then(function (r) {
-      return r.ok ? { ok: true, login: r.body.login } : { ok: false, error: (r.body && r.body.message) || "HTTP " + r.status };
+      /* network = 请求根本没到 GitHub（gh() 的 status 0 兜底）——不是 token 的错，调用方不得据此清 token */
+      return r.ok ? { ok: true, login: r.body.login }
+        : { ok: false, network: r.status === 0, error: (r.body && r.body.message) || "HTTP " + r.status };
     });
   }
   function blobToBase64(blob) {
@@ -635,7 +637,11 @@ YJ.editor = (function () {
           if (!r.ok) throw new Error("人工表上传失败：" + ((r.body && r.body.message) || "HTTP " + r.status));
           tree[0].sha = r.body.sha;
           function rmCommit() {   /* 比赛配图表：远端 races_manual 叠加本次改动（null = 删键），有改动才进 tree */
-            if (!rmIds.length) return null;
+            /* 2026-10-26 修：恒回 promise——rmCommit().then(reCommit) 在无比赛配图草稿时对 null.then
+             * 抛 TypeError（「Cannot read properties of null (reading 'then')」），纯马匹字段/图片改动
+             * 的提交全炸（§104 a2dd6fb 引入；当日首提成功只因带了比赛配图 1）。做 .then 回调时
+             * Promise.resolve() 与 null 行为一致，两条调用路径（665 / 671）都安全。 */
+            if (!rmIds.length) return Promise.resolve();
             var rmTable = JSON.parse(JSON.stringify(rmRemote || {}));
             rmIds.forEach(function (rid) {
               if (rmOut[rid] === null) delete rmTable[rid]; else rmTable[rid] = rmOut[rid];
@@ -650,7 +656,7 @@ YJ.editor = (function () {
           }
           function reCommit() {   /* 比赛编辑表（§104）：远端 races_edits 叠加草稿 rc，有改动才进 tree */
             var dNow = draftRead();
-            if (!dNow.rc) return null;
+            if (!dNow.rc) return Promise.resolve();   /* 同 rmCommit：恒回 promise，防后续被直接 .then */
             var reTable = mergeRaceEdits(reRemote, dNow.rc);
             reN = (reTable.add || []).length + (reTable.mod || []).length + (reTable.del || []).length;
             if (!reN) return null;
@@ -2574,8 +2580,15 @@ YJ.editor = (function () {
         state.gh = { msg: "校验中…" };
         renderBox();
         ghTestToken().then(function (r) {
-          if (r.ok) state.gh = { msg: "已连接 @" + r.login + " · token 只存本浏览器", msgOk: true };
-          else { ghClearToken(); state.gh = { msg: "token 无效：" + r.error, msgOk: false }; }
+          if (r.ok) {
+            state.gh = { msg: "已连接 @" + r.login + " · token 只存本浏览器", msgOk: true };
+          } else if (r.network) {
+            /* 2026-10-26 修：网络层失败 ≠ token 无效，保留 token——此前一律 ghClearToken()，
+             * api.github.com 抖一次就把刚贴的 PAT 静默删掉，看起来像「保存了没生效、得再贴一次」。 */
+            state.gh = { msg: "GitHub 校验连不上（网络波动），token 已保留——可直接提交，或稍后重新校验", msgOk: false };
+          } else {
+            ghClearToken(); state.gh = { msg: "token 无效：" + r.error, msgOk: false };
+          }
           renderBox(); render();
         });
         return;

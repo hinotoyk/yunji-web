@@ -737,6 +737,16 @@
 - **复评追补（2026-10-26 二次审阅，用户授权直接改）**：① 惰性求值收口（bus/editor/profile，见上）；② 旧桶清理 `cleanLegacyBucket()`；③ PAT 旧键提示 `legacyTokenNote()`；④ `site.id` 补进配置契约（`docs/REFACTOR.md` §3.3 + README 新项目步骤）与 `AGENTS.md` 硬规（存储键前缀 + 加载期禁求值）；⑤ `gen-site-config.mjs` 对缺省 `id` 构建期告警（新克隆仓最容易漏）；⑥ `data/fetch_log.jsonl` 裁剪改为**计数门控 + 全量按 ts 过滤**（原「只看首行是否过期」在 merge=union 把旧行夹到中间时会永久跳过裁剪，且逐请求全量读 4MB）；⑦ 常驻用例 `scripts/races/verify_races_edits.py`（13 断言）+ `scripts/verify_fetch_log.py`（原 `tests/` 里的临时脚本移出，补 trim/幂等/门控——`tests/` 按约定不入库，挪到 `scripts/` 才留得住）；⑧ `scripts/races/verify_drill.cjs` 的体重档位断言去掉「540-550 / >550 必须为空」的数据绑定（2026-10 已有 554kg，断言随数据过期）。
 - **关键结论**：跨站共存的工具链，站点级存储键必须自带命名空间；「origin 判定与路径无关」是本质——本地多项目共用一个端口时，任何未前缀的键都会跨项目互串。bus.js §62「sessionStorage 优于 localStorage」防的是**跨标签页**串扰，本次前缀补上的是**同标签跨站导航残留**这另一半。
 
+### §106 · 编辑台提交链路两修：无比赛配图草稿的 TypeError 崩溃 + PAT 校验网络抖动误清除（2026-10-26）
+
+- **动因（用户实测）**：① 编辑台改马匹图片后「提交到 GitHub」报红条 `Cannot read properties of null (reading 'then')`，草稿箱始终挂着「图片=草稿 2 张」提交不出去；② 第一次保存 PAT 后按钮「没反应」，重贴第二次才提交成功。
+- **根因 1（提交崩溃，§104 a2dd6fb 引入）**：`editor.js::submitDrafts` 的 blob 链里 `if (!(d.tl && d.tl.table)) return rmCommit().then(reCommit);`——`rmCommit()` 在**无比赛配图草稿**时按早退约定返回 `null`，对 `null.then` 抛 TypeError 被整链 catch 成提交失败。即 **§104 之后一切「纯马匹字段/图片」的提交（最常见的提交形态）必炸**；当日 17:35 那次提交能成功只因恰好带了「比赛配图 1」（commit 8c14a03）。旧代码（5afb004）是 `return rmCommit();` 作链值，不对其 `.then`，故 §104 加 reCommit 时才暴露。
+- **修法 1**：`rmCommit()` / `reCommit()` 早退分支 `return null` → `return Promise.resolve()`（做 `.then` 回调时两者行为一致，671 行 `.then(rmCommit).then(reCommit)` 路径不受影响），两处调用形态从此恒安全。
+- **根因 2（PAT「保存了没生效」）**：「提交到 GitHub」按钮的 disabled 只看 `ghBusy || 草稿箱空`，**与 PAT 无关**；真正的坑在 `ghTokenSave` 处理器——保存后 `GET /user` 校验，**校验失败一律 `ghClearToken()`**，网络层抖动（status 0，连不上 api.github.com）也被当「token 无效」把刚贴的 PAT 静默删掉，之后点提交只会弹「先在连接 GitHub 里粘贴 PAT」，体感即「保存了没生效、再贴一次才行」。
+- **修法 2**：`ghTestToken()` 失败分支补 `network: r.status === 0`；校验网络失败**保留 token**并明示「GitHub 校验连不上（网络波动），token 已保留」，只有 GitHub 明确拒绝（401 等）才清除。真正 token 贴错的行为不变（照旧清除 + 红字提示）。
+- **验证**：`node --check` 过；`npm run build` 过（races-bundle round-trip 对账通过）；dist/editor.js 含两处修复、页面引用 `?v=` 哈希随内容自动更新（强刷即得）。用户当前挂着的「图片=草稿 2 张」草稿在 localStorage/IndexedDB 原样保留，修复生效后直接再点提交即可。
+- **关键结论**：promise 链里「有时返回 promise 有时返回 null」的函数**不能被无条件 `.then`**——早退分支一律 `Promise.resolve()` 兜底；外部服务的「校验」要把**网络层失败**与**凭据被拒**分开处置，前者不该惩罚用户已输入的凭据。
+
 
 
 
