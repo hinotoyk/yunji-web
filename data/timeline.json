@@ -1,12 +1,12 @@
 {
  "meta": {
-  "generated_at": "2026-10-09T17:58:49",
+  "generated_at": "2026-10-26T17:17:23",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
-   "events": 6,
+   "events": 7,
    "horses": 6,
-   "graded_wins": 3,
-   "sire_wins": 0
+   "graded_wins": 4,
+   "sire_wins": 1
   }
  },
  "events": [
@@ -199,6 +199,44 @@
     "agari": "37.6",
     "pop": "6番",
     "team": "騎手 吉村誠之助 · 57kg ｜ 調教師 清水久詞"
+   }
+  },
+  {
+   "date": "2026-10-25",
+   "type": "race",
+   "node": "sire",
+   "horse": {
+    "id": 40,
+    "name": "ゴーイントゥスカイ",
+    "cn": "通天飞"
+   },
+   "photo": "../data/photos/40-1.webp",
+   "tags": [
+    {
+     "cat": "first",
+     "label": "G1首胜",
+     "crown": true
+    },
+    {
+     "cat": "graded",
+     "label": "重赏第4胜"
+    },
+    {
+     "cat": "sire",
+     "label": "父子制覇",
+     "tip": "飞机云同胜：菊花赏"
+    }
+   ],
+   "race": {
+    "name": "菊花賞",
+    "grade": "GI",
+    "glabel": "G1",
+    "gbadge": "g1",
+    "meta": "京都11R · 芝3000m · 良",
+    "time": "3:04.5",
+    "agari": "35.4",
+    "pop": "3番",
+    "team": "騎手 武豊 · 57kg ｜ 調教師 上原佑紀"
    }
   }
  ]
