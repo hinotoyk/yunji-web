@@ -1,7 +1,7 @@
 {
  "_meta": {
   "schema": "basic/v1",
-  "updated": "2026-10-26 17:17:23",
+  "updated": "2026-10-26 10:13:02",
   "count": 277
  },
  "horses": [
@@ -2147,6 +2147,7 @@
    },
    "セリ取引価格": "3,300万円 (2023年 セレクトセール)",
    "photo": [
+    "data/photos/40-2.webp",
     "data/photos/40-1.webp"
    ],
    "races_file": "data/races/40.json",
