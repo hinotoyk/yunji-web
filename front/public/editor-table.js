@@ -364,7 +364,7 @@ YJ.editorTable = (function () {
         var sv = savedOf(id, k), base = baseOf(id, k);
         var v = ent[k];
         if (v === null) S.pendOv[id][k] = { v: null, base: base, saved: sv };
-        else if (saved == null && String(v) === String(base)) { /* 无钉同值 → 不算待保存 */ }
+        else if (sv == null && String(v) === String(base)) { /* 无钉同值 → 不算待保存（2026-10-26 修：原写 saved，未声明标识符 → 带草稿重开本页 ReferenceError） */ }
         else S.pendOv[id][k] = { v: v, base: base, saved: sv };
       });
       if (!Object.keys(S.pendOv[id]).length) delete S.pendOv[id];

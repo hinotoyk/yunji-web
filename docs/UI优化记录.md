@@ -769,6 +769,13 @@
 - **验证**：`tests/editor-sim.mjs` 新增 T9（预置 `{"ov":{"868":{...}}}` 无 `ph` 键的箱 → 打开草稿箱不炸、未知马以 `#868` 兜底显示、读侧补形后写回即补全键）；模拟台加 `SIM_PUB`/`SIM_REPO` 参数后可直跑另一仓 public——yunji 与 kzn 各 30 断言全绿；`node --check` 过；`npm run build` 过（dist 含「统一补形」标记）。kzn 侧同轮同步了 yunji §106/§107 全量（详见 kzn 仓 `docs/UI优化记录.md` §106）。
 - **关键结论**：双仓同源的模块一处修 bug 必须同步另一处；「箱里缺键」属于**形状假设缺陷**，修在读入口一处即可覆盖全部下游下标访问。
 
+### §109 · 批量表格页带草稿重开报「数据加载失败」：hydrateBasic 未声明标识符（2026-10-26，双仓同改）
+
+- **动因（同类排查，yunji 侧未爆但必现）**：§108 修完草稿箱后按同一链路继续查「批量表格 → 草稿箱 → PAT → 提交」——`editor-table.js::hydrateBasic` 第 367 行写的是 `saved == null`（应为局部变量 `sv`），`saved` 在本函数/闭包内**未声明**，严格模式下读取即 `ReferenceError`。因为空箱时循环不执行，用户只在「改过值、箱里已有 ov 条目」的状态下重开本页才触发；异常被 init 的 `.catch` 吞成「数据加载失败：ReferenceError: saved is not defined」，整页表格不渲染。
+- **修法**：`saved` → `sv`（同一分支第 366/368 行用的就是 `sv`，仅此处笔误）。yunji 与 kzn 双仓同改。
+- **验证**：模拟台新增 T11（预置 ov 草稿 → 加载批量表格页 → `hydrateBasic` 水合）：修复前精确复现「数据加载失败：ReferenceError: saved is not defined」且 `pendOv` 为空；修复后两仓各 **32 断言全绿**（含「草稿值正确水合进待保存层」）；`node --check` 过；双仓 `npm run build` 过，dist/editor-table.js 含修正。
+- **关键结论**：`ReferenceError` 类缺陷只在「该分支真被执行」时暴露（空箱/无草稿时不炸），回归测试必须**带着状态**跑（预置草稿再打开页面）；检查脚本的「数据加载失败」吞异常提示本身是线索——这类文案应该带上错误 message，本次即靠它定位。
+
 
 
 
