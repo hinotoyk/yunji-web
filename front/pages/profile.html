@@ -189,38 +189,171 @@ function renderOverview(hs){
     if(ka||kb) return ka===kb?0:(ka?1:-1); /* 非年份（未知）排最后 */
     return nb-na; /* 年份降序，最新在前 */
   });
-  var stat=function(v,k,hi){ return '<div class="flex flex-col items-start justify-center rounded-md bg-muted/30 px-4 py-3.5"><div class="text-[22px] font-semibold leading-tight '+(hi?'text-primary':'')+'">'+esc(v)+'</div><div class="mt-0.5 text-[12px] text-secondary-foreground">'+esc(k)+'</div></div>'; };
-  var group=function(label, sub, inner){
+  var group=function(label, sub, inner, right){
     return '<div class="flex min-h-0 flex-1 flex-col rounded-[10px] border border-border bg-card p-5">'+
-      '<div class="mb-3 flex items-baseline gap-2"><span class="text-[12px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+label+'</span>'+(sub?'<span class="text-[10.5px] tracking-[.5px] text-muted-foreground">'+sub+'</span>':'')+'</div>'+
+      '<div class="mb-3 flex items-center gap-2"><span class="text-[12px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+label+'</span>'+(sub?'<span class="text-[10.5px] tracking-[.5px] text-muted-foreground">'+sub+'</span>':'')+
+      (right?'<span class="ml-auto rounded-full bg-muted/60 px-3 py-1 text-[11px] text-muted-foreground">'+right+'</span>':'')+'</div>'+
       inner+'</div>';
   };
-  var sexName={'牡':'牡马','牝':'牝马','セン':'骟马'};
-  /* 概览 · PC：等式排版 总和（青绿大数）= 年份白卡 + 年份白卡 + …（flex-wrap 兜底，年份增多自动折行）；mb 隐藏 */
-  var op=function(s){ return '<span class="flex-none self-center text-[20px] font-semibold leading-none text-foreground/75">'+s+'</span>'; };
-  var yearTile=function(y){
-    return '<div class="flex flex-col rounded-[10px] bg-card px-5 py-3.5 shadow-[0_2px_12px_rgba(16,24,40,.08)]">'+
-      '<div class="text-[24px] font-bold leading-none tracking-[-.2px] text-foreground tabular-nums">'+esc(byYear[y])+'</div>'+
-      '<div class="mt-1.5 whitespace-nowrap text-[12px] text-muted-foreground">'+esc(y)+' 年生</div></div>';
-  };
+  /* ── 状态 · BY STATUS：方形面积图（treemap），类名+数字直标块内 ──
+   * 分类口径与 statusChain（yj-util §48 单一出处）同源，由 登録状態/抹消_去向種別 两键现场聚合（不动数据）：
+   *   現役 → 中央现役；确认去向 → 地方现役/繁殖/乘马/种马/死亡（空状态马有确认去向同样归入，如未出道即死亡）；
+   *   抹消但去向未确认 → JRA抹消（JRA 注册状态原值当类名）；其余（空状态无去向，多为未出道马）→ 未登录。
+   * 「现役」= 中央 + 地方（仍在出赛的两档）→ 面积图分两块、色系同族可对照。
+   * 面积 ∝ 匹数；<2 匹小类（当前=死亡/种马）入右侧定宽格子栏（见 tmPaint 注）——大类面积零失真、小类诚实可见。
+   * 配色 = 200 级低饱和浅底 + 同 hue 900 级深字（theme.css .yj-tm--* 纯 bg/text 类）；
+   * 块渲染与概览/性别共用 tmHTML（仍在 renderOverview 内，§48 仅 2 处不出 public）。 */
+  var CATS=[
+    {k:'live',    n:'中央现役', c:'yj-tm--live',    tip:'JRA 登录中 · 现役在厩'},
+    {k:'local',   n:'地方现役', c:'yj-tm--local',   tip:'JRA 抹消后移籍地方竞马，仍在出赛'},
+    {k:'breed',   n:'繁殖',    c:'yj-tm--breed',   tip:'抹消后转入繁殖'},
+    {k:'ride',    n:'乘马',    c:'yj-tm--ride',    tip:'抹消后转为乘马'},
+    {k:'unknown', n:'JRA抹消', c:'yj-tm--unknown', tip:'已从 JRA 抹消 · 去向未确认（可能地方/繁殖/乘马）'},
+    {k:'sire',    n:'种马',    c:'yj-tm--sire',    tip:'抹消后转为种公马'},
+    {k:'dead',    n:'死亡',    c:'yj-tm--dead',    tip:'死亡（含未出道即死亡）'},
+    {k:'unreg',   n:'未登录',  c:'yj-tm--unreg',   tip:'尚无 JRA 登录状态记录（多为未出道马）'}
+  ];
+  var catMap={}; CATS.forEach(function(c){ catMap[c.k]=c; });
+  var bySt={};
+  hs.forEach(function(h){
+    var st=h.登録状態||'', d=h.抹消_去向種別||'', k;
+    if(st==='現役') k='live';
+    else if(d) k=({'地方競馬':'local','繁殖':'breed','乗馬':'ride','種馬':'sire','死亡':'dead','海外':'overseas'}[d]||'unknown');
+    else if(st==='抹消') k='unknown';
+    else k='unreg';
+    bySt[k]=(bySt[k]||0)+1;
+  });
+  var cats=CATS.slice();
+  if(bySt.overseas){   /* 海外去向当前无收录马：>0 才进图例/色块（枚举同 statusChain，不预设常量） */
+    var oc={k:'overseas', n:'海外', c:'yj-tm--overseas', tip:'抹消后转往海外竞马'};
+    cats.push(oc); catMap.overseas=oc;
+  }
+  /* 性别 · BY SEX：**三等分列**色块（非面积图——骟马匹数少，面积图会缩成细条太易忽视，等宽列平权）；
+   * 色类 .yj-tm--male/female/gelding（theme.css），块形态与面积图同语言（浅底深字、类名数字在块内） */
+  var SEXCATS=[
+    {k:'牡',  n:'牡马', c:'yj-tm--male',   tip:'公马'},
+    {k:'牝',  n:'牝马', c:'yj-tm--female', tip:'母马'},
+    {k:'セン', n:'骟马', c:'yj-tm--gelding', tip:'去势马（セ/セン 同义）'}
+  ];
+  SEXCATS.forEach(function(c){ catMap[c.k]=c; });
+  /* squarified treemap（Bruls et al.）：逐行贪心压向短边，worst 宽高比不再下降才换行；面积 ∝ 匹数。
+   * 末行保底（MIN=28px）：短容器下 1-9 匹的尾行会细成 10-20px 的条——从相邻同向前一行「保宽削厚」
+   * 借厚度到 28px（内联「类名+数字」的最低预算），容器仍精确铺满、无叠无漏；借厚上限 = 前行厚-10。
+   * W/H = 实测容器像素（tmPaint 里量）→ 选马后 DOM 被替换，函数随作用域废弃，无泄漏。 */
+  function tmSquarify(items,W,H){
+    var MIN=28;
+    var total=0; items.forEach(function(v){ total+=v.n; });
+    var sc=total>0 ? (W*H)/total : 0;
+    var its=items.map(function(v){ return {k:v.k, a:v.n*sc}; });
+    var rows=[], x=0, y=0, w=W, h=H, i=0;
+    while(i<its.length){
+      var horiz=w>=h, len=horiz?w:h, j=i, sum=0, best=Infinity;
+      while(j<its.length){
+        var s=sum+its[j].a, th=s/len, worst=0;
+        for(var q=i;q<=j;q++){ var o=its[q].a/th, ar=Math.max(th/o,o/th); if(ar>worst) worst=ar; }
+        if(j===i||worst<=best){ best=worst; sum=s; j++; } else break;
+      }
+      var sub=[]; for(var q4=i;q4<j;q4++) sub.push(its[q4]);
+      rows.push({its:sub, horiz:horiz, x:x, y:y, w:w, h:h,
+        thN:sum/len, th:sum/len});           /* thN=自然厚（算各块展宽），th=渲染厚（可被借位修正） */
+      if(horiz){ y+=sum/w; h-=sum/w; } else { x+=sum/h; w-=sum/h; }
+      i=j;
+    }
+    if(rows.length>1){
+      var last=rows[rows.length-1], prev=rows[rows.length-2];
+      if(last.horiz===prev.horiz && last.th<MIN && prev.th>MIN){
+        var d=Math.min(MIN-last.th, prev.th-MIN);
+        if(d>0){
+          last.th+=d; prev.th-=d;
+          if(last.horiz){ last.y-=d; } else { last.x-=d; }   /* 末行向容器内侧扩，底/右缘仍贴边 */
+        }
+      }
+    }
+    var out=[];
+    rows.forEach(function(r){
+      var off=r.horiz?r.x:r.y;
+      r.its.forEach(function(it){
+        var ext=it.a/r.thN;                    /* 展宽按自然厚算 → 行内恰好铺满，无叠无漏 */
+        out.push(r.horiz ? {k:it.k,x:off,y:r.y,w:ext,h:r.th} : {k:it.k,x:r.x,y:off,w:r.th,h:ext});
+        off+=ext;
+      });
+    });
+    return out;
+  }
+  /* 小类右栏：<2 匹的小类（当前=死亡 1、种马 0）在纯面积图里必然不可见/细成丝，硬等效放大会虚增其面积比
+   * （0 匹块会被撑到和 14 匹块一样大，误导）→ 单列**右侧定宽格子栏**：块小即类小，诚实且全可读；
+   * 死亡固定右栏末位（右栏贴右缘 → 末格=整图右下角，终点态语义）+ 固定浅灰（theme.css .yj-tm--dead）。 */
+  function tmPaint(){
+    var el=document.getElementById(tmId); if(!el) return;
+    var W=el.clientWidth, H=el.clientHeight;
+    if(W<40||H<40) return;
+    var MINI_MAX=2-1e-9, bigs=[], minis=[];
+    cats.forEach(function(c){ var n=bySt[c.k]||0; (n<MINI_MAX?minis:bigs).push({k:c.k,n:n}); });
+    /* 右栏排序：按匹数降序，但「死亡」固定钉在末位（终点态放最角落）；
+     * 若死亡涨到 ≥2 匹回到主面积图，则按常规面积排位（角落约定仅对小类右栏生效） */
+    minis.sort(function(a,b){
+      if(a.k==='dead') return 1;
+      if(b.k==='dead') return -1;
+      return b.n-a.n;
+    });
+    bigs.sort(function(a,b){ return b.n-a.n; });
+    var mw=minis.length?Math.min(Math.max(minis.length*74,74),W*0.32):0;
+    var rects=tmSquarify(bigs,W-mw,H);
+    if(minis.length){
+      var mh=(H-(minis.length-1)*2)/minis.length;
+      minis.forEach(function(it,i){ rects.push({k:it.k,x:W-mw,y:i*(mh+2),w:mw,h:mh}); });
+    }
+    el.innerHTML=tmHTML(rects,bySt);
+  }
+  /* 块渲染单一出处（状态/概览两图共用）：按面积阈值选标签形态（竖排 / 横排一行 / 数字-only）；
+   * pctSum 传入时追加占比行（面积差肉眼难辨，标注占比才读得准） */
+  function tmHTML(rs,cnt,pctSum){
+    return rs.map(function(r){
+      var c=catMap[r.k]||{n:'',c:'',tip:''};
+      var ix=Math.round(r.x)+1, iy=Math.round(r.y)+1, iw=Math.max(Math.round(r.w)-2,0), ih=Math.max(Math.round(r.h)-2,0), inner='';
+      var pct=(pctSum&&ih>=64)?'<span class="yj-tm-p">'+(100*(cnt[r.k]||0)/pctSum).toFixed(1)+'%</span>':'';
+      if(iw>=50&&ih>=44) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v">'+(cnt[r.k]||0)+'</b>'+pct;
+      else if(iw>=64&&ih>=26) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v yj-tm-v--s">'+(cnt[r.k]||0)+'</b>';
+      else if(iw>=36&&ih>=22) inner='<b class="yj-tm-v yj-tm-v--s">'+(cnt[r.k]||0)+'</b>';
+      else if(iw>=22&&ih>=14) inner='<b class="yj-tm-v yj-tm-v--xs">'+(cnt[r.k]||0)+'</b>';
+      var cls='yj-tm '+c.c+((iw>=64&&ih>=26&&!(iw>=50&&ih>=44))?' yj-tm-h':'');
+      return '<div class="'+cls+'" style="left:'+ix+'px;top:'+iy+'px;width:'+iw+'px;height:'+ih+'px" title="'+esc(c.tip+' · '+(cnt[r.k]||0)+' 匹')+'">'+inner+'</div>';
+    }).join('');
+  }
+  var tmId='yjStm';
+  var tmWrap='<div id="'+tmId+'" class="relative min-h-[190px] w-full flex-1 max-md:min-h-[170px]"></div>';
+  function paintAll(){ tmPaint(); ovPaint(); }   /* ovPaint 声明提升，定义在下方概览段 */
+  /* 概览 · 年份占比图：块面积 ∝ 匹数，块内 标签+匹数+占比（面积差肉眼难辨，标注才读得准）。
+   * 总数在占比图里没有位置——它=全部面积的和，再摆一块必双重计数 → 抬到组标题右侧信息 chip（group 第 4 参）。
+   * 年份色轮换 y1..y5（新增年份自动续色，未知年份排最后照常参与）；随卡片高度伸展，resize 重排 */
+  var YEARC=['yj-tm--y1','yj-tm--y2','yj-tm--y3','yj-tm--y4','yj-tm--y5'];
+  var ovItems=years.map(function(y,i){
+    var k=String(y);
+    catMap[k]={k:k, n:y+' 年生', c:YEARC[i%YEARC.length], tip:y+' 年出生的产驹'};
+    return {k:k, n:byYear[y]||0};
+  });
+  var ovId='yjOvm';
+  var ovWrap='<div id="'+ovId+'" class="relative min-h-[150px] w-full flex-1 max-md:min-h-[140px]"></div>';
+  function ovPaint(){
+    var el=document.getElementById(ovId); if(!el) return;
+    var W=el.clientWidth, H=el.clientHeight;
+    if(W<40||H<40) return;
+    var items=ovItems.filter(function(v){ return v.n>0; });
+    items.sort(function(a,b){ return b.n-a.n; });
+    var sum=items.reduce(function(s,v){ return s+v.n; },0);
+    el.innerHTML=tmHTML(tmSquarify(items,W,H),byYear,sum);
+  }
   var statHTML=
-    group('概览','OVERVIEW',
-      /* PC：等式（mb 端隐藏） */
-      '<div class="flex min-h-0 flex-1 flex-wrap content-center items-center gap-x-3.5 gap-y-3 max-md:hidden">'+
-        '<div class="mr-1 flex flex-col"><div class="text-[30px] font-bold leading-none tracking-[-.2px] text-primary tabular-nums">'+esc(total)+'</div>'+
-        '<div class="mt-1.5 whitespace-nowrap text-[12.5px] font-medium text-secondary-foreground">收录产驹总数</div></div>'+
-        op('=')+
-        years.map(function(y){ return yearTile(y); }).join(op('+'))+
-      '</div>'+
-      /* mb（≤768）：不做 =/+，直接展示 —— 总数通栏 + 年份 2 列网格统计卡 */
-      '<div class="hidden max-md:grid max-md:flex-1 max-md:grid-cols-2 max-md:gap-3">'+
-        '<div class="max-md:col-span-2">'+stat(total,'收录产驹总数',true)+'</div>'+
-        years.map(function(y){ return stat(byYear[y], y+' 年生',''); }).join('')+
-      '</div>')+
+    group('概览','OVERVIEW', ovWrap,
+      '收录产驹总数 <b class="ml-1 text-[13px] font-bold tabular-nums text-primary">'+esc(total)+'</b>')+
     group('性别','BY SEX',
       '<div class="grid min-h-0 flex-1 grid-cols-3 gap-3">'+
-        ['牡','牝','セン'].map(function(s){ return stat(bySex[s]||0, sexName[s], ''); }).join('')+
-      '</div>');
+        SEXCATS.map(function(c){
+          var n=bySex[c.k]||0;
+          return '<div class="yj-tile '+c.c+' flex flex-col items-center justify-center px-3 py-4" title="'+esc(c.tip+' · '+n+' 匹')+'">'+
+            '<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v">'+n+'</b></div>';
+        }).join('')+'</div>')+
+    group('状态','BY STATUS', tmWrap);
   document.getElementById("body").innerHTML =
     '<div class="flex min-h-full flex-col gap-4">'+
       '<div class="rounded-[10px] border border-border bg-card p-6">'+
@@ -228,6 +361,14 @@ function renderOverview(hs){
         '<div class="mt-1.5 text-[13px] text-muted-foreground">{{YJ_SITE_TAGLINE}}</div>'+
       '</div>'+statHTML+
     '</div>';
+
+  paintAll();
+  /* 视口变化 → 重排两张面积图（按实测容器宽高铺排；选马后本 DOM 已被整体替换，paint 内部空判自动退出） */
+  if(!renderOverview._tmBound){
+    renderOverview._tmBound=true;
+    var tmT=0;
+    window.addEventListener('resize',function(){ clearTimeout(tmT); tmT=setTimeout(paintAll,120); });
+  }
 }
 
 /* 主胜鞍（后端 merge_races 派生精选：重赏 > OP/L > 最高班赛 > 新馬/未勝利，最多 4 条）：
