@@ -87,7 +87,7 @@ td.dim .num{color:#c6c6ca}
   <!-- 页头 -->
   <div class="page-title mb-7 max-md:mt-2.5">统计总览 · STATS</div>
 
-  <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年）；集計期間与口径说明在页尾「说明 · NOTES」 -->
+  <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年） -->
   <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
     <div class="seg" id="vseg">
       <button type="button" data-v="中央" data-on="true" title="中央（JRA）">JRA</button>
@@ -154,13 +154,20 @@ td.dim .num{color:#c6c6ca}
     </div>
   </section>
 
-  <!-- ⑤ 说明 -->
+  <!-- ⑤ 种马榜走势（跨站引用 jbis-sire-rank-history：数据 = 该站 derived/sire-history 派生产物，
+       图表 = 该站发布的纯渲染组件 embed/sire-rank-chart.js，本页只挂载；口径=JBIS 榜单，不受顶部工具条影响） -->
   <section class="mb-8">
     <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>说明 · NOTES
+      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>种马榜走势 · SIRE RANK
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="mt-1 text-[12px] leading-relaxed text-muted-foreground" id="aboutNote"></div>
+      <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="seg" id="srkDimSeg"></div>
+        <div class="seg" id="srkDivSeg"></div>
+        <div class="st-legend" id="srkLegend"></div>
+      </div>
+      <div class="st-kpis" id="srkKpis"></div>
+      <div id="srkChart" class="mt-3"></div>
     </div>
   </section>
 </div>
@@ -708,20 +715,107 @@ function renderGraded() {
   document.getElementById("gradedList").innerHTML = html;
 }
 
-/* ---- ⑤ 说明 · NOTES（工具条原「集計期間 / 口径」文案已并入此处，同 races.html 三态口径） ---- */
-function renderAbout() {
-  var m = STATS.meta.stats;
-  document.getElementById("aboutNote").innerHTML =
-    "集計期間：<b>" + m.first_date + "</b> ~ <b>" + m.last_date + "</b> · " + m.runs + " 条记录 / " + m.horses + " 匹出赛产驹。" +
-    "<br>统计切面：<b>生产年</b> = 产驹出生年份（可选 2023年世代/2024年世代…）；<b>自然年</b> = 比赛日历年份（1月1日–12月31日）。" +
-    "顶部切换后全页统计（概览/曲线/倾向/重赏）随之收窄，跳转链接会附带 byear/year 条件。" +
-    "<br>口径：完赛=数字着顺 · 未完赛（中止/失格）计出走 · 未出走（取消/除外）不计 · 着外=出走−前三（含未完赛） · 比率分母=出走，同比赛记录页。" +
-    "<br>比赛级别：新马/未胜利/一胜级~三胜级/OP/L/Jpn1-3/G1-3/JG1-3/其他；距离：短距离≤1400m/英里1401-1800m/中距离1801-2400m/长距离>2400m。" +
-    "<br>母父 = 产驹母亲的父亲（血统图「母の父」格，同血统图取值；按出赛数从多到少）。" +
-    "<br>总体平均 = 当前勾选范围（场地×切面）的整体值；率列 绿=高于平均 · 红=低于平均。" +
-    "<br>样本少 = 出走 &lt; " + SM_F + "（数字弱化 = 出走 &lt; " + DIM_F + "），小样本仅供参考。" +
-    "<br>倾向矩阵 体重/生产牧场/马主 四页签：体重 = 该场比赛登记的 馬体重（当日值；分 体重·牡（含セン）/ 体重·牝 两页签；400-550kg 每 10kg 一档 + &lt;400 / &gt;550，550 归入 540-550；空值不入桶）；生产牧场 / 马主 = basic.json 现值（空值不入桶，按出赛数降序）；四者均可跳转比赛记录（体重跳转自动附带性别条件）。";
+/* ---- ⑤ 种马榜走势（2026-10-27 · 跨站引用 jbis-sire-rank-history）----
+ * 数据 = YJ_DATA.remote.jbisRank + derived/sire-history/<board>/<jbis_id>.json（arg 型缓存条目 sireRank，
+ *        TTL 12h · 断网回退旧缓存，与全站产物同一控制器）；图表 = 该站发布的纯渲染组件
+ *        embed/sire-rank-chart.js（window.JBIS_RANK_EMBED，只画图不 fetch 不写存储）。
+ * 本节口径 = JBIS 榜单（賞金・全般・万円），与页面工具条（basic.json 口径）相互独立。 */
+var SRK = { dim: "g23", div: "central" };   /* 默认 = 23年世代・中央（首产世代，2026-10-27 与用户定稿） */
+/* 图表色 = tailwind.config chart1/chart2 对齐值：主题未发 CSS 变量（chart2 键无连字符），
+ * SVG 属性与图例拿不到 var(--*)，页面内单一定义、图例与组件入参同源（组件默认回退值与此一致）。 */
+var SRK_COLORS = { prize: "#0aa7a0", rank: "#0f8fd6" };
+function srkLegend() {   /* v1.3.0 定稿：名次副图去除，名次 = 跳增标注内嵌（+金额（N位））与 tooltip */
+  document.getElementById("srkLegend").innerHTML =
+    '<span><i style="background:' + SRK_COLORS.prize + '"></i>赏金</span>' +
+    '<span><i style="background:' + SRK_COLORS.prize + ';opacity:.55"></i>单日增量</span>';
 }
+var SRK_DIMS = [
+  { k: "年度", l: "年度",     tip: "年度別サイアー（全部产驹，JBIS 当前年度集計）" },
+  { k: "g23",  l: "23年世代", tip: "世代別サイアー 2023年生（首产世代）" },
+  { k: "g24",  l: "24年世代", tip: "世代別サイアー 2024年生（当年 2歳世代）" }
+];
+var SRK_DIVS = [ { k: "central", l: "中央" }, { k: "overall", l: "総合" } ];
+var SRK_TYPE = { "年度|central": "t2-annual-central", "年度|overall": "t3-annual-overall",
+                 "g23|central": "t4-gen-central", "g23|overall": "t5-gen-overall",
+                 "g24|central": "t4-gen-central", "g24|overall": "t5-gen-overall" };
+function srkBoard() {   /* 缓存 arg = "<board>/<jbisId>"（REG.url 原样拼进 derived/sire-history/ 下）；
+                         * 板 id = 类型@年度（年度板随自然年滚动，世代板出生年固定），马 ID = YJ_SITE.jbisId（config/sire.json 单源） */
+  return SRK_TYPE[SRK.dim + "|" + SRK.div] + "@" +
+    (SRK.dim === "年度" ? new Date().getFullYear() : SRK.dim === "g23" ? 2023 : 2024) +
+    "/" + (YJ_SITE.jbisId || "");
+}
+var srkEmbedP = null;
+function srkEmbed() {   /* 图表组件脚本只加载一次；加载失败可重试（重置 Promise） */
+  if (!srkEmbedP) {
+    srkEmbedP = new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = YJ_DATA.remote.jbisRank + "embed/sire-rank-chart.js";
+      s.onload = function () { res(); };
+      s.onerror = function () { srkEmbedP = null; rej(new Error("图表组件加载失败")); };
+      document.head.appendChild(s);
+    });
+  }
+  return srkEmbedP;
+}
+function srkKpis(data) {
+  var his = data.history || [];
+  var last = his[his.length - 1] || {}, prev = his.length > 1 ? his[his.length - 2] : null;
+  var kpi = function (k, v, cls) {
+    return '<div class="st-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+  };
+  /* 赏金格式复用 YJ.util.manYen（§48 单一出处；入参円，derived 口径万円 ×1e4） */
+  var dp = prev && last.prizeOverall != null && prev.prizeOverall != null ? last.prizeOverall - prev.prizeOverall : null;
+  var dpHtml = dp == null ? "—" : dp === 0 ? "±0" :
+    '<span class="' + (dp > 0 ? "yj-up" : "yj-down") + '">' + (dp > 0 ? "+" : "−") + manYen(Math.abs(dp) * 10000) + "</span>";
+  var rank = last.rank;
+  document.getElementById("srkKpis").innerHTML =
+    kpi("当前赏金", last.prizeOverall != null ? manYen(last.prizeOverall * 10000) : "—", "hi") +
+    kpi("排名", rank == null ? "—" : "第" + rank + "位", rank != null && rank <= 3 ? "hi" : "") +
+    kpi("较前快照", dpHtml) +
+    kpi("最新快照", last.date ? last.date.slice(5).replace("-", "/") : "—", "dim");
+}
+var srkSeq = 0;
+function renderSireRank() {
+  var el = document.getElementById("srkChart");
+  var board = srkBoard(), seq = ++srkSeq;   /* 过期渲染丢弃：切板后迟到的旧数据不回写 */
+  document.getElementById("srkDimSeg").innerHTML = SRK_DIMS.map(function (d) {
+    return '<button type="button" data-d="' + d.k + '" data-on="' + (SRK.dim === d.k ? "true" : "false") +
+      '" title="' + esc(d.tip) + '">' + d.l + '</button>';
+  }).join("");
+  document.getElementById("srkDivSeg").innerHTML = SRK_DIVS.map(function (d) {
+    return '<button type="button" data-v="' + d.k + '" data-on="' + (SRK.div === d.k ? "true" : "false") + '">' + d.l + '</button>';
+  }).join("");
+  srkLegend();
+  document.getElementById("srkKpis").innerHTML = "";
+  el.innerHTML = '<div class="hint-empty">読み込み中…</div>';
+  Promise.all([YJ.cache.fetch("sireRank", { arg: board }), srkEmbed()]).then(function (r) {
+    if (seq !== srkSeq) return;
+    window.JBIS_RANK_EMBED.render(el, r[0], {
+      style: "combo",      /* 2026-10-27 用户定稿：单面板（平滑累计+渐变面积）+ 增量柱共用 y 轴；名次副图 v1.3.0 去除 */
+      annotate: true,      /* 跳增日标注「+金额（名次）」 */
+      colors: SRK_COLORS,
+      labels: { prize: "赏金", rank: "名次", delta: "单日增量", empty: "暂无快照数据" }
+    });
+    srkKpis(r[0]);
+  }).catch(function (e) {
+    if (seq !== srkSeq) return;
+    el.innerHTML = '<div class="hint-empty">数据加载失败（' + esc(e.message || "网络异常") +
+      '） · <button type="button" id="srkRetry" class="underline text-primary">重试</button></div>';
+    document.getElementById("srkRetry").addEventListener("click", renderSireRank);
+  });
+}
+document.getElementById("srkDimSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-d]") : null;
+  if (!btn || SRK.dim === btn.getAttribute("data-d")) return;
+  SRK.dim = btn.getAttribute("data-d");
+  renderSireRank();
+});
+document.getElementById("srkDivSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-v]") : null;
+  if (!btn || SRK.div === btn.getAttribute("data-v")) return;
+  SRK.div = btn.getAttribute("data-v");
+  renderSireRank();
+});
 
 /* ---- 渲染入口 ---- */
 function renderAll() {
@@ -730,7 +824,6 @@ function renderAll() {
   renderCurve();
   renderTabs(); renderTable();
   renderGraded();
-  renderAbout();
   applyMatScroll();                                    /* 容器高度对齐人气页签（场地/切面变化后行数会变，随 renderAll 重测） */
 }
 
@@ -811,6 +904,7 @@ window.addEventListener("resize", function () {
 
 /* ---- 初始化 ---- */
 (function init() {
+  renderSireRank();                                    /* 种马榜走势数据独立（JBIS 跨站引用），与 stats.json 并行加载 */
   YJ.cache.fetch("stats").then(function (data) {
     STATS = data;
     renderAll();

@@ -771,10 +771,28 @@
 
 ### §109 · 批量表格页带草稿重开报「数据加载失败」：hydrateBasic 未声明标识符（2026-10-26，双仓同改）
 
+
 - **动因（同类排查，yunji 侧未爆但必现）**：§108 修完草稿箱后按同一链路继续查「批量表格 → 草稿箱 → PAT → 提交」——`editor-table.js::hydrateBasic` 第 367 行写的是 `saved == null`（应为局部变量 `sv`），`saved` 在本函数/闭包内**未声明**，严格模式下读取即 `ReferenceError`。因为空箱时循环不执行，用户只在「改过值、箱里已有 ov 条目」的状态下重开本页才触发；异常被 init 的 `.catch` 吞成「数据加载失败：ReferenceError: saved is not defined」，整页表格不渲染。
 - **修法**：`saved` → `sv`（同一分支第 366/368 行用的就是 `sv`，仅此处笔误）。yunji 与 kzn 双仓同改。
 - **验证**：模拟台新增 T11（预置 ov 草稿 → 加载批量表格页 → `hydrateBasic` 水合）：修复前精确复现「数据加载失败：ReferenceError: saved is not defined」且 `pendOv` 为空；修复后两仓各 **32 断言全绿**（含「草稿值正确水合进待保存层」）；`node --check` 过；双仓 `npm run build` 过，dist/editor-table.js 含修正。
 - **关键结论**：`ReferenceError` 类缺陷只在「该分支真被执行」时暴露（空箱/无草稿时不炸），回归测试必须**带着状态**跑（预置草稿再打开页面）；检查脚本的「数据加载失败」吞异常提示本身是线索——这类文案应该带上错误 message，本次即靠它定位。
+
+### §110 · 统计总览新增「种马榜走势 · SIRE RANK」：跨站引用 jbis-sire-rank-history（2026-10-27）
+
+- **动因**：用户要求把云崽（コントレイル）的赏金变化图引到站内，未来还会引用 racing-calendar。定稿方案 = **组件化跨站引用**（与 friend-links「一个组件文件 + 各站一行挂载」同模式）：jbis-sire-rank-history 仓出纯渲染图表组件 `embed/sire-rank-chart.js`，云迹只负责喂数据与挂载；**不复制数据进本仓 data/**（兄弟站即数据唯一出处，避免双站同步负担）。**图表风格（组件 v1.3.1 用户选型定稿）= combo 单面板**：赏金累计平滑线+渐变面积 + **单日增量柱（与赏金共用 y 轴、同面板**，独立刻度分轴版仍在组件里留作 triple）；**名次副图去除**（用户：太丑）→ 名次信息由主图跳增标注「+金额（N位）」与 tooltip 承担，KPI 保留「排名」。y 轴 = 目标 ~9 格自动取整（千万级步进，1.87億 板每 2,000万一格）；默认 23年世代・中央（首产世代）。
+- **云迹侧改动**（本仓）：
+  - `front/public/data-config.js`：新增 `YJ_DATA.remote.jbisRank`（GitHub Pages 站根，跨站 URL 单一出处）；
+  - `front/public/yj-cache.js`：注册表新增 `sireRank` 条目（arg = `"<board>/<jbisId>"` 如 `t4-gen-central@2023/0001237042`，TTL 12h 同全站；GH Pages 带 CORS `*`，Cache API/304 续期/断网回退全链路照常）；
+  - `front/scripts/gen-site-config.mjs`：`YJ_SITE` 增发 `jbisId`（源 = config/sire.json 的 `sire.jbis_id`；注意顶层键也叫 sire）；
+  - `front/pages/stats.html`：新增 ⑤ 种马榜走势（维度 seg 年度/23年世代/24年世代 × 范围 seg 中央/総合；KPI 当前赏金/排名/较前快照/最新快照；`manYen` 复用 §48 单一出处；**口径 = JBIS 榜单，不受顶部工具条影响**，页面不放口径文案——图下注释与 ⑥说明·NOTES 模块按用户要求整体移除，口径只留在代码注释与本记录）；KPI/曲线/矩阵/重赏各 section 回归无损。
+  - `tests/sire-rank-embed/`：本地联调候选页（跨域取数 → yj-cache → 远程组件 → 渲染全链路）。
+- **jbis 侧改动**（彼仓）：`site/embed/sire-rank-chart.js`（零依赖 ~10KB，纯渲染不 fetch 不写存储；颜色缺省继承宿主 CSS 变量 `--primary`/`--chart-2`，回退 `--accent`——jbis 四主题与云迹 Tailwind 都零改样式）+ `site/embed-demo.html` 演示页 + 彼仓 DESIGN.md §12 组件契约。
+- **坑与教训**：
+  - 云迹 Tailwind 配置色键为 `chart2`（无连字符）**不产出 CSS 变量**，SVG 属性/图例里 `var(--chart-2)` 拿不到值（透明）→ 页面内单一定义 `SRK_COLORS`，图例与组件入参同源；
+  - 注册表 URL 模板曾漏 `/<jbisId>/` 段（联调日志 `[404] .../t4-gen-central@2023.json` 一眼定位）→ arg 契约定为 `<board>/<jbisId>`；
+  - headless 截图「页面没变」是 **HTTP 缓存**（模拟服务曾发 max-age=600 且复用 profile），换 profile + no-cache 才看到新代码；
+  - stats 页独立打开会被 `rehome.js` 回壳重定向，无头验证须带 `?embed=1`。
+- **验证**：组件 `buildSVG` Node 冒烟 17 断言全绿（正常/单点/空态/小值刻度/全 1 名次除零）；无头 Edge 端到端（:8090 → :9091 跨域，模拟 GH Pages CORS）`jbre-ok` + SVG 3 path + KPI「138237.8万円 · 第2位 · 16 快照」；整页 `?embed=1` 回归——四既有 section 照常、本节在组件未发布时优雅降级出「重试」；`npm run build` 过，dist 的 theme css 含 `underline`/`hover:underline`，data-config/yj-cache/site-config/stats.html 均含新内容。**上线顺序**：先 push jbis 仓（发布 embed 组件），云迹再 push——否则组件 404 显示重试态（数据本身正常）。
 
 
 

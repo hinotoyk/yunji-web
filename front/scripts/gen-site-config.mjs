@@ -42,12 +42,16 @@ export function siteVars() {
   const name = str(site.name);
   const logo = str(site.logo) || name.charAt(0);
   const domains = Array.isArray(site.domains) && site.domains.length ? site.domains : [];
+  /* jbisId（2026-10-27）：sire 的 JBIS 马 ID（config/sire.json 的 sire.jbis_id；注意顶层键也叫
+   * sire，故取 sire.sire.jbis_id），跨站引用 jbis-sire-rank-history derived 产物路径用
+   * （stats.html 种马榜走势）；缺省 → ""。 */
+  const jbisId = str((sire.sire && sire.sire.jbis_id) || sire.jbis_id);
   if (!id && !warnedNoSiteId) {
     warnedNoSiteId = true;
     console.warn("[gen-site-config] config/sire.json 缺 site.id（§105）：存储键前缀将回退共享的 \"yj\"，" +
       "同一端口/同源部署多个站点时 PAT/草稿/缓存会互相串。新克隆仓库请改成自己的站点标识（如 \"kzn\"）。");
   }
-  return { id, name, subtitle: str(site.subtitle), tagline: str(site.tagline), logo, domains };
+  return { id, name, subtitle: str(site.subtitle), tagline: str(site.tagline), logo, domains, jbisId };
 }
 
 export function gradeTable() {
@@ -79,7 +83,7 @@ export function siteConfigJs() {
   const s = siteVars();
   return (
     "/* 构建产物 · 由 front/scripts/gen-site-config.mjs 生成（勿手改）；源 = config/sire.json + config/grade-table.json */\n" +
-    "window.YJ_SITE = " + JSON.stringify({ id: s.id, name: s.name, subtitle: s.subtitle, tagline: s.tagline, logo: s.logo, domains: s.domains }) + ";\n" +
+    "window.YJ_SITE = " + JSON.stringify({ id: s.id, name: s.name, subtitle: s.subtitle, tagline: s.tagline, logo: s.logo, domains: s.domains, jbisId: s.jbisId }) + ";\n" +
     "window.YJ_GRADE = " + JSON.stringify(gradeTable()) + ";\n"
   );
 }

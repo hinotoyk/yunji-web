@@ -14,5 +14,15 @@ window.YJ_DATA = {
     p = String(p == null ? '' : p).replace(/^\/+/, '');
     if (p.indexOf('data/') === 0) p = p.slice(5); /* 兼容后端契约里的 data/xxx 写法 */
     return this.prefix + '/' + this.root + '/' + p;
+  },
+  /* ---- 远程数据源（跨站引用 · 运行时 fetch，不复制进本仓 data/） ----
+   * 兄弟站清单见 docs/友情跳转方案.md（四仓同文）。GitHub Pages 全站带 CORS *，可直连。
+   * jbis-sire-rank-history：JBIS 種牡馬ランキング每日快照站（数据与派生产物的唯一出处，
+   *   每日 JST 12:30 自动采集发布）。当前引用：
+   *   · derived/sire-history/<board>/<jbis_id>.json —— 种马榜走势（stats.html §种马榜走势；
+   *     yj-cache REG.sireRank，arg = "<board>/<jbisId>"，jbisId 源 = config/sire.json → YJ_SITE.jbisId）
+   *   · embed/sire-rank-chart.js —— 该站发布的纯渲染图表组件（stats.html 动态加载一次） */
+  remote: {
+    jbisRank: 'https://hinotoyk.github.io/jbis-sire-rank-history/'
   }
 };

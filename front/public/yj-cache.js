@@ -44,7 +44,12 @@ YJ.cache = (function () {
                  url: function (id) { return YJ_DATA.url("pedigree/" + id + ".json"); } },
     stats:     { ttl: TTL_DEF, url: function () { return YJ_DATA.url("stats.json"); } },
     datechart: { ttl: TTL_DEF, url: function () { return YJ_DATA.url("datechart.json"); } },
-    timeline:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("timeline.json"); } }
+    timeline:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("timeline.json"); } },
+    /* 跨站引用（2026-10-27）：jbis-sire-rank-history 派生产物。arg = "<board>/<jbisId>"
+     * （如 "t4-gen-central@2023/0001237042"），URL 单一出处 = data-config.js YJ_DATA.remote.jbisRank；
+     * 对方站每日构建发布，结构升级有 index.json/schema 可校验，失败由控制器回退旧缓存。
+     * 种马榜走势（stats.html）专用。 */
+    sireRank:  { ttl: TTL_DEF, url: function (arg) { return YJ_DATA.remote.jbisRank + "derived/sire-history/" + arg + ".json"; } }
   };
 
   var COK = typeof caches !== "undefined" && typeof caches.open === "function";
