@@ -23,6 +23,13 @@
 .lb-legend i{display:inline-block;width:16px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
 .lb-legend .i-total{background:#c9e8e6}
 .lb-legend .i-solid{background:#0aa7a0}
+/* §129 分页条：单页隐藏；MB 加大触点 */
+.lb-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12.5px;color:#52525b}
+.lb-pager button{border:1px solid #e4e4e7;background:#fff;border-radius:8px;padding:5px 14px;font-size:12.5px;line-height:1.5;color:#3f3f46;cursor:pointer}
+.lb-pager button:hover:not(:disabled){border-color:#0aa7a0;color:#0aa7a0}
+.lb-pager button:disabled{opacity:.35;cursor:default}
+.lb-pager .lb-pg-info{min-width:150px;text-align:center}
+@media (max-width:768px){ .lb-pager{gap:8px} .lb-pager button{padding:8px 14px;white-space:nowrap} .lb-pg-total{display:none} }
 /* 图表本体由 ECharts 定制包 canvas 渲染（§115），本页 CSS 只剩 KPI 条/图例/空态 */
 .hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
 @media (max-width:768px){
@@ -52,6 +59,7 @@
       <div class="lb-kpis mb-3" id="kpis"></div>
       <div class="lb-legend mb-3" id="legend"></div>
       <div id="chart"></div>
+      <div id="pager" class="lb-pager" style="display:none"></div>
       <div id="note" class="mt-2.5 text-[12px] text-muted-foreground"></div>
     </div>
   </section>
@@ -73,7 +81,9 @@
  * 悬停 tooltip 看全明细（含世代/性别），点击条形开档案页。名次按赏金排定（并列同顺位）。
  * 数据：datechart.json（逐场 runs[]）+ basic.json（join 生年/性别/马名），前端聚合，零新产物。
  * 金额口径（§112 定稿）：逐场 賞金 加总（datechart runs[].pr 同源），实测与 netkeiba
- * 「獲得賞金(中央)+(地方)」274/274 全等；未出走（取消/除外）不计；海外台账场无金额按 0 计。
+ * 「獲得賞金(中央)+(地方)」274/274 全等；海外台账场无金额按 0 计。
+ * §131 展示口径（用户定稿）：有任何比赛记录（含中止/取消/除外）的产驹全部上墙，
+ * 0 赏金排末尾按显示名排序（原名 ja / 译名 zh collation），并列同顺位共享名次。
  * 重赏判定 = race-rows GRADE 徽章类 ∈ {g1,g2,g3}（同 grade-table.json 派生规则）。
  * 榜别：all 总榜（通算）/ year 自然年 / gen 世代（成员通算）；图只画赏金>0 的马，
  *       被排除的 0 赏金马数在脚注说明（总榜/自然年=出走过但 0 赏金，世代=尚未获得赏金）。
@@ -88,8 +98,9 @@ var manYen = function (pr) { return YJ.util.manYen(pr, "0万"); };
 var GRADE = YJ.raceRows.GRADE;
 
 /* ---- 聚合 ----
- * T = 通算；Y[y] = 自然年切面（同构）。pr 总赏金 / sg 重赏赏金 / n 出走 / w 1着（并列次序键） */
-function newStat() { return { pr: 0, sg: 0, w: 0, n: 0 }; }
+ * T = 通算；Y[y] = 自然年切面（同构）。pr 总赏金 / sg 重赏赏金 / n 出走 / w 1着（并列次序键）；
+ * raw = 任何比赛记录数（含取消/除外，§131：有记录即上墙，0 赏金排末尾按名序） */
+function newStat() { return { pr: 0, sg: 0, w: 0, n: 0, raw: 0 }; }
 function bump(s, pr, win, graded) {
   s.pr += pr; s.n += 1;
   if (win) s.w += 1;
@@ -112,15 +123,17 @@ function aggregate() {
   DC.runs.forEach(function (r) {
     var id = String(r.id), a = AGG[id];
     if (!a) return;                                   /* 马表缺失的记录跳过（防御） */
+    a.T.raw += 1;                                     /* §131：任何比赛记录都算「有记录」 */
     var y = (r.d || "").slice(0, 4);
     if (!y) return;
-    if (r.p === "取消" || r.p === "除外") return;       /* 未出走：不计金额/出走（全站三态口径） */
+    var ys = a.Y[y] || (a.Y[y] = newStat());
+    ys.raw += 1;
+    if (r.p === "取消" || r.p === "除外") return;       /* 未出走：不计金额/出走数（金额口径不变） */
     var bd = GRADE[r.g] ? GRADE[r.g][1] : "";
     var graded = bd === "g1" || bd === "g2" || bd === "g3";
     var pr = r.pr || 0, win = r.p === 1;
     bump(a.T, pr, win, graded);
-    var s = a.Y[y] || (a.Y[y] = newStat());
-    bump(s, pr, win, graded);
+    bump(ys, pr, win, graded);
   });
 }
 
@@ -160,9 +173,9 @@ function validateState() {
   if (lb.mode === "gen" && GENS.indexOf(lb.gen) < 0) lb.gen = GENS[0] || "";
 }
 
-/* ---- 当前行视图（只画赏金>0；zero = 被排除的 0 赏金马数，脚注说明） ---- */
+/* ---- 当前行视图（§131：有任何比赛记录即上墙——含中止/取消/除外；0 赏金排末尾按名字顺序） ---- */
 function viewRows() {
-  var rows = [], zero = 0;
+  var rows = [];
   for (var id in HORSES) {
     var m = HORSES[id], a = AGG[id];
     if (lb.sex === "m" && m.grp !== "m") continue;
@@ -172,24 +185,33 @@ function viewRows() {
       if (lb.gen && m.gen !== lb.gen) continue;
       s = a.T;
     } else {
-      if (a.T.n === 0) continue;                      /* 总榜/自然年：出走过的马 */
       s = (lb.mode === "year") ? (a.Y[lb.y] || newStat()) : a.T;
-      if (lb.mode === "year" && s.n === 0) continue;   /* 该年未出走的马 */
     }
-    if (s.pr > 0) rows.push({ id: id, m: m, s: s });
-    else zero += 1;
+    if (!s.raw) continue;                              /* 从未有比赛记录（连取消/除外都没有）→ 不上墙 */
+    rows.push({ id: id, m: m, s: s });
   }
   /* 并列顺位：按 (赏金, 1着, id) 排定，(赏金,1着) 相同并列同顺位（1,2,2,4）；
+   * 0 赏金（含仅取消/除外者）一律排末尾，彼此按显示名排序（§131 用户定稿）；
    * 先在副本上定序并赋 rank，再对原数组按同序排（比较器一致，结果稳定） */
-  var byPr = rows.slice().sort(function (x, y2) { return y2.s.pr - x.s.pr || y2.s.w - x.s.w || ((+x.id) - (+y2.id)); });
+  var nmCmp = function (x, y2) {
+    return labelName(x.m).localeCompare(labelName(y2.m), lb.nm === "cn" ? "zh-Hans-CN" : "ja");
+  };
+  var cmp = function (x, y2) {
+    if (x.s.pr === 0 || y2.s.pr === 0) {
+      if (x.s.pr !== y2.s.pr) return y2.s.pr - x.s.pr; /* 有赏金的在前 */
+      return nmCmp(x, y2);                             /* 同为 0 赏金 → 名字顺序 */
+    }
+    return y2.s.pr - x.s.pr || y2.s.w - x.s.w || ((+x.id) - (+y2.id));
+  };
+  var byPr = rows.slice().sort(cmp);
   var rank = 0;
   byPr.forEach(function (r, i) {
     var prev = i ? byPr[i - 1] : null;
     if (prev && prev.s.pr === r.s.pr && prev.s.w === r.s.w) r.rank = rank;
     else { rank = i + 1; r.rank = rank; }
   });
-  rows.sort(function (x, y2) { return y2.s.pr - x.s.pr || y2.s.w - x.s.w || ((+x.id) - (+y2.id)); });
-  return { rows: rows, zero: zero };
+  rows.sort(cmp);
+  return { rows: rows };
 }
 
 /* ---- 渲染 ---- */
@@ -230,17 +252,10 @@ function renderKpis(rows) {
     kpi("重赏赏金", manYen(sg), sg ? "" : "dim");
 }
 function renderLegend() {
-  /* 性别以名字颜色表达（§125），色样仅 PC（MB 黑字不加） */
-  var sexLeg = isMb() ? "" :
-    '<span style="color:#a1a1aa">名字颜色：</span>' +
-    '<span style="color:#0B5A8C;font-weight:600">牡</span>' +
-    '<span style="color:#B03A30;font-weight:600">牝</span>' +
-    '<span style="color:#5A5A5A;font-weight:600">骟</span>';
+  /* §129：撤「名字颜色：牡/牝/骟」（名字颜色保留，性别走 tooltip）；§130：撤「悬停看明细 · 点击条形开档案」 */
   document.getElementById("legend").innerHTML =
     '<span><i class="i-total"></i>总赏金</span>' +
-    '<span><i class="i-solid"></i>重赏赏金</span>' +
-    sexLeg +
-    '<span style="color:#a1a1aa">悬停看明细 · 点击条形开档案</span>';
+    '<span><i class="i-solid"></i>重赏赏金</span>';
 }
 /* ---- 图表渲染（ECharts 定制包 §115 · 条形 §116 参照 JBIS · 标签 §121 左侧色条定稿）----
  * 条形：双系列同槽齐平拼接（总赏金浅青实心 + 重赏赏金主色实心，读出「大头来自重赏还是分场」）。
@@ -249,7 +264,9 @@ function renderLegend() {
  * MB（≤768px）花哨全撤：无名次、无色条，只 名字+条形，名字右对齐防截断。
  * 马名语言 = 原名/译名 seg（比赛记录切换先例）：译名 = 港译优先 → 自译 → 回退原名。
  * 金额标签挂条尾只标总赏金（重赏金额进 tooltip）；悬停看全明细，点击条形开档案。 */
-var EC = null, CUR_ROWS = [];
+var EC = null, CUR_ROWS = [], CUR_TOTAL = 0;
+/* §129 分页：PC 100 名/页、MB 10 名/页（用户定稿）；页码不进持久化（刷新回第 1 页） */
+function pageSize() { return isMb() ? 10 : 100; }
 function chartFont() { return "'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif"; }
 /* 断点侦测：MB 与 PC 标签形态不同（§119） */
 var _mql = window.matchMedia ? window.matchMedia("(max-width: 768px)") : null;
@@ -257,12 +274,19 @@ function isMb() { return !!(_mql && _mql.matches); }
 /* 马名显示语言（原名/译名切换，§119）：译名 = 港译优先 → 自译 → 回退原名 */
 function labelName(m) { return lb.nm === "cn" ? (m.cn || m.name) : m.name; }
 function renderChart(view) {
-  var rows = view.rows, el = document.getElementById("chart"), mb = isMb();
+  var all = view.rows, el = document.getElementById("chart"), mb = isMb();
+  /* §129 分页切片：页码越界兜底（大切面翻页后切到小切面）；页内行数定画布高 */
+  var ps = pageSize(), pages = Math.max(1, Math.ceil(all.length / ps));
+  if (lb.page >= pages) lb.page = pages - 1;
+  if (lb.page < 0) lb.page = 0;
+  var rows = all.slice(lb.page * ps, lb.page * ps + ps);
+  CUR_TOTAL = all.length;
   CUR_ROWS = rows;
-  if (!rows.length) {
+  if (!all.length) {
     /* 切空切面前先彻底销毁实例（innerHTML 会移走 canvas，留下的是孤儿实例 → 再切回数据时白屏） */
     if (EC) { EC.dispose(); EC = null; }
     el.innerHTML = '<div class="hint-empty">该切面下暂无赏金数据</div>';
+    document.getElementById("pager").style.display = "none";
     return;
   }
   if (!window.YJ_ECHARTS) {
@@ -276,7 +300,8 @@ function renderChart(view) {
    * containLabel 对 rich 标签估宽不准 → grid.left 显式留宽、关死 */
   var maxLen = 0, maxSub = 0, chipW = 0;
   if (!mb) {
-    rows.forEach(function (r) {
+    /* 按全部行（非当前页）扫最长名：翻页时列宽稳定不跳变 */
+    all.forEach(function (r) {
       var main = labelName(r.m), sub = lb.nm === "cn" ? r.m.name : (r.m.cn || "");
       if (main.length > maxLen) maxLen = main.length;
       if (sub && sub !== main && sub.length > maxSub) maxSub = sub.length;
@@ -315,14 +340,14 @@ function renderChart(view) {
         if (!r) return "";
         return "<b>#" + r.rank + " " + esc(r.m.name) + "</b>" +
           (r.m.cn ? "<span style='color:#a1a1aa'>〈" + esc(r.m.cn) + "〉</span>" : "") +
-          "<br/>总赏金 <b>" + manYen(r.s.pr) + "</b>" +
+          "<br/>总赏金 <b>" + (r.s.pr > 0 ? manYen(r.s.pr) : "—") + "</b>" +
           "<br/>重赏赏金 " + (r.s.sg > 0 ? "<b style='color:#0b6b64'>" + manYen(r.s.sg) + "</b>" : "—") +
           (r.m.gen ? "<br/>" + esc(r.m.gen) + "年世代" : "") + (r.m.sex ? " · " + r.m.sex : "");
       }
     },
     xAxis: {
       type: "value", splitLine: { lineStyle: { color: "#f0f0f0" } },
-      axisLabel: { color: "#8a8a8a", fontSize: 11, formatter: function (v) { return manYen(v); } }
+      axisLabel: { color: "#8a8a8a", fontSize: 11, hideOverlap: true, formatter: function (v) { return manYen(v); } }
     },
     yAxis: (function () {
       /* 类目标签演进：§119 下拉框 chip → §121 五套候选评审（tests/leaderboard-labels.html）定稿
@@ -375,22 +400,38 @@ function renderChart(view) {
         data: prData,
         itemStyle: { color: "#c9e8e6", borderRadius: [0, 2, 2, 0] },
         label: { show: true, position: "right", color: "#171717", fontSize: 11,
-          formatter: function (p) { return manYen(p.value); } } },
+          formatter: function (p) { return p.value > 0 ? manYen(p.value) : "—"; } } },
       { name: "重赏赏金", type: "bar", barMaxWidth: 22, z: 3,
         data: sgData,
         itemStyle: { color: "#0aa7a0", borderRadius: [2, 0, 0, 2] } }
     ]
   }, true);
+  renderPager();
+}
+/* §129 页码条：单页隐藏；显示 页码 + 名次区间 + 总数（并列顺位取首末行 rank） */
+function renderPager() {
+  var el = document.getElementById("pager");
+  var ps = pageSize(), pages = Math.max(1, Math.ceil(CUR_TOTAL / ps));
+  if (pages <= 1 || !CUR_ROWS.length) { el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "";
+  el.innerHTML =
+    '<button type="button" data-p="prev"' + (lb.page <= 0 ? " disabled" : "") + '>‹ 上一页</button>' +
+    '<span class="lb-pg-info">第 ' + (lb.page + 1) + ' / ' + pages + ' 页 · ' +
+    CUR_ROWS[0].rank + '–' + CUR_ROWS[CUR_ROWS.length - 1].rank + ' 名' +
+    '<span class="lb-pg-total"> · 共 ' + CUR_TOTAL + ' 匹</span></span>' +
+    '<button type="button" data-p="next"' + (lb.page >= pages - 1 ? " disabled" : "") + '>下一页 ›</button>';
 }
 function renderAll() {
+  /* 切面签名变化 → 回第 1 页（翻页走 renderChart 直调，不算切面变化） */
+  var sig = [lb.mode, lb.y, lb.gen, lb.sex, lb.nm, isMb() ? "mb" : "pc"].join("|");
+  if (sig !== renderAll._sig) { lb.page = 0; renderAll._sig = sig; }
   var view = viewRows();
   renderSegs();
   renderKpis(view.rows);
   renderLegend();
   renderChart(view);
-  var note = "金额 = 逐场赏金加总（中央 + 地方，与 netkeiba「獲得賞金」口径一致）；未出走（取消/除外）不计；" +
-    "海外实战场（台账补录）源数据无金额 → 按 0 计。";
-  if (view.zero) note += " 另有 " + view.zero + " 匹" + (lb.mode === "gen" ? "尚未获得赏金，未列入图。" : "出走过但赏金为 0，未列入图。");
+  var note = "金额 = 逐场赏金加总（中央 + 地方，与 netkeiba「獲得賞金」口径一致）；取消/除外不计金额；" +
+    "海外实战场（台账补录）源数据无金额 → 按 0 计。";   /* §132：0 赏金上墙说明文案撤（行为不变） */
   document.getElementById("note").innerHTML = note;
 }
 
@@ -425,6 +466,17 @@ document.getElementById("nameSeg").addEventListener("click", function (e) {
   lb.nm = btn.getAttribute("data-n");
   saveState();
   renderAll();
+});
+/* §129 翻页：只重画当前页（KPI/图例/脚注不随页变化）；翻页后图区回顶端 */
+document.getElementById("pager").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-p]") : null;
+  if (!btn || btn.disabled) return;
+  var ps = pageSize(), pages = Math.max(1, Math.ceil(CUR_TOTAL / ps));
+  if (btn.getAttribute("data-p") === "prev" && lb.page > 0) lb.page -= 1;
+  else if (btn.getAttribute("data-p") === "next" && lb.page < pages - 1) lb.page += 1;
+  else return;
+  renderChart(viewRows());
+  document.getElementById("chart").scrollIntoView({ block: "start", behavior: "smooth" });
 });
 /* 视口变化 → ECharts 重算画布（防抖，与 stats 页 resize 先例同型）；跨 MB/PC 断点时标签形态不同 → 整体重绘 */
 var _rsT = null, _mbLast = null;
