@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<script src="../rehome.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产驹赏金 · {{YJ_SITE_NAME}}</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
+<link rel="stylesheet" href="theme.css">
+<style>
+/* 页面局部样式（lb-*）：KPI 条版式同 stats.html 页内样式先例；组件类（.seg/.card/.page-title）
+ * 单一出处 = theme.css。v4（§115）：图表由 ECharts 定制包 canvas 渲染（空心=总赏金/实心=重赏赏金语义不变）。 */
+.lb-kpis{display:flex;flex-wrap:wrap}
+.lb-kpi{padding:2px 18px;border-left:1px solid #ececec}
+.lb-kpi:first-child{padding-left:2px;border-left:0}
+.lb-kpi .k{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;white-space:nowrap}
+.lb-kpi .v{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:#171717;white-space:nowrap}
+.lb-kpi .v.hi{color:#0aa7a0}
+.lb-kpi .v.dim{color:#a1a1aa}
+/* 图例：浅色/主色小样，与条形渲染同源同色 */
+.lb-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font-size:12px;color:#52525b}
+.lb-legend i{display:inline-block;width:16px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.lb-legend .i-total{background:#c9e8e6}
+.lb-legend .i-solid{background:#0aa7a0}
+/* 图表本体由 ECharts 定制包 canvas 渲染（§115），本页 CSS 只剩 KPI 条/图例/空态 */
+.hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
+@media (max-width:768px){
+  .lb-kpi{padding:2px 10px}
+  .lb-kpi .v{font-size:16px}
+}
+</style>
+</head>
+<body class="bg-background text-foreground antialiased">
+<div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
+
+  <!-- 页头 -->
+  <div class="page-title mb-7 max-md:mt-2.5">产驹赏金 · LEADERBOARD</div>
+
+  <section class="mb-8">
+    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
+      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>赏金排行 · RANKING
+    </div>
+    <div class="card p-4 pt-3.5 max-md:p-3">
+      <!-- 工具条：榜别（总榜/自然年/世代）+ 年份·世代切面（联动出现）+ 性别三态 -->
+      <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="seg" id="modeSeg"></div>
+        <div class="seg" id="sliceSeg" style="display:none"></div>
+        <div class="seg" id="sexSeg"></div>
+        <div class="seg md:hidden" id="nameSeg"></div>
+      </div>
+      <div class="lb-kpis mb-3" id="kpis"></div>
+      <div class="lb-legend mb-3" id="legend"></div>
+      <div id="chart"></div>
+      <div id="note" class="mt-2.5 text-[12px] text-muted-foreground"></div>
+    </div>
+  </section>
+</div>
+
+<script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
+<script src="../yj-cache.js"></script>
+<script src="../site-config.js"></script>
+<script src="../race-rows.js"></script>
+<script src="../echarts.bar.min.js"></script>
+<script>
+/* ================= 产驹赏金 LEADERBOARD（v4 · ECharts 图表版 §115；§128 更名） =================
+ * 形态（用户定稿 §114+§115）：撤表格整页只留横向条形图；渲染库 = ECharts 定制包
+ * （front/public/echarts.bar.min.js：仅 Bar+Grid/Tooltip/Legend/Dataset+Canvas，gzip ≈167KB，
+ * 仅本页 <script> 引用，其他页面 0 下载）。浅青实心条 = 总赏金（按榜首归一），
+ * 主色实心段 = 重赏赏金（重赏场次所得，含 2-5着）同槽齐平叠放（§116 参照 JBIS sire-rank），
+ * 读出「大头来自重赏还是分场」；
+ * 悬停 tooltip 看全明细（含世代/性别），点击条形开档案页。名次按赏金排定（并列同顺位）。
+ * 数据：datechart.json（逐场 runs[]）+ basic.json（join 生年/性别/马名），前端聚合，零新产物。
+ * 金额口径（§112 定稿）：逐场 賞金 加总（datechart runs[].pr 同源），实测与 netkeiba
+ * 「獲得賞金(中央)+(地方)」274/274 全等；未出走（取消/除外）不计；海外台账场无金额按 0 计。
+ * 重赏判定 = race-rows GRADE 徽章类 ∈ {g1,g2,g3}（同 grade-table.json 派生规则）。
+ * 榜别：all 总榜（通算）/ year 自然年 / gen 世代（成员通算）；图只画赏金>0 的马，
+ *       被排除的 0 赏金马数在脚注说明（总榜/自然年=出走过但 0 赏金，世代=尚未获得赏金）。
+ * 性别：全部 / 牡馬（含骟，セ 归牡组）/ 牝馬（YJ.util.sexOf，同 stats 维度口径）。 */
+var DC = null, BASIC = null;
+var lb = { mode: "all", y: "", gen: "", sex: "all", nm: "orig" };
+
+var esc = YJ.util.esc;
+var manYen = function (pr) { return YJ.util.manYen(pr, "0万"); };
+
+/* 等级映射单一出处 = race-rows.js（GRADE[格] = [显示字, 徽章类]）；重赏 = 徽章类 g1/g2/g3 */
+var GRADE = YJ.raceRows.GRADE;
+
+/* ---- 聚合 ----
+ * T = 通算；Y[y] = 自然年切面（同构）。pr 总赏金 / sg 重赏赏金 / n 出走 / w 1着（并列次序键） */
+function newStat() { return { pr: 0, sg: 0, w: 0, n: 0 }; }
+function bump(s, pr, win, graded) {
+  s.pr += pr; s.n += 1;
+  if (win) s.w += 1;
+  if (graded) s.sg += pr;
+}
+var HORSES = {}, AGG = {};
+function aggregate() {
+  HORSES = {}; AGG = {};
+  BASIC.horses.forEach(function (h) {
+    var id = String(h.id), sx = YJ.util.sexOf(h);
+    HORSES[id] = {
+      name: YJ.util.mainName(h),
+      cn: h["香港馬名"] || h["自译馬名"] || "",
+      sex: sx === "セ" ? "セン" : sx,
+      grp: (sx === "牡" || sx === "セ") ? "m" : (sx === "牝" ? "f" : ""),
+      gen: h["生年"] ? String(h["生年"]) : ""
+    };
+    AGG[id] = { T: newStat(), Y: {} };
+  });
+  DC.runs.forEach(function (r) {
+    var id = String(r.id), a = AGG[id];
+    if (!a) return;                                   /* 马表缺失的记录跳过（防御） */
+    var y = (r.d || "").slice(0, 4);
+    if (!y) return;
+    if (r.p === "取消" || r.p === "除外") return;       /* 未出走：不计金额/出走（全站三态口径） */
+    var bd = GRADE[r.g] ? GRADE[r.g][1] : "";
+    var graded = bd === "g1" || bd === "g2" || bd === "g3";
+    var pr = r.pr || 0, win = r.p === 1;
+    bump(a.T, pr, win, graded);
+    var s = a.Y[y] || (a.Y[y] = newStat());
+    bump(s, pr, win, graded);
+  });
+}
+
+/* ---- 切面清单 ---- */
+var YEARS = [], GENS = [];
+function deriveSlices() {
+  YEARS = []; GENS = [];
+  DC.runs.forEach(function (r) {
+    var y = (r.d || "").slice(0, 4);
+    if (y && YEARS.indexOf(y) < 0) YEARS.push(y);
+  });
+  YEARS.sort().reverse();
+  BASIC.horses.forEach(function (h) {
+    var g = h["生年"] ? String(h["生年"]) : "";
+    if (g && GENS.indexOf(g) < 0) GENS.push(g);
+  });
+  GENS.sort().reverse();
+}
+
+/* ---- 状态记忆（storeKey 调用期求值，§105 禁止加载期算站点前缀） ---- */
+function lsKey() { return YJ.util.storeKey("leaderboard.view"); }
+function loadState() {
+  try {
+    var v = JSON.parse(localStorage.getItem(lsKey()) || "{}");
+    if (v.mode === "all" || v.mode === "year" || v.mode === "gen") lb.mode = v.mode;
+    if (v.sex === "all" || v.sex === "m" || v.sex === "f") lb.sex = v.sex;
+    if (v.nm === "orig" || v.nm === "cn") lb.nm = v.nm;
+    if (v.y) lb.y = String(v.y);
+    if (v.gen) lb.gen = String(v.gen);
+  } catch (e) { /* 存储不可用/损坏 → 默认值 */ }
+}
+function saveState() {
+  try { localStorage.setItem(lsKey(), JSON.stringify({ mode: lb.mode, y: lb.y, gen: lb.gen, sex: lb.sex, nm: lb.nm })); } catch (e) {}
+}
+function validateState() {
+  if (lb.mode === "year" && YEARS.indexOf(lb.y) < 0) lb.y = YEARS[0] || "";
+  if (lb.mode === "gen" && GENS.indexOf(lb.gen) < 0) lb.gen = GENS[0] || "";
+}
+
+/* ---- 当前行视图（只画赏金>0；zero = 被排除的 0 赏金马数，脚注说明） ---- */
+function viewRows() {
+  var rows = [], zero = 0;
+  for (var id in HORSES) {
+    var m = HORSES[id], a = AGG[id];
+    if (lb.sex === "m" && m.grp !== "m") continue;
+    if (lb.sex === "f" && m.grp !== "f") continue;
+    var s;
+    if (lb.mode === "gen") {
+      if (lb.gen && m.gen !== lb.gen) continue;
+      s = a.T;
+    } else {
+      if (a.T.n === 0) continue;                      /* 总榜/自然年：出走过的马 */
+      s = (lb.mode === "year") ? (a.Y[lb.y] || newStat()) : a.T;
+      if (lb.mode === "year" && s.n === 0) continue;   /* 该年未出走的马 */
+    }
+    if (s.pr > 0) rows.push({ id: id, m: m, s: s });
+    else zero += 1;
+  }
+  /* 并列顺位：按 (赏金, 1着, id) 排定，(赏金,1着) 相同并列同顺位（1,2,2,4）；
+   * 先在副本上定序并赋 rank，再对原数组按同序排（比较器一致，结果稳定） */
+  var byPr = rows.slice().sort(function (x, y2) { return y2.s.pr - x.s.pr || y2.s.w - x.s.w || ((+x.id) - (+y2.id)); });
+  var rank = 0;
+  byPr.forEach(function (r, i) {
+    var prev = i ? byPr[i - 1] : null;
+    if (prev && prev.s.pr === r.s.pr && prev.s.w === r.s.w) r.rank = rank;
+    else { rank = i + 1; r.rank = rank; }
+  });
+  rows.sort(function (x, y2) { return y2.s.pr - x.s.pr || y2.s.w - x.s.w || ((+x.id) - (+y2.id)); });
+  return { rows: rows, zero: zero };
+}
+
+/* ---- 渲染 ---- */
+function renderSegs() {
+  document.getElementById("modeSeg").innerHTML =
+    '<button type="button" data-m="all" data-on="' + (lb.mode === "all" ? "true" : "false") + '" title="全部比赛赏金累计（通算）">总榜</button>' +
+    '<button type="button" data-m="year" data-on="' + (lb.mode === "year" ? "true" : "false") + '" title="按比赛日历年份切分（1月1日–12月31日）">自然年</button>' +
+    '<button type="button" data-m="gen" data-on="' + (lb.mode === "gen" ? "true" : "false") + '" title="按产驹出生年世代切分（成员通算赏金）">世代</button>';
+  var slice = "";
+  if (lb.mode === "year") {
+    YEARS.forEach(function (y) {
+      slice += '<button type="button" data-y="' + esc(y) + '" data-on="' + (lb.y === y ? "true" : "false") + '">' + esc(y) + '年</button>';
+    });
+  } else if (lb.mode === "gen") {
+    GENS.forEach(function (g) {
+      slice += '<button type="button" data-y="' + esc(g) + '" data-on="' + (lb.gen === g ? "true" : "false") + '">' + esc(g) + '年世代</button>';
+    });
+  }
+  var seg = document.getElementById("sliceSeg");
+  seg.style.display = slice ? "" : "none";
+  seg.innerHTML = slice;
+  document.getElementById("sexSeg").innerHTML =
+    '<button type="button" data-s="all" data-on="' + (lb.sex === "all" ? "true" : "false") + '" title="全部产驹">全部</button>' +
+    '<button type="button" data-s="m" data-on="' + (lb.sex === "m" ? "true" : "false") + '" title="牡马与骟马合并成组（同统计总览性别口径）">牡馬（含骟）</button>' +
+    '<button type="button" data-s="f" data-on="' + (lb.sex === "f" ? "true" : "false") + '" title="牝马">牝馬</button>';
+  document.getElementById("nameSeg").innerHTML =
+    '<button type="button" data-n="orig" data-on="' + (lb.nm === "orig" ? "true" : "false") + '" title="日文原名（无则英文名）">原名</button>' +
+    '<button type="button" data-n="cn" data-on="' + (lb.nm === "cn" ? "true" : "false") + '" title="中文译名（港译优先，无则自译；再缺失回退原名）">译名</button>';
+}
+function renderKpis(rows) {
+  var sum = 0, sg = 0;
+  rows.forEach(function (r) { sum += r.s.pr; sg += r.s.sg; });
+  var kpi = function (k, v, cls) {
+    return '<div class="lb-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+  };
+  document.getElementById("kpis").innerHTML =
+    kpi("赏金总额", manYen(sum), "hi") +
+    kpi("重赏赏金", manYen(sg), sg ? "" : "dim");
+}
+function renderLegend() {
+  /* 性别以名字颜色表达（§125），色样仅 PC（MB 黑字不加） */
+  var sexLeg = isMb() ? "" :
+    '<span style="color:#a1a1aa">名字颜色：</span>' +
+    '<span style="color:#0B5A8C;font-weight:600">牡</span>' +
+    '<span style="color:#B03A30;font-weight:600">牝</span>' +
+    '<span style="color:#5A5A5A;font-weight:600">骟</span>';
+  document.getElementById("legend").innerHTML =
+    '<span><i class="i-total"></i>总赏金</span>' +
+    '<span><i class="i-solid"></i>重赏赏金</span>' +
+    sexLeg +
+    '<span style="color:#a1a1aa">悬停看明细 · 点击条形开档案</span>';
+}
+/* ---- 图表渲染（ECharts 定制包 §115 · 条形 §116 参照 JBIS · 标签 §121 左侧色条定稿）----
+ * 条形：双系列同槽齐平拼接（总赏金浅青实心 + 重赏赏金主色实心，读出「大头来自重赏还是分场」）。
+ * PC 类目标签（§121，5 套候选评审选定）= 行左缘通高竖色条（1/2/3 名语义色，4+ 浅灰）+
+ * 名次数字（top3 语义色加粗）+ 两行名（主名 + 互补名小字，默认原名时第二行即中文名）。
+ * MB（≤768px）花哨全撤：无名次、无色条，只 名字+条形，名字右对齐防截断。
+ * 马名语言 = 原名/译名 seg（比赛记录切换先例）：译名 = 港译优先 → 自译 → 回退原名。
+ * 金额标签挂条尾只标总赏金（重赏金额进 tooltip）；悬停看全明细，点击条形开档案。 */
+var EC = null, CUR_ROWS = [];
+function chartFont() { return "'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif"; }
+/* 断点侦测：MB 与 PC 标签形态不同（§119） */
+var _mql = window.matchMedia ? window.matchMedia("(max-width: 768px)") : null;
+function isMb() { return !!(_mql && _mql.matches); }
+/* 马名显示语言（原名/译名切换，§119）：译名 = 港译优先 → 自译 → 回退原名 */
+function labelName(m) { return lb.nm === "cn" ? (m.cn || m.name) : m.name; }
+function renderChart(view) {
+  var rows = view.rows, el = document.getElementById("chart"), mb = isMb();
+  CUR_ROWS = rows;
+  if (!rows.length) {
+    /* 切空切面前先彻底销毁实例（innerHTML 会移走 canvas，留下的是孤儿实例 → 再切回数据时白屏） */
+    if (EC) { EC.dispose(); EC = null; }
+    el.innerHTML = '<div class="hint-empty">该切面下暂无赏金数据</div>';
+    return;
+  }
+  if (!window.YJ_ECHARTS) {
+    el.innerHTML = '<div class="hint-empty">图表库（echarts.bar.min.js）加载失败，请通过 http 服务器访问</div>';
+    return;
+  }
+  /* ⚠ 复用已有实例（§122）：不能 innerHTML 清空容器——那会把 ECharts 持有的 canvas 一并移除，
+   * setOption 就画进了游离 canvas（切换榜别/性别/语言后图表消失的真凶）；改数据直接 notMerge setOption */
+  el.style.height = Math.max(rows.length * (mb ? 30 : 36) + 42, 220) + "px";
+  /* 标签列等宽按当前榜最长名自适应（§123：名次 16 + 名字 2 起排；互补名行 18 起排）；
+   * containLabel 对 rich 标签估宽不准 → grid.left 显式留宽、关死 */
+  var maxLen = 0, maxSub = 0, chipW = 0;
+  if (!mb) {
+    rows.forEach(function (r) {
+      var main = labelName(r.m), sub = lb.nm === "cn" ? r.m.name : (r.m.cn || "");
+      if (main.length > maxLen) maxLen = main.length;
+      if (sub && sub !== main && sub.length > maxSub) maxSub = sub.length;
+    });
+    var contentW = Math.max(20 + maxLen * 13, maxSub ? 20 + maxSub * 10.5 : 0);
+    chipW = Math.min(Math.max(Math.ceil(contentW), 120), 260);
+  }
+  var lib = window.YJ_ECHARTS;
+  if (!EC) {
+    el.innerHTML = "";   /* 仅首次初始化时清掉占位/失败提示 */
+    EC = lib.init(el, null, { renderer: "canvas" });
+    EC.on("click", function (p) {
+      var r = CUR_ROWS[p.dataIndex];
+      if (r) window.open("profile.html?horse=" + r.id, "_blank", "noopener");   /* §80：新标签页 */
+    });
+  } else {
+    EC.resize();   /* 行数变化 → 高度已改，同步画布 */
+  }
+  var prData = [], sgData = [];
+  rows.forEach(function (r) {
+    prData.push(r.s.pr);
+    sgData.push(r.s.sg);
+  });
+  EC.setOption({
+    textStyle: { fontFamily: chartFont() },
+    animationDuration: 700, animationEasing: "cubicOut",
+    /* grid：PC rich 标签估不准 → 显式 chipW+12、禁 containLabel（§119）；
+     * MB 纯文本标签无 rich → containLabel 自适应实际标签宽，贴左去死空白（§127 用户反馈） */
+    grid: { left: mb ? 10 : chipW + 12, right: 112, top: mb ? 12 : 16, bottom: 26, containLabel: mb },
+    tooltip: {
+      trigger: "axis", axisPointer: { type: "shadow" }, confine: true,
+      backgroundColor: "rgba(255,255,255,.97)", borderColor: "#e4e4e7",
+      textStyle: { color: "#171717", fontSize: 12, fontFamily: chartFont() },
+      formatter: function (ps) {
+        var r = ps && ps.length ? CUR_ROWS[ps[0].dataIndex] : null;
+        if (!r) return "";
+        return "<b>#" + r.rank + " " + esc(r.m.name) + "</b>" +
+          (r.m.cn ? "<span style='color:#a1a1aa'>〈" + esc(r.m.cn) + "〉</span>" : "") +
+          "<br/>总赏金 <b>" + manYen(r.s.pr) + "</b>" +
+          "<br/>重赏赏金 " + (r.s.sg > 0 ? "<b style='color:#0b6b64'>" + manYen(r.s.sg) + "</b>" : "—") +
+          (r.m.gen ? "<br/>" + esc(r.m.gen) + "年世代" : "") + (r.m.sex ? " · " + r.m.sex : "");
+      }
+    },
+    xAxis: {
+      type: "value", splitLine: { lineStyle: { color: "#f0f0f0" } },
+      axisLabel: { color: "#8a8a8a", fontSize: 11, formatter: function (v) { return manYen(v); } }
+    },
+    yAxis: (function () {
+      /* 类目标签演进：§119 下拉框 chip → §121 五套候选评审（tests/leaderboard-labels.html）定稿
+       * 「彩色名次数字」（色条三种实现均被 ECharts 丢弃，见 §121/§122）→ §123 互补名居中排主名正下方
+       * → §124 行首性别色块（用户复看：符号多余、色块与名次对不齐，回滚）→ §125 定稿 **主名按性别着色**：
+       *   牝粉 #B03A30 / 牡蓝 #0B5A8C / 骟灰 #5A5A5A（= 基本信息徽章字色，无符号无色块、零对齐负担）。
+       * MB 仍极简黑字不加（MB 定稿 v8）。 */
+      var base = { type: "category", inverse: true, axisLine: { show: false }, axisTick: { show: false } };
+      if (mb) {
+        base.data = rows.map(function (r) { return labelName(r.m); });
+        /* §127：去定宽/截断（containLabel 按实际宽度留位，名字短时贴左不空）；当前数据最长 9 字足够放下 */
+        base.axisLabel = { color: "#171717", fontSize: 12.5, fontWeight: 600 };
+        return base;
+      }
+      /* 类目标签 §123/§125：名次数字着色（1/2/3 名语义色 #0aa7a0/#0f8fd6/#e8742a 加粗，4+ 中灰）+
+       * 主名按性别着色（牡蓝/牝粉/骟灰，同片段几何三份换色）+ 互补名小字（默认原名时第二行即中文名）。
+       * §123 定稿（用户）：互补名「居中」排在主名正下方——按 canvas measureText 实测主名/互补名宽度，
+       * 逐行生成带左缩进的 cn 片段（pad = (主名宽-互补名宽)/2，同宽片段样式按 pad 复用）。
+       * ⚠ 两行 fragment 总宽必须相等（都 = chipW）：不等时 align:"right" 逐行右锚会把短行整体平移
+       *   （§122 前中文名整体偏左 14px 的根因）；行1 = 名次(16)+主名格，行2 = 缩进(18+pad)+互补名格。
+       * MB = 仅名字（无名次），右对齐防截断 */
+      /* §126 居中修正：像素实测发现 align:"left" 在「名次+主名」多片段行上不生效——主名实际按
+       * 片段盒子**居中**渲染；单片段行则真左对齐（§123 的 measureText/pad 由此系统性偏左）。
+       * 定稿：cn 与 jp **同盒子**（padding-left 18、宽 chipW−18）+ align:"center"，第二行与主名
+       * 同格居中——不再测量字宽，天然免疫字体/加载时序差异；动态 cn<pad> 键随之删除。 */
+      var rich = {
+        r1: { color: "#0aa7a0", width: 14, align: "center", fontSize: 12, fontWeight: 800, padding: [0, 0, 0, 2] },
+        r2: { color: "#0f8fd6", width: 14, align: "center", fontSize: 12, fontWeight: 800, padding: [0, 0, 0, 2] },
+        r3: { color: "#e8742a", width: 14, align: "center", fontSize: 12, fontWeight: 800, padding: [0, 0, 0, 2] },
+        rk: { color: "#8a8a8a", width: 14, align: "center", fontSize: 11.5, fontWeight: 600, padding: [0, 0, 0, 2] },
+        jp:  { color: "#171717", fontSize: 12.5, fontWeight: 600, width: chipW - 18, align: "center", padding: [0, 0, 0, 2], overflow: "truncate" },
+        jpM: { color: "#0B5A8C", fontSize: 12.5, fontWeight: 600, width: chipW - 18, align: "center", padding: [0, 0, 0, 2], overflow: "truncate" },
+        jpF: { color: "#B03A30", fontSize: 12.5, fontWeight: 600, width: chipW - 18, align: "center", padding: [0, 0, 0, 2], overflow: "truncate" },
+        jpG: { color: "#5A5A5A", fontSize: 12.5, fontWeight: 600, width: chipW - 18, align: "center", padding: [0, 0, 0, 2], overflow: "truncate" },
+        cn:  { color: "#a1a1aa", fontSize: 10.5, width: chipW - 18, align: "center", padding: [1, 0, 0, 18], overflow: "truncate" }
+      };
+      base.data = rows.map(function (r) {
+        var rtag = r.rank <= 3 ? "r" + r.rank : "rk";
+        var ntag = r.m.sex === "牝" ? "jpF" : r.m.sex === "セン" ? "jpG" : r.m.sex === "牡" ? "jpM" : "jp";
+        var main = labelName(r.m), sub = lb.nm === "cn" ? r.m.name : (r.m.cn || "");
+        var s = "{" + rtag + "|" + r.rank + "}{" + ntag + "|" + main + "}";
+        if (sub && sub !== main) s += "\n{cn|" + sub + "}";
+        return s;
+      });
+      base.axisLabel = { align: "right", rich: rich };
+      return base;
+    })(),
+    series: [
+      { name: "总赏金", type: "bar", barGap: "-100%", barMaxWidth: 22, z: 2,
+        data: prData,
+        itemStyle: { color: "#c9e8e6", borderRadius: [0, 2, 2, 0] },
+        label: { show: true, position: "right", color: "#171717", fontSize: 11,
+          formatter: function (p) { return manYen(p.value); } } },
+      { name: "重赏赏金", type: "bar", barMaxWidth: 22, z: 3,
+        data: sgData,
+        itemStyle: { color: "#0aa7a0", borderRadius: [2, 0, 0, 2] } }
+    ]
+  }, true);
+}
+function renderAll() {
+  var view = viewRows();
+  renderSegs();
+  renderKpis(view.rows);
+  renderLegend();
+  renderChart(view);
+  var note = "金额 = 逐场赏金加总（中央 + 地方，与 netkeiba「獲得賞金」口径一致）；未出走（取消/除外）不计；" +
+    "海外实战场（台账补录）源数据无金额 → 按 0 计。";
+  if (view.zero) note += " 另有 " + view.zero + " 匹" + (lb.mode === "gen" ? "尚未获得赏金，未列入图。" : "出走过但赏金为 0，未列入图。");
+  document.getElementById("note").innerHTML = note;
+}
+
+/* ---- 事件 ---- */
+document.getElementById("modeSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-m]") : null;
+  if (!btn || lb.mode === btn.getAttribute("data-m")) return;
+  lb.mode = btn.getAttribute("data-m");
+  validateState();
+  saveState();
+  renderAll();
+});
+document.getElementById("sliceSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-y]") : null;
+  if (!btn) return;
+  var v = btn.getAttribute("data-y");
+  if (lb.mode === "year") { if (lb.y === v) return; lb.y = v; }
+  else { if (lb.gen === v) return; lb.gen = v; }
+  saveState();
+  renderAll();
+});
+document.getElementById("sexSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-s]") : null;
+  if (!btn || lb.sex === btn.getAttribute("data-s")) return;
+  lb.sex = btn.getAttribute("data-s");
+  saveState();
+  renderAll();
+});
+document.getElementById("nameSeg").addEventListener("click", function (e) {
+  var btn = e.target.closest ? e.target.closest("button[data-n]") : null;
+  if (!btn || lb.nm === btn.getAttribute("data-n")) return;
+  lb.nm = btn.getAttribute("data-n");
+  saveState();
+  renderAll();
+});
+/* 视口变化 → ECharts 重算画布（防抖，与 stats 页 resize 先例同型）；跨 MB/PC 断点时标签形态不同 → 整体重绘 */
+var _rsT = null, _mbLast = null;
+function _onRs() {
+  clearTimeout(_rsT);
+  _rsT = setTimeout(function () {
+    var mb = isMb();
+    if (EC) EC.resize();
+    if (mb !== _mbLast) { _mbLast = mb; renderAll(); }
+  }, 150);
+}
+window.addEventListener("resize", _onRs);
+if (_mql) { if (_mql.addEventListener) _mql.addEventListener("change", _onRs); else if (_mql.addListener) _mql.addListener(_onRs); }
+
+/* ---- 初始化 ---- */
+(function init() {
+  loadState();
+  Promise.all([YJ.cache.fetch("datechart"), YJ.cache.fetch("basic")]).then(function (r) {
+    DC = r[0]; BASIC = r[1];
+    aggregate();
+    deriveSlices();
+    validateState();
+    renderAll();
+  }).catch(function (e) {
+    document.getElementById("kpis").innerHTML =
+      '<div class="hint-empty">数据加载失败（' + esc(e.message || e) + '），请通过 http 服务器访问</div>';
+  });
+})();
+</script>
+</body>
+</html>
+

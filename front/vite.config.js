@@ -7,7 +7,8 @@ const { defineConfig } = require('vite');
 // edit-table = 批量表格编辑页（§104 键盘电子表格流：基本信息 manual_overrides + 比赛 races_edits）
 // edit-timeline = 航迹线人工节点编辑页（2026-09 从 edit.html 拆出，同为独立入口）
 // edit-drafts = 草稿箱查询页（§93：未提交草稿 + 已保存人工值一页通览，与抽屉共用渲染/检索）
-const PAGES = ['profile', 'races', 'pedigree', 'stats', 'datechart', 'timeline',
+// leaderboard = 产驹赏金（§112：总榜/自然年/世代 × 牡牝三态，前端聚合 datechart+basic；§128 更名）
+const PAGES = ['profile', 'races', 'pedigree', 'stats', 'leaderboard', 'datechart', 'timeline',
   'edit', 'edit-table', 'edit-timeline', 'edit-drafts'];
 
 const input = { main: resolve(__dirname, 'index.html') };
