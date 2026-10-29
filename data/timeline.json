@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-10-26T09:35:39",
+  "generated_at": "2026-10-29T03:48:47",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 7,
@@ -210,7 +210,7 @@
     "name": "ゴーイントゥスカイ",
     "cn": "通天飞"
    },
-   "photo": "../data/photos/202608040911-1.webp",
+   "photo": "../data/photos/202608040911-2.webp",
    "tags": [
     {
      "cat": "first",
