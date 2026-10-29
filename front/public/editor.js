@@ -1898,7 +1898,10 @@ YJ.editor = (function () {
       rmLog((f.name || "图片") + "：" + (e && e.message ? e.message : "处理失败"), "err");
     }).then(function () {
       state.tl.raceBusy = false;
-      renderTL();
+      /* 2026-10-28 修（§133）：上传落箱必须走全量 render——此前只 renderTL()，保存条的
+       * 「提交到 GitHub」/「草稿箱」计数停留在打开页面时的旧状态（首个草稿=按钮一直灰着）。
+       * render 内部本就调 renderTL()，状态条、草稿箱抽屉一并同步。 */
+      render();
     });
   }
   function racePanelHTML() {
@@ -1972,7 +1975,7 @@ YJ.editor = (function () {
     state.tl.events.sort(function (a, b) { return String(a.date) < String(b.date) ? -1 : String(a.date) > String(b.date) ? 1 : 0; });
     state.tl.edit = null; state.tl.err = "";
     persistTlDraft();
-    renderTL();
+    render();   /* §133：整表快照落箱 → 保存条立刻变亮（render 内含 renderTL） */
   }
   function tlDelete(i) {
     if (state.tl.del !== i) { state.tl.del = i; renderTL(); return; }   /* 两次点击确认，不用 window.confirm（headless 会卡） */
@@ -1982,7 +1985,7 @@ YJ.editor = (function () {
     var ref = draftRefOf(gone);           /* 被删节点的草稿图顺手清掉 */
     if (ref && String(gone && gone.photo || "").indexOf("draft:tl:") === 0) blobDel(ref);
     persistTlDraft();
-    renderTL();
+    render();   /* §133：落箱后同步保存条（同 tlApplyEdit） */
   }
   function tlPhotoUpload(files) {
     var arr = [].slice.call(files || []);
@@ -2852,7 +2855,8 @@ YJ.editor = (function () {
           delete state.tl.racePhUrl[rrid];
           rmPut(rrid, null);
         } else rmPut(rrid, { mode: "remove" });                 /* 盘上已配置 → 提交时删键 */
-        renderTL();
+        /* §133：撤销草稿（1→0）/ 标记移除已配置（0→1）都改草稿数 → 全量 render 重算保存条 */
+        render();
       }
       else if (d.tledit !== undefined) openTLEdit(Number(d.tledit));
       else if (d.tldel !== undefined) tlDelete(Number(d.tldel));
@@ -2862,7 +2866,9 @@ YJ.editor = (function () {
         rmDropAll();                            /* 比赛配图草稿一并清（§82.9 同属时间线页草稿） */
         if (state.mode === "draft") tlDrop();   /* draft：放弃 = 清掉草稿箱里的整表快照，回到远端表现值 */
         state.tl.dirty = false; state.tl.edit = null; state.tl.err = ""; state.tl.report = null; state.tl.del = -1;
-        loadTimeline().then(renderTL);
+        /* §133：清箱后草稿数 1→0 → 全量 render 让提交按钮变灰、草稿箱计数归位（此前只 renderTL，
+         * 按钮停在亮态，点提交才报「草稿箱是空的」） */
+        loadTimeline().then(render);
       } else if (d.tlAtag !== undefined) tlAddTag();
       else if (d.tlDtag !== undefined) { editEV().tags.splice(Number(d.tlDtag), 1); renderTL(); }
     });
