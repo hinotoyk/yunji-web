@@ -1067,3 +1067,211 @@
 - **截图工具坑（务必记住）**：本机 Edge 无头 `--window-size=390,900` 的**实际 `innerWidth` 是 492px**（系统 DPI 125%，且设 288 仍得 492，存在下限），截图宽 390 却按 492 布局渲染 → 右侧一律「看起来被裁」，极易误判成页面横向溢出。**判断布局健康必须用实测值**（`docEl.scrollWidth === innerWidth`、`#chart.clientWidth === canvas 宽`），不能只看截图边缘。测量办法：把带 `setTimeout` 检测脚本的页面副本放进 `dist/pages/`，跑完即删。
 - **验证**：`npm run build` ✓ 7.09s（含 data 复制与 races-bundle 对账）；四处回退在 `front/` 与 `dist/` 双侧 grep 残留为 0（仅注释提及）；`node --check` 两个改动 JS 通过；mb 下拉、mb 赏金图、PC 赏金图、编辑台脏状态四项均已实测。
 - **kzn 同步**：`editor.js` 本次改动为 `putFieldDraft` 新增 + 两处调用点 + `pinsHTML` 中文名，属双仓共用文件，须同步并逐字节对账。
+
+### §141 · 页内样式拆分（审查 §6.2-1）+ kpiHTML 去重（§6.2-4）（2026-10-30 傍晚）
+
+处理审查报告 6.2 的四项工程化债务中的两项（另两项见 §141 末「未做」）。**核心结论：审查报告 6.2-1 只点了 races/stats/datechart 三页，实际全站有 9 个文件带 `<style>`，漏了 leaderboard 与 timeline——按报告原文的范围做会留下两处同样的混排债务。**
+
+#### ① 全站 `<style>` 盘点（实测，字符数）
+
+| 文件 | 体积 | 行数 | 处置 |
+|---|---|---|---|
+| `datechart.html` | 8.21 kB | 108 | **拆** → `datechart-page.css` |
+| `races.html` | 7.98 kB | 85 | **拆** → `races-page.css` |
+| `stats.html` | 4.28 kB | 59 | **拆** → `stats-page.css` |
+| `leaderboard.html` | 2.51 kB | 27 | **拆** → `leaderboard-page.css`（报告漏点） |
+| `timeline.html` | 2.28 kB | 37 | **拆** → `timeline-page.css`（报告漏点） |
+| `edit-timeline.html` | 1.02 kB | 10 | 保留内联 |
+| `index.html` | 530 B | 9 | 保留内联 |
+| `profile.html` | 432 B | 6 | 保留内联 |
+| `pedigree.html` | 137 B | 2 | 保留内联 |
+
+**分档标准**：≥2 kB 且规则数 > 4 → 拆；<1 kB 且规则 ≤ 4 条 → 保留。5 个大块合计 25.3 kB，占全部内联样式 **92.3%**；4 个小块合计 2.1 kB（pedigree 仅 1 条规则 137 B），拆出去是「多一个 HTTP 请求换 137 字节」的负优化，故保留。**目标不是「零内联 style」，而是消除大块混排。**
+
+#### ② 拆分原则（不得违反）
+
+- **每页一个独立文件，禁止合并成 `pages.css`**——否则变成「只一页用的样式让所有页白下载」，正是审查报告明确反对的做法。
+- **禁止搬进 `theme.css`**：`.filter-*`/`.pg-*`/`.f-*`/`.st-*`/`.dc-*`/`.lb-*`/`.tl` 前缀全站均只一页使用（已 grep 核实）。
+- 纯搬移：**不改选择器名、不改声明值**。5 个文件头均写明「本文件内容来源 + 为何不共享 + 加载顺序约束」。
+
+#### ③ ★ 重要发现：Vite 不保证 CSS link 顺序（架构约束）
+
+**实测**：源码里写 `theme.css` → `xxx-page.css`，dist 产物里变成 **`xxx-page.css` → `theme.css`**（单页独有 chunk 排在共享 chunk 之前）。`timeline.html` 因仍有 `<style>` 块而保住原序，其余 5 页全部反序。
+
+**后果与约束（已写入 5 个文件头）**：
+- 页面 CSS **禁止**用同名选择器覆盖 `theme.css` 的类（`.card`/`.seg`/`.yj-kpi`…）——会**静默失效**，且极难排查（页面「改了没生效」）。
+- 确需覆盖时用父级作用域/双类名提高特异性（如 `.st-mat .card`）。
+- 当前 5 个文件均不含对 theme 同名类的覆盖，故顺序无关：
+  - `races` 的 `#page.embed` 靠 **id 优先级**胜出，与顺序无关；
+  - `datechart` 的 `.yj-kpi .trophy` 是**新增子选择器**（theme 里无 `.trophy` 规则，已 grep 确认 `theme-*.css` 零匹配），不是覆盖；
+  - `timeline` 与 `timeline-cards.css` 的同名类（`.tl-date`/`.tl-node`/`.tl-card`/`.tl-cardwrap`）**只定义不同属性**，不构成覆盖。
+
+#### ④ ★ 拆分暴露并修复了一个既有 CSS bug（timeline 轴线）
+
+原 `timeline.html` 页内 `<style>` 的注释第 2 行写：
+
+```
+ * 卡片视觉（.tl-card/.tl-photo/.tl-body/.tl-racename*/.tl-tag*/.tl-kpis/...
+```
+
+`.tl-racename*/` 里的 `*/` 被 CSS 解析器当作**注释结束符** → 注释提前截断 → 紧随其后的 `.tl{position:relative}` 选择器被污染成 `.tl-tag*/.tl-kpis/... .tl`（无效选择器）→ **整条规则被浏览器丢弃，从未生效**。
+
+- 内联在 HTML 里时 esbuild 静默容忍；拆成独立 `.css` 后 minify 报 `▲ [WARNING] Unexpected "*" [css-syntax-error]` 才暴露。
+- **实际影响**：`.tl::before`（轴线）是 `position:absolute`，失去定位祖先 → 相对**初始包含块**定位 → 轴线从页面最顶端贯穿整个视口，穿过页头标题区（对照图 `tests/css-split-check/{ok,bug}.png`）。
+- **修复**：注释里 `*` 与 `/` 之间加空格，并加警示注释说明此坑。修复后 `.tl{position:relative}` 正常生效，轴线正确限制在容器内（年份胶囊下方 → 末卡片）。
+- ⚠ **这是本次唯一的视觉变化，且是修正而非回归**。若有人质疑「拆分应零变化」，答复：零变化指的是「不该有的变化为零」，此处的变化是把一个一直错位的装饰线放回正确位置。
+
+#### ⑤ kpiHTML 去重（§6.2-4）
+
+`stats.html` 原有两份**逐字节相同**的 3 行闭包 `kpi(k,v,cls)`（原 295-297 行于 `renderKpis()`、703-705 行于 `srkKpis()`），只有调用处不同。收口为文件级 `function kpiHTML(k, v, cls)`（`stats.html:220`），7 处调用改指它。**纯 JS 局部函数合并，不碰 CSS/构建/双仓文件，零风险。**
+
+#### ⑥ 验证（构建 + 产物核对）
+
+- `cd front && COPY_DATA=skip npm run build` ✓ 5.67s，**零 CSS 语法警告**（修复前有 `Unexpected "*"`）。
+- **规则级比对（最严格的一步）**：用 `git show HEAD:front/pages/X.html` 取原 `<style>` 块，去注释/展平 `@media`/规范化空白后与新 `.css` 做集合比较：
+
+| 页面 | 原规则数 | 新规则数 | 结果 |
+|---|---|---|---|
+| stats | 37 | 37 | 零丢失 |
+| races | 61 | 61 | 零丢失 |
+| datechart | 76 | 76 | 零丢失 |
+| leaderboard | 13 | 13 | 零丢失 |
+| timeline | 29 | 29 | 唯一「差异」= `.tl{position:relative}` 由污染态修正为正确态（即 ④ 的 bug） |
+
+- **产物**：`theme` 63.22 kB / gzip 11.45；`races` 5.21 / 1.43；`datechart` 5.71 / 1.55；`stats` 2.63 / 0.92；`timeline` 1.70 / 0.68；`leaderboard` 0.99 / 0.48；`timeline-cards` 2.29 / 0.91。
+- **源码残留**：5 页 `<style>` 计数全部为 0。
+- **关键规则存在性**：`#page.embed` / `table.yj-lib.fs155` / `.dc-dp-panel` / `.yj-kpi .trophy` / `.lb-pager` / `.st-mat` / `.tl{position:relative}` 在对应 dist CSS 中均命中。
+- **对照图**：`tests/css-split-check/timeline-ok.html`（修复版）vs `timeline-bug.html`（`.tl{position:static}` 模拟原 bug）→ `ok.png` / `bug.png`。**本机 Edge 无头截图静默失败（exit=0 但无文件），改用 Chrome**（`/c/Program Files (x86)/Google/Chrome/Application/chrome.exe --headless=new --virtual-time-budget=3000`）——记入工具坑。
+
+#### ⑦ 未做（本轮明确不做）
+
+- **间距令牌落地（§6.2-2）**：实测各页几乎不存在裸 `padding:12px` 之类行内硬编码，硬编码集中在页内 `<style>` 里且多为非标准值（`5px 7px`/`9px`），无法用四档令牌等值替换。真正可换的是 Tailwind utility（`p-4`→`p-card`），但那会**改变实际间距值**（16→24px），属视觉调整而非重构 → 不单独立项。
+- **暗色模式（§6.2-3）**：`.yj-ov-*` 的渐变描边 + 双重径向雾需整体重新设计（不是换色），`.yj-tm--*` 需 200/900 色阶全反，涉 11 页逐类补变体，且无暗色设计稿 → 风险高，待设计驱动。
+
+### §142 · 批量表格去掉键盘流 + 修复草稿箱放弃后的双向联动（2026-10-30 傍晚）
+
+用户三点反馈：①③ 批量表格（基本信息 / 比赛记录两个页签）**去掉快捷键文案、不做快捷按键兼容**；② 改了基本信息表格后点草稿箱「放弃修改」，表格没变化。第 ② 条是真 bug，且比赛记录页签同样受影响。
+
+#### ① 键盘流移除（edit-table.html + editor-table.js）
+
+**删掉的**：
+- `edit-table.html` 页头那行「点单元格就地改 · Enter 下移 / Tab 右移 / 方向键移动 · Ctrl+Z 撤销 / Ctrl+Y 重做 · Delete 清格」整条 `<span>`（历史：10-30 上午刚从 `<kbd>` 键帽回退成纯文本，下午直接删除）。
+- `editor-table.js` `bind()` 里网格级 `keydown` 整块：Enter↓ / Tab→ / 方向键移动 / F2 进编辑 / Delete·Backspace 清格 / Ctrl+Z·Y 撤销重做。
+- `moveCursor()` 与 `cursorTd()` 两个函数（只服务上述导航，移除后成死代码）。`setCursor()` **保留**——`commitEdit` / `applyCell` 提交后仍要重新给该格画光标环。
+
+**保留的**（属编辑控件基础行为，不是「电子表格快捷键」）：
+- 格内输入框 `Enter` = 提交本格（不再自动下移）；`Escape` = 取消本格。
+- `Tab` 不拦截 → 走浏览器默认焦点移动，触发 `blur` 里的 `commitEdit`，效果与「点别处」一致。
+- 工具条「↶ 撤销 / ↷ 重做」按钮、`Esc` 退出全屏。
+
+#### ② 放弃草稿后表格不刷新（真 bug，两条路径）
+
+**根因**：`editor.js::discardOne()` 按草稿类型分支，只有 `__rc`（比赛记录）派发了 `yj-rc-dropped` 事件通知表格页；**普通马匹字段草稿（`ov`）的分支只 `draftDropHorse()` 删 localStorage + `render()`，不派发任何事件**。而 `editor-table.js` 把 ov 草稿水合成表格行（`S.pendOv` / `S.sh.basic.rows`），内存状态没人通知刷新 → 用户看到「点了放弃，表格没变化」。
+
+**修复**：
+- `editor.js::discardOne()` 的普通马匹分支补 `document.dispatchEvent(new CustomEvent("yj-ov-dropped", { detail: { id } }))`，与 `__rc` 分支的 `yj-rc-dropped` 完全对称。
+- `editor-table.js::init()` 新增 `yj-ov-dropped` 监听：清掉该马的 `touchedOv` / `pendOv` 痕迹、丢弃正在编辑的格，再 `hydrateBasic()` + `rebuild()` + `updateSummary()`。
+  - 为什么要清 `touchedOv`：`hydrateBasic()` 会按当前草稿重建 `startOv`，但若残留 `touchedOv[id]`，下一次 `syncOv()` 会用旧 `startOv` 把已放弃的值写回草稿箱。
+- ⚠ **双仓同步（2026-10-30 用户定稿：暂缓，本仓不做）**：`editor.js` 与 kzn 仓逐字节对齐，本次改动**只落在 yunji-web**；kzn 侧一律不动——已核实 `Z:/IdeaProjects/kzn-web` 工作区 `git status` 输出为空、17:00 后零文件改动。**同步时机与内容由用户本人决定并执行**，本仓不发起任何 kzn 侧写入。
+
+**三条路径都已实测**（见 ③）：草稿箱放弃基本信息、草稿箱放弃比赛记录（`__rc`）、底部「放弃修改」按钮（`resetSession`）——三者都能让表格回到原值。
+
+#### ③ 自动化验收（16 项全通过）
+
+用同源 iframe 包装页驱动真实页面（`dist/pages/_selftest-linkage.html`，跑完即删），断言结果截图存 `tests/css-split-check/linkage-test-allpass.png`：
+
+| 组 | 断言 |
+|---|---|
+| 基本信息 | 初始化 / 277 行渲染 / 点击出输入框 / Enter 提交生效 / ov 草稿写入 / **Escape 取消仍有效** / **方向键与 Delete 已无效果** / 抽屉打开 / **★ 放弃后表格恢复原值** / localStorage 清空 / **撤销按钮有效** |
+| 比赛记录 | 849 行渲染 / 改格生效 / d.rc 写入 / **★ `__rc` 放弃后恢复原值** |
+| 底部按钮 | 改格生效 / **★ 「放弃修改」后恢复原值**（headless 下 `confirm` 恒 false，测试内覆盖为 true） |
+
+**测试工具坑（务必记住，本次踩了 3 个）**：
+1. **本机 Edge 无头截图静默失败**（exit=0 但无文件）→ 改用 Chrome（`/c/Program Files (x86)/Google/Chrome/Application/chrome.exe`）。
+2. **`--virtual-time-budget` 会加速 `setTimeout`**：用定时器轮询等数据加载，15 秒虚拟时间在真实几毫秒内耗尽 → 数据还没回来就超时。改用 **MutationObserver**（由真实 DOM 变化驱动，不受虚拟时间影响）。
+3. **iframe 的初始 `about:blank` 文档 `readyState` 就是 `complete`**：用 `readyState` 判断「已加载」会误判并拿到空文档，测试永久挂起。必须等真正的 `load` 事件，并用 `location.href` 含目标页名二次确认。
+
+#### ④ 未做
+
+- 未删除工具条的撤销/重做按钮（用户只要求去快捷键，按钮仍在且实测有效）。
+- 未改动 `Delete` 键在**输入框内**的原生行为（那是文本框自带，不属于表格导航）。
+
+### §143 · 修复提交成功后批量表格页不重水合（2026-10-30 深夜）
+
+§142 修好了「**放弃**」路径的双向联动，但「**提交**」路径存在同构的缺口。用户验收时提出："编辑相关的都应该和草稿箱、提交按钮同步，提交后也要该清空的清空，该回显的回显。"
+
+#### ① 根因
+
+`editor.js::submitDrafts()` 成功后的 `then` 里：
+
+```js
+return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
+  state.table = r[0] || {};
+  render();        // ← 只重渲染编辑页自己
+});
+```
+
+- **该清空的确实清空了**：`draftDropHorse()` 已在提交过程中把 `localStorage` 里的 ov 草稿逐条删掉，草稿箱计数、摘要、提交按钮都正确归零。
+- **该回显的没回显**：`editor-table.js` 里的 `S.pendOv` / `S.sh.basic.rows` 是**独立的内存副本**，`editor.js` 的 `render()` 影响不到它。表格页没有任何事件可听 → 提交后仍显示"改过的值"。
+- **更严重的次生 bug**：此时用户再改任意一格，`syncOv()` 会拿**提交前的** `S.startOv` 做 diff，把刚提交掉的旧值当成"用户改动"重新写回 `localStorage` → **已提交的草稿原地复活**。
+
+`__rc`（比赛记录）分支此前只派发了 `yj-rc-dropped`（一个"放弃"语义的事件），提交路径没有任何等价物。
+
+#### ② 修复（两处，各一行 + 一个监听）
+
+**`editor.js`** — 在 `loadTable()` 完成**之后**派发（顺序关键：此时 `state.table` 已换成最新远端表，表格页重算 `savedOf` 才准）：
+
+```js
+return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
+  state.table = r[0] || {};
+  render();
+  document.dispatchEvent(new CustomEvent("yj-draft-committed"));
+});
+```
+
+**`editor-table.js::init()`** — 新增监听，全量重水合：
+
+```js
+document.addEventListener("yj-draft-committed", function () {
+  S.touchedOv = {}; S.pendOv = {};   /* 清掉"用户已改过"的痕迹，否则下次 syncOv 会复活旧草稿 */
+  S.startRc = null;
+  S.undoJ = []; S.redoJ = [];        /* 撤销/重做栈指向的是已提交的旧状态，必须清空 */
+  if (S.editing) { S.editing = null; }
+  hydrateBasic(); hydrateRaces();
+  rebuild();                         /* 内含 syncToolbar + updateSummary */
+});
+```
+
+为什么三样都要清：
+
+| 清什么 | 不清的后果 |
+|---|---|
+| `S.touchedOv` / `S.pendOv` | `hydrateBasic()` 会按新草稿重建 `startOv`，但残留 `touchedOv` 会让下一次 `syncOv()` 用旧 `startOv` 把已提交值写回草稿箱 |
+| `S.undoJ` / `S.redoJ` | 撤销一次会把表格退回到"提交前"的本地状态，与远端已提交的内容冲突，用户以为提交失败 |
+| `S.editing` | 若提交时正好有格在编辑，`blur` 会在重水合后对已换掉的 DOM 提交，写入错行 |
+
+⚠ 双仓同步同样**暂缓**（用户定稿：kzn 侧不动），本次 `editor.js` 改动只落 yunji-web。
+
+#### ③ 自动化验收
+
+**提交链路 16 项全通过**（`tests/css-split-check/_selftest-commit.html`，截图 `commit-test.png`）
+用同源 iframe 驱动真实 `dist/pages/edit-table.html`，`win.fetch` 覆写为只拦截 `api.github.com`（`editor.js::gh()` 用原生 fetch），其余透传；假 PAT 写入 `YJ.util.storeKey('gh.token')`。
+
+| 阶段 | 断言 |
+|---|---|
+| 前置 | 页面就绪 277 行 / GitHub mock + 假 token 就位 |
+| 改一格 | 改格生效 / 摘要反映改动 / 草稿箱按钮显示计数 / 提交按钮已启用 |
+| 提交 | 提交成功（mock 返回 commit url） |
+| **该清空的清空** | **★ localStorage 草稿已清空** / **★ 摘要已归零** / **★ 草稿箱计数归零** / **★ 提交按钮回到 disabled** |
+| **该回显的回显** | **★ 已派发 `yj-draft-committed`** / **★ 表格已重水合回官方值** / **★ 撤销·重做栈已清空** / **★ 草稿箱抽屉显示空态** |
+| **提交后再改** | **★ 只写入本次改动，未复活已提交的「香港馬名」** |
+
+> 关于"表格回官方值"：`loadTable()` 读的是本地静态 `data/manual_overrides.json`（不走 GitHub），所以提交成功后表格必然回到该文件的官方值——这正是**正确**表现（本地静态数据不会因提交而变），也证明草稿已从内存态剥离。真机上 GitHub 侧的 `manual_overrides.json` 已更新，下次构建后静态文件同步。
+
+**放弃路径回归 9 项全通过**（`_selftest-linkage.html`，截图 `linkage-regression.png`）
+确认 §142 的三条放弃路径未被 §143 的改动破坏：A. 草稿箱放弃基本信息（★ 恢复原值 + ★ 草稿已清空）/ B. 草稿箱放弃比赛记录 `__rc`（★ 恢复「回田」）/ C. 底部「放弃修改」（★ 恢复）/ D. 方向键 · Delete 已无效果（快捷键确实移除了）。
+
+#### ④ 未做
+
+- 未让提交后自动 `git pull` 或刷新 `data/manual_overrides.json`——静态数据随构建更新，属构建期职责，不在运行期做网络回写。
+- 未在提交成功后自动关闭草稿箱抽屉（用户可能还想看提交结果），只把它渲染成空态。

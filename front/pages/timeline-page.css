@@ -1,0 +1,59 @@
+/* ============================================================
+ * 航迹线（timeline.html）· 本页专属样式：中央轴线布局骨架
+ *
+ * 分层（三份 CSS 各管一段，互不重叠）：
+ *   1. theme.css            —— 全站 token / 通用组件（.card/.seg/.yj-kpi/.yj-grade…）
+ *   2. timeline-cards.css   —— 卡片**视觉原子**（卡片壳/图位/文本区/赛事名/事件标签/迷你数据条/徽章变体）
+ *                              与 edit-timeline.html 共享
+ *   3. 本文件               —— 本页**布局骨架**（.tl 居中轴线 + 左右交替 grid + 节点颜色）
+ *                              edit-timeline 是「单侧一行」，grid-template 完全不同 → 不共享
+ *
+ * ★ 不要把本文件并进 timeline-cards.css：那会让 edit-timeline.html 白下载本页骨架
+ *   （约 2.3 kB），而它根本用不到 .tl::before / .tl-item.left/right。
+ *
+ * ★★ 加载顺序不保证（实测）：Vite 会把「单页独有」的 CSS chunk 排在共享 chunk 之前。
+ *   本文件与 timeline-cards.css 有同名类（.tl-date / .tl-node / .tl-card / .tl-cardwrap），
+ *   但**只定义不同属性**（本文件管 grid 定位与颜色，cards 管排版与尺寸），不构成覆盖 → 顺序无关。
+ *   ⚠ 以后若要在本文件改 .tl-date 的 font-size 等 cards 已定义的属性，会因顺序而静默失效；
+ *   那种改动应改 timeline-cards.css（两页同步）或提高特异性。
+ * ============================================================ */
+
+/* ===== 本页专属：中央轴线布局骨架 =====
+ * 卡片视觉（.tl-card / .tl-photo / .tl-body / .tl-racename-* / .tl-tag-* / .tl-kpis / .tl-kpi / .tl-node 底座 /
+ * .tl-date 排版 + 徽章变体）全部在 timeline-cards.css，此处**不要**再复制一份。
+ * ⚠ 注释里写通配类名时，`*` 与 `/` 之间必须留空格 —— 否则 `*​/` 会被当成注释结束符，
+ *   注释提前截断、后半段文本被当 CSS 解析（2026-10-30 拆文件时由 minify 报出，原内联时静默）。
+ * 这里只放「居中轴线 + 左右交替」的 grid 骨架 —— 编辑台预览是单侧一行布局，两者不通用。 */
+.tl{position:relative}
+.tl::before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:2px;transform:translateX(-50%);background:#ececec}
+.tl-item{position:relative;display:grid;grid-template-columns:1fr 56px 1fr;grid-template-rows:auto;align-items:center;padding-bottom:26px}
+.tl-item.right{grid-template-areas:"date node card"}
+.tl-item.left{grid-template-areas:"card node date"}
+.tl-date{grid-area:date}
+.tl-item.right .tl-date{text-align:right;padding-right:20px}
+.tl-item.left .tl-date{text-align:left;padding-left:20px}
+.tl-node{grid-area:node;justify-self:center}
+.tl-cardwrap{grid-area:card;min-width:0;width:min(480px,100%)}
+.tl-item.right .tl-cardwrap{justify-self:start}
+.tl-item.left .tl-cardwrap{justify-self:end}
+.tl-item.left .tl-photo{order:2}
+.tl-item.left .tl-body{order:1}
+/* 年份：骑在轴线上的居中胶囊 */
+.tl-yearrow{position:relative;display:flex;justify-content:center;padding:4px 0 20px;z-index:1}
+.tl-year{background:#fff;border:1px solid #ececec;border-radius:100px;padding:3px 18px;font-size:13px;font-weight:700;color:#171717}
+@media (max-width:768px){
+  .tl::before{left:7px;transform:none}
+  .tl-item.right,.tl-item.left{grid-template-columns:16px minmax(0,1fr);grid-template-areas:"node date" "node card";align-items:start;padding-bottom:14px}
+  .tl-date{align-self:end;text-align:left !important;padding:0 0 4px !important}
+  .tl-node{margin-top:20px;align-self:start}
+  .tl-cardwrap{width:100%}
+  .tl-card{aspect-ratio:auto}
+  .tl-yearrow{justify-content:flex-start;padding:2px 0 14px 28px}
+}
+/* 节点颜色 = 该事件最高优先级标签的类别色 */
+.tl-node.first{background-color:#0aa7a0}
+.tl-node.graded{background-color:#0a3b7e}
+.tl-node.gen{background-color:#e8742a}
+.tl-node.sire{background-color:#d5302a}
+.tl-node.award{background-color:#dca026}
+.tl-node.manual{background-color:#8a9096}   /* 人工节点：中性灰 */

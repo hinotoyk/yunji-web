@@ -801,6 +801,13 @@ YJ.editor = (function () {
         return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
           state.table = r[0] || {};
           render();
+          /* 2026-10-30 修（§143）：提交成功 → 通知批量表格页**全量重水合**。
+           * 此前只有 reCommitted 分支派发 yj-rc-dropped；基本信息（ov）草稿虽然在上面的
+           * draftDropHorse() 里已清空 localStorage，但表格页内存中的 S.pendOv / S.sh.basic.rows
+           * 仍是提交前的值 → 用户看到「提交成功了，表格还显示改过的值，像没生效」；
+           * 更糟的是再改一格时 syncOv() 会用旧 S.startOv 把已提交的值重新写回草稿箱。
+           * 放在 loadTable() 之后派发：此时 state.table 已换成最新远端表，表格页重算 savedOf 才准。 */
+          document.dispatchEvent(new CustomEvent("yj-draft-committed"));
         });
       }).catch(function (e) {
         if (e && e.refConflict && remaining > 0) {
@@ -2752,6 +2759,13 @@ YJ.editor = (function () {
           state.draft = {}; state.note = ""; state.editing = "";
           state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {};
         }
+        /* 2026-10-30 修：批量表格页（edit-table.html）把 ov 草稿水合成表格行，
+         * 此前放弃一条**字段草稿**只删了 localStorage，表格页内存里 S.pendOv / rows 仍是旧值
+         * → 用户看到「点了放弃，表格没变化」。与 __rc 分支的 yj-rc-dropped 对称，
+         * 这里派发 yj-ov-dropped 让表格页重新水合基本信息表。
+         * ⚠ 双仓共用文件（与 kzn 逐字节对齐）：此改动**待用户本人手动同步**到 kzn。
+         * 2026-10-30 定稿：本仓不发起任何 kzn 侧写入，kzn 何时同步由用户决定。 */
+        document.dispatchEvent(new CustomEvent("yj-ov-dropped", { detail: { id: did } }));
         render();
       }
     }

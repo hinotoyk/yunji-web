@@ -1,0 +1,106 @@
+/* ============================================================
+ * 比赛记录（races.html）· 本页专属样式
+ *
+ * 为什么独立成文件（2026-10-30 UI 审查 §6.2-1）：
+ *   原先是 races.html 的页内 <style> 块（85 行 / 7.98 kB，全站第二大），与页面结构、
+ *   筛选逻辑、跨马表渲染 JS 混排。按 timeline-cards.css 的先例拆出。
+ *
+ * 内容分三块：
+ *   1. 独立模式「维度条」—— .filter-* 筛选卡与 chip、.f-tag 已选马胶囊、.f-csel 紧凑选择器挂载点
+ *   2. 分页条 —— .pager / .pg-*
+ *   3. 跨马表宽屏密度分档 —— table.yj-lib.fs125~fs155（JS 按表内留白自动挂档，见页内注释）
+ *   另有 #page.embed 一条：profile 内嵌时的满宽覆盖（id 选择器，优先级高于 Tailwind utility，顺序无关）
+ *
+ * ★ 不要把这些规则搬进 theme.css：.filter-* / .pg-* / .f-* 前缀全站仅本页使用
+ *   （徽章/卡片那部分早已收口在 theme.css，此处不再重复）。
+ *
+ * ★★ 加载顺序不保证（实测）：Vite 会把「单页独有」的 CSS chunk 排在共享 chunk（theme.css）
+ *   之前。本文件不含对 theme.css 同名类的覆盖（#page.embed 靠 id 优先级胜出，不依赖顺序），
+ *   故顺序无关。若要在此覆盖 theme.css 的类，须提高特异性。
+ * ============================================================ */
+
+/* embed 模式：贴满 iframe 宽度并去掉页级留白，还原 profile 内嵌时的样式（宽度必须 100%，覆盖独立页 80% 布局） */
+#page.embed{max-width:none;padding:0;width:100%}
+
+/* ===== 等级 / 着顺 / 人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
+ * 已收敛到 theme.css @layer components（单一出处，与日期统计明细共用同一份样式定义）===== */
+
+/* ===== 独立模式：全库跨马查询 维度条 ===== */
+.filter-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.filter-title{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.filter-title::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:#0aa7a0;margin-right:8px;vertical-align:-2px}
+.f-reset{margin-left:auto;border:1px solid #e5e5e5;border-radius:8px;padding:4px 12px;font-size:12px;color:#737373;background:#fff;cursor:pointer;transition:all .15s}
+.f-reset:hover{border-color:rgba(239,68,68,.55);color:#ef4444;background:#fef2f2}
+.filter-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:14px 16px 10px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px}
+@media (max-width:768px){.filter-grid{grid-template-columns:1fr}}
+.filter-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
+.filter-row.wide{grid-column:1/-1}
+.filter-label{flex:none;width:76px;padding-top:6px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#8a8a8a;text-transform:uppercase}
+.filter-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.filter-chip{display:inline-flex;align-items:center;height:26px;padding:0 11px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;line-height:1;cursor:pointer;user-select:none;white-space:nowrap;transition:border-color .15s,color .15s,background .15s,box-shadow .15s}
+.filter-chip:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
+.filter-chip.on{border-color:#0aa7a0;background:#e6f6f5;color:#0b6b64;font-weight:600;box-shadow:inset 0 0 0 1px #0aa7a0}
+.filter-chip.on:hover{background:#d9f1ef}
+.filter-grp{flex:none;align-self:center;margin-right:2px;padding:2px 8px;border-radius:6px;background:#f2f4f5;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#7a7a7a;text-transform:uppercase}
+/* ===== 出走马筛选（tag 型多选）：已选马胶囊；搜索添加复用 public/selector.js 组件（compact+multi） ===== */
+.f-tag{display:inline-flex;align-items:center;gap:1px;height:26px;padding:0 3px 0 11px;border:1px solid #0aa7a0;border-radius:7px;background:#e6f6f5;color:#0b6b64;font-size:12px;font-weight:600;white-space:nowrap}
+.f-tag-x{width:19px;height:19px;border:0;border-radius:5px;background:transparent;color:#0b6b64;font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.f-tag-x:hover{background:rgba(10,167,160,.16);color:#ef4444}
+/* compact selector 挂载点（出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重共用）：圆角 7px / 边框 #e3e3e3 / 去下边距
+ * —— 与 .filter-chip 完全统一；与 tag 胶囊同高，下拉绝对定位随组件自身
+ * 宽度（§77 用户反馈圈选「下拉框太短」）：定宽 238px（198×1.2，+20%）。
+ * ⚠ 必须用显式 width 而非 flex-basis —— Chromium 算 .filter-chips 固有宽时忽略嵌套 flex 项的
+ * flex-basis（实测按 input 默认 ~20ch≈188px 收缩）；显式 width 的固有贡献才是 238px。
+ * min-width:0 + 默认 shrink：窄 PC 窗口（~800px 半列 220px）回缩防溢出（旧 min-width:198 反而会顶破）。
+ * mb 追加：chips 行占满 + 挂载点 flex 拉满整行（移动端搜索框惯例；375px 窄屏受行宽所限 ~229px 回缩） */
+.f-csel .box{border-radius:7px;border-color:#e3e3e3}
+.f-csel .box:hover{border-color:rgba(10,167,160,.55)}
+.f-csel .yj-sel{margin-bottom:0}
+.f-csel{width:238px;min-width:0;max-width:100%}
+@media (max-width:768px){.filter-chips{flex-grow:1}.f-csel{width:auto;flex:1 1 238px}}
+/* 自定义 tooltip（悬停显示聚合含义）——维度 chip 用；马名列头/明细标题的 .yj-name-toggle
+ * 同款浮层已随该控件移入 theme.css（两页共用，单一出处） */
+.filter-chip[data-tip]{position:relative}
+.filter-chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
+.filter-chip[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
+/* 马名跳转（.hjump）与马名语言切换（.yj-name-toggle）已移至 theme.css（单一出处，两页共用） */
+/* ===== 分页条 ===== */
+.pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:14px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;font-size:12px}
+.pg-nav{height:28px;padding:0 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.pg-nav:hover:not(:disabled){border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
+.pg-nav:disabled{opacity:.4;cursor:not-allowed}
+.pg-btn{min-width:28px;height:28px;padding:0 6px;border:1px solid transparent;border-radius:7px;background:transparent;color:#444;font-size:12px;cursor:pointer;transition:all .15s}
+.pg-btn:hover{background:#f2f4f5}
+.pg-btn.on{border-color:#0aa7a0;background:#0aa7a0;color:#fff;font-weight:600}
+.pg-ell{color:#9aa0a6;padding:0 2px}
+.pg-info{margin:0 4px;color:#737373;white-space:nowrap}
+@media (max-width:768px){.pager{justify-content:center;gap:4px}.pg-btn{min-width:26px;height:26px}.pg-nav{padding:0 9px}}
+/* 独立 PC 跨马表：窄屏（≤1180px iframe，约等于 1280 显示器）字号再收紧一档，避免 2 字列/日期/徽章被省略 */
+@media (max-width:1180px){table.yj-lib{font-size:10.5px}}
+
+/* ===== 独立 PC 跨马表：宽屏密度分档（v7）=====
+ * JS 按「表内留白 ≤40%」自动给 table.yj-lib 挂 fs125/fs135/fs145/fs155（表体 12.5~15.5px）。
+ * 24 寸及以下（容器宽 < 约 1700px）留白本就 35% 上下 → 稳在默认 11.5px，老观感零变化；
+ * 27 寸（容器 ≈2050px）落到 fs155：表体 15.5px、行高 +2px、徽章同步放大。
+ * 注水分配（v7 新增）：上限随档位走（TIER_CAP）——档位越高赛事名/文本列越收、数字列越放，
+ * 27 寸赛事名不再一列独大；15/24 寸 slack 被文本列吃光、撞不到上限 → 行为与 v6 完全一致。
+ * 只作用在跨马表（.yj-lib），内嵌表 / mb 卡片 / 其它页面不受影响。 */
+table.yj-lib.fs125{font-size:12.5px}
+table.yj-lib.fs135{font-size:13.5px}
+table.yj-lib.fs145{font-size:14.5px}
+table.yj-lib.fs155{font-size:15.5px}
+table.yj-lib.fs125 th{font-size:11px}
+table.yj-lib.fs135 th{font-size:11.5px}
+table.yj-lib.fs145 th{font-size:12px}
+table.yj-lib.fs155 th{font-size:12.5px}
+table.yj-lib.fs125 td{padding-top:7px;padding-bottom:7px}
+table.yj-lib.fs135 td,table.yj-lib.fs145 td,table.yj-lib.fs155 td{padding-top:8px;padding-bottom:8px}
+table.yj-lib.fs125 .yj-no{width:28px;height:28px;font-size:14px}
+table.yj-lib.fs135 .yj-no{width:30px;height:30px;font-size:15px}
+table.yj-lib.fs145 .yj-no{width:31px;height:31px;font-size:15.5px}
+table.yj-lib.fs155 .yj-no{width:33px;height:33px;font-size:16.5px}
+table.yj-lib.fs125 .yj-grade{font-size:11.5px}
+table.yj-lib.fs135 .yj-grade{font-size:12.5px;padding:2px 8px}
+table.yj-lib.fs145 .yj-grade{font-size:13px;padding:2px 8px}
+table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}

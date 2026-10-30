@@ -8,67 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
-<style>
-/* 分段控件样式单一出处 = theme.css @layer components（.seg，与 datechart 单位切换同款；2026-xx 收口） */
-/* KPI 条（2026-10-30 UI 审查 §29）：原 .st-kpis/.st-kpi 六行定义与 datechart .dc-* / leaderboard
- * .lb-* 逐字节相同 → 收口到 theme.css 的 .yj-kpis/.yj-kpi（三页共用），本页不再本地定义。
- * 下方 .st-trophy 是奖杯图标尺寸，属本页特有，保留。 */
-.st-trophy{font-size:15px;margin-right:2px}
-/* 通算战绩 [73-70-69-466]：**格式保留连字符**，四段底色连成「一整条」——
- * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
- * 因此底色连续、过渡柔和无硬边；圆角只留在整条两端（首段左圆 / 末段右圆），中缝直角。 */
-.st-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
-.st-brk b,.st-chip{color:#171717;font-weight:600;padding:1px 6px}
-.st-chip{border-radius:4px}
-.st-brk i{font-style:normal;color:#171717;font-weight:600;padding:1px 5px}
-.st-brk b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
-.st-brk b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
-.st-brk-lg{font-size:19px}
-/* 着顺分布条 */
-.st-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#f2f2f2}
-.st-bar i{display:block;height:100%}
-/* 比率带 */
-.st-rate b{font-size:16px;font-variant-numeric:tabular-nums}
-.st-rate .lbl{color:#8a8a8a}
-/* 矩阵 tab */
-.st-tab{padding:4px 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;font-size:12.5px;color:#52525b;cursor:pointer;transition:all .15s}
-.st-tab:hover{border-color:rgba(10,167,160,.5);color:#0b6b64}
-.st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
-/* 矩阵表 */
-.st-mat{width:100%;border-collapse:collapse;font-size:13px}
-.st-mat th{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:center;white-space:nowrap}
-.st-mat th.left{text-align:left}
-.st-mat td{padding:6px 10px;border-bottom:1px solid #f2f2f2;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.st-mat td.left{text-align:left;white-space:normal}
-.st-mat th[data-sk]{cursor:pointer;user-select:none}
-.st-mat th[data-sk]:hover{color:#0aa7a0}
-/* 排序图标悬出表头文字右侧：负右外边距抵消自身宽度，不占表头长度、不影响文字居中 */
-.st-mat .st-sa{display:inline-block;width:12px;margin:0 -14px 0 2px;color:#c4c8cb;font-size:10px}
-.st-mat th[data-sk]:hover .st-sa,.st-mat .st-sa.on{color:#0aa7a0}
-/* 基准行（总体平均）= 中性灰参照色：与率列「绿=高于/红=低于总体平均」的数据语义色分离，不再撞绿 */
-.st-mat tr.base td{background:#f4f4f5;font-weight:600;color:#52525b}
-.st-mat tr.yj-drill{cursor:pointer}
-.st-mat tr.yj-drill:hover td{background:#f4fbfa}
-.st-mat tr.yj-drill:hover td.left{text-decoration:underline;text-decoration-color:#0aa7a0;text-underline-offset:3px}
-/* 相对基准差色标 */
-.yj-up{color:#0b8a84;font-weight:600}
-.yj-down{color:#d64545;font-weight:600}
-/* 样本少 */
-.yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
-td.dim .num{color:#c6c6ca}
-/* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源） */
-/* 图例 */
-.st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
-.st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
-.st-legend i.dot{width:7px;height:7px;border-radius:50%}
-/* 空态：本页原有一条 .hint-empty 覆盖（26px 版），但页内无任何元素使用该类 → 2026-10-30 UI 审查 §30
- * 一并删除；需要空态时用 theme.css 的 .hint-empty（60px 大留白）或 .hint-empty--sm（26px 紧凑）。 */
-/* 月龄明细表（v2）：行=月龄 · 世代子行——组首行上缘加分隔线区分月龄组 */
-.st-mat tr.grp td{border-top:2px solid #e4e4e7}
-@media (max-width:768px){
-  .st-brk-lg{font-size:14px}
-}
-</style>
+<link rel="stylesheet" href="stats-page.css">
 </head>
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
@@ -214,6 +154,13 @@ var i18n = YJ.i18n;   /* i18n.js 已在上方显式引入（D4：删去唯一多
  * → 着别分布条与图例用它（4 段，完赛口径） */
 var BR = YJ.raceRows.PLACE_BG;   /* 通算战绩括号四段配色（= 着顺四段：1/2/3 浅色三件套 + 着外浅灰）：同源 race-rows.js PLACE_BG（§76 去掉首位出走段；D5 合并 BR/CBR 双别名） */
 
+/* KPI 单格 HTML（2026-10-30 UI 审查 §6.2-4）：本文件此前在 renderKpis() 与 srkKpis() 里
+ * 各持一份**逐字节相同**的闭包副本，改结构要记得改两处。收口为文件级单一出处。
+ * cls：可选强调类（hi = 青绿高亮 / dim = 灰）；结构对应 theme.css 的 .yj-kpi / .k / .v。 */
+function kpiHTML(k, v, cls) {
+  return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+}
+
 /* ---- 统计切面：all / yYYYY(自然年) / gYYYY(生产年) ---- */
 function scopeKey() {
   return st.yVal === "all" ? "all" : (st.yMode === "gen" ? "g" + st.yVal : "y" + st.yVal);
@@ -292,14 +239,11 @@ function renderKpis() {
     brk += '<b style="background:' + BR[i] + '">' + v + '</b>';
   });
   brk += ']</span>';
-  var kpi = function (k, v, cls) {
-    return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
-  };
   var tr = trophyMerged().length;
   document.getElementById("kpis").innerHTML =
-    kpi("通算战绩", brk) +
-    kpi("总赏金", manYen(b.pr)) +
-    kpi("重赏胜利", '<span class="st-trophy">🏆</span>' + tr, tr ? "hi" : "dim");
+    kpiHTML("通算战绩", brk) +
+    kpiHTML("总赏金", manYen(b.pr)) +
+    kpiHTML("重赏胜利", '<span class="st-trophy">🏆</span>' + tr, tr ? "hi" : "dim");
 }
 function renderDistBar() {
   var b = baseMerged();
@@ -700,19 +644,16 @@ function srkEmbed() {   /* 图表组件脚本只加载一次；加载失败可�
 function srkKpis(data) {
   var his = data.history || [];
   var last = his[his.length - 1] || {}, prev = his.length > 1 ? his[his.length - 2] : null;
-  var kpi = function (k, v, cls) {
-    return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
-  };
   /* 赏金格式复用 YJ.util.manYen（§48 单一出处；入参円，derived 口径万円 ×1e4） */
   var dp = prev && last.prizeOverall != null && prev.prizeOverall != null ? last.prizeOverall - prev.prizeOverall : null;
   var dpHtml = dp == null ? "—" : dp === 0 ? "±0" :
     '<span class="' + (dp > 0 ? "yj-up" : "yj-down") + '">' + (dp > 0 ? "+" : "−") + manYen(Math.abs(dp) * 10000) + "</span>";
   var rank = last.rank;
   document.getElementById("srkKpis").innerHTML =
-    kpi("当前赏金", last.prizeOverall != null ? manYen(last.prizeOverall * 10000) : "—", "hi") +
-    kpi("排名", rank == null ? "—" : "第" + rank + "位", rank != null && rank <= 3 ? "hi" : "") +
-    kpi("较前快照", dpHtml) +
-    kpi("最新快照", last.date ? last.date.slice(5).replace("-", "/") : "—", "dim");
+    kpiHTML("当前赏金", last.prizeOverall != null ? manYen(last.prizeOverall * 10000) : "—", "hi") +
+    kpiHTML("排名", rank == null ? "—" : "第" + rank + "位", rank != null && rank <= 3 ? "hi" : "") +
+    kpiHTML("较前快照", dpHtml) +
+    kpiHTML("最新快照", last.date ? last.date.slice(5).replace("-", "/") : "—", "dim");
 }
 var srkSeq = 0;
 function renderSireRank() {

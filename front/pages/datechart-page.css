@@ -1,0 +1,130 @@
+/* ============================================================
+ * 日期统计（datechart.html）· 本页专属样式
+ *
+ * 为什么独立成文件（2026-10-30 UI 审查 §6.2-1）：
+ *   原先是 datechart.html 的页内 <style> 块（108 行 / 8.21 kB，全站最大），与日历渲染、
+ *   日期选择器逻辑、明细渲染 JS 混排。按 timeline-cards.css 的先例拆出。
+ *
+ * 内容分四块：
+ *   1. 窗口切换 ‹ › 与「快速定位日期」选择器 —— .dc-nav / .dc-dp-*（本页最复杂的组件，约 30 行）
+ *   2. KPI 带奖杯图标 —— .yj-kpi .trophy（仅补图标尺寸，条体本身在 theme.css）
+ *   3. 通算战绩括号 .dc-brk* / 日历 .dc-cal·.dc-cell / 年视图 .dc-ym*
+ *   4. 口径切换入场淡入 .dc-fade
+ *
+ * ★ 不要把这些规则搬进 theme.css：.dc-* 前缀全站仅本页使用。
+ *
+ * ★★ 关于 .yj-kpi .trophy 与加载顺序：
+ *   这条规则挂在 theme.css 的 .yj-kpi 之下，是**新增子选择器**（theme.css 里没有 .trophy 规则），
+ *   不是对同名类的覆盖 —— 因此本文件排在 theme.css 之前或之后都生效，无层叠依赖。
+ *   但 Vite 实测会把「单页独有」CSS chunk 排在共享 chunk 之前，所以**不要**在此写
+ *   `.yj-kpi{padding:...}` 这类与 theme.css 同选择器同属性的规则（会静默失效）。
+ * ============================================================ */
+
+/* ===== 等级/着顺/人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
+ * 已收敛到 theme.css @layer components，并与 front/public/race-rows.js 配套：
+ * 明细与比赛页（内嵌）共用同一份样式与同一份行渲染代码，改一次两处同步 ===== */
+
+/* 单位切换（天/周/月/年 分段控件）：样式单一出处 = theme.css @layer components（.seg，与 stats 场地切换同款；2026-xx 收口） */
+
+/* ===== 窗口切换 ‹ › ===== */
+.dc-nav{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:15px;line-height:1;cursor:pointer;transition:all .15s}
+.dc-nav:hover:not(:disabled){border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
+.dc-nav:disabled{opacity:.35;cursor:not-allowed}
+
+/* ===== 快速定位日期选择器（Element date-picker 风格：统一挂在窗口标签上，随口径出 日/周/月/年 面板） ===== */
+.dc-dp-label{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:0;border-radius:7px;background:transparent;color:#171717;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;transition:all .15s;white-space:nowrap}
+.dc-dp-label:hover{background:#f0faf9;color:#0b6b64}
+.dc-dp-caret{font-size:9px;color:#8a8a8a;transition:transform .15s}
+.dc-dp[data-on=true] .dc-dp-label{color:#0b6b64;background:#f0faf9}
+.dc-dp[data-on=true] .dc-dp-caret{transform:rotate(180deg);color:#0aa7a0}
+.dc-dp-panel{position:absolute;left:0;top:calc(100% + 8px);z-index:30;width:312px;padding:10px;border:1px solid #e5e5e5;border-radius:10px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.dc-dp-hd{display:flex;align-items:center;gap:2px;margin-bottom:8px}
+.dc-dp-nav{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:#52525b;font-size:12px;line-height:1;cursor:pointer}
+.dc-dp-nav:hover:not(:disabled){background:#f0f0f0;color:#0b6b64}
+.dc-dp-nav:disabled{opacity:.3;cursor:not-allowed}
+.dc-dp-lab{flex:1;text-align:center;font-size:13px;font-weight:600;color:#171717;white-space:nowrap}
+.dc-dp-grid{display:grid;gap:2px}
+.dc-dp-cell{display:inline-flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:6px;background:transparent;font-size:12px;color:#3a3a3e;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .12s}
+.dc-dp-cell:hover{background:#f0f0f0}
+.dc-dp-cell.out{color:#c0c0c4}                       /* 邻月补位 */
+.dc-dp-cell.dis{color:#d4d4d8;cursor:default;pointer-events:none}  /* 范围外禁用 */
+.dc-dp-cell.today{box-shadow:inset 0 0 0 1px #0aa7a0}
+.dc-dp-cell.cur,.dc-dp-cell.cur:hover{background:#0aa7a0;color:#fff;font-weight:600}
+.dc-dp-wrow{display:grid;grid-template-columns:38px repeat(7,1fr);gap:2px;border-radius:7px}
+.dc-dp-wrow .dc-dp-cell{width:100%}
+.dc-dp-wnum{display:inline-flex;align-items:center;justify-content:center;height:30px;border-radius:6px;background:transparent;border:0;font-size:10.5px;color:#8a8a8a;cursor:pointer;font-variant-numeric:tabular-nums}
+.dc-dp-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:1px}
+.dc-dp-wrow.hl .dc-dp-wnum{color:#0b6b64;font-weight:700}
+.dc-dp-ft{display:flex;justify-content:flex-end;margin-top:8px;padding-top:8px;border-top:1px solid #ececec}
+.dc-dp-ft button{border:0;background:transparent;color:#0b6b64;font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:6px}
+.dc-dp-ft button:hover{background:rgba(10,167,160,.1)}
+
+/* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 =====
+ * 2026-10-30 UI 审查 §29：条体样式收口到 theme.css .yj-kpis/.yj-kpi（与 stats / leaderboard 同一份），
+ * 本页只保留奖杯图标尺寸（.trophy 挂在 .yj-kpi 之下，属本页特有）。 */
+.yj-kpi .trophy{font-size:16px;margin-right:2px}
+
+/* ===== 通算战绩 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
+ * 四段底色连成「一整条」：数字格各用该段底色，连字符格用「上一色→下一色」线性渐变接缝，
+ * 底色连续、过渡柔和无硬边；圆角只留在整条两端（KPI 大括号 5px / 日历小格 3px） ===== */
+.dc-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
+.dc-brk b{color:#171717;font-weight:600}
+.dc-brk i{font-style:normal;color:#171717;font-weight:600;padding:0 1px}
+.dc-brk b:first-of-type{margin-left:2px;border-radius:3px 0 0 3px}
+.dc-brk b:last-of-type{margin-right:2px;border-radius:0 3px 3px 0}
+.dc-brk-lg{font-size:19px}
+.dc-brk-lg b{padding:1px 6px}
+.dc-brk-lg i{padding:1px 5px}
+.dc-brk-lg b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
+.dc-brk-lg b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
+
+/* ===== 日历（月网格：周一行 + 日格，行首尾补真实邻月日 .dc-outm） ===== */
+.dc-cal{display:flex;flex-direction:column;gap:3px}
+.dc-dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dc-dow{text-align:center;font-size:10.5px;font-weight:600;color:#8a8a8a;padding:2px 0}
+.dc-wrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;border-radius:10px}
+.dc-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:2px}
+.dc-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:66px;padding:5px 7px;border:0;border-radius:8px;background:transparent;cursor:pointer;text-align:left;transition:background .15s}
+.dc-cell:hover{background:#f0f0f0}
+.dc-cell.run{background:#f5f5f5}
+.dc-cell.run:hover{background:#ededed}
+.dc-cell.dc-sel{box-shadow:inset 0 0 0 2px #0aa7a0}
+/* 邻月补位格：真实日期 + 数据照出，但日期/赏金降灰、格底不套 win/run 色 → 一眼分得出不是本月
+ * （降灰语义同日期面板 .dc-dp-cell.out） */
+.dc-cell.dc-outm .dc-d{color:#b4b4b8}
+.dc-cell.dc-outm .dc-prz{color:#b8b8bc}
+.dc-cell.dc-outm:hover{background:#f7f7f7}
+.dc-cell-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
+.dc-d{font-size:12.5px;font-weight:600;color:#52525b;font-variant-numeric:tabular-nums}
+.dc-cell.win .dc-d{color:#0aa7a0}
+.dc-gw{font-size:10px;line-height:1.3;white-space:nowrap}
+.dc-prz{font-size:10.5px;color:#8a8a8a;font-variant-numeric:tabular-nums}
+
+/* ===== 年视图：12 个月卡 ===== */
+.dc-ym{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.dc-ym:hover{border-color:rgba(10,167,160,.55);background:#f7fdfd}
+.dc-ym-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
+.dc-ym b{font-size:13px;font-weight:700;color:#171717}
+.dc-ym.zero b{color:#a1a1aa}
+.dc-ym.zero .dc-brk,.dc-ym.zero .dc-prz{color:#c6c6ca}
+.dc-ym-prz{font-size:12px;color:#52525b;font-variant-numeric:tabular-nums}
+.dc-ym-n{font-size:10.5px;color:#8a8a8a}
+
+/* ===== 明细：行/卡片渲染与样式统一走 race-rows.js + theme.css（与比赛页内嵌表同一份代码） ===== */
+
+/* ===== 手机（≤768px）：日历格只留 日期+🏆，通算战绩/赏金收进 KPI 带与明细 ===== */
+@media (max-width:768px){
+  .dc-cell{min-height:38px;padding:3px 5px;gap:1px}
+  .dc-d{font-size:11px}
+  .dc-cell .dc-brk,.dc-cell .dc-prz{display:none}
+  .dc-gw{font-size:9px}
+  /* KPI 条 padding / 字号已由 theme.css 的 .yj-kpi 媒体查询统一（§29），这里只管奖杯图标 */
+  .dc-brk-lg{font-size:14px}
+  .yj-kpi .trophy{font-size:13px}
+  .yj-mb-item{margin-right:10px}
+}
+/* 口径/单位切换的入场反馈（2026-10-30 UI 审查 §20）：日历区与明细区整块重绘时挂一次淡入，
+   让「内容已经换了」这件事有可感知的信号，而不是瞬间替换。时长压到 150ms，不拖慢连点切换。 */
+.dc-fade{animation:dcFadeIn .15s ease}
+@keyframes dcFadeIn{from{opacity:.35}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dc-fade{animation:none}}

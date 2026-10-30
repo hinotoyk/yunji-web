@@ -560,8 +560,10 @@ YJ.editorTable = (function () {
     S.editing = { td: td, ri: ri, key: key, old: old, input: inp, row: r };
     inp.addEventListener("blur", function () { commitEdit(); });
     inp.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); commitEdit(); moveCursor(1, 0, true); }
-      else if (e.key === "Tab") { e.preventDefault(); commitEdit(); moveCursor(0, 1, true); }
+      /* 只保留编辑控件的基础行为（2026-10-30 用户定稿）：Enter 提交本格、Escape 取消本格。
+       * 不再做 Enter↓ / Tab→ 的单元格跳转；Tab 不拦截 → 走浏览器默认焦点移动，
+       * 触发 blur 里的 commitEdit，效果与「点别处」一致。 */
+      if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
       else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
     });
   }
@@ -643,32 +645,14 @@ YJ.editorTable = (function () {
     return null;
   }
 
-  /* ---------------- 光标导航 ---------------- */
+  /* ---------------- 光标环（仅「点击后高亮当前格」用） ----------------
+   * cursorTd / moveCursor 已于 2026-10-30 删除：它们只服务键盘导航（方向键/Enter↓/Tab→），
+   * 键盘流移除后无调用方。setCursor 保留 —— commitEdit / applyCell 提交后要重新给该格画环。 */
   function setCursor(td) {
     $all("td.ring-2", els.grid).forEach(function (x) { x.classList.remove("ring-2", "ring-primary/60", "ring-inset"); });
     if (!td) { S.cur = null; return; }
     td.classList.add("ring-2", "ring-primary/60", "ring-inset");
     S.cur = { ri: +td.getAttribute("data-ri"), key: td.getAttribute("data-c") };
-  }
-  function cursorTd() {
-    return S.cur ? locateCell(S.cur.ri, S.cur.key) : null;
-  }
-  function moveCursor(dr, dc, thenEdit) {
-    if (!S.cur) return;
-    var s = sh();
-    var vi = -1;
-    s.view.forEach(function (v, i) { if (v.i === S.cur.ri) vi = i; });
-    if (vi < 0) vi = 0;
-    vi = Math.max(0, Math.min(s.view.length - 1, vi + dr));
-    var vis = layout().filter(function (c) { return !s.hidden[c.k]; });
-    var ci = 0;
-    for (var i = 0; i < vis.length; i++) if (vis[i].k === S.cur.key) { ci = i; break; }
-    ci = Math.max(0, Math.min(vis.length - 1, ci + dc));
-    var ri = s.view[vi].i, key = vis[ci].k;
-    var td = locateCell(ri, key);
-    if (!td) return;
-    td.scrollIntoView({ block: "nearest", inline: "nearest" });
-    if (thenEdit) startEdit(td); else setCursor(td);
   }
 
   /* ---------------- 粘贴导入 / 导出 TSV ---------------- */
@@ -802,6 +786,31 @@ YJ.editorTable = (function () {
       document.addEventListener("yj-rc-dropped", function () {
         S.startRc = null; hydrateRaces(); rebuild(); updateSummary();
       });
+      /* 草稿箱里放弃了一条**字段草稿**（editor.js::discardOne 的普通马匹分支）→ 重新水合基本信息表。
+       * 2026-10-30 修：此前该分支只删 localStorage 不派发事件，表格页内存里的 S.pendOv 与
+       * S.sh.basic.rows 仍是改过的值，表现为「点了放弃，表格没变化」。
+       * hydrateBasic() 会按当前草稿重建 startOv/pendOv/rows，所以这里先清掉该马的会话痕迹，
+       * 免得残留的 touchedOv 让下一次 syncOv 把旧 startOv 写回草稿箱。 */
+      document.addEventListener("yj-ov-dropped", function (ev) {
+        var id = ev && ev.detail ? String(ev.detail.id || "") : "";
+        if (id) { delete S.touchedOv[id]; delete S.pendOv[id]; }
+        if (S.editing) { S.editing = null; }      /* 正在编辑的格一并丢弃（放弃草稿语义） */
+        hydrateBasic();
+        rebuild();                                 /* 内含 syncToolbar + updateSummary */
+      });
+      /* 提交成功（editor.js::submitDrafts 的成功 then）→ 两张表全量重水合。
+       * 2026-10-30 修（§143）：此前提交成功只对 races 派发 yj-rc-dropped，基本信息无人通知，
+       * 表格继续显示已提交的旧值、摘要与草稿箱计数也不归零。
+       * 提交后远端表已更新、本地草稿已清，所以：会话状态全清 + 撤销栈清空（不能再回退已提交的改动）
+       * + 重新水合 = 表格回到官方值、摘要归零、草稿箱计数归零、提交按钮自动回到 disabled。 */
+      document.addEventListener("yj-draft-committed", function () {
+        S.touchedOv = {}; S.pendOv = {};
+        S.startRc = null;
+        S.undoJ = []; S.redoJ = [];
+        if (S.editing) { S.editing = null; }
+        hydrateBasic(); hydrateRaces();
+        rebuild();                                 /* 内含 syncToolbar + updateSummary */
+      });
       return null;
     }).catch(function (e) {
       if (els.meta) els.meta.textContent = "数据加载失败：" + e;
@@ -828,24 +837,11 @@ YJ.editorTable = (function () {
       if (e.target.checked) sh().sel[ri] = 1; else delete sh().sel[ri];
       syncToolbar();
     });
-    els.grid.addEventListener("keydown", function (e) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
-      if (S.editing) return;
-      if (!S.cur) return;
-      var map = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
-      if (map[e.key]) { e.preventDefault(); moveCursor(map[e.key][0], map[e.key][1], false); }
-      else if (e.key === "Enter" || e.key === "F2") { e.preventDefault(); var td = cursorTd(); if (td) startEdit(td); }
-      else if (e.key === "Delete" || e.key === "Backspace") {
-        var td2 = cursorTd();
-        if (!td2) return;
-        var key = S.cur.key;
-        var c = null; layout().forEach(function (x) { if (x.k === key) c = x; });
-        var rDel = rowAt(S.cur.ri);
-        if (!c || c.ro || !rDel || (key === "出走馬名" && rDel._st !== "new")) return;
-        if (String(rDel[key] == null ? "" : rDel[key]) !== "") applyCell(rDel, key, "");
-      }
-    });
+    /* 网格级键盘导航已移除（2026-10-30 用户定稿「不做快捷按键兼容」）：
+     * 原绑定 Enter↓ / Tab→ / 方向键移动 / F2 进编辑 / Delete·Backspace 清格 / Ctrl+Z·Y 撤销重做。
+     * 现交互只有「点击单元格就地编辑」，撤销/重做只走工具条按钮。
+     * 保留：格内输入框的 Enter 提交、Escape 取消（编辑控件基础行为，见 startEdit）。
+     * ⚠ 不要复活这段：文案已从 edit-table.html 移除，加回键盘流会造成「界面不说、键却能用」的隐藏行为。 */
     if (els.sheets) els.sheets.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-sheet]");
       if (b) switchSheetUI(b.getAttribute("data-sheet"));

@@ -11,7 +11,8 @@
 <body class="bg-muted/50 text-foreground antialiased">
 
 <!-- 2026-10 v3「工作台」改版（docs/UI优化记录.md §90）+ §104 批量表格：编辑导航第 2 项。
-     键盘电子表格流：整页密表 + 单元格就地编辑 + Enter↓/Tab→/方向键 + Ctrl+Z·Y 撤销重做。
+     交互（2026-10-30 用户定稿）：整页密表 + 点击单元格就地编辑，**不做键盘电子表格流**
+     （无 Enter↓/Tab→/方向键/Delete 清格/Ctrl+Z·Y 绑定；撤销/重做只走工具条按钮）。
      编辑链路复用 editor.js（草稿箱 / GitHub 连接 / 一次性原子提交 / 报告语言零改动）：
      基本信息 → manual_overrides.json（d.ov）；比赛记录 → races_edits.json（d.rc，SCHEMA §9）。
      §82.13：mb 端不开放编辑——应用容器 max-md 隐藏，只留电脑端提示。 -->
@@ -27,9 +28,10 @@
     <!-- 页内页签已撤下（2026-10-25 用户定稿）：编辑台导航统一收进外壳侧栏「编辑」组（front/index.html #editNav） -->
     <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
       <span class="text-[13.5px] font-bold text-secondary-foreground">批量表格</span>
-      <!-- 快捷键说明：2026-10-30 曾改 <kbd> 键帽胶囊，用户复看后认为多余（键帽反而抢视线），
-           已回退为一整行纯文本。 -->
-      <span class="text-[11.5px] text-muted-foreground">点单元格就地改 · Enter 下移 / Tab 右移 / 方向键移动 · Ctrl+Z 撤销 / Ctrl+Y 重做 · Delete 清格</span>
+      <!-- 快捷键说明已删除（2026-10-30 用户定稿）：不做键盘电子表格流兼容。
+           历史：2026-10-30 上午曾改 <kbd> 键帽胶囊，用户复看认为多余 → 回退为纯文本；
+           当日下午用户进一步要求「去掉文案、不做快捷按键兼容」→ 整条移除，
+           对应的 Enter↓/Tab→/方向键/Delete/Ctrl+Z·Y 键盘处理同步删除（见 editor-table.js bind()）。 -->
     </div>
     <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-chart3"></i>待保存（本页改动）</span>

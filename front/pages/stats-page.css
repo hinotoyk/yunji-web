@@ -1,0 +1,77 @@
+/* ============================================================
+ * 倾向统计（stats.html）· 本页专属样式
+ *
+ * 为什么独立成文件（2026-10-30 UI 审查 §6.2-1）：
+ *   原先是 stats.html 的页内 <style> 块（59 行 / 4.28 kB），与页面结构、业务 JS 混排，
+ *   读源码要先跳过几十行 CSS。按 timeline-cards.css 的先例拆出。
+ *
+ * ★ 不要把这些规则搬进 theme.css：
+ *   本文件全部是**只有 stats 页用**的选择器（.st-* 前缀 + .yj-up/.yj-down/.yj-sm），
+ *   进全站 CSS 会让其余 10 个页面白下载。
+ *
+ * ★★ 加载顺序不保证（实测）：Vite 会把「单页独有」的 CSS chunk 排在共享 chunk（theme.css）
+ *   之前，源码里写的 theme → 本文件的顺序在 dist 里会变成 本文件 → theme。
+ *   因此本文件**禁止**用同名选择器覆盖 theme.css 的类（如 .card / .seg / .yj-kpi）——
+ *   会静默失效。确需覆盖时用双类名/父级作用域提高特异性（如 `.st-mat .card`）。
+ *   当前本文件不含任何对 theme.css 同名类的覆盖，故顺序无关。
+ * ============================================================ */
+
+/* 分段控件样式单一出处 = theme.css @layer components（.seg，与 datechart 单位切换同款；2026-xx 收口） */
+/* KPI 条（2026-10-30 UI 审查 §29）：原 .st-kpis/.st-kpi 六行定义与 datechart .dc-* / leaderboard
+ * .lb-* 逐字节相同 → 收口到 theme.css 的 .yj-kpis/.yj-kpi（三页共用），本页不再本地定义。
+ * 下方 .st-trophy 是奖杯图标尺寸，属本页特有，保留。 */
+.st-trophy{font-size:15px;margin-right:2px}
+/* 通算战绩 [73-70-69-466]：**格式保留连字符**，四段底色连成「一整条」——
+ * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
+ * 因此底色连续、过渡柔和无硬边；圆角只留在整条两端（首段左圆 / 末段右圆），中缝直角。 */
+.st-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
+.st-brk b,.st-chip{color:#171717;font-weight:600;padding:1px 6px}
+.st-chip{border-radius:4px}
+.st-brk i{font-style:normal;color:#171717;font-weight:600;padding:1px 5px}
+.st-brk b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
+.st-brk b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
+.st-brk-lg{font-size:19px}
+/* 着顺分布条 */
+.st-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#f2f2f2}
+.st-bar i{display:block;height:100%}
+/* 比率带 */
+.st-rate b{font-size:16px;font-variant-numeric:tabular-nums}
+.st-rate .lbl{color:#8a8a8a}
+/* 矩阵 tab */
+.st-tab{padding:4px 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;font-size:12.5px;color:#52525b;cursor:pointer;transition:all .15s}
+.st-tab:hover{border-color:rgba(10,167,160,.5);color:#0b6b64}
+.st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
+/* 矩阵表 */
+.st-mat{width:100%;border-collapse:collapse;font-size:13px}
+.st-mat th{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:center;white-space:nowrap}
+.st-mat th.left{text-align:left}
+.st-mat td{padding:6px 10px;border-bottom:1px solid #f2f2f2;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-mat td.left{text-align:left;white-space:normal}
+.st-mat th[data-sk]{cursor:pointer;user-select:none}
+.st-mat th[data-sk]:hover{color:#0aa7a0}
+/* 排序图标悬出表头文字右侧：负右外边距抵消自身宽度，不占表头长度、不影响文字居中 */
+.st-mat .st-sa{display:inline-block;width:12px;margin:0 -14px 0 2px;color:#c4c8cb;font-size:10px}
+.st-mat th[data-sk]:hover .st-sa,.st-mat .st-sa.on{color:#0aa7a0}
+/* 基准行（总体平均）= 中性灰参照色：与率列「绿=高于/红=低于总体平均」的数据语义色分离，不再撞绿 */
+.st-mat tr.base td{background:#f4f4f5;font-weight:600;color:#52525b}
+.st-mat tr.yj-drill{cursor:pointer}
+.st-mat tr.yj-drill:hover td{background:#f4fbfa}
+.st-mat tr.yj-drill:hover td.left{text-decoration:underline;text-decoration-color:#0aa7a0;text-underline-offset:3px}
+/* 相对基准差色标 */
+.yj-up{color:#0b8a84;font-weight:600}
+.yj-down{color:#d64545;font-weight:600}
+/* 样本少 */
+.yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
+td.dim .num{color:#c6c6ca}
+/* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源） */
+/* 图例 */
+.st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
+.st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.st-legend i.dot{width:7px;height:7px;border-radius:50%}
+/* 空态：本页原有一条 .hint-empty 覆盖（26px 版），但页内无任何元素使用该类 → 2026-10-30 UI 审查 §30
+ * 一并删除；需要空态时用 theme.css 的 .hint-empty（60px 大留白）或 .hint-empty--sm（26px 紧凑）。 */
+/* 月龄明细表（v2）：行=月龄 · 世代子行——组首行上缘加分隔线区分月龄组 */
+.st-mat tr.grp td{border-top:2px solid #e4e4e7}
+@media (max-width:768px){
+  .st-brk-lg{font-size:14px}
+}
