@@ -902,6 +902,33 @@ YJ.editor = (function () {
     return valOf(state.horse, key);
   }
   function isDirty(f) { return Object.prototype.hasOwnProperty.call(state.draft, f.key); }
+  /* 草稿写入的唯一入口（2026-10-30 修 bug）：输入框改回「原值」时必须删掉 draft 键。
+   * 原实现是 `state.draft[key] = value` 无条件写入，而 isDirty 只判断「键在不在」，
+   * 于是「输入 1 → 删空」后键仍在（值 ""）→ 行永远停在草稿态（浅橙底 + 草稿 chip），
+   * 草稿箱里也留着一条与线上无差异的改动。基线取值链与 currentValue 同源：
+   * 已存人工值 ?? 官方生效值（pinned 优先，否则 basic.json 合并值）。
+   * ⚠ 命名不能叫 setDraft：本文件照片模块已有 `setDraft(list)`（第 ~1476 行，同一闭包），
+   *   函数声明提升下后定义者胜出，字段输入会调进照片逻辑，把字段名当图片路径写进 ph 草稿
+   *   （实测症状：localStorage 里 ph={mode:"set",list:["香港馬名"]}、ov 空、输入框值被清空）。 */
+  function draftBaseline(key) {
+    var p = pinned(state.horse.id, key);
+    return p !== undefined ? String(p) : valOf(state.horse, key);
+  }
+  function putFieldDraft(key, val) {
+    var v = (val === null || val === undefined) ? "" : String(val);
+    if (v !== draftBaseline(key)) { state.draft[key] = v; return; }
+    /* 改回基线值 = 该字段彻底没有改动：内存键 + 落箱键都要删。
+     * 只删内存不够 —— hydrateHorse() 每次渲染都从 ovGet() 重灌 state.draft，
+     * 箱里那条旧值会立刻复活，表现为「清空后状态看着对了，但草稿箱仍计 1 处、
+     * 刷新后浅橙底和「草稿」chip 又回来了」。 */
+    delete state.draft[key];
+    var id = String(state.horse.id);
+    var e = ovGet(id);
+    if (e && Object.prototype.hasOwnProperty.call(e, key)) {
+      delete e[key];
+      ovPut(id, e);   /* keys 空且无 _note 时 ovPut 整条删除；有备注则只留 _note */
+    }
+  }
   function hasDraft() { return Object.keys(state.draft).length > 0; }
   function hasChanges() { return hasDraft() || photoDirty(); }
   /* 不含草稿的「已生效值」：人工保存值优先，否则官方抓取值（变更摘要与状态条的唯一口径） */
@@ -1165,9 +1192,13 @@ YJ.editor = (function () {
         return esc(YJ.i18n.t(k)) + "→" + esc(pinValueText(k, e._orig[k]));
       }).join("、") : "";
       var cur = String(state.horse && state.horse.id) === String(id);
+      /* 中文名（2026-10-30 用户要求）：已保存人工表值里只显示日文主名，翻查时对不上中文名。
+       * 取值优先级 = 香港馬名（港译）→ 自译馬名，两者都空则不占位。 */
+      var cnName = h ? String(h["香港馬名"] || h["自译馬名"] || "").trim() : "";
       var head = '<div class="flex items-baseline gap-2 min-w-0">' +
           '<button data-goto="' + esc(id) + '" class="min-w-0 truncate text-left text-[12.5px] font-bold text-accent-foreground" type="button">' +
             esc(h ? YJ.util.mainName(h) : "#" + id) + "</button>" +
+          (cnName ? '<span class="max-w-[46%] flex-none truncate text-[11px] text-muted-foreground">' + esc(cnName) + "</span>" : "") +
           '<span class="flex-none text-[9.5px] font-bold tracking-[.5px] text-muted-foreground">#' + esc(String(id).padStart(3, "0")) + "</span>" +
           '<span class="ml-auto flex-none text-[10px] font-semibold tabular-nums text-muted-foreground">' + keys.length + " 项</span>" +
           (q ? "" : '<button data-savetoggle="' + esc(id) + '" class="flex-none w-5 text-[11px] leading-[1.5] text-muted-foreground transition hover:text-foreground" type="button" title="' + (open ? "收起" : "展开") + " " + esc(h ? YJ.util.mainName(h) : "#" + id) + '">' + (open ? "▾" : "▸") + "</button>") +
@@ -2445,7 +2476,11 @@ YJ.editor = (function () {
   function draftsHTML() {
     var entries = draftEntriesHTML();
     var pinN = pinIds().length;
-    return '<div class="rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+    /* 卡片级状态色条（2026-10-30 UI 审查 §28）：两块原本同为白底灰边，只能靠标题文字区分
+     * 「还没提交」与「已线上生效」。加 3px 左色条后与行级色系语言对齐：
+     *   未提交 = chart3 橙（同 .yj-ed-state--dry / .yj-ed-row--dry）
+     *   已保存 = primary 青绿（同 .yj-ed-state--pin / .yj-ed-row--pin） */
+    return '<div class="rounded-[14px] border border-border border-l-[3px] border-l-chart3 bg-card p-5 shadow-sm max-md:p-4">' +
         '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
           '<span class="text-[13px] font-bold">未提交草稿</span>' +
           '<span class="' + TIP + '">各编辑页的改动都在这里攒着 · 「提交到 GitHub」一次性原子生效</span>' +
@@ -2456,7 +2491,7 @@ YJ.editor = (function () {
             : '<div class="py-2 text-[12px] leading-[1.7] text-muted-foreground">草稿箱是空的。在基本信息 / 航迹线页里改字段 / 图片 / 时间线都会自动进这里，攒够一次性提交。</div>') +
         "</div>" +
       "</div>" +
-      '<div class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+      '<div class="mt-3 rounded-[14px] border border-border border-l-[3px] border-l-primary bg-card p-5 shadow-sm max-md:p-4">' +
         '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
           '<span class="text-[13px] font-bold">已保存人工表值</span>' +
           '<span class="' + TIP + '">线上生效中的人工值（已叠加本浏览器未提交草稿）</span>' +
@@ -2600,14 +2635,14 @@ YJ.editor = (function () {
         return;
       }
       if (t.tagName !== "INPUT" || !t.dataset.f) return;
-      state.draft[t.dataset.f] = t.value;
+      putFieldDraft(t.dataset.f, t.value);   /* 改回原值 = 自动删键（见 putFieldDraft） */
       state.err = "";
       softRefreshRow(t.dataset.f);
     });
     if (els.form) els.form.addEventListener("change", function (ev) {
       var t = ev.target;
       if (t.tagName !== "SELECT" || !t.dataset.f) return;
-      state.draft[t.dataset.f] = t.value;
+      putFieldDraft(t.dataset.f, t.value);
       state.err = "";
       render();
     });

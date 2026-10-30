@@ -48,15 +48,10 @@
 .dc-dp-ft button{border:0;background:transparent;color:#0b6b64;font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:6px}
 .dc-dp-ft button:hover{background:rgba(10,167,160,.1)}
 
-/* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 ===== */
-.dc-kpis{display:flex;flex-wrap:wrap}
-.dc-kpi{padding:2px 18px;border-left:1px solid #ececec}
-.dc-kpi:first-child{padding-left:2px;border-left:0}
-.dc-kpi .k{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;white-space:nowrap}
-.dc-kpi .v{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:#171717;white-space:nowrap}
-.dc-kpi .v.hi{color:#0aa7a0}
-.dc-kpi .v.dim{color:#a1a1aa}
-.dc-kpi .trophy{font-size:16px;margin-right:2px}
+/* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 =====
+ * 2026-10-30 UI 审查 §29：条体样式收口到 theme.css .yj-kpis/.yj-kpi（与 stats / leaderboard 同一份），
+ * 本页只保留奖杯图标尺寸（.trophy 挂在 .yj-kpi 之下，属本页特有）。 */
+.yj-kpi .trophy{font-size:16px;margin-right:2px}
 
 /* ===== 通算战绩 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
  * 四段底色连成「一整条」：数字格各用该段底色，连字符格用「上一色→下一色」线性渐变接缝，
@@ -112,12 +107,16 @@
   .dc-d{font-size:11px}
   .dc-cell .dc-brk,.dc-cell .dc-prz{display:none}
   .dc-gw{font-size:9px}
-  .dc-kpi{padding:2px 12px}
-  .dc-kpi .v{font-size:16px}
+  /* KPI 条 padding / 字号已由 theme.css 的 .yj-kpi 媒体查询统一（§29），这里只管奖杯图标 */
   .dc-brk-lg{font-size:14px}
-  .dc-kpi .trophy{font-size:13px}
+  .yj-kpi .trophy{font-size:13px}
   .yj-mb-item{margin-right:10px}
 }
+/* 口径/单位切换的入场反馈（2026-10-30 UI 审查 §20）：日历区与明细区整块重绘时挂一次淡入，
+   让「内容已经换了」这件事有可感知的信号，而不是瞬间替换。时长压到 150ms，不拖慢连点切换。 */
+.dc-fade{animation:dcFadeIn .15s ease}
+@keyframes dcFadeIn{from{opacity:.35}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dc-fade{animation:none}}
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
@@ -155,7 +154,7 @@
         <button id="navNext" class="dc-nav" type="button" aria-label="下一窗口">›</button>
       </div>
     </div>
-    <div id="kpis" class="dc-kpis mb-3"></div>
+    <div id="kpis" class="yj-kpis mb-3"></div>
     <div id="cal"></div>
   </div>
 
@@ -342,6 +341,16 @@ function render(){
   renderKpis(mode, key);
   renderCal(mode, key);
   renderDetail(mode, key);
+  fadeIn();   /* 整块重绘后挂一次淡入（§20）：让「口径/单位已切换」有可感知的反馈 */
+}
+
+/* 重启动画的标准写法：先摘类 → 强制 reflow → 再挂类，否则连续切换时动画不会重播 */
+function fadeIn(){
+  var el = document.getElementById("page");
+  if (!el) return;
+  el.classList.remove("dc-fade");
+  void el.offsetWidth;
+  el.classList.add("dc-fade");
 }
 
 function renderNav(mode){
@@ -363,7 +372,7 @@ function renderNav(mode){
 function renderKpis(mode, key){
   var s = statsOf(scopeRuns(mode, key));
   var kpi = function(label, value, cls){
-    return '<div class="dc-kpi"><div class="k">' + label + '</div><div class="v' + (cls ? " " + cls : "") + '">' + value + '</div></div>';
+    return '<div class="yj-kpi"><div class="k">' + label + '</div><div class="v' + (cls ? " " + cls : "") + '">' + value + '</div></div>';
   };
   var prize = s.pr ? manYen(s.pr) : (s.n ? "0万" : "—");
   document.getElementById("kpis").innerHTML =

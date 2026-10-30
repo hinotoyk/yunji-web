@@ -1029,3 +1029,41 @@
 - **判定：kzn 版正确**。结构依据（stats.html matHtml）：① `<tr class="base">` 基准行硬编码永远第一、永无 data-href → tbody `rows[2]` 恒 = 真实首行；② data-href 版的前提「首行必有下钻」被 `drillURL` 构造性否定——grade「其他」桶与未知 cond 键返回 null（stats.html 529/522 行）→ 该行渲染成无 data-href 的普通行（616 行），`split("data-href")[1]` 会静默跳过它、拿后面的行顶「首行」。
 - **实测**：kzn 数据 grade 14 桶「其他」胜率 18.2% **当前即登顶**——降序首行恰是无下钻行，data-href 版在 kzn 当场假失败（即建仓时被修正的原因）；yunji 数据现无「其他」桶、两个排序极端（新马 13.6%/OP 0.0%）均有下钻 → **纯靠数据凑巧未炸**；且 yunji 未胜利=L 同为 10.0%，无下钻桶登顶时还可能 pct 同值错行假通过（断言静默失真）。
 - **回灌**：yunji firstRow 改 tbody 版（注释补判定依据与本条指引）；`node scripts/stats/verify_stats.cjs` 全绿（193 通过 · 0 失败）。两仓该函数现已一致；脚本剩余差异均为有意站点适配（yunji 世代写死 2 与 2023+2024 字串、kzn 数据驱动 pathGens + .grp 结构断言）。
+### §139 · 全站 UI 审查与整改：KPI 条/空态/时间线卡片三处副本收口 + 12 项体验修正（2026-10-30）
+
+- **动因**：用户要求「评审现有 UI 设计并提出优化方案，只能读文件不能改」，随后升级为「按建议实施 + 写审查文档」。完整逐项记录（含被否掉的 9 条建议及其理由）= `docs/UI审查报告-2026-10-30.md`，本节只记**结论性决策**。
+- **收口（三处真实副本，本次主要收益）**：
+  1. **KPI 条** `.st-kpi`/`.dc-kpi`/`.lb-kpi` 三份六行定义逐字节相同 → 统一为 `theme.css` 的 `.yj-kpis`/`.yj-kpi`（含 mb 媒体查询）。三页本地定义删除，类名替换，各页特有图标（`.trophy`）改挂 `.yj-kpi` 之下。
+  2. **时间线卡片** `edit-timeline.html` 的 `.yj-pv` 块原是 `timeline.html` 页内 `<style>` 的人工副本 → 新建 `pages/timeline-cards.css` 装「视觉原子」（卡片壳/图位/文本区/赛事名行/事件标签/数据条/节点底座/日期排版/徽章变体双作用域），两页共同引用；**布局骨架不共享**（正式页居中轴线左右交替 vs 预览单侧一行，grid 不通用）。
+  3. **空态** `.hint-empty` 60px 版（theme.css）与 26px 版（stats/leaderboard 各自覆盖）并存 → 新增 `.hint-empty--sm` 紧凑变体；leaderboard 三处改用变体、stats 的死覆盖删除。
+- **体验修正（12 项）**：侧栏选中态由「实心 primary 白字」改「浅青底 + 深青字 + 左侧 3px 竖条」（`.nav-item::before`，scaleY 进出）；外壳切页 160ms 淡入；`profile` 搜索列 md 280px / lg 350px 分档 + mb 限高 45vh；treemap 原生 title 补占比；`races` 加跨马查询模式提示条（EMBED 分支隐藏）；`timeline` 字号下限 10.5→11；`datechart` 口径/单位切换加 150ms 淡入；`leaderboard` 重赏系列加 `#066a66` 描边（色弱可分）+ MB 分页 10→20；`pedigree` 5 代图 mb 取消 `min-width:760px`；`edit` 页首草稿提示条（MutationObserver 镜像 `#summary`，**不改 editor.js 以免与 kzn 分叉**）；`edit-table` 快捷键改 `<kbd>` 胶囊；`editor.js` 草稿箱两卡加左侧色条（橙=未提交 / 青绿=已保存）。
+- **主动否掉的建议（详见审查文档第三节）**：手机菜单钮改 fixed（净高度相等、会压页头）、名字四槽 items-baseline（flex-col 下会对齐到标签）、年份胶囊缩进 28→23px（28 本就对齐卡内文字）、分节条 0 值空洞（色块照常铺满）、相册 1/N 指示器（早已存在）、宽屏密度分档（早已存在）、KPI 均值基准（需后端 bench 字段）、保存条收起（唯一提交入口，风险>收益）、pedigree 补 md:w-[90%]（定宽内容不该满铺）。
+- **验证**：`cd front && COPY_DATA=skip npm run build` ✓ 8.70s；产物核对——`.yj-kpi` 6 规则 + 2 媒体查询齐备、`.hint-empty--sm` 层叠在 `.hint-empty` 之后、`.nav-item:before` 已输出、旧 `.st-/dc-/lb-kpi` 零残留、`timeline-cards.css` 两页共同引用且顺序在 theme 之后、`index.html` 仅剩 logo 的 `bg-primary`。
+- **对照截图（2026-10-30 追补）**：审查文档第二节「逐项对照图解」含 7 张改前/改后并排图（侧栏选中态 / 跨马查询提示条 / 编辑台草稿提示 / 草稿箱两卡色条 / 赏金双系列描边 / 快捷键 kbd / 5 代血统窄屏），源页 = `tests/ui-review-2026-10-30/*.html`，产物 = `docs/assets/ui-review-2026-10-30/*.png`，用 Edge 无头渲染（`--headless=new --virtual-time-budget=3000 --screenshot`，**虚拟时间预算必须给，否则截到空白图**）。截图页的「改后」栏引用真实 `dist/assets/theme-*.css`，属规格级示意而非线上像素复刻；三处视觉零变化的收口（KPI 条/时间线卡片/空态）不放截图只做文字说明。
+- **kzn 同步**：`editor.js`（草稿卡色条）与 `pedigree.js`（窄屏 min-width）两处为双仓共用文件，必须同步并逐字节对账；其余按 kzn 页面集取舍（见审查文档 6.3）。
+
+### §140 · 用户复看 §139 后的回退（4 项）+ 新增（1 项）+ 三个真 bug 修复（2026-10-30 下午）
+
+用户看过 §139 的线上效果后逐条反馈：**4 项判定为「多余/变丑」要求撤掉，1 项要求补内容，另报 2 个 mb 端 bug**。本节记结论与根因，不改上一节的记录（保留决策演进）。
+
+- **回退 4 项（撤回 §139 对应改动）**：
+  1. `races` 跨马查询模式提示条整条删除（筛选条自带「筛选 · FILTER」标题，模式本就易辨，多一行是噪音）。JS 里 `modeHint` 隐藏分支同步删除。
+  2. `edit` 页首草稿提示条整条删除（含 MutationObserver 镜像脚本）——「本匹有 N 处未提交改动…」与底部保存条信息重复。
+  3. `leaderboard` 重赏系列 `borderColor:#066a66 / borderWidth:1.5` + 图例 `inset box-shadow` 全部撤掉，回纯色（用户原话「加了之后很丑」）。
+  4. `edit-table` 快捷键 `<kbd>` 键帽回退为一整行纯文本（键帽抢视线），页内 `<style>` 随之清空删除。
+- **新增 1 项**：`editor.js` 草稿箱「已保存人工表值」每条马名行补中文名 —— 取值 `香港馬名 || 自译馬名`（港译优先，无则自译），`max-w-[46%] truncate` 防挤压，两者都空则不占位。
+- **真 bug 1 · 编辑台脏状态不刷新（用户报：香港马名输入 1 再删掉，仍显示草稿态）**
+  - 表层原因：`isDirty()` 只判断 `state.draft` 里「键在不在」，输入后删空 → 键仍在（值 `""`）→ 永远 pending。
+  - 深层坑 A：**函数名冲突**。新增的 `setDraft(key,val)` 与照片模块既有的 `setDraft(list)`（同一闭包）重名，函数声明提升下后定义者胜出 → 字段输入调进照片逻辑，把**字段名当图片路径**写进 `ph` 草稿（实测 `ph={"1":{"mode":"set","list":["香港馬名"]}}`、`ov` 空、输入框值被清空）。改名 `putFieldDraft` 解决。
+  - 深层坑 B：**只删内存键不够**。`hydrateHorse()` 每次渲染都从 `ovGet()` 重灌 `state.draft`，箱里旧值立刻复活（表现为「状态看着对了，但草稿箱仍计 1 处、刷新后浅橙底又回来」）。必须在 `putFieldDraft` 里同时 `delete` 落箱那条（`ovPut` 在 keys 空且无 `_note` 时整条删除）。
+  - 实测验收：输入「1」→ `dry=true / chip=草稿 / 落盘 ov={"1":{"香港馬名":"1"}}`；清空 → `dry=false / chip=无 / 落盘 ov={} / 按钮回到「草稿箱」无计数`。
+- **真 bug 2 · mb 端搜索下拉不显示（profile）**
+  - 根因是 §139 自己引入的：给左列加 `max-md:max-h-[45vh] max-md:overflow-y-auto`，而 mb 端 `persistent=isPc()` 为 false → 下拉是 `position:absolute` 浮层，被祖先 `overflow-y-auto` 裁掉。
+  - 修复：左列与 `#selector` 在 mb 端一律 `block`（去掉限高与 overflow）；`selector.js` 的 `.drop` 补 `max-md:flex-none`（原 `flex-1 min-h-0` 在 `.yj-sel` 为 `h-auto` 时 `flex-basis:0` 会把列表高度算成 0，这是同一处的第二重隐患）。
+  - 实测验收：聚焦后 `hiddenClass=false / dropH=360 / items=278`，列表正常浮层显示。
+- **真 bug 3 · mb 端赏金图右侧留空（leaderboard）**
+  - 主因：`grid.right` 硬编码 112 是照 PC 的「名次+主名+互补名」rich 标签预算留的；MB 标签只有一串「3億4,429万」约 55px @10.5px，多出的 57px 全是死空白。改为 `right: mb ? 68 : 112`，label `fontSize` mb 10.5 / `distance` 3，条形区约 +38px。
+  - 次因：`.seg` 是 `inline-flex` 不换行，按钮 `padding:0 15px` 时两组控件合计约 374px > mb 可用宽 362px，撑出横向滚动条。本页 mb 端压缩到 `padding:0 9px / font-size:12.5px`（只作用于 `#modeSeg/#sliceSeg/#sexSeg/#nameSeg`，不影响 stats / datechart）。
+- **截图工具坑（务必记住）**：本机 Edge 无头 `--window-size=390,900` 的**实际 `innerWidth` 是 492px**（系统 DPI 125%，且设 288 仍得 492，存在下限），截图宽 390 却按 492 布局渲染 → 右侧一律「看起来被裁」，极易误判成页面横向溢出。**判断布局健康必须用实测值**（`docEl.scrollWidth === innerWidth`、`#chart.clientWidth === canvas 宽`），不能只看截图边缘。测量办法：把带 `setTimeout` 检测脚本的页面副本放进 `dist/pages/`，跑完即删。
+- **验证**：`npm run build` ✓ 7.09s（含 data 复制与 races-bundle 对账）；四处回退在 `front/` 与 `dist/` 双侧 grep 残留为 0（仅注释提及）；`node --check` 两个改动 JS 通过；mb 下拉、mb 赏金图、PC 赏金图、编辑台脏状态四项均已实测。
+- **kzn 同步**：`editor.js` 本次改动为 `putFieldDraft` 新增 + 两处调用点 + `pinsHTML` 中文名，属双仓共用文件，须同步并逐字节对账。

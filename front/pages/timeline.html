@@ -8,39 +8,26 @@
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
+<!-- 卡片视觉原子（卡片壳/图位/文本区/赛事名行/事件标签/迷你数据条/徽章变体）：
+     2026-10-30 UI 审查 §26 从本页与 edit-timeline.html 的重复副本里抽出，两页共用一份。 -->
+<link rel="stylesheet" href="timeline-cards.css">
 <style>
-/* ===== 等级徽章 / 1着徽章 / 马名跳转：样式单一出处 = theme.css（.yj-grade/.yj-g*/.yj-no*/.yj-no1/.hjump）
- * 本页只保留两个故意变体（页内 <style> 未分层，级联优先于 theme.css 的 @layer）：
- * ① 卡片内等级徽章不左缩进；② 1着徽章 22px 小号（底座/颜色仍走 theme.css） ===== */
-.yj-grade{margin-left:0}
-.yj-no{flex:none;width:22px;height:22px;font-size:12px}
-
-/* ===== 中央时间轴：轴线居中，卡片 16:9 左右交替，日期在卡片对侧 ===== */
+/* ===== 本页专属：中央轴线布局骨架 =====
+ * 卡片视觉（.tl-card/.tl-photo/.tl-body/.tl-racename*/.tl-tag*/.tl-kpis/.tl-kpi/.tl-node 底座/
+ * .tl-date 排版 + 徽章变体）全部在 timeline-cards.css，此处**不要**再复制一份。
+ * 这里只放「居中轴线 + 左右交替」的 grid 骨架 —— 编辑台预览是单侧一行布局，两者不通用。 */
 .tl{position:relative}
 .tl::before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:2px;transform:translateX(-50%);background:#ececec}
 .tl-item{position:relative;display:grid;grid-template-columns:1fr 56px 1fr;grid-template-rows:auto;align-items:center;padding-bottom:26px}
 .tl-item.right{grid-template-areas:"date node card"}
 .tl-item.left{grid-template-areas:"card node date"}
-.tl-date{grid-area:date;font-size:13px;font-weight:600;color:#8a9096;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tl-date{grid-area:date}
 .tl-item.right .tl-date{text-align:right;padding-right:20px}
 .tl-item.left .tl-date{text-align:left;padding-left:20px}
-.tl-node{grid-area:node;justify-self:center;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px #fff;position:relative;z-index:1}
+.tl-node{grid-area:node;justify-self:center}
 .tl-cardwrap{grid-area:card;min-width:0;width:min(480px,100%)}
 .tl-item.right .tl-cardwrap{justify-self:start}
 .tl-item.left .tl-cardwrap{justify-self:end}
-.tl-card{display:flex;overflow:hidden;min-width:0;transition:box-shadow .15s}
-.tl-card:hover{box-shadow:0 2px 10px rgba(16,24,40,.07)}
-/* 图位：横放 A4 比例（宽:高=297:210≈√2:1），贴时间轴一侧、垂直居中，四周留 10px 白边（不顶死卡缘）；无图=浅灰占位 */
-.tl-photo{flex:none;align-self:center;width:50%;margin:10px;aspect-ratio:297/210;background:#f5f5f5;overflow:hidden;border-radius:4px}
-.tl-photo img{display:block;width:100%;height:100%;object-fit:cover}
-.tl-photo.empty{display:flex;align-items:center;justify-content:center}
-.tl-photo.empty span{font-size:34px;opacity:.3;line-height:1}
-.tl-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 16px}
-/* 比赛名行（等级徽章 + 赛事名）：**恒单行**，PC / mb 同一套 —— 名字超宽由 fitRaceNames() 缩字号，
-   缩到下限仍放不下才用省略号兜底（此刻给 title，悬停可看全）。徽章 flex:none 不参与压缩。 */
-.tl-racename-row{display:flex;align-items:center;gap:8px;min-width:0}
-.tl-racename-row .yj-grade{flex:none}
-.tl-racename{flex:1 1 auto;min-width:0;font-size:15px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-item.left .tl-photo{order:2}
 .tl-item.left .tl-body{order:1}
 /* 年份：骑在轴线上的居中胶囊 */
@@ -53,8 +40,6 @@
   .tl-node{margin-top:20px;align-self:start}
   .tl-cardwrap{width:100%}
   .tl-card{aspect-ratio:auto}
-  .tl-photo{width:44%}
-  .tl-body{padding:10px 12px}
   .tl-yearrow{justify-content:flex-start;padding:2px 0 14px 28px}
 }
 /* 节点颜色 = 该事件最高优先级标签的类别色 */
@@ -64,30 +49,10 @@
 .tl-node.sire{background-color:#d5302a}
 .tl-node.award{background-color:#dca026}
 .tl-node.manual{background-color:#8a9096}   /* 人工节点：中性灰 */
-
-/* ===== 事件标签（一场比赛可叠加多枚，类别色区分） ===== */
-.tl-tag{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:2px 9px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap;position:relative}
-/* 首胜标签（后端 crown:true）右上角：斜置小皇冠（金 #dca026 同站内金） */
-.tl-tag .crown{position:absolute;top:-8px;right:-7px;width:12px;height:12px;transform:rotate(18deg);pointer-events:none;fill:#dca026}
-.tl-tag.first{background-color:rgba(10,167,160,.12);color:#0b6b64}
-.tl-tag.graded{background-color:rgba(10,59,126,.09);color:#0a3b7e}
-.tl-tag.gen{background-color:rgba(232,116,42,.13);color:#b4530c}
-.tl-tag.sire{background-color:rgba(213,48,42,.1);color:#b02a25}
-.tl-tag.award{background-color:rgba(220,160,38,.16);color:#8f6408}
-.tl-tag.manual{background-color:rgba(138,144,150,.14);color:#5c636a}   /* 人工节点标签：中性灰 */
-
-/* ===== 迷你数据条：label 上 / 值 下，细竖线分隔 ===== */
-.tl-kpis{display:flex;flex-wrap:wrap}
-.tl-kpi{padding:0 16px;border-left:1px solid #ececec}
-.tl-kpi:first-child{padding-left:2px;border-left:0}
-.tl-kpi .k{font-size:10.5px;font-weight:600;letter-spacing:.5px;color:#9aa0a6}
-.tl-kpi .v{margin-top:1px;font-size:13.5px;font-variant-numeric:tabular-nums;color:#171717}
-.tl-kpi .v.hi{color:#0aa7a0;font-weight:700}
-@media (max-width:768px){.tl-kpi{padding:0 12px}}
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
-<div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
+<div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
   <div class="page-title mb-7 flex flex-wrap items-baseline gap-x-4 gap-y-1 max-md:mt-2.5">航迹线 · TIMELINE<a id="editEntry" class="hidden text-[11.5px] font-semibold normal-case tracking-normal text-muted-foreground transition hover:text-primary max-md:hidden" href="edit-timeline.html" title="人工节点编辑（编辑台）">编辑 ↗</a></div>
   <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
   <div id="body"><div class="hint-empty">正在加载时间线数据…</div></div>
@@ -223,7 +188,7 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
  * 机制：先复位到 CSS 基准字号（单一出处 = 页内 .tl-racename）→ 量 scrollWidth/clientWidth →
  *   超宽按 0.5px 步进降字号；降到下限 NAME_FLOOR 仍放不下才交给 CSS 省略号，并挂 title 悬停看全名。
  * 幂等：每轮先复位字号，故 resize / 字体加载完成后可放心重跑。 */
-var NAME_FLOOR = 10.5;   /* 字号下限（px）：再小就伤可读性，改为省略号兜底 */
+var NAME_FLOOR = 11;     /* 字号下限（px）：再小就伤可读性，改为省略号兜底（2026-10-30 UI 审查 §15：10.5→11） */
 function fitRaceNames(){
   var els = document.querySelectorAll(".tl-racename");
   for (var i = 0; i < els.length; i++){

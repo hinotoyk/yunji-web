@@ -110,8 +110,16 @@ YJ.pedigree = (function () {
   /* 注入网格样式（Tailwind utility 已覆盖配色/字号/间距；
    * 仅 grid 布局机制与紧凑版行高需要少量结构性 CSS，定义在这里） */
   var css = `
-/* 血统网格（5 列，行列照抄旧版；配色用 Tailwind 类） */
+/* 血统网格（5 列，行列照抄旧版；配色用 Tailwind 类）
+ * min-width:760px 是 PC 下「5 代名字不被挤成省略号」的底线；窄屏（≤768px）取消该底线并整体缩一档，
+ * 让 375px 竖屏也能一屏看全结构（2026-10-30 UI 审查 §23：原样在手机上要横向滚约 2 屏才能看全）。
+ * 缩档后名字仍可能省略，弹窗 body 的 overflow-auto 保留作兜底。 */
 .pside{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:26px;gap:1px;background:#e5e5e5;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;min-width:760px}
+@media (max-width:768px){
+  .pside{min-width:0;grid-auto-rows:22px;font-size:9px}
+  .pcell{padding:1px 3px}
+  .pcell:not(.inline) .meta{font-size:7.5px;margin-top:0}
+}
 .pcell{min-width:0;padding:2px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;cursor:pointer;background:#fff}
 .pcell.m{background:#e9f1f7}
 .pcell.f{background:#f8eeee}

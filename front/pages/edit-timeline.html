@@ -7,36 +7,19 @@
 <title>航迹线编辑 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="stylesheet" href="theme.css">
+<!-- 卡片视觉原子：与 timeline.html 共用同一份（2026-10-30 UI 审查 §26）。
+     此前这里是「复制自 timeline.html 页内 <style>」的 .yj-pv 副本，靠人工同步；
+     现在抽到 timeline-cards.css，正式页与预览页引用同一个文件，改一次两边同步。
+     ★ 徽章变体（.yj-grade 不缩进 / .yj-no 22px）也已在共享文件里按 .tl / .yj-pv 双作用域定义。 -->
+<link rel="stylesheet" href="timeline-cards.css">
 <style>
-/* ===== 实时预览（docs/UI优化记录.md §91）：航迹线页同款人工节点卡渲染 =====
- * 样式复制自 pages/timeline.html 页内 <style>（人工节点用到的子集），scoped 在 .yj-pv 下仅作用于预览区。
- * ★ 单一出处仍是 timeline.html —— 那边改卡片结构/六色，这里必须同步（同 TL_CATS 的「改色同步」约定）。 */
+/* ===== 本页专属：预览卡的「单侧一行」布局骨架 =====
+ * 与正式页的「居中轴线 + 左右交替」不同（预览只有一侧，不需要 .tl 轴线与 .tl::before），
+ * 所以 grid 骨架留在这里，卡片视觉原子一律走 timeline-cards.css。 */
 .yj-pv .tl-item{display:grid;grid-template-columns:auto 26px minmax(0,1fr);grid-template-areas:"date node card";align-items:center}
-.yj-pv .tl-date{grid-area:date;font-size:13px;font-weight:600;color:#8a9096;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;padding-right:2px}
-.yj-pv .tl-node{grid-area:node;justify-self:center;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px #fff;position:relative;z-index:1;background-color:#8a9096}   /* 人工节点恒 manual 灰（build_timeline.to_manual_event 硬编码） */
+.yj-pv .tl-date{grid-area:date;text-align:right;padding-right:2px}
+.yj-pv .tl-node{grid-area:node;justify-self:center;background-color:#8a9096}   /* 人工节点恒 manual 灰（build_timeline.to_manual_event 硬编码） */
 .yj-pv .tl-cardwrap{grid-area:card;min-width:0;width:min(480px,100%);justify-self:start}
-.yj-pv .tl-card{display:flex;overflow:hidden;min-width:0}
-.yj-pv .tl-photo{flex:none;align-self:center;width:50%;margin:10px;aspect-ratio:297/210;background:#f5f5f5;overflow:hidden;border-radius:4px}
-.yj-pv .tl-photo img{display:block;width:100%;height:100%;object-fit:cover}
-.yj-pv .tl-photo.empty{display:flex;align-items:center;justify-content:center}
-.yj-pv .tl-photo.empty span{font-size:34px;opacity:.3;line-height:1}
-.yj-pv .tl-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 16px}
-.yj-pv .tl-tag{display:inline-flex;align-items:center;gap:4px;border-radius:100px;padding:2px 9px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap;position:relative}
-.yj-pv .tl-tag.manual{background-color:rgba(138,144,150,.14);color:#5c636a}
-.yj-pv .tl-tag.first{background-color:rgba(10,167,160,.12);color:#0b6b64}
-.yj-pv .tl-tag.graded{background-color:rgba(10,59,126,.09);color:#0a3b7e}
-.yj-pv .tl-tag.gen{background-color:rgba(232,116,42,.13);color:#b4530c}
-.yj-pv .tl-tag.sire{background-color:rgba(213,48,42,.1);color:#b02a25}
-.yj-pv .tl-tag.award{background-color:rgba(220,160,38,.16);color:#8f6408}
-/* §92 比赛样式人工节点：KPI 条 + 格/着顺徽章（同 timeline.html 页内变体：格不缩进、着顺 22px） */
-.yj-pv .yj-grade{margin-left:0}
-.yj-pv .yj-no{width:22px;height:22px;font-size:12px}
-.yj-pv .tl-kpis{display:flex;flex-wrap:wrap}
-.yj-pv .tl-kpi{padding:0 16px;border-left:1px solid #ececec}
-.yj-pv .tl-kpi:first-child{padding-left:2px;border-left:0}
-.yj-pv .tl-kpi .k{font-size:10.5px;font-weight:600;letter-spacing:.5px;color:#9aa0a6}
-.yj-pv .tl-kpi .v{margin-top:1px;font-size:13.5px;font-variant-numeric:tabular-nums;color:#171717}
-.yj-pv .tl-kpi .v.hi{color:#0aa7a0;font-weight:700}
 </style>
 </head>
 <body class="bg-muted/50 text-foreground antialiased">

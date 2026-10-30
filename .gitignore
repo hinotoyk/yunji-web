@@ -16,3 +16,6 @@ front/node_modules/
 
 # 数据管线缓存与编辑台备份（.bak 含编辑备注，绝不能被 CI `git add data/` 带上；copy-data/step_sync 也都跳过本目录）
 data/_tmp/
+
+# AI 助手的工作记忆（会话日志，非项目源码）
+/.workbuddy-ai/

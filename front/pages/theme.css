@@ -37,6 +37,11 @@
 
 /* ---------- 通用组件（Tailwind 组合类，@apply 封装复用） ---------- */
 @layer components {
+  /* ★ 暗色模式待办（2026-10-30 UI 审查 §2）：tailwind.config.js 已挂 darkMode:'class'，
+   * 但深色 token 尚未定义。将来接入时，本文件里所有**写死 hex 的组件**都要补 dark 变体，
+   * 清单：.card / .seg / .yj-ov-*（渐变描边+径向雾，需整体重做）/ .yj-no1-3 / .yj-nkm1-3 /
+   * .yj-tm--*（200 浅底 + 900 深字要反向）/ .yj-g1-g3 / .yj-ed-* / .nav-item::before。
+   * 走 @apply token 的类（如 .yj-ed-in、.yj-stb）只需换 token 值，不必逐类改。 */
   .card { @apply rounded-[10px] border border-border bg-card text-card-foreground; }
   table { @apply w-full border-collapse text-[13.5px]; }
   thead th { @apply whitespace-nowrap border-b border-border bg-muted/40 px-[13px] py-[9px] text-left text-[12.5px] font-semibold tracking-[.5px]; }
@@ -55,6 +60,42 @@
   .page-title::before { content:""; @apply h-4 w-1 flex-none rounded bg-primary; }
   select, input { @apply h-9 rounded-md border border-input bg-background px-2.5 text-[13px] text-foreground; }
   .hint-empty { @apply py-[60px] px-5 text-center text-[13.5px] text-muted-foreground; }
+  /* 空态紧凑变体（stats / leaderboard 卡内空态）：原两页各自重定义 .hint-empty 为 26px，
+   * 与 theme.css 的 60px 版并存导致同站两种空态间距（2026-10-30 UI 审查 §30 收口）。 */
+  .hint-empty--sm { @apply py-[26px] px-2.5 text-center text-[13px] text-muted-foreground; }
+
+  /* ---------- KPI 条（stats / datechart / leaderboard 三页共用）----------
+   * 2026-10-30 UI 审查 §29 收口：三页原各自定义 .st-kpi/.dc-kpi/.lb-kpi，实测 padding/
+   * 分隔线/字号/颜色逐项相同（padding:2px 18px、border-left:#ececec、k 11px、v 20px、hi #0aa7a0）
+   * —— 属 §48 第 5 条「≥3 处使用」的收口门槛内，合并为本组件。
+   * 用法：<div class="yj-kpis"><div class="yj-kpi"><span class="k">…</span><span class="v">…</span></div>…</div>
+   * 图标（奖杯等）由调用处自带 <i class="…">，不进组件。 */
+  .yj-kpis { display: flex; flex-wrap: wrap; }
+  .yj-kpi { padding: 2px 18px; border-left: 1px solid #ececec; }
+  .yj-kpi:first-child { padding-left: 2px; border-left: 0; }
+  .yj-kpi .k { font-size: 11px; font-weight: 600; letter-spacing: .5px; color: #8a8a8a; white-space: nowrap; }
+  .yj-kpi .v { margin-top: 2px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: #171717; white-space: nowrap; }
+  .yj-kpi .v.hi { color: #0aa7a0; }
+  .yj-kpi .v.dim { color: #a1a1aa; }
+  @media (max-width: 768px) {
+    .yj-kpi { padding: 2px 12px; }
+    .yj-kpi .v { font-size: 16px; }
+  }
+
+  /* ---------- 外壳侧栏导航项：当前页指示器 ----------
+   * 2026-10-30 UI 审查 §4：原选中态是「整条实心 primary 底 + 白字」，在 220px 侧栏里
+   * 面积过大、与未选中项（灰字）之间缺少层次过渡。改为「浅青底 + 左侧 3px 竖条 + 深青字」，
+   * 底色/字色由 index.html 的 data-[on=true]:bg-accent / text-accent-foreground 承担，
+   * 本组件只负责那条竖条（伪元素，不占布局）。 */
+  .nav-item { position: relative; }
+  .nav-item::before {
+    content: ""; position: absolute; left: 0; top: 50%;
+    width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+    transform: translateY(-50%) scaleY(0);
+    background: #0aa7a0; transition: transform .16s ease;
+  }
+  .nav-item[data-on="true"]::before { transform: translateY(-50%) scaleY(1); }
+  @media (prefers-reduced-motion: reduce) { .nav-item::before { transition: none; } }
 
   /* 分段控件（stats 场地/口径切换 + datechart 单位切换；原两页各持一份本地 CSS，2026-xx 收口统一）：
    * 规范值取 32px 高（= Tailwind h-8 标准控件高，与页内相邻按钮对齐）；原 stats 30px 版归齐于此。 */

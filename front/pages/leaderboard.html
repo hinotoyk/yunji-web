@@ -9,20 +9,22 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
 <style>
-/* 页面局部样式（lb-*）：KPI 条版式同 stats.html 页内样式先例；组件类（.seg/.card/.page-title）
- * 单一出处 = theme.css。v4（§115）：图表由 ECharts 定制包 canvas 渲染（空心=总赏金/实心=重赏赏金语义不变）。 */
-.lb-kpis{display:flex;flex-wrap:wrap}
-.lb-kpi{padding:2px 18px;border-left:1px solid #ececec}
-.lb-kpi:first-child{padding-left:2px;border-left:0}
-.lb-kpi .k{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;white-space:nowrap}
-.lb-kpi .v{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:#171717;white-space:nowrap}
-.lb-kpi .v.hi{color:#0aa7a0}
-.lb-kpi .v.dim{color:#a1a1aa}
-/* 图例：浅色/主色小样，与条形渲染同源同色 */
+/* 页面局部样式（lb-*）：组件类（.seg/.card/.page-title/.yj-kpis）单一出处 = theme.css。
+ * v4（§115）：图表由 ECharts 定制包 canvas 渲染（空心=总赏金/实心=重赏赏金语义不变）。
+ * 2026-10-30 UI 审查 §29：原 .lb-kpis/.lb-kpi 六行定义与 stats/datechart 逐字节相同 → 收口到 .yj-kpi。 */
+/* 图例：浅色/主色小样，与条形渲染同源同色
+ * 2026-10-30 复看：曾给实心段加 #066a66 内框做色弱区分，用户判定「加了之后很丑」→ 已回退为纯色。 */
 .lb-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font-size:12px;color:#52525b}
 .lb-legend i{display:inline-block;width:16px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
 .lb-legend .i-total{background:#c9e8e6}
 .lb-legend .i-solid{background:#0aa7a0}
+/* mb 端分段控件紧凑化（2026-10-30 修横向溢出）：.seg 是 inline-flex 不换行，按钮 padding 15px
+ * 时「总榜+自然年+世代」与「全部+牡马（含骗）」两组合计约 374px > 390 视口可用宽 362px，
+ * 撑出横向滚动条，图表 canvas 跟着变宽 → 右侧看起来是空白。压缩 padding 后两组共约 304px 可放下。
+ * 只作用于本页（stats / datechart 的 seg 组合更短，不受影响）。 */
+@media (max-width:768px){
+  #modeSeg button, #sliceSeg button, #sexSeg button, #nameSeg button{padding:0 9px;font-size:12.5px}
+}
 /* §129 分页条：单页隐藏；MB 加大触点 */
 .lb-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12.5px;color:#52525b}
 .lb-pager button{border:1px solid #e4e4e7;background:#fff;border-radius:8px;padding:5px 14px;font-size:12.5px;line-height:1.5;color:#3f3f46;cursor:pointer}
@@ -30,12 +32,10 @@
 .lb-pager button:disabled{opacity:.35;cursor:default}
 .lb-pager .lb-pg-info{min-width:150px;text-align:center}
 @media (max-width:768px){ .lb-pager{gap:8px} .lb-pager button{padding:8px 14px;white-space:nowrap} .lb-pg-total{display:none} }
-/* 图表本体由 ECharts 定制包 canvas 渲染（§115），本页 CSS 只剩 KPI 条/图例/空态 */
-.hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
-@media (max-width:768px){
-  .lb-kpi{padding:2px 10px}
-  .lb-kpi .v{font-size:16px}
-}
+/* 图表本体由 ECharts 定制包 canvas 渲染（§115），本页 CSS 只剩图例与空态。
+ * 空态（2026-10-30 UI 审查 §30）：原本地 .hint-empty 覆盖（26px 紧凑版）与 theme.css 的 60px 版
+ * 并存 → 改用 theme.css 的紧凑变体 .hint-empty--sm，本页不再定义 .hint-empty。
+ * KPI 条 padding/字号已由 .yj-kpi 的媒体查询统一（§29），本地媒体查询整块删除。 */
 </style>
 </head>
 <body class="bg-background text-foreground antialiased">
@@ -56,7 +56,7 @@
         <div class="seg" id="sexSeg"></div>
         <div class="seg md:hidden" id="nameSeg"></div>
       </div>
-      <div class="lb-kpis mb-3" id="kpis"></div>
+      <div class="yj-kpis mb-3" id="kpis"></div>
       <div class="lb-legend mb-3" id="legend"></div>
       <div id="chart"></div>
       <div id="pager" class="lb-pager" style="display:none"></div>
@@ -245,7 +245,7 @@ function renderKpis(rows) {
   var sum = 0, sg = 0;
   rows.forEach(function (r) { sum += r.s.pr; sg += r.s.sg; });
   var kpi = function (k, v, cls) {
-    return '<div class="lb-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+    return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
   };
   document.getElementById("kpis").innerHTML =
     kpi("赏金总额", manYen(sum), "hi") +
@@ -265,8 +265,10 @@ function renderLegend() {
  * 马名语言 = 原名/译名 seg（比赛记录切换先例）：译名 = 港译优先 → 自译 → 回退原名。
  * 金额标签挂条尾只标总赏金（重赏金额进 tooltip）；悬停看全明细，点击条形开档案。 */
 var EC = null, CUR_ROWS = [], CUR_TOTAL = 0;
-/* §129 分页：PC 100 名/页、MB 10 名/页（用户定稿）；页码不进持久化（刷新回第 1 页） */
-function pageSize() { return isMb() ? 10 : 100; }
+/* §129 分页：PC 100 名/页、MB 20 名/页（用户定稿）；页码不进持久化（刷新回第 1 页）
+ * 2026-10-30 UI 审查 §22：MB 由 10 改为 20 —— 20 条约 2~3 屏，翻页次数减半；
+ * 10 条时一屏就到底、200 匹要翻 20 页，横向对比体验被切碎。 */
+function pageSize() { return isMb() ? 20 : 100; }
 function chartFont() { return "'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif"; }
 /* 断点侦测：MB 与 PC 标签形态不同（§119） */
 var _mql = window.matchMedia ? window.matchMedia("(max-width: 768px)") : null;
@@ -285,12 +287,12 @@ function renderChart(view) {
   if (!all.length) {
     /* 切空切面前先彻底销毁实例（innerHTML 会移走 canvas，留下的是孤儿实例 → 再切回数据时白屏） */
     if (EC) { EC.dispose(); EC = null; }
-    el.innerHTML = '<div class="hint-empty">该切面下暂无赏金数据</div>';
+    el.innerHTML = '<div class="hint-empty hint-empty--sm">该切面下暂无赏金数据</div>';
     document.getElementById("pager").style.display = "none";
     return;
   }
   if (!window.YJ_ECHARTS) {
-    el.innerHTML = '<div class="hint-empty">图表库（echarts.bar.min.js）加载失败，请通过 http 服务器访问</div>';
+    el.innerHTML = '<div class="hint-empty hint-empty--sm">图表库（echarts.bar.min.js）加载失败，请通过 http 服务器访问</div>';
     return;
   }
   /* ⚠ 复用已有实例（§122）：不能 innerHTML 清空容器——那会把 ECharts 持有的 canvas 一并移除，
@@ -329,8 +331,11 @@ function renderChart(view) {
     textStyle: { fontFamily: chartFont() },
     animationDuration: 700, animationEasing: "cubicOut",
     /* grid：PC rich 标签估不准 → 显式 chipW+12、禁 containLabel（§119）；
-     * MB 纯文本标签无 rich → containLabel 自适应实际标签宽，贴左去死空白（§127 用户反馈） */
-    grid: { left: mb ? 10 : chipW + 12, right: 112, top: mb ? 12 : 16, bottom: 26, containLabel: mb },
+     * MB 纯文本标签无 rich → containLabel 自适应实际标签宽，贴左去死空白（§127 用户反馈）
+     * MB right（2026-10-30 再修）：原 112 是照 PC 的"名次+主名+互补名"预算留的，MB 标签只有
+     * 一串「3億4,429万」约 55px @10.5px，多留的 57px 全成了条形右侧的死空白。
+     * 收到 68 = 标签实测宽 + distance + 呼吸位，条形区宽度约 +38px。 */
+    grid: { left: mb ? 10 : chipW + 12, right: mb ? 68 : 112, top: mb ? 12 : 16, bottom: 26, containLabel: mb },
     tooltip: {
       trigger: "axis", axisPointer: { type: "shadow" }, confine: true,
       backgroundColor: "rgba(255,255,255,.97)", borderColor: "#e4e4e7",
@@ -399,7 +404,7 @@ function renderChart(view) {
       { name: "总赏金", type: "bar", barGap: "-100%", barMaxWidth: 22, z: 2,
         data: prData,
         itemStyle: { color: "#c9e8e6", borderRadius: [0, 2, 2, 0] },
-        label: { show: true, position: "right", color: "#171717", fontSize: 11,
+        label: { show: true, position: "right", distance: mb ? 3 : 5, color: "#171717", fontSize: mb ? 10.5 : 11,
           formatter: function (p) { return p.value > 0 ? manYen(p.value) : "—"; } } },
       { name: "重赏赏金", type: "bar", barMaxWidth: 22, z: 3,
         data: sgData,
@@ -502,7 +507,7 @@ if (_mql) { if (_mql.addEventListener) _mql.addEventListener("change", _onRs); e
     renderAll();
   }).catch(function (e) {
     document.getElementById("kpis").innerHTML =
-      '<div class="hint-empty">数据加载失败（' + esc(e.message || e) + '），请通过 http 服务器访问</div>';
+      '<div class="hint-empty hint-empty--sm">数据加载失败（' + esc(e.message || e) + '），请通过 http 服务器访问</div>';
   });
 })();
 </script>

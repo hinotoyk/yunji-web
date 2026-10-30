@@ -10,14 +10,9 @@
 <link rel="stylesheet" href="theme.css">
 <style>
 /* 分段控件样式单一出处 = theme.css @layer components（.seg，与 datechart 单位切换同款；2026-xx 收口） */
-/* 数据概览 KPI（同 datechart .dc-kpis/.dc-kpi/.dc-brk/.trophy） */
-.st-kpis{display:flex;flex-wrap:wrap}
-.st-kpi{padding:2px 18px;border-left:1px solid #ececec}
-.st-kpi:first-child{padding-left:2px;border-left:0}
-.st-kpi .k{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;white-space:nowrap}
-.st-kpi .v{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:#171717;white-space:nowrap}
-.st-kpi .v.hi{color:#0aa7a0}
-.st-kpi .v.dim{color:#a1a1aa}
+/* KPI 条（2026-10-30 UI 审查 §29）：原 .st-kpis/.st-kpi 六行定义与 datechart .dc-* / leaderboard
+ * .lb-* 逐字节相同 → 收口到 theme.css 的 .yj-kpis/.yj-kpi（三页共用），本页不再本地定义。
+ * 下方 .st-trophy 是奖杯图标尺寸，属本页特有，保留。 */
 .st-trophy{font-size:15px;margin-right:2px}
 /* 通算战绩 [73-70-69-466]：**格式保留连字符**，四段底色连成「一整条」——
  * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
@@ -66,13 +61,11 @@ td.dim .num{color:#c6c6ca}
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
 .st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .st-legend i.dot{width:7px;height:7px;border-radius:50%}
-/* 空态 */
-.hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
+/* 空态：本页原有一条 .hint-empty 覆盖（26px 版），但页内无任何元素使用该类 → 2026-10-30 UI 审查 §30
+ * 一并删除；需要空态时用 theme.css 的 .hint-empty（60px 大留白）或 .hint-empty--sm（26px 紧凑）。 */
 /* 月龄明细表（v2）：行=月龄 · 世代子行——组首行上缘加分隔线区分月龄组 */
 .st-mat tr.grp td{border-top:2px solid #e4e4e7}
 @media (max-width:768px){
-  .st-kpi{padding:2px 10px}
-  .st-kpi .v{font-size:16px}
   .st-brk-lg{font-size:14px}
 }
 </style>
@@ -100,7 +93,7 @@ td.dim .num{color:#c6c6ca}
       <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>数据概览 · RECORD
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="st-kpis" id="kpis"></div>
+      <div class="yj-kpis" id="kpis"></div>
       <div class="mt-4" id="distBar"></div>
       <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[13px] text-muted-foreground" id="rateBand"></div>
     </div>
@@ -130,7 +123,7 @@ td.dim .num{color:#c6c6ca}
         <div class="seg" id="srkDivSeg"></div>
         <div class="st-legend" id="srkLegend"></div>
       </div>
-      <div class="st-kpis" id="srkKpis"></div>
+      <div class="yj-kpis" id="srkKpis"></div>
       <div id="srkChart" class="mt-3"></div>
     </div>
   </section>
@@ -300,7 +293,7 @@ function renderKpis() {
   });
   brk += ']</span>';
   var kpi = function (k, v, cls) {
-    return '<div class="st-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+    return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
   };
   var tr = trophyMerged().length;
   document.getElementById("kpis").innerHTML =
@@ -708,7 +701,7 @@ function srkKpis(data) {
   var his = data.history || [];
   var last = his[his.length - 1] || {}, prev = his.length > 1 ? his[his.length - 2] : null;
   var kpi = function (k, v, cls) {
-    return '<div class="st-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
+    return '<div class="yj-kpi"><div class="k">' + k + '</div><div class="v' + (cls ? " " + cls : "") + '">' + v + '</div></div>';
   };
   /* 赏金格式复用 YJ.util.manYen（§48 单一出处；入参円，derived 口径万円 ×1e4） */
   var dp = prev && last.prizeOverall != null && prev.prizeOverall != null ? last.prizeOverall - prev.prizeOverall : null;

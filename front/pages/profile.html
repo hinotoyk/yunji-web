@@ -23,12 +23,18 @@
   <!-- 页头 -->
   <header class="page-title w-full flex-none px-6 pt-[18px] pb-4 max-md:px-3.5 max-md:pt-4 max-md:pb-3">基本信息 · PROFILE</header>
 
-  <!-- 两栏：左=常驻过滤搜索 / 右=详情（目录 = 外壳侧边栏，已存在；铺满内容区避免两侧留白） -->
-  <div class="grid w-full min-h-0 flex-1 grid-cols-[350px_minmax(0,1fr)] gap-5 px-6 pb-6 max-md:block max-md:gap-4 max-md:px-3.5 max-md:pb-12">
+  <!-- 两栏：左=常驻过滤搜索 / 右=详情（目录 = 外壳侧边栏，已存在；铺满内容区避免两侧留白）
+       搜索列宽响应式（2026-10-30 UI 审查 §9）：原固定 350px，在 768–1024px（平板横屏 / 窄 PC
+       半屏）会吃掉近 1/3 宽度挤压详情 → md 档收窄到 280px，lg 起才恢复 350px。
+       ★ mb 端左列必须是 block（2026-10-30 修 bug）：曾给这里加 max-md:max-h-[45vh] +
+       overflow-y-auto，与 #selector / 列表自身的 flex-1 min-h-0 叠成三层限高，列表被压成 0 高
+       → 搜索框下面直接是详情、马名列表整个消失。列表自身已有 max-md:max-h-[45vh] 可滚
+       （selector.js inline 模式），外层不要再限高。 -->
+  <div class="grid w-full min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] gap-5 px-6 pb-6 lg:grid-cols-[350px_minmax(0,1fr)] max-md:block max-md:gap-4 max-md:px-3.5 max-md:pb-12">
 
     <!-- 左：常驻过滤式搜索（复用原搜索框，缩短宽度；下拉做成常驻列表） -->
-    <div class="flex min-h-0 flex-col max-md:h-auto">
-      <div id="selector" class="min-h-0 flex-1 max-md:h-auto"></div>
+    <div class="flex min-h-0 flex-col max-md:block">
+      <div id="selector" class="min-h-0 flex-1 max-md:block max-md:h-auto"></div>
     </div>
 
     <!-- 右：详情 -->
@@ -317,7 +323,11 @@ function renderOverview(hs){
       else if(iw>=36&&ih>=22) inner='<b class="yj-tm-v yj-tm-v--s">'+(cnt[r.k]||0)+'</b>';
       else if(iw>=22&&ih>=14) inner='<b class="yj-tm-v yj-tm-v--xs">'+(cnt[r.k]||0)+'</b>';
       var cls='yj-tm '+c.c+((iw>=64&&ih>=26&&!(iw>=50&&ih>=44))?' yj-tm-h':'');
-      return '<div class="'+cls+'" style="left:'+ix+'px;top:'+iy+'px;width:'+iw+'px;height:'+ih+'px" title="'+esc(c.tip+' · '+(cnt[r.k]||0)+' 匹')+'">'+inner+'</div>';
+      /* 悬停说明（2026-10-30 UI 审查 §8）：块本身 overflow:hidden → 伪元素浮层会被裁掉，
+       * 所以这里用原生 title（慢但不会被裁、且天然可被读屏/触屏长按读取）。
+       * 文案 = 类别含义 · 匹数 · 占比（占比仅在传入 pctSum 的概览图里有意义）。 */
+      var tipTxt=c.tip+' · '+(cnt[r.k]||0)+' 匹'+(pctSum?' · '+(100*(cnt[r.k]||0)/pctSum).toFixed(1)+'%':'');
+      return '<div class="'+cls+'" style="left:'+ix+'px;top:'+iy+'px;width:'+iw+'px;height:'+ih+'px" title="'+esc(tipTxt)+'">'+inner+'</div>';
     }).join('');
   }
   var tmId='yjStm';
