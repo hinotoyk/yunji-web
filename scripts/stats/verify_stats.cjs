@@ -355,6 +355,9 @@ ok(diffCnt === 0, "逐切面 1:1 对账通过（" + scopeCnt + " 个切面 × ba
 /* ═══════════ [C] 页面冒烟（stub DOM + 真实产物；期望值从产物独立重算） ═══════════ */
 console.log("[C] stats.html 页面冒烟");
 const html = fs.readFileSync(path.join(ROOT, "front", "pages", "stats.html"), "utf8");
+/* 页内样式自 §141 拆到 stats-page.css：凡断言样式规则的一律读这里，
+ * 仍读 html 会恒假（2026-10-30 §144 修：`tr.base td` 中性灰底一条自拆分起就 FAIL） */
+const pageCss = fs.readFileSync(path.join(ROOT, "front", "pages", "stats-page.css"), "utf8");
 const code = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
 ok(code.includes('YJ.cache.fetch("stats")'), "页面经统一缓存控制器引用 stats 产物（12h）");
 
@@ -415,14 +418,18 @@ function el(id) {
     appendChild(c) { c.parentNode = this; return c; },
     removeChild(c) { return c; },
     closest() { return null; },
+    querySelector() { return null; },
     querySelectorAll() { return []; },
     getBoundingClientRect() { return { left: 0, right: 0, width: 800, height: 200 }; },
   };
   return n;
 }
+/* querySelector 一律返回 null：§144 页签滑入视野 / 表头高度实测两条增强走不到，静默跳过即可，
+ * 不需要页面里写防御分支（stub 只保证「不抛」） */
 global.document = {
   _handlers: {},
   getElementById(id) { return els[id] || (els[id] = el(id)); },
+  querySelector() { return null; },
   querySelectorAll() { return []; },
   addEventListener(t, f) { (this._handlers[t] = this._handlers[t] || []).push(f); },
 };
@@ -557,8 +564,8 @@ setTimeout(function () {
   ok(mt.includes("2着") && mt.includes("3着") && mt.includes("着外"), "着别列：1/2/3着 + 着外");
   ok(mt.includes("<td>" + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "</td>"),
     "基准行着外 = " + (startsOf(b0) - b0.w - b0.p2 - b0.p3) + "（出走口径含未完赛 → 出走列 = 前三 + 着外）");
-  ok(html.includes("tr.base td{background:#f4f4f5") && !html.includes("#f7fdfd"),
-    "基准行（总体平均）= 中性灰底（与率列 绿=高于/红=低于 的数据语义色分离）");
+  ok(pageCss.includes("tr.base td{position:sticky;top:var(--st-th,26px);z-index:2;background-color:#f4f4f5") && !pageCss.includes("#f7fdfd"),
+    "基准行（总体平均）= 中性灰底 + sticky（与率列 绿=高于/红=低于 的数据语义色分离；长列表滚动时参照常驻，§144）");
   ok(mt.includes("短距离"), "默认页签 = 距离（首屏渲染短/英/中/长距离行）");
   click("matTabs", "surf");                      /* 跑道维度需切页签（默认已是距离，见 docs/UI优化记录.md §56） */
   const mtSurf = String(els["matTable"]._html);
@@ -587,7 +594,8 @@ setTimeout(function () {
   const gradedKeys = ["G1", "G2", "G3", "JG1", "JG2", "JG3", "Jpn1", "Jpn2", "Jpn3"];
   const gEx = gradedKeys.filter(k => gAll.some(x => x.k === k));
   const gk = gEx.find(k => gAll.find(x => x.k === k).w > 0) || gEx[0];   /* 优先取有胜场的重赏桶 */
-  ok(gk && new RegExp(">" + gk + "(<span[^>]*>样本少</span>)?</td>(<td( class=\"dim\")?>\\d+</td>)<td( class=\"dim\")?>" + gAll.find(x => x.k === gk).w + "</td>").test(mtGr),
+  /* 出走格自 §144 起带 class="st-nb"（+ 可选 dim）、--nb 变量与样本量条 <i> → 属性/条都用通配 */
+  ok(gk && new RegExp(">" + gk + "(<span[^>]*>样本少</span>)?</td>(<td[^>]*>(<i></i>)?\\d+</td>)<td( class=\"dim\")?>" + gAll.find(x => x.k === gk).w + "</td>").test(mtGr),
     "比赛级别页签：" + (gk || "?") + " 行 1着 = " + (gk ? gAll.find(x => x.k === gk).w : "?") + "（纯数字无样式）");
   ok(gk && mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:" + gk + ",venue:中央") + '"'), (gk || "?") + " 行下钻 = grade:" + gk);
   ok(mtGr.includes('data-href="races.html?f=' + encodeURIComponent("grade:1勝クラス,venue:中央") + '"'), "一胜级行下钻 = grade:1勝クラス（races.html gradeMatches 已支持）");
@@ -600,11 +608,15 @@ setTimeout(function () {
   const dAll = byv["中央"].scopes.all.dims.dist;
   /* 标签含 >2400m 一类字符，页面经 esc() 输出为 &gt; —— 断言先按同规则转义再比对 */
   const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const DIST_LBL = { "短距离": "短距离 ≤1400m", "英里": "英里 1401-1800m", "中距离": "中距离 1801-2400m", "长距离": "长距离 >2400m" };
-  ok(dAll.length >= 2 && dAll.every(x => mtDist.includes(escHtml(DIST_LBL[x.k]))), "距离行标签附范围（" + dAll.map(x => DIST_LBL[x.k]).join(" / ") + "）");
-  const dIdx = lbl => { const m = mtDist.match(new RegExp(">" + escHtml(lbl).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(<span|</td>)")); return m ? m.index : -1; };
+  /* §144 起距离标签拆成两段：<span class="st-c1">名称</span><span class="st-c2">范围</span>
+   * （原先一个字符串「中距离 1801-2400m」在窄屏折 3 行）→ 断言按拆开后的结构比对 */
+  const DIST_RANGE = { "短距离": "≤1400m", "英里": "1401-1800m", "中距离": "1801-2400m", "长距离": ">2400m" };
+  const distCell = k => ">" + escHtml(k) + '</span><span class="st-c2">' + escHtml(DIST_RANGE[k]) + "</span>";
+  ok(dAll.length >= 2 && dAll.every(x => mtDist.includes(distCell(x.k))),
+    "距离行标签附范围（两段式：" + dAll.map(x => x.k + " " + DIST_RANGE[x.k]).join(" / ") + "）");
+  const dIdx = k => mtDist.indexOf(distCell(k));
   const D_SEQ = ["短距离", "英里", "中距离", "长距离"].filter(k => dAll.some(x => x.k === k));
-  ok(D_SEQ.length >= 2 && D_SEQ.every((k, i) => dIdx(DIST_LBL[k]) >= 0 && (i === 0 || dIdx(DIST_LBL[k]) > dIdx(DIST_LBL[D_SEQ[i - 1]]))),
+  ok(D_SEQ.length >= 2 && D_SEQ.every((k, i) => dIdx(k) >= 0 && (i === 0 || dIdx(k) > dIdx(D_SEQ[i - 1]))),
     "距离固定序：" + D_SEQ.join("→"));
   const dk = D_SEQ[0];
   ok(dk && mtDist.includes('data-href="races.html?f=' + encodeURIComponent("dist:" + dk + ",venue:中央") + '"'), "距离行下钻 = dist:" + dk);

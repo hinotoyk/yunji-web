@@ -37,32 +37,59 @@
 /* 比率带 */
 .st-rate b{font-size:16px;font-variant-numeric:tabular-nums}
 .st-rate .lbl{color:#8a8a8a}
-/* 矩阵 tab */
-.st-tab{padding:4px 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;font-size:12.5px;color:#52525b;cursor:pointer;transition:all .15s}
+/* 矩阵 tab 栏（§144）：15 个页签平铺，窄屏会折成 5 行（≈170px 纯空白，且第二行起只剩零星几颗）。
+ * PC 收紧内边距挤进一行；MB 改单行横滑 + 右缘渐隐（滑到末端渐隐自动撤掉，见 syncEdges）。
+ * 页签**顺序**不动（用户定稿），只改排布方式。 */
+.st-tabs{display:flex;flex-wrap:wrap;gap:4px}
+.st-tab{padding:4px 8px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;font-size:12px;color:#52525b;cursor:pointer;transition:all .15s;white-space:nowrap}
 .st-tab:hover{border-color:rgba(10,167,160,.5);color:#0b6b64}
 .st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
-/* 矩阵表 */
-.st-mat{width:100%;border-collapse:collapse;font-size:13px}
-.st-mat th{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:center;white-space:nowrap}
+/* 横向溢出提示：仅在「还有内容在右侧」时生效（data-edge=more），滑到末端自动撤掉 */
+.st-tabs[data-edge=more],
+#matWrap[data-edge=more]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent)}
+/* 矩阵表（§144 改造三点）：
+ * ① border-collapse 改 separate —— sticky 单元格在 collapse 下边框会留在原地不跟着走（Chrome 已知问题）；
+ *    全表只用横向边框，separate + border-spacing:0 与 collapse 视觉完全一致。
+ * ② 表头 + 基准行 sticky —— 调教师/骑手/竞马场等长列表在容器内竖向滚动时，
+ *    「总体平均」参照和列名始终可见（原先滚下去就失去比较基准，只能凭记忆）。
+ *    基准行 top 偏移 = 表头实测高度（applyMatScroll 写入 --st-th，写死 px 遇字体/缩放下会错位）。
+ * ③ 首列 sticky left —— 窄屏横滑时「类别」常驻，不会滑成一片数字。 */
+.st-mat{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.st-mat th{position:sticky;top:0;z-index:3;background:#fff;font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;padding:5px 10px;border-bottom:1px solid #ececec;text-align:center;white-space:nowrap}
 .st-mat th.left{text-align:left}
 .st-mat td{padding:6px 10px;border-bottom:1px solid #f2f2f2;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 .st-mat td.left{text-align:left;white-space:normal}
+.st-mat th.left,.st-mat td.left{position:sticky;left:0;background:#fff}
+.st-mat thead th.left{z-index:4}
+/* 出走列样本量条（§144）= 单元格内「数据条」：自左向右、占满格高的浅青填充，宽度 = 本行出走 ÷ 最大出走。
+ * 解决的是**读数错误**而非美观：原先「长距离 16 场 25.0% 胜率」与「英里 364 场 9.6%」
+ * 在纯数字 + 红绿上等权呈现，低样本行看起来像最优解；条长把「这一档有多少数据」直接画出来。
+ * 用 background-image 实现（非额外元素）：数字仍居中、不受条影响，也不改动单元格内容结构。 */
+.st-mat td.st-nb{background-image:linear-gradient(90deg,rgba(10,167,160,.14),rgba(10,167,160,.14));background-repeat:no-repeat;background-position:left center;background-size:var(--nb,0%) 100%}
 .st-mat th[data-sk]{cursor:pointer;user-select:none}
+/* 距离维类别格的两段（§144）：PC 同行 · 范围降为次级灰字；MB 各占一行 */
+.st-mat .st-c1{margin-right:5px}
+.st-mat .st-c2{font-size:11.5px;color:#a1a1aa;white-space:nowrap}
 .st-mat th[data-sk]:hover{color:#0aa7a0}
 /* 排序图标悬出表头文字右侧：负右外边距抵消自身宽度，不占表头长度、不影响文字居中 */
 .st-mat .st-sa{display:inline-block;width:12px;margin:0 -14px 0 2px;color:#c4c8cb;font-size:10px}
 .st-mat th[data-sk]:hover .st-sa,.st-mat .st-sa.on{color:#0aa7a0}
-/* 基准行（总体平均）= 中性灰参照色：与率列「绿=高于/红=低于总体平均」的数据语义色分离，不再撞绿 */
-.st-mat tr.base td{background:#f4f4f5;font-weight:600;color:#52525b}
+/* 基准行（总体平均）= 中性灰参照色：与率列「绿=高于/红=低于总体平均」的数据语义色分离，不再撞绿。
+ * 底色一律写 background-color（不写 background 简写）——简写会把样本量条的 background-image 一起清掉 */
+.st-mat tr.base td{position:sticky;top:var(--st-th,26px);z-index:2;background-color:#f4f4f5;font-weight:600;color:#52525b}
+.st-mat tr.base td.left{z-index:5}
 .st-mat tr.yj-drill{cursor:pointer}
-.st-mat tr.yj-drill:hover td{background:#f4fbfa}
+.st-mat tr.yj-drill:hover td{background-color:#f4fbfa}
 .st-mat tr.yj-drill:hover td.left{text-decoration:underline;text-decoration-color:#0aa7a0;text-underline-offset:3px}
 /* 相对基准差色标 */
 .yj-up{color:#0b8a84;font-weight:600}
 .yj-down{color:#d64545;font-weight:600}
 /* 样本少 */
 .yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
-td.dim .num{color:#c6c6ca}
+/* 出走 < DIM_F(10) 的行数字弱化（§144 修死规则）：原选择器是 `td.dim .num`，
+ * 但矩阵的 <td class="dim"> 里只有裸文本、从来没有 .num 子元素 → 这条规则一直空转，
+ * 低样本行的数字与正常行等权。改直接命中 td.dim（率列内的 yj-up/yj-down 自带色，仍优先生效）。 */
+.st-mat td.dim{color:#b4b4b8}
 /* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源） */
 /* 图例 */
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
@@ -74,4 +101,28 @@ td.dim .num{color:#c6c6ca}
 .st-mat tr.grp td{border-top:2px solid #e4e4e7}
 @media (max-width:768px){
   .st-brk-lg{font-size:14px}
+  /* 页签栏单行横滑（§144）：原 15 个页签在 375px 下折成 5 行、占约 170px 纯空白。
+   * 顺序不变，只把换行改成横滑；右缘渐隐提示「后面还有」，选中页签点击后自动滑入视野。 */
+  .st-tabs{flex-wrap:nowrap;overflow-x:auto;gap:5px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .st-tabs::-webkit-scrollbar{display:none}
+  .st-tabs .st-tab{flex:0 0 auto}
+  /* 矩阵表窄屏压缩（§144）：原 13px 字号 + 10px 内边距在 375px 下溢出约两列
+   * （连对/复胜被裁且无任何滚动提示）。压到 12px / 5px 后 9 列可完整显示；
+   * 更窄的机型（360px）仍溢出时走 #matWrap 横滑，首列 sticky + 投影兜底。 */
+  .st-mat{font-size:12px}
+  .st-mat th{padding:5px 3px;font-size:10.5px;letter-spacing:0}
+  .st-mat td{padding:5px 3px}
+  /* 排序图标窄屏只留「当前排序列」：未排序列的 ⇅ 是用负外边距悬在文字右侧的（不占表宽），
+   * 窄屏 3px 内边距下会被右侧裁掉半颗；隐藏后表头也更干净，可点性由页脚说明承担 */
+  .st-mat .st-sa{display:none}
+  .st-mat .st-sa.on{display:inline-block;width:auto;margin:0 0 0 2px}
+  /* 距离维标签强制两行：名称一行、范围一行（否则 71px 列宽把「1801-2400m」折成 3 行，行高失控） */
+  .st-mat .st-c1{display:block;margin-right:0;line-height:1.3}
+  .st-mat .st-c2{display:block;font-size:10px;line-height:1.3}
+  .st-mat td.st-nb{background-image:none}   /* 列宽约 30px，比例条已不可辨 → 关掉，靠「样本少」标与弱化字 */
+  .st-pc-only{display:none}                 /* 数据条图例随条一起隐藏 */
+  .yj-sm{font-size:9.5px;padding:0 4px;margin-left:4px}   /* 缩小后可与类别标签同排，不再单独占一行 */
+  /* 只有真溢出时才给首列投影（否则白底表格凭空多一道阴影） */
+  #matWrap[data-edge=more] .st-mat th.left,
+  #matWrap[data-edge=more] .st-mat td.left{box-shadow:6px 0 8px -8px rgba(0,0,0,.28)}
 }

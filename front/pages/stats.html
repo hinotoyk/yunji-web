@@ -45,7 +45,7 @@
       <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>产驹倾向 · TENDENCY
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="mb-3 flex flex-wrap gap-1.5" id="matTabs"></div>
+      <div class="mb-3 st-tabs" id="matTabs"></div>
       <div class="overflow-x-auto relative" id="matWrap"><table class="st-mat" id="matTable"></table></div>
       <div id="matNote" class="mt-2.5 text-[12px] text-muted-foreground"></div>
     </div>
@@ -438,11 +438,19 @@ function renderCurve() {
 }
 
 /* ---- ② 倾向矩阵 ---- */
-function renderTabs() {
+/* 页签渲染；keepView=true 时（用户点击触发）把选中页签滑入视野——
+ * MB 页签栏是单行横滑容器，点右侧页签后若不管，选中项会停在视口外、看不到自己选了什么。
+ * 初始化/数据刷新不传该参数：否则 block:"nearest" 会把页面直接滚到矩阵处。 */
+function renderTabs(keepView) {
   document.getElementById("matTabs").innerHTML = TAB_DIMS.map(function (d) {
     return '<button type="button" class="st-tab" data-tab="' + d.k + '" data-on="' + (st.tab === d.k ? "true" : "false") +
       '" title="' + esc(d.tip) + '">' + d.l + '</button>';
   }).join("");
+  if (keepView) {
+    var on = document.querySelector('#matTabs button[data-on="true"]');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+  syncEdges();
 }
 function surfLabel(k) { return i18n.e("芝ダ", k) || k; }
 /* 比率着色：高于总体平均=绿（yj-up），低于=红（yj-down）；按 0.1pt 精度比较（同显示值，显示相同则不着色） */
@@ -485,10 +493,19 @@ function drillURL(tab, k) {
   return pairs ? "races.html?f=" + encodeURIComponent(pairs.join(",")) : "";
 }
 function bucketLabel(tab, k) {
-  if (tab === "dist") return DIST_RANGE[k] ? k + " " + DIST_RANGE[k] : k;   /* 类别后附范围，一眼读出距离 */
   if (tab === "grade") return k;                     /* 桶键即中文标签（build_stats.py grade_key） */
   if (tab === "turn") return k === "右" ? "右转" : k === "左" ? "左转" : k;
   return surfLabel(k);
+}
+/* 类别格 HTML：距离维把「名称 + 范围」拆成两段（§144）——
+ * 原先拼成一个字符串「中距离 1801-2400m」，窄屏 71px 列宽下会折成 3 行、行高失控；
+ * 拆开后 PC 同行（范围降为次级灰字，层次更清）、MB 强制两行（名称一行 · 范围一行）。 */
+function catHtml(tab, k) {
+  var l = esc(bucketLabel(tab, k));
+  if (tab === "dist" && DIST_RANGE[k]) {
+    return '<span class="st-c1">' + l + '</span><span class="st-c2">' + esc(DIST_RANGE[k]) + '</span>';
+  }
+  return l;
 }
 /* 表格 HTML 构建（renderTable 与 人气高度离屏实测 applyMatScroll 共用，保证参考高度与实际渲染一致） */
 function matHtml(tab) {
@@ -535,6 +552,11 @@ function matHtml(tab) {
     return '<th data-sk="' + c.k + '" title="点击按' + c.l + '排序（再点切换升/降序）">' + c.l +
       '<span class="st-sa' + (on ? " on" : "") + '">' + (on ? (st.sort.dir === "asc" ? "↑" : "↓") : "⇅") + '</span></th>';
   }).join("");
+  /* 出走列数据条的分母 = **本页签数据行里的最大出走**（不含基准行）。
+   * 不能拿基准行当分母：基准行是各档之和（恒为最大），切到调教师/骑手这类「档多而每档都小」的页签时
+   * 每档都只剩 2~3%，条全部糊成一条细线、完全失去比较作用。以最多档为 100% 才能横向比出「哪档数据多」。 */
+  var maxN = 0;
+  rows.forEach(function (b) { var s = starts(b); if (s > maxN) maxN = s; });
   var html = '<thead><tr><th class="left">类别</th>' + ths + '</tr></thead><tbody>';
   var baseOut = Math.max(0, starts(base) - base.w - base.p2 - base.p3);
   html += '<tr class="base" title="当前勾选范围（场地×切面）的整体平均"><td class="left">总体平均</td><td>' + starts(base) + '</td>' +
@@ -551,8 +573,9 @@ function matHtml(tab) {
     var rowOut = Math.max(0, starts(b) - b.w - b.p2 - b.p3);
     var td = function (v) { return '<td' + dimCls + '>' + v + '</td>'; };
     html += '<tr' + (url ? ' class="yj-drill" data-href="' + esc(url) + '" title="点击查看该条件下的比赛记录"' : "") + '>' +
-      '<td class="left">' + esc(bucketLabel(tab, b.k)) + sm + '</td>' +
-      td(starts(b)) +
+      '<td class="left">' + catHtml(tab, b.k) + sm + '</td>' +
+      /* 出走格：--nb = 样本量条宽度（相对最大出走），CSS 侧 .st-nb 画成格内数据条 */
+      '<td class="st-nb' + (r.f < DIM_F ? ' dim' : '') + '" style="--nb:' + (maxN ? Math.round(starts(b) / maxN * 100) : 0) + '%">' + starts(b) + '</td>' +
       td(b.w) +
       td(b.p2) +
       td(b.p3) +
@@ -568,7 +591,8 @@ function matHtml(tab) {
 function renderTable() {
   var tab = st.tab;
   document.getElementById("matTable").innerHTML = matHtml(tab);
-  var note = "红=低于总体平均 · 绿=高于总体平均（分母=出走） · 样本少 = 出走&lt;" + SM_F + " · 点击行可查看该条件下的全部比赛 · 点击表头按该列排序";
+  /* 数据条说明只在 PC 出现（MB 侧 .st-nb 已关掉数据条，留着等于给看不见的东西写图例） */
+  var note = '红=低于总体平均 · 绿=高于总体平均（分母=出走） · <span class="st-pc-only">出走列数据条 = 该档样本量（相对最多档） · </span>样本少 = 出走&lt;' + SM_F + " · 点击行可查看该条件下的全部比赛 · 点击表头按该列排序";
   if (tab === "trainer" || tab === "jockey") {
     note = "调教师/骑手全部列出，按出赛数从多到少。胜率受马匹实力与配对影响，仅供参考。";
   } else if (tab === "breeder" || tab === "owner") {
@@ -578,6 +602,7 @@ function renderTable() {
       "；400-550kg 每 10kg 一档 + <400 / >550，550 归 540-550）；空值不入桶 → 行合计 ≤ 总出走；跳转自动附带性别条件。";
   }
   document.getElementById("matNote").innerHTML = note;
+  syncEdges();                                          /* 换页签后表宽会变（标签长短不一）→ 重判是否溢出 */
 }
 /* ---- 倾向矩阵纵向滚动：容器 max-height = 「人气」页签完整展示高度 ----
  * 用同一构建代码（matHtml("ninki")）离屏实测：表头 + 基准行 + 全部人气行，
@@ -586,6 +611,10 @@ function renderTable() {
 function applyMatScroll() {
   var wrap = document.getElementById("matWrap");
   if (!wrap || !document.createElement || !STATS) return;   /* stub/无量测环境：不裁切 */
+  /* 表头实测高度 → sticky 基准行的 top 偏移（§144）。写死 px 在字体回退/缩放下会错位，
+   * 错位后滚动时基准行上沿会漏出被覆盖的行。每次重渲染/重测都刷新。 */
+  var head = document.querySelector("#matTable thead");
+  if (head) wrap.style.setProperty("--st-th", Math.round(head.getBoundingClientRect().height) + "px");
   var probe = document.createElement("table");
   probe.className = "st-mat";
   probe.style.cssText = "position:absolute;left:0;top:0;visibility:hidden";   /* 脱离文档流叠在原表上，含块 = matWrap（relative），宽度一致才量得准 */
@@ -598,6 +627,25 @@ function applyMatScroll() {
     wrap.style.maxHeight = h + "px";
   }
 }
+/* ---- 横向溢出提示（§144）----
+ * 页签栏（MB 单行横滑）与矩阵容器（窄屏可能溢出）统一处理：内容右侧还有没滑出来的部分时
+ * 打 data-edge="more" → CSS 给右缘渐隐（矩阵另加首列投影）；滑到末端或本来不溢出 → "end"，一切恢复原样。
+ * 不做 JS 的话「能横滑」这件事在触屏上完全没有视觉线索，用户会以为列被裁掉了。 */
+function syncEdges() {
+  ["matTabs", "matWrap"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    /* 容差 4px：表头排序图标用负外边距悬在文字右侧，会给表格留下 3px 级的「幻影溢出」
+     * （实测 table.scrollWidth 324 / 实际列宽合计 321），按 2px 判会把满宽表格误判成可横滑、
+     * 平白给首列加一道投影。真溢出至少是一整列（≥20px），4px 不会漏判。 */
+    var more = el.scrollWidth - el.clientWidth - el.scrollLeft > 4;
+    el.setAttribute("data-edge", more ? "more" : "end");
+  });
+}
+["matTabs", "matWrap"].forEach(function (id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener("scroll", syncEdges, { passive: true });
+});
 
 /* ---- ③ 种马榜走势（2026-10-27 · 跨站引用 jbis-sire-rank-history）----
  * 数据 = YJ_DATA.remote.jbisRank + derived/sire-history/<board>/<jbis_id>.json（arg 型缓存条目 sireRank，
@@ -705,6 +753,7 @@ function renderAll() {
   renderCurve();
   renderTabs(); renderTable();
   applyMatScroll();                                    /* 容器高度对齐人气页签（场地/切面变化后行数会变，随 renderAll 重测） */
+  syncEdges();
 }
 
 /* ---- 事件 ---- */
@@ -761,7 +810,7 @@ document.getElementById("matTabs").addEventListener("click", function (e) {
   var btn = e.target.closest ? e.target.closest("button[data-tab]") : null;
   if (!btn) return;
   st.tab = btn.getAttribute("data-tab");
-  renderTabs();
+  renderTabs(true);                                     /* true = 把选中页签滑入视野（MB 横滑栏） */
   renderTable();
 });
 document.getElementById("matTable").addEventListener("click", function (e) {
@@ -779,7 +828,7 @@ document.getElementById("matTable").addEventListener("click", function (e) {
 var resizeTimer = null;
 window.addEventListener("resize", function () {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(function () { renderCurve(); applyMatScroll(); }, 150);
+  resizeTimer = setTimeout(function () { renderCurve(); applyMatScroll(); syncEdges(); }, 150);
 });
 
 /* ---- 初始化 ---- */
