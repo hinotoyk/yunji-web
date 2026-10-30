@@ -74,10 +74,8 @@
       <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>年龄成绩曲线 · AGE PERFORMANCE
     </div>
     <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
         <div class="seg" id="rateSeg"></div>
-        <div class="seg" id="genSeg"></div>
-        <div class="st-legend" id="curveLegend"></div>
       </div>
       <div id="curve"></div>
       <div id="curveNote" class="mt-2 text-[12px] text-muted-foreground"></div>
@@ -95,6 +93,7 @@
 <script src="../yj-cache.js"></script>
 <script src="../site-config.js"></script>
 <script src="../race-rows.js"></script>
+<script src="../echarts.line.min.js"></script>
 <script>
 /* ================= 倾向统计 STATS =================
  * 数据：data/stats.json（后端预计算，按 场地类型 × 统计切面 二维聚合：
@@ -109,7 +108,7 @@
  * 口径与 races.html / build_stats.py 一致：三态 / 距离四档 / 人气逐一 / 赛道方向 / 性别归一 / 母父=血统图「母亲的父亲」；
  *       比率分母=出走（完赛+未完赛，取消/除外不计），同 races.html 模块 34。 */
 var STATS = null;
-var st = { vts: ["中央"], yMode: "gen", yVal: "all", gen: "全部", rates: ["win"], sort: { k: "", dir: "desc" }, tab: "dist" };   /* 默认页签 = TAB_DIMS 第一个（距离） */
+var st = { vts: ["中央"], yMode: "gen", yVal: "all", genSel: null, rates: ["win"], sort: { k: "", dir: "desc" }, tab: "dist" };   /* genSel = 图例勾选态（null=全显）；默认页签 = TAB_DIMS 第一个（距离） */
 
 var TAB_DIMS = [
   { k: "dist",    l: "距离",     tip: "短距离≤1400m / 英里1401-1800m / 中距离1801-2400m / 长距离>2400m" },
@@ -299,126 +298,62 @@ function renderYseg() {
   document.getElementById("yseg").innerHTML = seg.join("");
 }
 
-/* ---- ④ 年龄成绩曲线（SVG：颜色=产年 · 线型=指标，指标 seg 可组合多选，分母=出走） ---- */
-function renderCurve() {
-  var pts = curveMerged();
-  var wrap = document.getElementById("curve");
-  var segWrap = document.getElementById("genSeg");
-  document.getElementById("rateSeg").innerHTML = RATE_METRICS.map(function (m) {
-    return '<button type="button" data-r="' + m.k + '" data-on="' + (st.rates.indexOf(m.k) >= 0 ? "true" : "false") +
-      '" title="按月龄查看' + m.l + '（分母=出走，可组合多选）">' + m.l + '</button>';
-  }).join("");
-  var mts = RATE_METRICS.filter(function (m) { return st.rates.indexOf(m.k) >= 0; });
+/* ---- ④ 年龄成绩曲线（ECharts 定制包 · §145）----
+ * 语义沿用 §135：颜色 = 世代 · 线型 = 指标 · 分母 = 出走。
+ * 相对原手写 SVG 的五处改动，每处对应一个实测问题（详见 docs/UI优化记录.md §145）：
+ *   ① y 轴上界自适应 + 超上界贴顶 —— 原固定 50%，14 颗可靠点全挤在底部 30% 高度里互相压线；
+ *      撑满 50% 的其实只有一颗 9 场的 44.4%（噪声）→ 刻度只按可靠点定标，噪声点贴顶画 ▲
+ *   ② axis tooltip —— 原只有 SVG <title>，必须精确悬停，触屏完全不可用
+ *   ③ 点径编码样本量 —— 原用「空心/实心」区分，两个 3px 圆肉眼几乎分不出
+ *   ④ 总体平均参考线 —— 与矩阵「高于/低于总体平均」同口径，灰虚线
+ *   ⑤ 图例 = 世代且可点 —— 原 genSeg 下拉 + 自绘图例是两个控件做同一件事
+ * 数据：stats.json 的 curve[]（gen 产年 × a 月龄），前端按 场地 × 切面 合并（curveMerged）。 */
+var CURVE = { ec: null, meta: [], over: false };   /* meta[seriesIndex] = { gen, mt }：tooltip 靠它把系列反查回「世代 × 指标」；over = 本次有贴顶点 */
+function chartFont() { return "'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif"; }
+function isMb() { return !!(window.matchMedia && window.matchMedia("(max-width: 768px)").matches); }
+/* 线型小样背景（seg 按钮用）：dash 串 → repeating-linear-gradient，与 ECharts lineStyle.type 同源 */
+function lineBg(m, color) {
+  if (!m.dash) return color;
+  var on = m.dash === "2,3" ? 2 : 4;
+  return "repeating-linear-gradient(90deg," + color + " 0 " + on + "px,transparent " + on + "px " + (on + 3) + "px)";
+}
+/* dash 串 → ECharts lineStyle.type：'6,3' 这种字符串它不认，必须给数组 */
+function lineType(m) { return m.dash ? m.dash.split(",").map(Number) : "solid"; }
+/* 可见世代：以图例勾选态 st.genSel 为准（null = 全显） */
+function curveGens(pts) {
   var gens = [];
   pts.forEach(function (p) { if (gens.indexOf(p.gen) < 0) gens.push(p.gen); });
   gens.sort();
-  if (!gens.length) {
-    segWrap.innerHTML = "";
-    wrap.innerHTML = '<div class="hint-empty">暂无曲线数据</div>';
-    document.getElementById("curveLegend").innerHTML = "";
-    document.getElementById("curveNote").textContent = "";
-    return;
-  }
-  if (st.gen !== "全部" && gens.indexOf(st.gen) < 0) st.gen = "全部";
-  var segs = ['<button type="button" data-g="全部" data-on="' + (st.gen === "全部" ? "true" : "false") + '">全部</button>'];
-  gens.forEach(function (g) {
-    segs.push('<button type="button" data-g="' + g + '" data-on="' + (st.gen === g ? "true" : "false") + '">' + g + '年世代</button>');
-  });
-  segWrap.innerHTML = segs.join("");
-  var sel = st.gen === "全部" ? gens : [st.gen];
-  var bins = [];
-  pts.forEach(function (p) { if (sel.indexOf(p.gen) >= 0 && bins.indexOf(p.a) < 0) bins.push(p.a); });
-  bins.sort(function (a, b) { return a - b; });
-  var colorOf = function (g) { var i = gens.indexOf(g); return GEN_COLORS[i % GEN_COLORS.length]; };
-  var series = [];
-  sel.forEach(function (g) {
-    mts.forEach(function (m) {
-      var arr = [];
-      bins.forEach(function (a) {
-        var hit = null;
-        for (var i = 0; i < pts.length; i++) if (pts[i].gen === g && pts[i].a === a) { hit = pts[i]; break; }
-        if (!hit) return;
-        arr.push({ a: a, rate: rates(hit)[m.k], f: starts(hit), w: hit.w });   /* 比率分母=出走 */
-      });
-      series.push({ gen: g, mt: m, color: colorOf(g), arr: arr });
-    });
-  });
-  var ymax = 20;
-  series.forEach(function (s) {
-    s.arr.forEach(function (p) {
-      var v = p.rate * 100;
-      if (v > ymax) ymax = Math.ceil(v / 10) * 10;
-    });
-  });
-  if (ymax < 20) ymax = 20;
-  var W = Math.max(320, Math.min(1200, wrap.clientWidth || 800));
-  var H = 232, padL = 36, padR = 24, padT = 12, padB = 24;
-  var plotW = W - padL - padR, plotH = H - padT - padB;
-  var y = function (rPct) { return padT + plotH * (1 - rPct / ymax); };   /* 入参=百分数 */
-  var x = function (i) { return bins.length === 1 ? padL + plotW / 2 : padL + i * plotW / (bins.length - 1); };
-  var svg = [];
-  var steps = [0, ymax / 2, ymax];
-  steps.forEach(function (gv) {
-    svg.push('<line x1="' + padL + '" y1="' + y(gv) + '" x2="' + (W - padR) + '" y2="' + y(gv) +
-      '" stroke="#f0f0f0" stroke-width="1"/>');
-    svg.push('<text x="' + (padL - 5) + '" y="' + (y(gv) + 3.5) + '" text-anchor="end" font-size="10" fill="#a1a1aa">' + gv + '%</text>');
-  });
-  series.forEach(function (s) {
-    var path = "";
-    s.arr.forEach(function (p, i) {
-      path += (i ? " L" : "M") + x(bins.indexOf(p.a)).toFixed(1) + " " + y(p.rate * 100).toFixed(1);
-    });
-    if (s.arr.length > 1) {
-      svg.push('<path d="' + path + '" fill="none" stroke="' + s.color + '" stroke-width="2"' +
-        (s.mt.dash ? ' stroke-dasharray="' + s.mt.dash + '"' : "") + '/>');
-    }
-    s.arr.forEach(function (p) {
-      var cx = x(bins.indexOf(p.a)), cy = y(p.rate * 100);
-      var solid = p.f >= DIM_F;
-      var tt = s.gen + "年世代 · " + ageLabel(p.a) + " · 出走" + p.f + " · 1着" + p.w + " · " +
-        s.mt.l + " " + pct(p.rate) + (p.f < SM_F ? "（样本少）" : "");
-      svg.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="3.4" fill="' +
-        (solid ? s.color : "#fff") + '" stroke="' + s.color + '" stroke-width="1.5" opacity="' + (solid ? "1" : "0.75") + '">' +
-        '<title>' + esc(tt) + '</title></circle>');
-    });
-  });
-  var lblStep = Math.max(1, Math.ceil(bins.length / Math.max(1, Math.floor(plotW / 46))));   /* 标签抽稀防重叠 */
-  bins.forEach(function (a, i) {
-    if (i % lblStep !== 0 && i !== bins.length - 1) return;
-    svg.push('<text x="' + x(i).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" font-size="10" fill="#737373">' + ageLabel(a) + '</text>');
-  });
-  wrap.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;height:auto">' + svg.join("") + '</svg>';
-  /* 图例 */
-  /* 图例（线型=指标：实线/虚线/点线小样，同 SVG dash） */
-  var legendBg = function (m, color) {
-    if (!m.dash) return color;
-    var on = m.dash === "2,3" ? 2 : 4;
-    return "repeating-linear-gradient(90deg," + color + " 0 " + on + "px,transparent " + on + "px " + (on + 3) + "px)";
-  };
-  var legend = [];
-  sel.forEach(function (g) {
-    mts.forEach(function (m) {
-      legend.push('<span><i style="background:' + legendBg(m, colorOf(g)) + '"></i>' + g + '年世代' + m.l + '</span>');
-    });
-  });
-  legend.push('<span style="color:#a1a1aa">○ 样本少（出走&lt;10）</span>');
-  document.getElementById("curveLegend").innerHTML = legend.join("");
-  /* 峰值注解 */
-  /* 峰值注解（按 产年 × 选中指标） */
+  return gens.filter(function (g) { return !st.genSel || st.genSel[g + "年世代"] !== false; });
+}
+function disposeCurve() { if (CURVE.ec) { CURVE.ec.dispose(); CURVE.ec = null; } }
+
+/* 峰值注解 + 口径说明（图例切换时只刷这段与明细表，不重画图，避免动画回放） */
+function renderCurveNote(pts) {
+  var sel = curveGens(pts);
+  var mts = RATE_METRICS.filter(function (m) { return st.rates.indexOf(m.k) >= 0; });
   var notes = [];
   sel.forEach(function (g) {
     mts.forEach(function (m) {
       var peak = null;
-      series.forEach(function (s) {
-        if (s.gen !== g || s.mt !== m) return;
-        s.arr.forEach(function (p) { if (p.f >= SM_F && (!peak || p.rate > peak.rate)) peak = p; });
+      pts.forEach(function (p) {
+        if (p.gen !== g || starts(p) < SM_F) return;
+        var r = rates(p)[m.k];
+        if (!peak || r > peak.r) peak = { r: r, a: p.a };
       });
-      if (peak) notes.push(g + "年世代 " + m.l + "峰值 " + ageLabel(peak.a) + " " + pct(peak.rate));
+      if (peak) notes.push(g + "年世代 " + m.l + "峰值 " + ageLabel(peak.a) + " " + pct(peak.r));
     });
   });
-  document.getElementById("curveNote").textContent = "颜色=产年 · 线型=指标（分母=出走） · " + (notes.length ? "峰值： " + notes.join("； ") + "（样本≥" + SM_F + "）" : "样本均小于" + SM_F + "，仅供参考");
-  /* 月龄明细表（v2）：行=月龄（升序）· 世代子行——每月龄一组，组首行标月龄（组间分隔线 .grp），
-   * 同月龄内世代升序（2023→2024）；列序 出走/1着/2着/3着/着外/三率 与矩阵一致（分母=出走） */
+  document.getElementById("curveNote").textContent =
+    "颜色=世代 · 线型=指标（分母=出走） · 点径=样本量，空心=样本<" + SM_F + (CURVE.over ? "、▲=超出上界" : "") +
+    " · 灰虚线=总体平均 · " +
+    (notes.length ? "峰值： " + notes.join("； ") + "（样本≥" + SM_F + "）" : "样本均小于" + SM_F + "，仅供参考");
+}
+
+/* 月龄明细表（v2 · §135）：行=月龄（升序）· 世代子行，列序与矩阵一致（分母=出走）。
+ * 可见世代跟图例走 —— 图例点了什么，表里就只剩什么。 */
+function renderCurveTable(pts) {
+  var sel = curveGens(pts);
   var rows = [];
   pts.forEach(function (p) { if (sel.indexOf(p.gen) >= 0) rows.push(p); });
   rows.sort(function (a, b) { return a.a === b.a ? (a.gen < b.gen ? -1 : 1) : a.a - b.a; });
@@ -435,6 +370,185 @@ function renderCurve() {
   });
   html += '</tbody></table>';
   document.getElementById("curveTable").innerHTML = html;
+}
+
+function renderCurve() {
+  var pts = curveMerged();
+  var el = document.getElementById("curve");
+  var base = baseMerged(), br = rates(base);
+
+  /* 指标 seg：按钮自带线型小样 —— 「线型=指标」的对应关系由控件自己承担，
+   * 于是图例可以只表达世代（少一个维度、少一个控件、少一段自绘图例代码） */
+  document.getElementById("rateSeg").innerHTML = RATE_METRICS.map(function (m) {
+    return '<button type="button" data-r="' + m.k + '" data-on="' + (st.rates.indexOf(m.k) >= 0 ? "true" : "false") +
+      '" title="按月龄查看' + m.l + '（分母=出走，可组合多选）">' +
+      '<i class="st-lt" style="background:' + lineBg(m, "#52525b") + '"></i>' + m.l + "</button>";
+  }).join("");
+
+  var mts = RATE_METRICS.filter(function (m) { return st.rates.indexOf(m.k) >= 0; });
+  var gens = [];
+  pts.forEach(function (p) { if (gens.indexOf(p.gen) < 0) gens.push(p.gen); });
+  gens.sort();
+  if (!gens.length) {
+    disposeCurve();
+    el.innerHTML = '<div class="hint-empty hint-empty--sm">暂无曲线数据</div>';
+    document.getElementById("curveNote").textContent = "";
+    document.getElementById("curveTable").innerHTML = "";
+    return;
+  }
+  if (!window.YJ_ECHARTS) {
+    disposeCurve();
+    el.innerHTML = '<div class="hint-empty hint-empty--sm">图表库（echarts.line.min.js）加载失败，请通过 http 服务器访问</div>';
+    return;
+  }
+
+  var sel = curveGens(pts);
+  var bins = [];
+  pts.forEach(function (p) { if (bins.indexOf(p.a) < 0) bins.push(p.a); });
+  bins.sort(function (a, b) { return a - b; });
+  var colorOf = function (g) { return GEN_COLORS[gens.indexOf(g) % GEN_COLORS.length]; };
+  var maxN = 0;
+  pts.forEach(function (p) { var s = starts(p); if (s > maxN) maxN = s; });
+
+  var series = [], meta = [];
+  sel.forEach(function (g) {
+    mts.forEach(function (m) {
+      var data = bins.map(function (a) {
+        var hit = null;
+        for (var i = 0; i < pts.length; i++) if (pts[i].gen === g && pts[i].a === a) { hit = pts[i]; break; }
+        if (!hit) return null;
+        var f = starts(hit), r = rates(hit), sm = f < SM_F;
+        var item = { value: Math.round(r[m.k] * 1000) / 10, n: f, w: hit.w, sm: sm };
+        if (sm) item.itemStyle = { color: "#fff", borderColor: colorOf(g), borderWidth: 1.5 };   /* 样本少 = 空心 */
+        return item;
+      });
+      var s = {
+        name: g + "年世代",
+        type: "line",
+        data: data,
+        connectNulls: false,                            /* 缺月龄就断开：原手写版直连会让人以为中间有数据 */
+        symbol: "circle",
+        symbolSize: function (v, p) {
+          var n = (p && p.data && p.data.n) || 0;
+          return 4 + Math.round(5 * Math.sqrt(maxN ? n / maxN : 0));   /* 4~9px：点径即样本量 */
+        },
+        lineStyle: { width: 2, type: lineType(m), color: colorOf(g) },
+        itemStyle: { color: colorOf(g) },
+        emphasis: { focus: "series", scale: 1.5 },
+        z: 3
+      };
+      /* 每个指标一条总体平均参考线；只挂在第一个可见世代上，避免同一条线画多遍 */
+      if (g === sel[0]) {
+        s.markLine = {
+          silent: true, symbol: "none", animation: false,
+          lineStyle: { color: "#cfcfd4", type: "dashed", width: 1 },
+          label: {
+            /* PC 放右端加白底小片：3岁4月以后两条线都在 10~20%，裸字会被线压住；
+             * MB 图宽仅 321px，标签无论放哪端都会盖住数据 → 只留虚线，数值交给页脚说明与 y 轴 */
+            show: !isMb(), position: "insideEndTop", distance: 1,
+            color: "#8a8a8a", fontSize: 10, fontFamily: chartFont(),
+            backgroundColor: "rgba(255,255,255,.92)", padding: [1, 4], borderRadius: 3,
+            formatter: m.l + "平均 " + pct(br[m.k])
+          },
+          data: [{ yAxis: Math.round(br[m.k] * 1000) / 10 }]
+        };
+      }
+      series.push(s);
+      meta.push({ gen: g, mt: m });
+    });
+  });
+  CURVE.meta = meta;
+
+  /* y 上界自适应（取数据与平均线的较大者，留 12% 顶部余量，对齐到 5%）。
+   * 只让「可靠点（出走 ≥ SM_F）」与平均线参与定标 —— 实测 2岁4月 有一颗 9 场的 44.4%，
+   * 若参与定标会把上界拉到 50%，于是 14 颗可靠点（6~15.3%）全挤在底部 30% 高度里互相压线。 */
+  var ymax = 0;
+  series.forEach(function (s) {
+    s.data.forEach(function (d) { if (d && !d.sm && d.value > ymax) ymax = d.value; });
+  });
+  mts.forEach(function (m) { var v = br[m.k] * 100; if (v > ymax) ymax = v; });
+  ymax = Math.min(100, Math.max(20, Math.ceil(ymax * 1.12 / 5) * 5));
+
+  /* 超出上界的点：贴顶画成 ▲（真实值留在 d.real，tooltip 与明细表照旧给原值）。
+   * 不这么做就只能二选一：要么线冲出画布被裁成「断头」看着像渲染坏了，
+   * 要么把上界让给一颗 9 场的点、让 14 颗可靠点挤成一条。 */
+  var overCount = 0;
+  series.forEach(function (s) {
+    s.data.forEach(function (d) {
+      if (!d || d.value == null || d.value <= ymax) return;
+      d.real = d.value;
+      d.value = Math.round(ymax * 0.98 * 10) / 10;
+      d.over = true; d.symbol = "triangle"; d.symbolSize = 7;
+      overCount++;
+    });
+  });
+  CURVE.over = overCount > 0;
+
+  el.style.height = (isMb() ? 240 : 260) + "px";
+  if (!CURVE.ec) {
+    el.innerHTML = "";                                  /* 仅首次初始化时清占位；实例存在时清 innerHTML 会移走 canvas */
+    CURVE.ec = window.YJ_ECHARTS.init(el, null, { renderer: "canvas" });
+    /* 图例点击 = 切换世代可见性。图自己已按 legend 过滤，这里只把明细表与注解跟上 */
+    CURVE.ec.on("legendselectchanged", function (e) {
+      st.genSel = e.selected;
+      var p2 = curveMerged();
+      renderCurveTable(p2);
+      renderCurveNote(p2);
+    });
+  } else {
+    CURVE.ec.resize();                                  /* 视口/断点变化后高度已改，先同步画布 */
+  }
+
+  CURVE.ec.setOption({
+    textStyle: { fontFamily: chartFont() },
+    animationDuration: 600, animationEasing: "cubicOut",
+    grid: { left: 4, right: 14, top: 32, bottom: 4, containLabel: true },
+    legend: {
+      top: 0, right: 0, itemGap: 18, itemWidth: 14, itemHeight: 3, icon: "roundRect",
+      textStyle: { color: "#52525b", fontSize: 12, fontFamily: chartFont() },
+      inactiveColor: "#c9c9ce",
+      data: gens.map(function (g) { return g + "年世代"; }),
+      selected: st.genSel || {}
+    },
+    tooltip: {
+      trigger: "axis", confine: true,
+      axisPointer: { type: "line", lineStyle: { color: "#d4d4d8", type: "dashed" } },
+      backgroundColor: "rgba(255,255,255,.97)", borderColor: "#e4e4e7", padding: [8, 10],
+      textStyle: { color: "#171717", fontSize: 12, fontFamily: chartFont() },
+      formatter: function (ps) {
+        if (!ps || !ps.length) return "";
+        var out = '<div style="font-weight:600;margin-bottom:3px">' + esc(ps[0].axisValue) + "</div>";
+        ps.forEach(function (p) {
+          if (!p.data) return;
+          var mm = CURVE.meta[p.seriesIndex] || {};
+          var real = p.data.real == null ? p.value : p.data.real;   /* 贴顶点：报真实值，不报被钳住的高度 */
+          out += '<div style="margin-top:2px"><i style="display:inline-block;width:9px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px;background:' + p.color + '"></i>' +
+            '<span style="color:#52525b">' + (mm.gen || "") + "年世代 " + (mm.mt ? mm.mt.l : "") + "</span> " +
+            "<b>" + real + "%</b>" + (p.data.over ? '<span style="color:#a1a1aa"> ▲超出上界</span>' : "") +
+            '<span style="color:#a1a1aa;margin-left:6px">出走' + p.data.n + (p.data.sm ? " · 样本少" : "") + "</span></div>";
+        });
+        return out;
+      }
+    },
+    xAxis: {
+      type: "category", data: bins.map(ageLabel), boundaryGap: false,
+      axisLine: { lineStyle: { color: "#e4e4e7" } }, axisTick: { show: false },
+      axisLabel: { color: "#8a8a8a", fontSize: 10.5, fontFamily: chartFont(), hideOverlap: true, margin: 8 },
+      splitLine: { show: false }
+    },
+    yAxis: {
+      /* 不写 splitNumber：min/max 固定时 ECharts 默认切 5 段 → 0/10/20/30/40/50 整值；
+       * 写 splitNumber:3 会切出 0/20/50 这种非等距的丑刻度（实测） */
+      type: "value", min: 0, max: ymax,
+      axisLine: { show: false }, axisTick: { show: false },
+      splitLine: { lineStyle: { color: "#f2f2f2" } },
+      axisLabel: { color: "#a1a1aa", fontSize: 10.5, fontFamily: chartFont(), formatter: "{value}%" }
+    },
+    series: series
+  }, { notMerge: true });
+
+  renderCurveNote(pts);
+  renderCurveTable(pts);
 }
 
 /* ---- ② 倾向矩阵 ---- */
@@ -786,12 +900,6 @@ document.getElementById("yseg").addEventListener("click", function (e) {
   if (!btn) return;
   st.yVal = btn.getAttribute("data-y");
   renderAll();
-});
-document.getElementById("genSeg").addEventListener("click", function (e) {
-  var btn = e.target.closest ? e.target.closest("button[data-g]") : null;
-  if (!btn) return;
-  st.gen = btn.getAttribute("data-g");
-  renderCurve();
 });
 document.getElementById("rateSeg").addEventListener("click", function (e) {
   var btn = e.target.closest ? e.target.closest("button[data-r]") : null;

@@ -91,10 +91,12 @@
  * 低样本行的数字与正常行等权。改直接命中 td.dim（率列内的 yj-up/yj-down 自带色，仍优先生效）。 */
 .st-mat td.dim{color:#b4b4b8}
 /* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源） */
-/* 图例 */
+/* 图例（仅剩种马榜走势在用；曲线图例自 §145 起由 ECharts 内置 legend 承担） */
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
 .st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
-.st-legend i.dot{width:7px;height:7px;border-radius:50%}
+/* 指标 seg 内的线型小样（§145）：把「线型=指标」的对应关系交给控件自己，
+ * 于是曲线图例只需表达世代 —— 原 genSeg 下拉与自绘图例是两套控件做同一件事 */
+.st-lt{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px}
 /* 空态：本页原有一条 .hint-empty 覆盖（26px 版），但页内无任何元素使用该类 → 2026-10-30 UI 审查 §30
  * 一并删除；需要空态时用 theme.css 的 .hint-empty（60px 大留白）或 .hint-empty--sm（26px 紧凑）。 */
 /* 月龄明细表（v2）：行=月龄 · 世代子行——组首行上缘加分隔线区分月龄组 */

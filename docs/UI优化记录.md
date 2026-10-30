@@ -50,7 +50,7 @@
 | 32 | 日期统计页 | ✅ | 后端预计算 datechart.json，天/周/月/年日历 + KPI 带 + 内嵌明细 |
 | 33 | 同日按发走时间排序 | ✅ | 统一 `raceCmp`，四处生效 |
 | 34 | 着顺过滤三态化 | ✅ | 完赛/未完赛/未出走三态，KPI 改「出走」 |
-| 35 | 倾向统计页 | ✅ | 倾向矩阵（15 维切面）+ 种马榜走势 + 年龄成绩曲线，后端预计算（§135 删重赏之路并重排；§144 矩阵粘性表头/基准行 + 出走样本量条 + MB 单行页签） |
+| 35 | 倾向统计页 | ✅ | 倾向矩阵（15 维切面）+ 种马榜走势 + 年龄成绩曲线，后端预计算（§135 删重赏之路并重排；§144 矩阵粘性表头/基准行 + 出走样本量条 + MB 单行页签；§145 曲线改 ECharts 定制包：自适应 y 轴 + axis tooltip + 点径=样本量 + 总体平均参考线，图例即世代筛选器，原 genSeg/自绘图例/手写 SVG 全删） |
 | 36 | 着顺语义纯彩字修正 | ✅ | 人气/通算战绩/进板数改同色相深阶文字 |
 | 37 | 赛道方向译名 + 人气筛选多选 | ✅ | 显示层译名 + 复用 selRow 下拉 |
 | 38 | 未选马总览等式 | ✅ | `277 = 146 + 131` 实时聚合；mb 端直接展示 |
@@ -1304,3 +1304,49 @@ document.addEventListener("yj-draft-committed", function () {
   - 数值列**未改右对齐**——居中在 43px 窄列更稳，且要连带改排序图标的负外边距定位；本次收益不足以承担回归风险。
   - MB **未改卡片式列表**——会丢掉表头点击排序与「一行加得起来」的列语义，属另一套交互，需单独立项。
   - 15 个页签**未分组**——页签序 = 用户定稿（verify 有硬断言），分组必然要重排，与定稿冲突。
+
+### §145 · 倾向统计：年龄成绩曲线改 ECharts 定制包（2026-10-30，用户提出「顺便换成自定义版 echart」）
+
+- **动因（用户）**：年龄成绩曲线有没有优化展示的空间；顺便换成自定义版 ECharts，改完之后**没人引用的样式和控件删掉**。
+- **现状问题（读 `setOption` 载荷 + 截图实测，非推测）**：
+
+| # | 端 | 问题 |
+|---|---|---|
+| 1 | 双端 | y 轴写死 50%，而**撑满这个上限的只有一颗 9 场的 44.4%**（2岁4月，纯噪声）；14 颗可靠点（n≥20）实际落在 6%~15.3%，全挤在底部 30% 高度里互相压线 |
+| 2 | 双端 | 悬停提示只有一个 SVG `<title>` —— 必须精确停在 3px 圆点上才出，触屏**完全不可用** |
+| 3 | 双端 | 样本量只用「空心/实心」区分，两个 3px 圆肉眼几乎分不出；读者无法判断 44.4% 是 9 场还是 90 场 |
+| 4 | 双端 | 没有总体平均参考线 → 与矩阵「高于/低于总体平均」口径断裂，看曲线不知道 15% 算高还是低 |
+| 5 | 双端 | `#genSeg` 下拉 + `#curveLegend` 自绘图例是**两个控件做同一件事**；而「线型=指标」这条映射只存在于自绘图例里，指标一多就绕 |
+| 6 | 双端 | 手写 SVG 的 x 轴 19 个标签等距硬排，窄屏必重叠（无 `hideOverlap` 之类的兜底） |
+
+- **定制包（`front/public/echarts.line.min.js`）**：
+  - 从 `echarts/core` 按需引入 **LineChart + Grid/Tooltip/Legend/MarkLine + CanvasRenderer**，esbuild 打成 IIFE，挂 `window.YJ_ECHARTS`。
+  - 体积 **519 KB 原始 / 174 KB gzip**（与产驹赏金在用的 `echarts.bar.min.js` 515 KB/175 KB 同量级）；全量 `echarts.min.js` 约 1 MB/330 KB，只为一个折线图不值。
+  - 只有 `stats.html` 引用；构建配方写在文件头注释里（`npm i echarts@5.6.0 esbuild` → `npx esbuild entry.js --bundle --minify --format=iife --target=es2018`），重建不依赖本文档。
+  - `entry.js` 全文（重建时照抄即可）：
+
+```js
+import * as echarts from "echarts/core";
+import { LineChart } from "echarts/charts";
+import { GridComponent, TooltipComponent, LegendComponent, MarkLineComponent } from "echarts/components";
+import { CanvasRenderer } from "echarts/renderers";
+echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, CanvasRenderer]);
+window.YJ_ECHARTS = echarts;
+```
+- **落地**：
+  1. **y 上界只按可靠点定标**：`ymax = ceil(max(n≥SM_F 的点, 平均线) × 1.12 / 5) × 5`，下限 20%。本数据从 50% 降到 **20%**，可靠点带从占 30% 高度变成占 75%。
+  2. **超上界的点贴顶画 ▲**：`d.real` 存真实值、`d.value` 钳到 `ymax×0.98`、`symbol` 改 `triangle`。不这么做只剩两个坏选择——要么让线冲出画布被裁成「断头」（实测观感像渲染坏了），要么把刻度让给一颗 9 场的点。tooltip 与明细表**照旧报真实值**（44.4%），只有图上高度是贴顶位置。
+  3. **axis tooltip**：`trigger:"axis"` + 虚线 axisPointer，`formatter` 自绘「世代 · 指标 · 比率 · 出走n（· 样本少 / ▲超出上界）」；`confine:true` 防贴边溢出。
+  4. **点径 = 样本量**：`symbolSize` 回调 `4 + 5×√(n/maxN)`（4~9px）；n<SM_F 仍额外改空心（白底 + 世代色描边），两种编码叠加。
+  5. **总体平均参考线**：每个指标一条 `markLine`（灰虚线），**只挂在第一个可见世代上**，避免同一条线画多遍；标签 PC 放右端加白底小片（3岁4月后两条线都在 10~20%，裸字会被压），**MB 不显示标签**（图宽 321px，放哪端都盖数据）。
+  6. **图例即世代筛选器**：ECharts 内置 legend，`data` = 世代、`selected` 存 `st.genSel`；点击只 `renderCurveTable` + `renderCurveNote`，**不重画**（避免动画回放）。系列 `name` 用「世代」而非「世代×指标」→ 同名系列被 ECharts 合并成一个图例项，点一下关掉该世代全部指标。
+  7. **线型交给指标按钮**：`RATE_METRICS` 的 dash 串同时喂两处——按钮里的 `.st-lt` 小样用 `repeating-linear-gradient`、系列用 `lineStyle.type` 数组（`"6,3"` 字符串 ECharts 不认，必须 `split(",").map(Number)`）。
+  8. **删掉的**：`#genSeg`（`<div class="seg">` + 渲染 + click 监听）、`#curveLegend`、`.st-legend i.dot`、整段手写 SVG 生成逻辑（`renderCurve` 137 行 → 232 行，但多出 tooltip/图例联动/贴顶标记/明细表跟随）。`.st-legend` 类**保留**——种马榜走势还在用。
+  9. **y 轴不写 `splitNumber`**：`min/max` 固定时默认切 5 段 → 0/5/10/15/20 整值；写 `splitNumber:3` 会切出 0/8/20 这种非等距丑刻度（实测）。
+- **验证**：`node scripts/stats/verify_stats.cjs` **211 通过 · 0 失败**（§144 基线 207，本次 +4：贴顶 ▲ 数量与真实值、只有 n<20 才会超界、页脚 ▲ 说明、tooltip 报真实值）。断言全部改读 `setOption` 载荷（页面已不产出 SVG）。浏览器实测：**真实鼠标点击图例**（`dispatchAction` 不触发 `legendselectchanged`，不能用来验这条）→ `selected:{"2023年世代":false,"2024年世代":true}`、明细表 27 行 → 8 行、峰值注解只剩 2024；再点回来 27 行复原。PC 1016×260 / MB 336×240 画布，x 轴标签 `hideOverlap` 生效（MB 只留 5 个），零 console error。截图 `tests/age-final-pc.png`、`tests/age-final-mb.png`、`tests/age-card-pc.png`、`tests/age-card-mb.png`、`tests/age-legend-click-table-pc.png`。
+- **未做（明确取舍）**：
+  - **没有把 n<20 的点直接不画**：13/27 个点都是小样本，砍掉等于把 2岁2月~2岁5月整段（幼驹最早出赛的月龄）抹掉；改成贴顶 ▲ 保留信息量。
+  - **图例切换不重算 y 上界**：切换前后同一高度代表同一百分比，才比得出「世代差多少」；重算会让刻度随点击跳动。
+  - **没有加误差带/置信区间**：数据只给得到「出走 × 前三着」，算 Wilson 区间要改后端预计算；当前用「点径 + 空心 + ▲」三层编码已能表达可靠性。
+  - **没有做「导出 PNG」**：ECharts 自带 `getDataURL`，但页面其余图表（种马榜、产驹赏金）都没有导出，单点加会成为孤例。
+

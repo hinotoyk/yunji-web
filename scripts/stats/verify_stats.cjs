@@ -458,6 +458,26 @@ window.YJ_GRADE = _gradeCfg.GRADE || {};
 /* 页面 init 已改走 YJ.cache.fetch('stats')（12h 统一缓存）：node 无 caches → 控制器自动降级
  * 为直连 fetch stub，行为与旧版一致（同一份真实 yj-cache.js 顺带覆盖降级路径） */
 (0, eval)(fs.readFileSync(path.join(ROOT, "front", "public", "yj-cache.js"), "utf8"));
+/* ---- ECharts 桩（§145：年龄成绩曲线改 ECharts 定制包）----
+ * 曲线图不再产出 SVG，无法数 <path>；改为捕获 setOption 载荷做结构断言（同 tests/leaderboard-sim.mjs 的做法）。
+ * 同时记录 on() 注册的事件处理器，用于模拟图例点击。 */
+const EC = { opts: [], inst: null };
+function ecInstance() {
+  return {
+    _h: {},
+    setOption(o) { EC.opts.push(o); },
+    resize() {},
+    dispose() {},
+    on(ev, fn) { (this._h[ev] = this._h[ev] || []).push(fn); },
+    getOption() { return EC.opts[EC.opts.length - 1] || {}; },
+  };
+}
+window.YJ_ECHARTS = {
+  init() { EC.inst = ecInstance(); return EC.inst; },
+  getInstanceByDom() { return EC.inst; },
+};
+/* 最近一次 setOption 的载荷（曲线图断言全走它） */
+const ecOpt = () => EC.opts[EC.opts.length - 1] || {};
 eval(code);
 
 /* ---- 期望值工具（全部从产物独立重算；比率分母=出走） ---- */
@@ -513,42 +533,97 @@ setTimeout(function () {
   const yHtml = String(els["yseg"]._html);
   ok(yHtml.includes("全部") && yHtml.includes("2023年世代") && yHtml.includes("2024年世代"), "默认生产年值：全部/2023年世代/2024年世代");
 
-  console.log("[C2] 年龄成绩曲线（颜色=产年 + 线型=指标多选 + 明细表）");
-  const segHtml = String(els["genSeg"]._html);
-  ok(segHtml.includes("全部") && segHtml.includes("2023年世代") && segHtml.includes("2024年世代"), "世代切换：全部/2023年世代/2024年世代（届·年产 已弃用）");
+  console.log("[C2] 年龄成绩曲线（ECharts · 颜色=世代 + 线型=指标多选 + 明细表）");
   const rateHtml = String(els["rateSeg"]._html);
   ok(rateHtml.includes("胜率") && rateHtml.includes("连对率") && rateHtml.includes("复胜率"), "指标 seg：胜率/连对率/复胜率（可组合多选）");
   ok(rateHtml.includes('data-r="win" data-on="true"') && rateHtml.includes('data-r="ren" data-on="false"') && rateHtml.includes('data-r="fuku" data-on="false"'),
     "默认仅 胜率 选中");
-  const curveHtml = String(els["curve"]._html);
-  ok(curveHtml.includes("<svg") && (curveHtml.match(/<path/g) || []).length === 2, "默认 2 条折线（2023+2024 × 胜率，颜色=产年）");
-  const cys = [...curveHtml.matchAll(/cy="([\d.]+)"/g)].map(m => +m[1]);
-  ok(cys.length >= 4 && Math.max(...cys) - Math.min(...cys) > 40,
-    "曲线点位随比率起伏（最高-最低 cy 差 " + (Math.max(...cys) - Math.min(...cys)).toFixed(0) + "px，防贴底回归）");
-  ok((curveHtml.match(/<circle/g) || []).length >= 4, "曲线点标记（含 <title> tooltip）");
-  ok(String(els["curveLegend"]._html).includes("2023年世代胜率") && String(els["curveLegend"]._html).includes("2024年世代胜率") && String(els["curveLegend"]._html).includes("样本少"),
-    "图例（颜色=产年 · 选中指标）+ 样本少说明");
-  ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("月龄") && String(els["curveTable"]._html).includes("2023年世代") && String(els["curveTable"]._html).includes("2024年世代"), "月龄明细表（行=月龄 · 世代子行，§135）");
-  click("genSeg", "2024");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 1, "切换 2024年世代 → 1 条折线");
-  click("genSeg", "全部");
+  ok(rateHtml.includes('class="st-lt"'), "指标 seg 自带线型小样（线型=指标 的映射交给控件，图例只表达世代）");
+  ok(!html.includes('id="genSeg"') && !html.includes("curveLegend"),
+    "§145 撤掉 genSeg 下拉与自绘图例（ECharts legend 承担世代开关，两套控件做同一件事已合并）");
+
+  /* 曲线不再产出 SVG → 结构断言一律走 setOption 载荷 */
+  const g23 = "2023年世代", g24 = "2024年世代";
+  const opt1 = ecOpt();
+  ok(opt1.series && opt1.series.length === 2, "默认 2 条系列（2023+2024 × 胜率）");
+  ok(opt1.series.every(s => s.type === "line") && opt1.series.map(s => s.name).join(",") === g23 + "," + g24,
+    "系列名 = 世代（同名 → 一个图例项可整体开关该世代的所有指标）");
+  ok(JSON.stringify(opt1.legend.data) === JSON.stringify([g23, g24]), "图例 = 世代（legend.data 两项）");
+  const bins = opt1.xAxis.data;
+  ok(bins.length >= 4 && bins[0].includes("岁") && opt1.series.every(s => s.data.length === bins.length),
+    "x 轴 = 月龄类别（" + bins.length + " 个），各系列等长对齐");
+  ok(opt1.series.every(s => s.lineStyle.type === "solid"), "默认指标=胜率 → 实线");
+  ok(opt1.series.every(s => typeof s.symbolSize === "function" && s.connectNulls === false),
+    "点径按样本量回调（symbolSize 函数）+ 缺月龄断开（connectNulls=false，原手写版直连会让人以为中间有数据）");
+  const baseWin = Math.round(r0.win * 1000) / 10;
+  ok(opt1.series[0].markLine && opt1.series[0].markLine.data.length === 1 && opt1.series[0].markLine.data[0].yAxis === baseWin,
+    "总体平均参考线 = " + pctOf(r0.win) + "（与矩阵同口径，灰虚线）");
+  ok(!opt1.series[1].markLine, "参考线每个指标只挂一次（不随世代重复画）");
+  /* y 上界只认可靠点（出走 ≥ SM_F）+ 平均线：一颗 9 场的 44.4% 不该决定整张图的刻度 */
+  const ymaxExp = (() => {
+    let mx = 0;
+    opt1.series.forEach(s => s.data.forEach(d => { if (d && !d.sm && d.value > mx) mx = d.value; }));
+    mx = Math.max(mx, r0.win * 100);
+    return Math.min(100, Math.max(20, Math.ceil(mx * 1.12 / 5) * 5));
+  })();
+  ok(opt1.yAxis.max === ymaxExp, "y 上界 = " + ymaxExp + "%（只按可靠点定标：原固定 50%，14 颗可靠点全挤在底部 30% 高度）");
+  ok(opt1.yAxis.min === 0 && opt1.tooltip.trigger === "axis", "y 轴从 0 起 + axis tooltip（触屏可用，原仅 SVG <title>）");
+  ok(els["curve"].style.height === "260px", "PC 图高 260px（ECharts 容器高度由 JS 设定）");
+
+  /* 超上界的不可靠点：贴顶 ▲ + 真实值留在 d.real（tooltip/明细表照旧报原值） */
+  const overPts = [];
+  opt1.series.forEach(s => s.data.forEach(d => { if (d && d.over) overPts.push(d); }));
+  ok(overPts.length > 0 && overPts.every(d => d.value <= ymaxExp && d.real > ymaxExp && d.symbol === "triangle"),
+    "超上界点贴顶画 ▲（" + overPts.length + " 颗，如 " + (overPts[0] ? overPts[0].real + "%→" + overPts[0].value + "%" : "-") + "）");
+  ok(overPts.every(d => d.sm), "只有样本 < " + 20 + " 的点才会超上界（可靠点一律在刻度内）");
+  ok(String(els["curveNote"].textContent).includes("▲=超出上界"), "页脚说明带上 ▲=超出上界");
+
+  const i0 = opt1.series[0].data.findIndex(d => d);
+  const d0 = opt1.series[0].data[i0];
+  const d0v = d0.real == null ? d0.value : d0.real;
+  const tip = opt1.tooltip.formatter([{ axisValue: bins[i0], seriesIndex: 0, value: d0.value, data: d0, color: "#0aa7a0" }]);
+  ok(tip.includes(g23) && tip.includes("胜率") && tip.includes(d0v + "%") && tip.includes("出走" + d0.n),
+    "tooltip = 世代 · 指标 · 比率 · 出走（" + bins[i0] + " " + d0v + "% 出走" + d0.n + "）");
+  /* 贴顶点：tooltip 报真实值（不是被钳住的高度） */
+  const o0 = overPts[0];
+  const tipO = opt1.tooltip.formatter([{ axisValue: "2岁4月", seriesIndex: 0, value: o0.value, data: o0, color: "#0aa7a0" }]);
+  ok(tipO.includes(o0.real + "%") && tipO.includes("▲超出上界") && !tipO.includes(o0.value + "%"),
+    "贴顶点 tooltip 报真实值 " + o0.real + "%（图上高度 " + o0.value + "% 只是贴顶位置）");
+
+  ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("月龄") &&
+     String(els["curveTable"]._html).includes(g23) && String(els["curveTable"]._html).includes(g24),
+    "月龄明细表（行=月龄 · 世代子行，§135）");
+
+  /* 图例点击 = 切世代可见性：图自己按 legend 过滤，只刷明细表与注解，不重画 */
+  const optCnt = EC.opts.length;
+  EC.inst._h.legendselectchanged[0]({ selected: { [g23]: false, [g24]: true } });
+  ok(EC.opts.length === optCnt, "图例点击不触发重画（只刷明细表与峰值注解）");
+  const tbHide = String(els["curveTable"]._html);
+  ok(tbHide.includes(g24) && !tbHide.includes(g23), "图例隐藏 2023 世代 → 明细表只剩 2024");
+  ok(!String(els["curveNote"].text).includes(g23 + "年世代 胜率峰值"), "峰值注解跟随图例");
+  EC.inst._h.legendselectchanged[0]({ selected: { [g23]: true, [g24]: true } });
+  ok(String(els["curveTable"]._html).includes(g23) && String(els["curveTable"]._html).includes(g24), "图例恢复 → 明细表回到两世代");
+
   click("rateSeg", "ren");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 4 && String(els["curveLegend"]._html).includes("连对率"),
-    "组合 胜率+连对率 → 4 条折线（实线+虚线）+ 图例跟随");
+  const opt2 = ecOpt();
+  ok(opt2.series.length === 4, "组合 胜率+连对率 → 4 条系列（2 世代 × 2 指标）");
+  ok(opt2.series.filter(s => JSON.stringify(s.lineStyle.type) === "[6,3]").length === 2,
+    "连对率 = 虚线 [6,3]（线型=指标；'6,3' 字符串 ECharts 不认，必须数组）");
+  ok(opt2.series.filter(s => s.markLine).length === 2, "两条参考线（每个指标一条）");
   click("rateSeg", "fuku");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 6 && String(els["curveNote"].text).includes("复胜率") && String(els["curveNote"].text).includes("分母=出走"),
-    "三指标全开 → 6 条折线 + 注解跟随（分母=出走）");
+  ok(ecOpt().series.length === 6 && String(els["curveNote"].text).includes("复胜率") && String(els["curveNote"].text).includes("分母=出走"),
+    "三指标全开 → 6 条系列 + 注解跟随（分母=出走）");
   click("rateSeg", "win");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 4 && String(els["rateSeg"]._html).includes('data-r="win" data-on="false"'),
+  ok(ecOpt().series.length === 4 && String(els["rateSeg"]._html).includes('data-r="win" data-on="false"'),
     "再点已选指标可取消 → 剩 连对+复胜 4 条");
   click("rateSeg", "ren");
   click("rateSeg", "fuku");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 2 && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="true"'),
+  ok(ecOpt().series.length === 2 && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="true"'),
     "唯一项不可关（关掉连对率后 复胜率 不可再关，仍 2 条）");
   click("rateSeg", "win");
   click("rateSeg", "fuku");
-  ok((String(els["curve"]._html).match(/<path/g) || []).length === 2 && String(els["rateSeg"]._html).includes('data-r="win" data-on="true"') && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="false"'),
-    "回默认：仅 胜率 2 条折线");
+  ok(ecOpt().series.length === 2 && String(els["rateSeg"]._html).includes('data-r="win" data-on="true"') && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="false"'),
+    "回默认：仅 胜率 2 条系列");
 
   console.log("[C3] 倾向矩阵（15 页签 + 库内基准 + 下钻 URL）");
   ok((String(els["matTabs"]._html).match(/data-tab=/g) || []).length === 15, "矩阵 15 页签");
