@@ -1372,3 +1372,15 @@ window.YJ_ECHARTS = echarts;
 **验证**：build + dist 核对（旧选择器清零）；playwright-core（channel msedge）3 倍放大截图：色块连成等高一条、数字垂直居中；零月份 11 月卡 label/digits/dashes = `#a1a1aa`/`#c6c6ca`/`#c6c6ca` 统一灰。截图 `tests/.pw/m3-card.png`、`tests/.pw/m11-zero.png`、`tests/.pw/kpi-brk.png`。
 
 - **§147 补记（奖杯尺寸定稿）**：格内奖杯（日历格/年卡 `.dc-gw`）10px → **16px**（与 KPI「重赏胜利」同大小，用户定稿），mb 端因格子矮（38px）定 12px 防溢出；KPI 奖杯维持 16px（中途误缩 13px 已回退）。
+
+## §148 · 航迹线（timeline）四组展示优化（2026-10-31，用户问「是否还有优化空间」全选）
+
+**对象**：`timeline.html` + `timeline-page.css`（布局）+ `timeline-cards.css`（视觉原子，两页共享）+ `editor.js`（预览同步）。数据/后端零改动。
+
+**最终思路**（PC/mb 截图实测定案，骨架不动——三列 grid、六类事件色、赛事名恒单行均维持）：
+1. **无图纯文本卡**：无图事件不再出 `.tl-photo.empty` 浅灰占位板（🐎 emoji 部分环境还渲染不出），卡片退化为全宽文本卡——信息密度更好；卡片壳 `.tl-card`(flex)+`.tl-body`(flex:1) 天然支持，无需变体类。`timeline-cards.css` 删 `.tl-photo.empty` 两规则；`editor.js` 预览同步 + 提示文案补「无图 = 纯文本卡」。
+2. **年份胶囊 sticky + 年内计数**：`render()` 改为按年分组 `.tl-group`（yearrow + 该年全部行，交替序号跨年连续）；`.tl-yearrow` `position:sticky;top:8px`（sticky 以 `.tl-group` 为界，只在本年份区间内吸附）；yearrow 全宽透明层 `pointer-events:none` 防挡下方卡片 hover（胶囊自身恢复）；胶囊内补 `.tl-yc`（`N 条`，细竖线分隔）+ 默认淡投影。mb 端 `top:4px`。
+3. **交互微动效**：卡片入场 fade+上浮 14px（`IntersectionObserver` 逐行加 `.in` 放行；hidden 态只在 JS 挂 `.tl-anim` 后生效=渐进增强，无 JS/老浏览器全量放行绝不藏内容；整体包 `@media (prefers-reduced-motion: no-preference)`）；hover 事件行 → 同排节点 `scale(1.45)`+中性光晕（过渡在 cards 的 `.tl-node` 底座）；图片 hover `scale(1.04)`（.35s）。
+4. **日期+统计条**：日期年份 `<b>` 加粗加深（`#555b61`，月日维持浅灰 tabular-nums；`dateHTML()` 拆年月日，editor.js 预览同构）；顶部 stats 一行灰字 → 「数字+量词标签」迷你统计块（17px 粗体数字，重赏/父子制覇数字走 `text-primary` 青绿=胜语义色；Tailwind utility 内联，pages/*.html 在 content globs 内可编译）。
+
+**验证**：`node --check editor.js` ✓；`npm run build` ✓（⚠ 构建须带数据拷贝：试跑 `COPY_DATA=skip` 后 dist/data 被清空未回填，截图 401/404——**dist 会先清空**，skip 只该在确认数据无需回填时用）；dist 核对 `timeline-*.css` 含 `tl-yc/tl-anim/tl-group/hover 节点/reduced-motion/pointer-events:none`、`timeline-cards-*.css` 含 `tl-date b/scale(1.04)`、`tl-photo.empty` 与 🐎 全站清零。截图 `tests/timeline-review/`（`pc.png/mb.png`=改前，`pc-after.png/mb-after.png`=改后）。注：无头截图中个别图片灰块 = 懒加载与本地单线程服务器的传输竞态（图片 curl 全 200、每轮失败卡片随机），非页面问题；编辑台空态正常无报错。

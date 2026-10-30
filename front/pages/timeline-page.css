@@ -38,9 +38,13 @@
 .tl-item.left .tl-cardwrap{justify-self:end}
 .tl-item.left .tl-photo{order:2}
 .tl-item.left .tl-body{order:1}
-/* 年份：骑在轴线上的居中胶囊 */
-.tl-yearrow{position:relative;display:flex;justify-content:center;padding:4px 0 20px;z-index:1}
-.tl-year{background:#fff;border:1px solid #ececec;border-radius:100px;padding:3px 18px;font-size:13px;font-weight:700;color:#171717}
+/* 年份：骑在轴线上的居中胶囊；sticky 吸附在视口顶部（§147）——
+ * sticky 以父盒子 .tl-group 为界，只在本年份区间内跟随，滚出即让位下一年；
+ * yearrow 全宽透明层 pointer-events:none，避免悬停时挡住下方卡片的 hover（胶囊自身恢复）。 */
+.tl-yearrow{position:sticky;top:8px;z-index:2;display:flex;justify-content:center;padding:4px 0 20px;pointer-events:none}
+.tl-year{pointer-events:auto;background:#fff;border:1px solid #ececec;border-radius:100px;padding:3px 18px;font-size:13px;font-weight:700;color:#171717;box-shadow:0 1px 4px rgba(16,24,40,.06)}
+.tl-yc{margin-left:7px;padding-left:8px;border-left:1px solid #ececec;font-size:11px;font-weight:600;color:#9aa0a6}
+.tl-group{position:relative}
 @media (max-width:768px){
   .tl::before{left:7px;transform:none}
   .tl-item.right,.tl-item.left{grid-template-columns:16px minmax(0,1fr);grid-template-areas:"node date" "node card";align-items:start;padding-bottom:14px}
@@ -48,7 +52,7 @@
   .tl-node{margin-top:20px;align-self:start}
   .tl-cardwrap{width:100%}
   .tl-card{aspect-ratio:auto}
-  .tl-yearrow{justify-content:flex-start;padding:2px 0 14px 28px}
+  .tl-yearrow{justify-content:flex-start;padding:2px 0 14px 28px;top:4px}
 }
 /* 节点颜色 = 该事件最高优先级标签的类别色 */
 .tl-node.first{background-color:#0aa7a0}
@@ -57,3 +61,13 @@
 .tl-node.sire{background-color:#d5302a}
 .tl-node.award{background-color:#dca026}
 .tl-node.manual{background-color:#8a9096}   /* 人工节点：中性灰 */
+
+/* ===== 交互微动效（§147）===== */
+/* hover 事件行 → 节点放大 + 中性光晕（过渡在 timeline-cards.css 的 .tl-node 底座） */
+.tl-item:hover .tl-node{transform:scale(1.45);box-shadow:0 0 0 3px #fff,0 0 0 6px rgba(16,24,40,.08)}
+/* 卡片入场：fade + 上浮；hidden 态只在 JS 挂上 .tl-anim 后生效（渐进增强——
+ * 无 JS / 不支持观察器时列表永远可见）；整体包在 no-preference 里尊重系统减动效。 */
+@media (prefers-reduced-motion: no-preference){
+  .tl-anim .tl-item{opacity:0;transform:translateY(14px);transition:opacity .45s ease,transform .45s ease}
+  .tl-anim .tl-item.in{opacity:1;transform:none}
+}

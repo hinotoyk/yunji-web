@@ -16,7 +16,7 @@
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
   <div class="page-title mb-7 flex flex-wrap items-baseline gap-x-4 gap-y-1 max-md:mt-2.5">航迹线 · TIMELINE<a id="editEntry" class="hidden text-[11.5px] font-semibold normal-case tracking-normal text-muted-foreground transition hover:text-primary max-md:hidden" href="edit-timeline.html" title="人工节点编辑（编辑台）">编辑 ↗</a></div>
-  <div id="stats" class="mb-3 text-[12.5px] text-muted-foreground"></div>
+  <div id="stats" class="mb-5 max-md:mb-4"></div>
   <div id="body"><div class="hint-empty">正在加载时间线数据…</div></div>
 </div>
 
@@ -58,14 +58,21 @@ function teamHTML(team){
            team.split('｜').map(function(s){ return '<div>'+esc(s.trim())+'</div>'; }).join('')+
          '</div>';
 }
-/* 图源：timeline.json 已解析（race photo 优先→马照片），空=浅灰占位。
- * 图片标记统一走 YJ.ui.img（§5.3.2）：loading=lazy + decoding=async + 写死占位尺寸
+/* 图源：timeline.json 已解析（race photo 优先→马照片）。
+ * 无图 = 不出图位、卡片退化为「纯文本窄卡」（2026-10-31 §147 定稿）——旧 🐎 浅灰占位板观感塌陷，
+ * 文本卡反而信息密度更好；卡片视觉（.tl-card flex + .tl-body flex:1）天然支持无图态，无需变体类。
+ * 有图时统一走 YJ.ui.img（§5.3.2）：loading=lazy + decoding=async + 写死占位尺寸
  * 297×210 —— 与 .tl-photo 的 aspect-ratio:297/210 同源，解码前比例即已确定，不会顶动卡片位置。 */
 function photoHTML(ev){
   var src = ev.photo || "";
   return src
     ? '<div class="tl-photo">'+YJ.ui.img({ src: src, alt: "", cls: "", w: 297, h: 210 })+'</div>'
-    : '<div class="tl-photo empty"><span>🐎</span></div>';
+    : '';
+}
+/* 日期：年份加粗加深为时间锚点（§147），月日维持浅灰 tabular-nums；空值兜底 — */
+function dateHTML(d){
+  if (!d) return '<div class="tl-date">—</div>';
+  return '<div class="tl-date"><b>'+esc(d.slice(0,4))+'</b>'+esc(d.slice(4))+'</div>';
 }
 function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在左），"left"=卡片在轴左侧；图位恒贴时间轴一侧 */
   var card = '<div class="tl-card card">'+photoHTML(ev)+'<div class="tl-body">';
@@ -138,7 +145,7 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
   }
   card += '</div></div>';
   return '<div class="tl-item '+side+'">'+
-           '<div class="tl-date">'+esc(ev.date||"—")+'</div>'+
+           dateHTML(ev.date)+
            '<div class="tl-node '+esc(ev.node||"award")+'"></div>'+
            '<div class="tl-cardwrap">'+card+'</div>'+
          '</div>';
@@ -166,24 +173,64 @@ function fitRaceNames(){
   }
 }
 function render(events){
-  /* 时间自下而上：最新在顶部（渲染前倒序），年份分组同步降序；卡片按序左右交替骑在中央轴上 */
-  var year = "";
-  var items = events.slice().reverse().map(function(ev, i){
-    var s = "";
+  /* 时间自下而上：最新在顶部（渲染前倒序），年份分组同步降序；卡片按序左右交替骑在中央轴上
+   * （交替序号跨年连续，避免每年都从右侧重开导致轴线两侧密度失衡）。
+   * 分组结构（§147）：.tl-group 包住该年 yearrow + 全部事件行 —— yearrow 才能 sticky 吸附
+   * 在本年份区间内（sticky 以父盒子为界），滚出年份即让位给下一年。 */
+  var groups = [], year = "", cur = null;
+  events.slice().reverse().forEach(function(ev){
     var y = ev.date ? ev.date.slice(0,4) : "";
-    if (y && y !== year){ year = y; s += '<div class="tl-yearrow"><span class="tl-year">'+y+'</span></div>'; }
-    return s + eventHTML(ev, i%2===0 ? "right" : "left");
+    if (y !== year){ year = y; cur = { y: y, items: [] }; groups.push(cur); }
+    cur.items.push(ev);
+  });
+  var gi = 0;
+  var items = groups.map(function(g){
+    return '<div class="tl-group">'+
+             '<div class="tl-yearrow"><span class="tl-year">'+esc(g.y||"—")+
+               '<span class="tl-yc">'+g.items.length+' 条</span></span></div>'+
+             g.items.map(function(ev){
+               return eventHTML(ev, gi++%2===0 ? "right" : "left");
+             }).join("")+
+           '</div>';
   }).join("");
   document.getElementById("body").innerHTML = items.length
     ? '<div class="tl">'+items+'</div>'
     : '<div class="hint-empty">暂无里程碑事件</div>';
   fitRaceNames();   /* 渲染完立即量一次：赛事名超宽缩字号，保证恒单行 */
+  animOn();         /* 入场动效（§147）：观察器逐行放行，CSS 侧尊重 prefers-reduced-motion */
+}
+/* 卡片入场（§147）：给 .tl 挂 .tl-anim 后逐行加 .in 放行；hidden 态由 CSS 定义，
+ * 此处只负责开关——无 IntersectionObserver（老浏览器）直接全量放行，绝不藏内容。 */
+function animOn(){
+  var tl = document.querySelector(".tl");
+  if (!tl) return;
+  var items = tl.querySelectorAll(".tl-item");
+  if (!("IntersectionObserver" in window)){
+    for (var j = 0; j < items.length; j++) items[j].classList.add("in");
+    return;
+  }
+  tl.classList.add("tl-anim");
+  var io = new IntersectionObserver(function(entries){
+    for (var k = 0; k < entries.length; k++){
+      if (entries[k].isIntersecting){ entries[k].target.classList.add("in"); io.unobserve(entries[k].target); }
+    }
+  }, { threshold: .12 });
+  for (var i = 0; i < items.length; i++) io.observe(items[i]);
 }
 function renderStats(st){
+  /* §147：一行灰字 → 「数字 + 量词标签」迷你统计块；胜利类数字走 primary 青绿（数据语义色：胜=primary） */
   st = st || {};
+  function blk(n, label, hi){
+    return '<div class="flex items-baseline gap-1.5">'+
+             '<b class="text-[17px] font-bold leading-none '+(hi?'text-primary':'text-foreground')+'">'+(n||0)+'</b>'+
+             '<span class="text-[12px] text-muted-foreground">'+label+'</span>'+
+           '</div>';
+  }
   document.getElementById("stats").innerHTML =
-    '共 <b class="text-foreground">'+(st.events||0)+'</b> 条里程碑 · 覆盖 <b class="text-foreground">'+(st.horses||0)+'</b> 匹产驹'+
-    ' · 重赏胜利 <b class="text-foreground">'+(st.graded_wins||0)+'</b> 场 · 父子制覇 <b class="text-foreground">'+(st.sire_wins||0)+'</b> 次';
+    '<div class="flex flex-wrap items-baseline gap-x-7 gap-y-2">'+
+      blk(st.events,"条里程碑")+blk(st.horses,"匹产驹")+
+      blk(st.graded_wins,"场重赏胜利",1)+blk(st.sire_wins,"次父子制覇",1)+
+    '</div>';
 }
 function init(){
   YJ.cache.fetch("timeline").then(function(data){

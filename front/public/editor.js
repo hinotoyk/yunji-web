@@ -2126,12 +2126,12 @@ YJ.editor = (function () {
         (store.note ? '<div class="text-[12px] text-muted-foreground">' + esc(store.note) + "</div>" : "");
     }
     return '<div class="tl-item">' +
-        '<div class="tl-date">' + esc(store.date || "YYYY-MM-DD") + "</div>" +
+        '<div class="tl-date">' + (store.date ? "<b>" + esc(store.date.slice(0, 4)) + "</b>" + esc(store.date.slice(4)) : "<b>YYYY</b>-MM-DD") + "</div>" +
         '<div class="tl-node"></div>' +
         '<div class="tl-cardwrap"><div class="tl-card card">' +
           (ph
             ? '<div class="tl-photo"><img src="' + esc(photoSrc(ph)) + '" alt="" loading="lazy" decoding="async" width="297" height="210"></div>'
-            : '<div class="tl-photo empty"><span>🐎</span></div>') +
+            : "") +
           '<div class="tl-body">' + body +
             (tags.length ? '<div class="flex flex-wrap gap-1.5">' + tags.map(function (t) {
               return '<span class="tl-tag ' + esc(t.cat) + '"' + (t.tip ? ' title="' + esc(t.tip) + '"' : "") + ">" + esc(t.label) + "</span>";
@@ -2238,7 +2238,7 @@ YJ.editor = (function () {
       '<div class="mt-3 rounded-lg border border-border/60 bg-card/60 p-3">' +
         '<div class="yj-ed-lbl">实时预览 · 航迹线页同款</div>' +
         '<div data-tlpreview class="yj-pv mt-2">' + tlCardHTML(ev) + "</div>" +
-        '<div class="mt-1.5 text-[10.5px] leading-[1.6] text-muted-foreground">按「加入节点表」的落表形状渲染 · 图位 297:210 · 圆点恒人工节点灰（与航迹线页一致）</div>' +
+        '<div class="mt-1.5 text-[10.5px] leading-[1.6] text-muted-foreground">按「加入节点表」的落表形状渲染 · 图位 297:210 · 无图 = 纯文本卡 · 圆点恒人工节点灰（与航迹线页一致）</div>' +
       "</div>" +
       '<div class="mt-2 flex flex-wrap items-center gap-2">' +
         '<button data-tlapply="1" class="' + BTN_PRIMARY + '" type="button"' + dis + ">" +
