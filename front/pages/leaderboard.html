@@ -235,7 +235,7 @@ function renderSegs() {
   seg.innerHTML = slice;
   document.getElementById("sexSeg").innerHTML =
     '<button type="button" data-s="all" data-on="' + (lb.sex === "all" ? "true" : "false") + '" title="全部产驹">全部</button>' +
-    '<button type="button" data-s="m" data-on="' + (lb.sex === "m" ? "true" : "false") + '" title="牡马与骟马合并成组（同统计总览性别口径）">牡馬（含骟）</button>' +
+    '<button type="button" data-s="m" data-on="' + (lb.sex === "m" ? "true" : "false") + '" title="牡马与骟马合并成组（同倾向统计性别口径）">牡馬（含骟）</button>' +
     '<button type="button" data-s="f" data-on="' + (lb.sex === "f" ? "true" : "false") + '" title="牝马">牝馬</button>';
   document.getElementById("nameSeg").innerHTML =
     '<button type="button" data-n="orig" data-on="' + (lb.nm === "orig" ? "true" : "false") + '" title="日文原名（无则英文名）">原名</button>' +

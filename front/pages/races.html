@@ -271,7 +271,7 @@ var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[
             turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[], weight:[], breeder:[], owner:[] };
 var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear",
                 "turn","ninki","sex","trainer","jockey","mps","weight","breeder","owner"];
-/* ?f=key:value,key2:value2 下钻（统计总览矩阵行 → 独立模式预置筛选）
+/* ?f=key:value,key2:value2 下钻（倾向统计矩阵行 → 独立模式预置筛选）
  * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps/
  * weight=当日馬体重档（与 build_stats.py weight_bin 同口径）/breeder=生産牧場现值/owner=馬主现值）；
  * 无效维度或值在应用时由 validFilterValue 静默丢弃。 */
@@ -331,7 +331,7 @@ var NINKI_OPTS = Array.apply(null,Array(18)).map(function(_,i){
   var n=i+1;
   return {v:String(n), l:n+"人気", tip:n===1?"单胜人气第1":null};
 });
-/* 赛道方向（コース名前缀 右/左 → 右转/左转；模块 12.2 曾删，统计总览下钻恢复） */
+/* 赛道方向（コース名前缀 右/左 → 右转/左转；模块 12.2 曾删，倾向统计下钻恢复） */
 var TURN_OPTS = [
   {v:"右", l:"右转", tip:"右转·顺时针（コース名以「右」开头）"},
   {v:"左", l:"左转", tip:"左转·逆时针（コース名以「左」开头）"}
@@ -988,7 +988,7 @@ function initLibrary(){
     if(URL_HORSE && horses.some(function(h){ return String(h.id)===URL_HORSE; })){
       FLT.horse=[URL_HORSE];
     }
-    /* ?f=... 下钻（统计总览矩阵行 → 预置筛选）：无效维度/值静默丢弃（validFilterValue） */
+    /* ?f=... 下钻（倾向统计矩阵行 → 预置筛选）：无效维度/值静默丢弃（validFilterValue） */
     if(URL_F){
       DIM_KEYS.forEach(function(k){
         var vals=URL_F[k];

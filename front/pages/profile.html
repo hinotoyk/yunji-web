@@ -229,7 +229,7 @@ function renderOverview(hs){
     cats.push(oc); catMap.overseas=oc;
   }
   /* 性别 · BY SEX：**三等分列**色块（非面积图——骟马匹数少，面积图会缩成细条太易忽视，等宽列平权）；
-   * 色类 .yj-tm--male/female/gelding（theme.css），块形态与面积图同语言（浅底深字、类名数字在块内） */
+   * 色类 .yj-tm--male/female/gelding（theme.css）= 基本信息性别徽章同款指定色（sexBadge 全站基准），块形态与面积图同语言（类名数字在块内） */
   var SEXCATS=[
     {k:'牡',  n:'牡马', c:'yj-tm--male',   tip:'公马'},
     {k:'牝',  n:'牝马', c:'yj-tm--female', tip:'母马'},
@@ -325,8 +325,9 @@ function renderOverview(hs){
   function paintAll(){ tmPaint(); ovPaint(); }   /* ovPaint 声明提升，定义在下方概览段 */
   /* 概览 · 年份占比图：块面积 ∝ 匹数，块内 标签+匹数+占比（面积差肉眼难辨，标注才读得准）。
    * 总数在占比图里没有位置——它=全部面积的和，再摆一块必双重计数 → 抬到组标题右侧信息 chip（group 第 4 参）。
-   * 年份色轮换 y1..y5（新增年份自动续色，未知年份排最后照常参与）；随卡片高度伸展，resize 重排 */
-  var YEARC=['yj-tm--y1','yj-tm--y2','yj-tm--y3','yj-tm--y4','yj-tm--y5'];
+   * 年份色 y1..y12 按年份降序位次取色（一年一色零重色；新增年份插队拿 y1 顺移续色，未知年份排最后照常参与；
+   * >12 厩年才取模循环）；随卡片高度伸展，resize 重排 */
+  var YEARC=['yj-tm--y1','yj-tm--y2','yj-tm--y3','yj-tm--y4','yj-tm--y5','yj-tm--y6','yj-tm--y7','yj-tm--y8','yj-tm--y9','yj-tm--y10','yj-tm--y11','yj-tm--y12'];
   var ovItems=years.map(function(y,i){
     var k=String(y);
     catMap[k]={k:k, n:y+' 年生', c:YEARC[i%YEARC.length], tip:y+' 年出生的产驹'};

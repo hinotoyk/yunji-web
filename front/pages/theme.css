@@ -253,7 +253,7 @@
    * 类名字面量都在 profile.html → content 扫得到，@layer 安全。
    * 配色 = 200 级低饱和浅底 + 同 hue 800/900 级深字 —— 中央/地方现役=青绿/蓝同族（现役两档）、
    * 繁殖=橙、乘马=黄绿、JRA抹消=中性灰（去向不明=灰）、种马=紫、未登录=蓝灰（尚无记录）、海外=primary/20、
-   * 死亡=最浅灰（终点/退场=无彩色，比其他类「褪色」一档；与性别组骟马同 neutral-200 但不同组不混淆）。 */
+   * 死亡=最浅灰（终点/退场=无彩色，比其他类「褪色」一档）；性别三列例外，用基本信息徽章指定色（见下方性别段注释）。 */
   .yj-tm { @apply absolute flex flex-col items-center justify-center overflow-hidden rounded-[6px] leading-tight transition-[filter] duration-150 hover:brightness-95; }
   .yj-tm-h { @apply flex-row items-center gap-x-1.5; }   /* 宽扁块横排标签：类名+数字一行（块渲染按面积选） */
   .yj-tm-n { @apply text-[11.5px] font-semibold tracking-[.3px]; }
@@ -270,17 +270,29 @@
   .yj-tm--dead { @apply bg-neutral-200 text-neutral-600; }
   .yj-tm--unreg { @apply bg-slate-200 text-slate-700; }
   .yj-tm--overseas { @apply bg-primary/20 text-primary; }
-  /* 性别三等分列（male/female/gelding）与概览年份占比块（y1..y5 轮换，新年份自动续色）同属这套浅底深字；
+  /* 性别三等分列（male/female/gelding）配色 = 基本信息性别徽章同款指定色（profile sexBadge 全站基准，
+   * leaderboard 名字色 / 搜索列表色条同源：牡蓝 #C9EFFE/#0B5A8C · 牝粉 #FFDBD5/#B03A30 · 骟灰 #EFEFEF/#5A5A5A）；
    * 概览总数不占面积 → 组标题右侧 chip（text-primary），不占用色类 */
   .yj-tile { @apply flex flex-col rounded-[10px]; }
+  /* 概览年份占比块 y1..y12：按年份降序位次取色（新年份插队拿 y1、其余顺移，未知年份排最后照常参与）。
+   * v1 仅 5 色且全在蓝青族（sky/indigo/cyan/blue/teal）→ 年份一多取模重色，整片蓝紫两族难分辨
+   * （kzn 9 厩年每色两现，用户定调「有几个年份就有几个颜色」）；v2 扩 12 色全 hue 铺开、冷暖交替，
+   * 仍 200 浅底 + 同 hue 900 深字——厩年 ≤12 一年一色零重复（kzn 现 9 厩年全异色），>12 才取模循环。 */
   .yj-tm--y1 { @apply bg-sky-200 text-sky-900; }
-  .yj-tm--y2 { @apply bg-indigo-200 text-indigo-900; }
-  .yj-tm--y3 { @apply bg-cyan-200 text-cyan-900; }
-  .yj-tm--y4 { @apply bg-blue-200 text-blue-900; }
-  .yj-tm--y5 { @apply bg-teal-200 text-teal-900; }
-  .yj-tm--male { @apply bg-indigo-200 text-indigo-900; }
-  .yj-tm--female { @apply bg-rose-200 text-rose-900; }
-  .yj-tm--gelding { @apply bg-neutral-200 text-neutral-600; }
+  .yj-tm--y2 { @apply bg-violet-200 text-violet-900; }
+  .yj-tm--y3 { @apply bg-teal-200 text-teal-900; }
+  .yj-tm--y4 { @apply bg-rose-200 text-rose-900; }
+  .yj-tm--y5 { @apply bg-amber-200 text-amber-900; }
+  .yj-tm--y6 { @apply bg-indigo-200 text-indigo-900; }
+  .yj-tm--y7 { @apply bg-lime-200 text-lime-900; }
+  .yj-tm--y8 { @apply bg-fuchsia-200 text-fuchsia-900; }
+  .yj-tm--y9 { @apply bg-cyan-200 text-cyan-900; }
+  .yj-tm--y10 { @apply bg-orange-200 text-orange-900; }
+  .yj-tm--y11 { @apply bg-emerald-200 text-emerald-900; }
+  .yj-tm--y12 { @apply bg-blue-200 text-blue-900; }
+  .yj-tm--male { @apply bg-[#C9EFFE] text-[#0B5A8C]; }
+  .yj-tm--female { @apply bg-[#FFDBD5] text-[#B03A30]; }
+  .yj-tm--gelding { @apply bg-[#EFEFEF] text-[#5A5A5A]; }
 
   /* 照片位（左列：有图显示图、无图占位 🐎）+ 其下缩略图行 */
   .yj-ed-slot { @apply relative flex min-h-[190px] w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 transition-colors hover:border-primary max-md:min-h-[150px]; }

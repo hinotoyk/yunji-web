@@ -43,7 +43,7 @@
 - 风控：`fetch_log.jsonl` 各 host 非 200 = 0
 
 ### 1.2 `--check` 数据校验
-校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑四段断言（`node scripts/…`，见 §2）：**日期图**（`scripts/datechart/verify_datechart.cjs`，84 断言）/ **统计总览**（`scripts/stats/verify_stats.cjs`，168 断言）/ **比赛记录下钻冒烟**（`scripts/races/verify_drill.cjs`，31 断言）/ **比赛记录结果对账**（`scripts/races/verify_result.cjs`，全库三态闭合）。
+校验：引用完整性 / 通算战数 vs 文件出赛 / 跨来源重复 / 字段填充统计；末尾跑四段断言（`node scripts/…`，见 §2）：**日期图**（`scripts/datechart/verify_datechart.cjs`，84 断言）/ **倾向统计**（`scripts/stats/verify_stats.cjs`，193 断言）/ **比赛记录下钻冒烟**（`scripts/races/verify_drill.cjs`，31 断言）/ **比赛记录结果对账**（`scripts/races/verify_result.cjs`，全库三态闭合）。
 
 ### 1.2.1 离线单测（不碰 `data/`、不联网，2026-10-26 追补）
 - `python scripts/verify_fetch_log.py` —— log_fetch 写入/读取一致 + 滚动裁剪（窗口外丢弃 / 坏行丢弃 / 幂等 / `TRIM_CHECK_EVERY` 计数门控）。

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script src="../rehome.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>统计总览 · {{YJ_SITE_NAME}}</title>
+<title>倾向统计 · {{YJ_SITE_NAME}}</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
@@ -61,19 +61,15 @@
 /* 样本少 */
 .yj-sm{display:inline-block;margin-left:5px;padding:0 5px;border:1px solid #d9d9d9;border-radius:4px;font-size:10.5px;color:#a1a1aa;vertical-align:1px;white-space:nowrap}
 td.dim .num{color:#c6c6ca}
-/* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源）；
- * 本页仅保留行内变体：重赏之路行内徽章不左缩进 */
-.st-gline .yj-grade{margin-left:0}
+/* 等级徽章样式单一出处 = theme.css（.yj-grade + .yj-g*，与比赛记录/日期统计同源） */
 /* 图例 */
 .st-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#52525b}
 .st-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .st-legend i.dot{width:7px;height:7px;border-radius:50%}
 /* 空态 */
 .hint-empty{padding:26px 10px;text-align:center;font-size:13px;color:#a1a1aa}
-/* 重赏之路行 */
-.st-gline{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;padding:5px 0}
-.st-gstep{font-weight:600;font-variant-numeric:tabular-nums}
-.st-garrow{color:#c6c6ca}
+/* 月龄明细表（v2）：行=月龄 · 世代子行——组首行上缘加分隔线区分月龄组 */
+.st-mat tr.grp td{border-top:2px solid #e4e4e7}
 @media (max-width:768px){
   .st-kpi{padding:2px 10px}
   .st-kpi .v{font-size:16px}
@@ -85,7 +81,7 @@ td.dim .num{color:#c6c6ca}
 <div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
 
   <!-- 页头 -->
-  <div class="page-title mb-7 max-md:mt-2.5">统计总览 · STATS</div>
+  <div class="page-title mb-7 max-md:mt-2.5">倾向统计 · STATS</div>
 
   <!-- 工具条：场地范围（多选，默认 JRA）+ 统计切面（生产年/自然年） -->
   <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -110,7 +106,36 @@ td.dim .num{color:#c6c6ca}
     </div>
   </section>
 
-  <!-- ② 年龄成绩曲线 -->
+  <!-- ② 产驹倾向 -->
+  <section class="mb-8">
+    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
+      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>产驹倾向 · TENDENCY
+    </div>
+    <div class="card p-4 pt-3.5 max-md:p-3">
+      <div class="mb-3 flex flex-wrap gap-1.5" id="matTabs"></div>
+      <div class="overflow-x-auto relative" id="matWrap"><table class="st-mat" id="matTable"></table></div>
+      <div id="matNote" class="mt-2.5 text-[12px] text-muted-foreground"></div>
+    </div>
+  </section>
+
+  <!-- ③ 种马榜走势（跨站引用 jbis-sire-rank-history：数据 = 该站 derived/sire-history 派生产物，
+       图表 = 该站发布的纯渲染组件 embed/sire-rank-chart.js，本页只挂载；口径=JBIS 榜单，不受顶部工具条影响） -->
+  <section class="mb-8">
+    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
+      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>种马榜走势 · SIRE RANK
+    </div>
+    <div class="card p-4 pt-3.5 max-md:p-3">
+      <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="seg" id="srkDimSeg"></div>
+        <div class="seg" id="srkDivSeg"></div>
+        <div class="st-legend" id="srkLegend"></div>
+      </div>
+      <div class="st-kpis" id="srkKpis"></div>
+      <div id="srkChart" class="mt-3"></div>
+    </div>
+  </section>
+
+  <!-- ④ 年龄成绩曲线 -->
   <section class="mb-8">
     <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
       <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>年龄成绩曲线 · AGE PERFORMANCE
@@ -129,47 +154,6 @@ td.dim .num{color:#c6c6ca}
       </details>
     </div>
   </section>
-
-  <!-- ③ 产驹倾向 -->
-  <section class="mb-8">
-    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>产驹倾向 · TENDENCY
-    </div>
-    <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="mb-3 flex flex-wrap gap-1.5" id="matTabs"></div>
-      <div class="overflow-x-auto relative" id="matWrap"><table class="st-mat" id="matTable"></table></div>
-      <div id="matNote" class="mt-2.5 text-[12px] text-muted-foreground"></div>
-    </div>
-  </section>
-
-  <!-- ④ 重赏之路 -->
-  <section class="mb-8">
-    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>重赏之路 · GRADED
-    </div>
-    <div class="card p-4 pt-3.5 max-md:p-3">
-      <div id="gradedProg" class="mb-1"></div>
-      <div id="gradedNote" class="mb-3 text-[12px] text-muted-foreground"></div>
-      <div id="gradedList"></div>
-    </div>
-  </section>
-
-  <!-- ⑤ 种马榜走势（跨站引用 jbis-sire-rank-history：数据 = 该站 derived/sire-history 派生产物，
-       图表 = 该站发布的纯渲染组件 embed/sire-rank-chart.js，本页只挂载；口径=JBIS 榜单，不受顶部工具条影响） -->
-  <section class="mb-8">
-    <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
-      <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>种马榜走势 · SIRE RANK
-    </div>
-    <div class="card p-4 pt-3.5 max-md:p-3">
-      <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="seg" id="srkDimSeg"></div>
-        <div class="seg" id="srkDivSeg"></div>
-        <div class="st-legend" id="srkLegend"></div>
-      </div>
-      <div class="st-kpis" id="srkKpis"></div>
-      <div id="srkChart" class="mt-3"></div>
-    </div>
-  </section>
 </div>
 
 <script src="../data-config.js"></script>
@@ -179,7 +163,7 @@ td.dim .num{color:#c6c6ca}
 <script src="../site-config.js"></script>
 <script src="../race-rows.js"></script>
 <script>
-/* ================= 统计总览 STATS =================
+/* ================= 倾向统计 STATS =================
  * 数据：data/stats.json（后端预计算，按 场地类型 × 统计切面 二维聚合：
  *       scopes = { all 全部, yYYYY 自然年(比赛日历年), gYYYY 生产年(产驹生年) }）。
  * 场地范围：JRA/NAR/海外 组合多选，默认 JRA；统计切面：生产年/自然年 + 年份值。
@@ -378,7 +362,7 @@ function renderYseg() {
   document.getElementById("yseg").innerHTML = seg.join("");
 }
 
-/* ---- ② 年龄成绩曲线（SVG：颜色=产年 · 线型=指标，指标 seg 可组合多选，分母=出走） ---- */
+/* ---- ④ 年龄成绩曲线（SVG：颜色=产年 · 线型=指标，指标 seg 可组合多选，分母=出走） ---- */
 function renderCurve() {
   var pts = curveMerged();
   var wrap = document.getElementById("curve");
@@ -496,14 +480,19 @@ function renderCurve() {
     });
   });
   document.getElementById("curveNote").textContent = "颜色=产年 · 线型=指标（分母=出走） · " + (notes.length ? "峰值： " + notes.join("； ") + "（样本≥" + SM_F + "）" : "样本均小于" + SM_F + "，仅供参考");
-  /* 月龄明细表 */
+  /* 月龄明细表（v2）：行=月龄（升序）· 世代子行——每月龄一组，组首行标月龄（组间分隔线 .grp），
+   * 同月龄内世代升序（2023→2024）；列序 出走/1着/2着/3着/着外/三率 与矩阵一致（分母=出走） */
   var rows = [];
   pts.forEach(function (p) { if (sel.indexOf(p.gen) >= 0) rows.push(p); });
-  rows.sort(function (a, b) { return a.gen === b.gen ? a.a - b.a : (a.gen < b.gen ? -1 : 1); });
-  var html = '<table class="st-mat"><thead><tr><th class="left">生产年</th><th class="left">月龄</th><th>出走</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>胜率</th><th>连对率</th><th>复胜率</th></tr></thead><tbody>';
-  rows.forEach(function (p) {
+  rows.sort(function (a, b) { return a.a === b.a ? (a.gen < b.gen ? -1 : 1) : a.a - b.a; });
+  var html = '<table class="st-mat"><thead><tr><th class="left">月龄</th><th class="left">世代</th><th>出走</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>胜率</th><th>连对率</th><th>复胜率</th></tr></thead><tbody>';
+  var prevAge = null;
+  rows.forEach(function (p, i) {
+    var head = p.a !== prevAge;                        /* 组首行：标月龄 */
+    prevAge = p.a;
     var r = rates(p);
-    html += '<tr><td class="left">' + p.gen + '年世代</td><td class="left">' + ageLabel(p.a) + '</td><td>' + starts(p) + '</td><td>' + p.w +
+    html += '<tr' + (head && i > 0 ? ' class="grp"' : "") + '><td class="left' + (head ? " font-semibold" : "") + '">' + (head ? ageLabel(p.a) : "") +
+      '</td><td class="left">' + p.gen + '年世代</td><td>' + starts(p) + '</td><td>' + p.w +
       '</td><td>' + p.p2 + '</td><td>' + p.p3 + '</td><td>' + (starts(p) - p.w - p.p2 - p.p3) +
       '</td><td>' + pct(r.win) + '</td><td>' + pct(r.ren) + '</td><td>' + pct(r.fuku) + '</td></tr>';
   });
@@ -511,7 +500,7 @@ function renderCurve() {
   document.getElementById("curveTable").innerHTML = html;
 }
 
-/* ---- ③ 倾向矩阵 ---- */
+/* ---- ② 倾向矩阵 ---- */
 function renderTabs() {
   document.getElementById("matTabs").innerHTML = TAB_DIMS.map(function (d) {
     return '<button type="button" class="st-tab" data-tab="' + d.k + '" data-on="' + (st.tab === d.k ? "true" : "false") +
@@ -673,49 +662,7 @@ function applyMatScroll() {
   }
 }
 
-/* ---- ④ 重赏之路 ---- */
-/* 进阶步 ← 比赛级别细分桶（班赛 = 一胜~三胜级合计；重赏 = G1-3+JG1-3+Jpn1-3 合计，不含 L/OP） */
-var G_STEPS = [
-  ["新马",   ["新马"]],
-  ["未胜利", ["未胜利"]],
-  ["班赛",   ["一胜级", "二胜级", "三胜级"]],
-  ["OP",     ["OP"]],
-  ["L",      ["L"]],
-  ["重赏",   ["G1", "G2", "G3", "JG1", "JG2", "JG3", "Jpn1", "Jpn2", "Jpn3"]]
-];
-function renderGraded() {
-  var rows = dimMerged("grade");
-  var wmap = {};
-  rows.forEach(function (b) { wmap[b.k] = b.w; });
-  var steps = [];
-  G_STEPS.forEach(function (g, i) {
-    var w = g[1].reduce(function (a, k) { return a + (wmap[k] || 0); }, 0);
-    steps.push('<span class="st-gstep">' + g[0] + ' <b style="color:' + (w ? "#0b6b64" : "#c6c6ca") + '">' + w + '</b>胜</span>');
-    if (i < G_STEPS.length - 1) steps.push('<span class="st-garrow">→</span>');
-  });
-  document.getElementById("gradedProg").innerHTML = '<div class="st-gline">' + steps.join("") + '</div>';
-  document.getElementById("gradedNote").textContent = "重赏胜利明细 · " + trophyMerged().length + " 场";
-  var list = trophyMerged();
-  var html = "";
-  if (!list.length) {
-    html = '<div class="text-[13px] text-muted-foreground">暂无重赏胜利</div>';
-  }
-  list.forEach(function (t) {
-    /* 等级徽章 = 比赛记录页同款（yj-grade 胶囊；G/显示名映射单一出处 = race-rows.js，g3 兜底语义保留） */
-    var gk = YJ.raceRows.G[t.g] || "g3";
-    var lbl = YJ.raceRows.GLABEL[t.g] || t.g;
-    html += '<div class="st-gline">' +
-      '<span class="yj-grade yj-' + gk + '">' + esc(lbl) + '</span>' +
-      '<span class="text-muted-foreground">' + esc(t.d) + ' · ' + esc(t.v) + (t.R ? esc(t.R + "R") : "") + '</span>' +
-      '<a href="profile.html?horse=' + t.id + '" target="_blank" rel="noopener" class="font-semibold text-foreground hover:text-primary">' + esc(t.h) + '</a>' +
-      '<span>' + esc(t.r) + '</span>' +
-      '<span class="text-muted-foreground">' + esc(t.jk) + ' · ' + esc(t.tr) + '</span>' +
-      '</div>';
-  });
-  document.getElementById("gradedList").innerHTML = html;
-}
-
-/* ---- ⑤ 种马榜走势（2026-10-27 · 跨站引用 jbis-sire-rank-history）----
+/* ---- ③ 种马榜走势（2026-10-27 · 跨站引用 jbis-sire-rank-history）----
  * 数据 = YJ_DATA.remote.jbisRank + derived/sire-history/<board>/<jbis_id>.json（arg 型缓存条目 sireRank，
  *        TTL 12h · 断网回退旧缓存，与全站产物同一控制器）；图表 = 该站发布的纯渲染组件
  *        embed/sire-rank-chart.js（window.JBIS_RANK_EMBED，只画图不 fetch 不写存储）。
@@ -823,7 +770,6 @@ function renderAll() {
   renderKpis(); renderDistBar(); renderRateBand();
   renderCurve();
   renderTabs(); renderTable();
-  renderGraded();
   applyMatScroll();                                    /* 容器高度对齐人气页签（场地/切面变化后行数会变，随 renderAll 重测） */
 }
 

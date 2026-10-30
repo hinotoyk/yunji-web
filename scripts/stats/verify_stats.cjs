@@ -500,8 +500,6 @@ setTimeout(function () {
   const rb = String(els["rateBand"]._html);
   ok(rb.includes(pctOf(r0.win)) && rb.includes(pctOf(r0.ren)) && rb.includes(pctOf(r0.fuku)),
     "比率带（分母=出走）胜率/连对/复胜 = " + pctOf(r0.win) + " / " + pctOf(r0.ren) + " / " + pctOf(r0.fuku));
-  ok(String(els["aboutNote"]._html).includes(product.meta.stats.first_date) && String(els["aboutNote"]._html).includes(product.meta.stats.runs + " 条记录 / " + product.meta.stats.horses + " 匹"),
-    "说明区 集計期間（工具条 periodLabel 已移入 NOTES）");
   /* 顶部切面控件 */
   const modeHtml = String(els["ymodeSeg"]._html);
   ok(modeHtml.includes("生产年") && modeHtml.includes("自然年"), "切面模式：生产年/自然年");
@@ -523,7 +521,7 @@ setTimeout(function () {
   ok((curveHtml.match(/<circle/g) || []).length >= 4, "曲线点标记（含 <title> tooltip）");
   ok(String(els["curveLegend"]._html).includes("2023年世代胜率") && String(els["curveLegend"]._html).includes("2024年世代胜率") && String(els["curveLegend"]._html).includes("样本少"),
     "图例（颜色=产年 · 选中指标）+ 样本少说明");
-  ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("生产年"), "月龄明细表（生产年列）");
+  ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("月龄") && String(els["curveTable"]._html).includes("2023年世代") && String(els["curveTable"]._html).includes("2024年世代"), "月龄明细表（行=月龄 · 世代子行，§135）");
   click("genSeg", "2024");
   ok((String(els["curve"]._html).match(/<path/g) || []).length === 1, "切换 2024年世代 → 1 条折线");
   click("genSeg", "全部");
@@ -656,8 +654,12 @@ setTimeout(function () {
   const gRate = b => b.w / (b.n - b.exc);
   const gMax = Math.max(...grRows.map(gRate)), gMin = Math.min(...grRows.map(gRate));
   const firstRow = () => {
-    const seg = String(els["matTable"]._html).split("data-href")[1] || "";
-    return seg.slice(0, seg.indexOf("</tr>"));
+    /* 首个数据行 = tbody 内基准行之后的第一行；不能用 data-href 定位（「其他」等无下钻档无该属性，
+     * drillURL 对 grade 其他/未知 cond 返回 null → 行渲染无 data-href；data-href 版会静默跳过它测错行，
+     * kzn 数据「其他」桶胜率登顶实测踩坑，2026-10-30 审查定版回灌，见 UI优化记录 §138） */
+    const tb = String(els["matTable"]._html).split("<tbody")[1] || "";
+    const rows = tb.split("<tr");
+    return (rows[2] || "").slice(0, (rows[2] || "").indexOf("</tr>"));
   };
   ok((String(els["matTable"]._html).match(/data-sk=/g) || []).length === 8 && (String(els["matTable"]._html).match(/class="st-sa/g) || []).length === 8,
     "8 个数值列表头均可点击排序（常驻 ⇅ 提示图标）");
@@ -703,28 +705,9 @@ setTimeout(function () {
   const mtGr2 = String(els["matTable"]._html);
   ok(mtGr2.includes('data-href="races.html?f=' + encodeURIComponent("grade:新马,venue:中央") + '"'), "回 JRA 后 新马下钻仅 venue:中央");
 
-  console.log("[C6] 重赏之路 + 补充");
-  ok(String(els["gradedProg"]._html).includes("重赏") && String(els["gradedProg"]._html).includes("新马"), "级别胜利进度条");
-  ok(!String(els["gradedProg"]._html).includes("胜场按级别"), "口径注记文案已移除（用户要求，§79）");
-  const gW = k => (gAll.find(x => x.k === k) || {}).w || 0;
-  const prog = String(els["gradedProg"]._html);
-  const wBan = gW("一胜级") + gW("二胜级") + gW("三胜级"), wTrophy = gW("G1") + gW("G2") + gW("G3") + gW("JG1") + gW("JG2") + gW("JG3") + gW("Jpn1") + gW("Jpn2") + gW("Jpn3");
-  ok(prog.includes(">" + wBan + "</b>胜"), "班赛步数 = 一胜~三胜级合计 " + wBan);
-  ok(prog.includes(">" + wTrophy + "</b>胜"), "重赏步数 = G1-3+JG1-3+Jpn1-3 合计 " + wTrophy + "（不含 L/OP）");
-  const gl = String(els["gradedList"]._html);
-  ok((gl.match(/yj-grade/g) || []).length === byv["中央"].scopes.all.trophies.length, "重赏明细行数 = " + byv["中央"].scopes.all.trophies.length);
-  ok(gl.includes(">G2</span>") && gl.includes(">G3</span>"), "徽章 = 比赛记录同款 G2/G3（GIII 不再错写为 G12）");
-  ok(gl.includes('target="_blank"'), "重赏明细马名 → 档案新标签页（§80 跳转统一）");
-  /* 2026-10-26：改按**行内日期序列**断言降序——原实现对首尾两行的马链接 indexOf 比较，
-   * 同一匹马拿下多场重赏（如 id40 04-25 GGII + 10-25 GGI）时首尾 indexOf 相等 → 恒假。 */
-  const glDates = gl.match(/\d{4}-\d{2}-\d{2}/g) || [];
-  ok(glDates.length === byv["中央"].scopes.all.trophies.length && glDates.every((d, i) => i === 0 || glDates[i - 1] >= d),
-    "明细按日期降序（" + glDates.length + " 行：" + glDates.join("→") + "）");
-  ok(gl.includes("profile.html?horse=" + byv["中央"].scopes.all.trophies[0].id), "重赏明细跳档案链接");
-  const ab = String(els["aboutNote"]._html);
-  ok(ab.includes("集計期間") && ab.includes("口径：") && ab.includes("样本少") && ab.includes("比率分母=出走"), "口径说明（工具条口径文案并入 + 分母=出走）");
-  ok(ab.includes("自然年") && ab.includes("生产年"), "口径说明含切面解释");
-  ok(!ab.includes("场地类型") && !ab.includes("build_stats.py"), "说明区已去掉 场地类型对比 与数据来源句");
+  console.log("[C6] 补充（§135 重赏之路模块删除后收口）");
+  ok(!html.includes("重赏之路") && !html.includes("gradedProg") && !html.includes("gradedList") && !code.includes("renderGraded") && !html.includes("st-gline"),
+    "重赏之路模块已删：页面 HTML/CSS/JS 零残留（§135）");
 }, 0);
 
 /* 汇总 */

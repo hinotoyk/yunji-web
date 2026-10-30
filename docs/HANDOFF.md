@@ -14,7 +14,7 @@
 | 维度 | 状态 |
 |---|---|
 | 数据规模 | `data/basic.json` 建档 **277 匹**（2023=131 + 2024=146，id 1~277）；血统 277/277；成绩 276 个 `races/{id}.json` |
-| 前端页面 | 8 个页面**全部实现**：`profile`（基本信息/云崽档案）、`races`（比赛记录）、`stats`（统计总览）、`datechart`（日期统计）、`timeline`（航迹线）、`pedigree`（血统，profile 内嵌）、`edit` + `edit-timeline`（编辑台，mb 不开放） |
+| 前端页面 | 8 个页面**全部实现**：`profile`（基本信息/云崽档案）、`races`（比赛记录）、`stats`（倾向统计）、`datechart`（日期统计）、`timeline`（航迹线）、`pedigree`（血统，profile 内嵌）、`edit` + `edit-timeline`（编辑台，mb 不开放） |
 | 构建 | `front/` `npm run build` → 根 `dist/`（含 `dist/data/` 副本 + races 压缩包 + 字体子集） |
 | 数据更新 | 统一入口 `python run_update.py <策略>`；GitHub Actions 每日 UTC 22:00 跑 `--ci` 自动提交 data/ |
 | 部署 | push main → `deploy.yml` 自动构建并发布仓库根，入口 `/dist/index.html` |
@@ -123,7 +123,7 @@ yunji-web/
 ## 10. 关键决策时间线（最新为准）
 
 - 配色/布局：方案 F 青绿 × shadcn Neutral（仅亮色，无暗黑）+ 左侧导航外壳 + iframe 内嵌 + 单断点 768px。
-- 统计拆分：统计总览 / 日期统计 / 航迹线 三页独立。
+- 统计拆分：倾向统计 / 日期统计 / 航迹线 三页独立。
 - 数据提速：races 压缩包 + 全站统一缓存控制器（2026-09-28）。
 - 编辑台：草稿箱模式 + 线上一次性提交 + 页面拆分（2026-09-29/30）。
 - 全站措辞：侧边栏「日期图」→「日期统计」、「时间线」→「航迹线」、「XXXX年产」→「XXXX年世代」、「下钻」→「跳转」。
