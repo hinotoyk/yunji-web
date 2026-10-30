@@ -62,7 +62,7 @@
 /* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 =====
  * 2026-10-30 UI 审查 §29：条体样式收口到 theme.css .yj-kpis/.yj-kpi（与 stats / leaderboard 同一份），
  * 本页只保留奖杯图标尺寸（.trophy 挂在 .yj-kpi 之下，属本页特有）。 */
-.yj-kpi .trophy{font-size:16px;margin-right:2px}
+.yj-kpi .trophy{font-size:16px;margin-right:2px;display:inline-flex;align-items:center;color:#e8a013;vertical-align:-2px}   /* §146-5：SVG 奖杯亮金（§147 曾误缩到 13px，按用户定稿回到 16px 基准） */
 
 /* ===== 通算战绩 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
  * 四段底色连成「一整条」：数字格各用该段底色，连字符格用「上一色→下一色」线性渐变接缝，
@@ -81,13 +81,20 @@
 /* ===== 日历（月网格：周一行 + 日格，行首尾补真实邻月日 .dc-outm） ===== */
 .dc-cal{display:flex;flex-direction:column;gap:3px}
 .dc-dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.dc-dow{text-align:center;font-size:10.5px;font-weight:600;color:#8a8a8a;padding:2px 0}
+.dc-dow{text-align:center;font-size:10.5px;font-weight:600;color:#6b6b70;padding:2px 0}   /* §146-4：8a8a8a→6b6b70，小字对比度达 WCAG AA */
+/* §146-2：周末列头着色（日本日历惯例 土=蓝 / 日=红），一眼扫到周末赛事密集列 */
+.dc-dow.sat{color:#4467ab}
+.dc-dow.sun{color:#bb3f39}
 .dc-wrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;border-radius:10px}
 .dc-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:2px}
-.dc-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:66px;padding:5px 7px;border:0;border-radius:8px;background:transparent;cursor:pointer;text-align:left;transition:background .15s}
+.dc-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:66px;padding:5px 7px;border:0;border-radius:8px;background:transparent;cursor:pointer;text-align:left;transition:background .15s;position:relative}
 .dc-cell:hover{background:#f0f0f0}
 .dc-cell.run{background:#f5f5f5}
 .dc-cell.run:hover{background:#ededed}
+.dc-cell.dc-idle{background:#fafafa}                     /* §146-1：无出走日极浅底色，空格不再像未加载 */
+.dc-cell.dc-idle:hover{background:#f0f0f0}
+/* §146-3：胜日小圆点——PC 靠背景青绿深浅已够，mb 端格内只剩日期+🏆，加实体圆点做双通道编码（仅 ≤768px 显示） */
+.dc-wdot{display:none}
 .dc-cell.dc-sel{box-shadow:inset 0 0 0 2px #0aa7a0}
 /* 邻月补位格：真实日期 + 数据照出，但日期/赏金降灰、格底不套 win/run 色 → 一眼分得出不是本月
  * （降灰语义同日期面板 .dc-dp-cell.out） */
@@ -97,18 +104,22 @@
 .dc-cell-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
 .dc-d{font-size:12.5px;font-weight:600;color:#52525b;font-variant-numeric:tabular-nums}
 .dc-cell.win .dc-d{color:#0aa7a0}
-.dc-gw{font-size:10px;line-height:1.3;white-space:nowrap}
-.dc-prz{font-size:10.5px;color:#8a8a8a;font-variant-numeric:tabular-nums}
+/* §147：格内奖杯放大到 16px（与 KPI「重赏胜利」同大小，用户定稿）；
+ * 数字保持深色保证对比度；mb 端格子矮（38px），奖杯 12px 防溢出 */
+.dc-gw{font-size:16px;line-height:1.2;white-space:nowrap;display:inline-flex;align-items:center;gap:2px}
+.dc-gw svg{color:#e8a013;flex:none}
+.dc-prz{font-size:10.5px;color:#6b6b70;font-variant-numeric:tabular-nums}   /* §146-4：8a8a8a→6b6b70 达 AA */
 
 /* ===== 年视图：12 个月卡 ===== */
 .dc-ym{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
 .dc-ym:hover{border-color:rgba(10,167,160,.55);background:#f7fdfd}
 .dc-ym-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
-.dc-ym b{font-size:13px;font-weight:700;color:#171717}
+.dc-ym-top b{font-size:13px;font-weight:700;color:#171717}   /* 月份数字。⚠ 原 .dc-ym b 会误伤战绩条的 <b>（13px vs 连接条 <i> 16px）→ 年视图色块横向错位，§147 收窄到 .dc-ym-top */
 .dc-ym.zero b{color:#a1a1aa}
 .dc-ym.zero .dc-brk,.dc-ym.zero .dc-prz{color:#c6c6ca}
+.dc-ym.zero .dc-brk b,.dc-ym.zero .dc-brk i{color:#c6c6ca}   /* 零月份战绩条数字/连接符一并降灰（原靠 .dc-ym.zero b 误伤实现，§147 收窄后需显式声明） */
 .dc-ym-prz{font-size:12px;color:#52525b;font-variant-numeric:tabular-nums}
-.dc-ym-n{font-size:10.5px;color:#8a8a8a}
+.dc-ym-n{font-size:10.5px;color:#6b6b70}   /* §146-4：8a8a8a→6b6b70 达 AA */
 
 /* ===== 明细：行/卡片渲染与样式统一走 race-rows.js + theme.css（与比赛页内嵌表同一份代码） ===== */
 
@@ -117,7 +128,8 @@
   .dc-cell{min-height:38px;padding:3px 5px;gap:1px}
   .dc-d{font-size:11px}
   .dc-cell .dc-brk,.dc-cell .dc-prz{display:none}
-  .dc-gw{font-size:9px}
+  .dc-gw{font-size:12px}
+  .dc-cell.win .dc-wdot{display:block;position:absolute;left:6px;bottom:3px;width:4px;height:4px;border-radius:50%;background:#0aa7a0}   /* §146-3 */
   /* KPI 条 padding / 字号已由 theme.css 的 .yj-kpi 媒体查询统一（§29），这里只管奖杯图标 */
   .dc-brk-lg{font-size:14px}
   .yj-kpi .trophy{font-size:13px}

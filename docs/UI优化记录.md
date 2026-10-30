@@ -1350,3 +1350,25 @@ window.YJ_ECHARTS = echarts;
   - **没有加误差带/置信区间**：数据只给得到「出走 × 前三着」，算 Wilson 区间要改后端预计算；当前用「点径 + 空心 + ▲」三层编码已能表达可靠性。
   - **没有做「导出 PNG」**：ECharts 自带 `getDataURL`，但页面其余图表（种马榜、产驹赏金）都没有导出，单点加会成为孤例。
 
+
+## §146 · 日期统计页 7 项展示优化（2026-10-30）
+
+**对象**：`datechart.html` + `datechart-page.css`（数据/交互零改动，纯展示层）。
+
+**最终思路**：日历的「信息可扫读性」三件套——空格日给 `#fafafa` 极浅底（网格不再像没加载完）、周末列头着色（土=蓝 `#4467ab` / 日=红 `#bb3f39`，日本日历惯例；星期头同步从日文曜日「月火水…」改中文数字「一二三…」，与日期选择器面板同款）、mb 端胜日格加 4px 青绿圆点 `.dc-wdot`（≤768px 显示，PC 仍靠背景深浅，双通道编码补色弱可读性）。打磨项：**同日分组已回退（用户反馈空日期列反造成困扰）**——PC 明细表恢复每行完整日期；小字对比度 `.dc-dow/.dc-prz/.dc-ym-n` `#8a8a8a`→`#6b6b70`（达 WCAG AA 4.5:1）；🏆 emoji 换单色 SVG 奖杯 `TROPHY`（Material emoji_events 路径，`currentColor`，KPI/日历格/年卡三处共用；颜色定稿亮金 `#e8a013`（用户从 `#d97706`/`#e8a013` 中选定更亮的后者；奖杯语义、暖色与 chart3 同族）；语言统一「勝→胜」「週→周」（含周面板 tooltip）。
+
+**关键实现**：`dc-wdot` 绝对定位于格左下（`.dc-cell` 补 `position:relative`）。年视图月卡「胜 n」同步改中文。
+
+**验证**：`npm run build` 通过；dist 核对 `datechart-*.css` 含 `dc-idle/dc-wdot/dc-dow.sat/dc-dow.sun/#6b6b70` 全部新类、`dist/pages/datechart.html` 含 SVG 路径与「周/胜」文案。浏览器截图核对（PC 1440 / mb 390）：列头着色、空格浅底、金色奖杯、mb 圆点全部生效，无重叠/截断。截图 `tests/datechart-v2-pc.png`、`tests/datechart-v2-mb.png`（改前基线 `tests/datechart-pc.png`、`tests/datechart-mb.png`）。
+
+## §147 · 年视图战绩条横向错位修复（2026-10-30）
+
+**现象**：仅年视图月卡里，战绩条 [5-4-8-45] 的彩色数字块与渐变连接条高低参差（日历格与 KPI 正常）。
+
+**根因（CDP 实测）**：`datechart-page.css` 的 `.dc-ym b{font-size:13px}` 本意是月份数字，却**误伤战绩条 `bracketHTML` 里的 `<b>`**——数字块 13px/18.2px 高，连接条 `<i>` 继承 16px/22.4px 高，每根连接条上下各凸出 ~2.1px，视觉上成「城垛」。日历格里 b/i 同继承同字号故无感；`.dc-brk-lg` 因自带 padding 齐平亦无感。
+
+**修复**：`.dc-ym b` → `.dc-ym-top b`（选择器收窄到月份标签槽）；原零数据月份的降灰恰好靠 `.dc-ym.zero b` 误伤实现，收窄后补显式规则 `.dc-ym.zero .dc-brk b,.dc-ym.zero .dc-brk i{color:#c6c6ca}`（顺带把此前没灰到的连接条 `<i>` 一并降灰，零月份整条统一）。
+
+**验证**：build + dist 核对（旧选择器清零）；playwright-core（channel msedge）3 倍放大截图：色块连成等高一条、数字垂直居中；零月份 11 月卡 label/digits/dashes = `#a1a1aa`/`#c6c6ca`/`#c6c6ca` 统一灰。截图 `tests/.pw/m3-card.png`、`tests/.pw/m11-zero.png`、`tests/.pw/kpi-brk.png`。
+
+- **§147 补记（奖杯尺寸定稿）**：格内奖杯（日历格/年卡 `.dc-gw`）10px → **16px**（与 KPI「重赏胜利」同大小，用户定稿），mb 端因格子矮（38px）定 12px 防溢出；KPI 奖杯维持 16px（中途误缩 13px 已回退）。

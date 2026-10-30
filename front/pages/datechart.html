@@ -113,6 +113,9 @@ function bracketHTML(vals, cls){
 /* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿）；格式化逻辑单一出处 = YJ.util.manYen
  * （2026-xx 收口；本页空值 → ""，调用处均已 s.pr ? … 守卫兜底） */
 var manYen = YJ.util.manYen;
+/* 重赏奖杯图标（§146-5）：单色 SVG（Material emoji_events 路径）替代 🏆 emoji——
+ * Windows 下彩色 emoji 与全站扁平风格不搭；SVG 走 currentColor，PC/mb/年视图三处共用 */
+var TROPHY = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>';
 
 /* ---- ISO 周工具 ---- */
 function isoWeekInfo(dstr){
@@ -180,7 +183,7 @@ function keyLabel(mode, key){
   if (mode === "year")  return key + "年";
   var y = +key.slice(0,4), wk = +key.slice(6);
   var mon = mondayOfISOWeek(y, wk), end = new Date(mon); end.setUTCDate(end.getUTCDate() + 6);
-  return y + "年 第" + wk + "週（" + fmtMD(mon) + "–" + fmtMD(end) + "）";
+  return y + "年 第" + wk + "周（" + fmtMD(mon) + "–" + fmtMD(end) + "）";
 }
 /* 场地范围内过滤（st.vts 任一命中；vt 来自产物 venue_type） */
 function inVenue(r){ return st.vts.indexOf(r.vt) !== -1; }
@@ -270,7 +273,7 @@ function renderKpis(mode, key){
     kpi("出走", s.n, s.n ? "" : "dim") +
     kpi("通算战绩", bracketHTML(careerVals(s), "dc-brk-lg")) +
     kpi("总赏金", prize, s.pr ? "" : "dim") +
-    kpi("重赏胜利", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
+    kpi("重赏胜利", '<span class="trophy">' + TROPHY + '</span>' + s.gr, s.gr ? "hi" : "dim");
 }
 
 /* 月网格（天/周/月共用，差异只是高亮）：整格铺**真实日期**，行首/行尾补邻月日（灰显 M/D）。
@@ -315,12 +318,15 @@ function dayCellHTML(y, m, d, mode, key, dim){
   } else if (s.n){
     cls += s.w ? " win" : " run";
     if (s.w) style = ' style="background:rgba(10,167,160,' + (s.w >= 3 ? ".22" : s.w === 2 ? ".16" : ".10") + ')"';
+  } else {
+    cls += " dc-idle";                       /* §146-1：无出走空格日给极浅底色，网格不再像没加载完 */
   }
   if (mode === "day" && ds === key) cls += " dc-sel";
   var tip = dayTitle(ds) + " · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
   var inner = '<span class="dc-cell-top"><b class="dc-d">' + (dim ? m + "/" + d : d) + '</b>' +
-    (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>';
+    (s.gr ? '<span class="dc-gw">' + TROPHY + s.gr + '</span>' : '') + '</span>';
   if (s.n) inner += bracketHTML(careerVals(s)) + '<span class="dc-prz">' + (s.pr ? manYen(s.pr) : "") + '</span>';
+  if (s.w) inner += '<i class="dc-wdot" aria-hidden="true"></i>';   /* §146-3：胜日小圆点（mb 端显示，双通道编码） */
   return '<button type="button" class="' + cls.trim() + '" data-d="' + ds + '"' + style + ' title="' + esc(tip) + '">' + inner + '</button>';
 }
 
@@ -332,18 +338,19 @@ function yearCardsHTML(y){
     var zero = s.n ? "" : " zero";
     var tip = y + "年" + m + "月 · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
     out += '<button type="button" class="dc-ym' + zero + '" data-m="' + m + '" title="' + esc(tip) + '">' +
-      '<span class="dc-ym-top"><b>' + m + '月</b>' + (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>' +
+      '<span class="dc-ym-top"><b>' + m + '月</b>' + (s.gr ? '<span class="dc-gw">' + TROPHY + s.gr + '</span>' : '') + '</span>' +
       bracketHTML(careerVals(s)) +
       '<span class="dc-ym-prz">' + (s.pr ? manYen(s.pr) : "—") + '</span>' +
-      '<span class="dc-ym-n">' + (s.n ? "勝 " + s.w : "无出走") + '</span>' +
+      '<span class="dc-ym-n">' + (s.n ? "胜 " + s.w : "无出走") + '</span>' +
     '</button>';
   }
   return '<div class="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-2.5">' + out + '</div>';
 }
 
 function renderCal(mode, key){
-  var dow = ["月","火","水","木","金","土","日"].map(function(x){
-    return '<div class="dc-dow">' + x + '</div>';
+  /* §146-2/7：星期头改中文数字（与日期选择器面板同款，去日文曜日），周末列头着色（土=蓝 / 日=红） */
+  var dow = ["一","二","三","四","五","六","日"].map(function(x, i){
+    return '<div class="dc-dow' + (i === 5 ? " sat" : i === 6 ? " sun" : "") + '">' + x + '</div>';
   }).join("");
   var html;
   if (mode === "year"){
@@ -606,8 +613,8 @@ function renderDpPanel(){
       var pwDis = wMs - 604800000 < RANGE.msLo || wMs - 604800000 > RANGE.msHi;
       var nwDis = wMs + 604800000 < RANGE.msLo || wMs + 604800000 > RANGE.msHi;
       navL = '<button type="button" class="dc-dp-nav" data-nav="pm" title="上一月"' + (mi <= MIN_M ? " disabled" : "") + '>«</button>' +
-             '<button type="button" class="dc-dp-nav" data-nav="pw" title="上一週"' + (pwDis ? " disabled" : "") + '>‹</button>';
-      navR = '<button type="button" class="dc-dp-nav" data-nav="nw" title="下一週"' + (nwDis ? " disabled" : "") + '>›</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="pw" title="上一周"' + (pwDis ? " disabled" : "") + '>‹</button>';
+      navR = '<button type="button" class="dc-dp-nav" data-nav="nw" title="下一周"' + (nwDis ? " disabled" : "") + '>›</button>' +
              '<button type="button" class="dc-dp-nav" data-nav="nm" title="下一月"' + (mi >= MAX_M ? " disabled" : "") + '>»</button>';
     } else {
       navL = '<button type="button" class="dc-dp-nav" data-nav="py" title="上一年">«</button>' +
