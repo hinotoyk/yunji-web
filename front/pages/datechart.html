@@ -370,7 +370,7 @@ function toRow(r){
     性: r.sx, 年齢: r.ya,   /* 性齢 列（§78.1）：产物 22→24 字段随 build_datechart 同步 */
     race_id: r.rid,         /* 赛事名 → netkeiba SP 比赛页链接（§80；'' = 台账等无 id → 纯文本） */
     venue_type: r.vt,       /* raceLink 按 中央/地方/海外 分流 SP 子域（§80.2） */
-    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 斤量: r.ki,
+    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 枠番: r.wk, 馬番: r.ub, 斤量: r.ki,   /* 枠番/馬番 §159：产物 29 字段随 build_datechart 同步 */
     人気: r.nk, 結果: r.p, タイム: r.tm,
     上り: r.ag, 末脚: r.ms, /* 後3F 列（§101）：值徽章化走共享模块 agariBadge（末脚只作配色判断） */
     賞金: r.pr,
@@ -442,7 +442,8 @@ function renderDetail(mode, key){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;
   }
-  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义；
+  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义
+   * （§159 全站统一 18 列 embed 视图：datechart.json 已补 wk/ub 枠番/馬番字段）；
    * PC 表头传 nameToggle → 「马名」列头变成切换按钮（仅 PC 列头不带 cls，mb 卡片顶部中槽显示马名）。
    * 分页（§101）：PC 100 条/页、mb 卡 10 条/页，各自切片 + 各自页码行（CSS 断点各自显示）。 */
   var RR = YJ.raceRows;

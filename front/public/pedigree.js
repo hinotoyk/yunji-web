@@ -38,7 +38,10 @@ YJ.pedigree = (function () {
     var fs = g <= 1 ? 14 : g === 2 ? 13 : 12;
     var meta = [n.year, n.color].filter(Boolean).join(" · ");
     var inline = g >= 2 ? " inline" : "";
-    return '<div class="pcell ' + cls + inline + '" style="grid-row:' + rs + '/' + re + ';font-size:' + fs + 'px" title="' +
+    /* §158：JBIS 马页直达（节点自带 jbis 口径 id）→ data-pid 供委托点击（仅完整弹窗内生效，
+     * 简约 2 代网格整卡点击 = 弹完整 5 代，不抢）；hover 提亮样式见下方注入 CSS */
+    var pid = n.id ? ' data-pid="' + esc(n.id) + '"' : "";
+    return '<div class="pcell ' + cls + inline + '" style="grid-row:' + rs + '/' + re + ';font-size:' + fs + 'px"' + pid + ' title="' +
       esc([n.name, n.year ? n.year + "年生" : "", n.color].filter(Boolean).join(" · ")) + '">' +
       '<span class="name">' + esc(n.name) + '</span>' +
       (meta ? '<span class="meta">' + esc(meta) + '</span>' : '') +
@@ -132,14 +135,28 @@ YJ.pedigree = (function () {
     window.addEventListener("keydown", onKey);
     document.body.appendChild(ov);
     updScrollHint();   /* 首帧即算（1120px 网格在 mb 上右缘应立即亮起） */
+    /* §158：弹窗内单元格 = JBIS 直达入口 → 补悬停提示（简约 2 代网格点击仍是弹窗语义，不加） */
+    Array.prototype.forEach.call(ov.querySelectorAll(".pcell[data-pid]"), function (c) {
+      c.title = (c.title ? c.title + " · " : "") + "点击打开 JBIS 资料 ↗";
+    });
   }
 
   function bindSimple(el, ped, title) {
     el.addEventListener("click", function () { openModal(ped, title); });
   }
 
-  /* 注入网格样式（Tailwind utility 已覆盖配色/字号/间距；
-   * 仅 grid 布局机制与紧凑版行高需要少量结构性 CSS，定义在这里） */
+/* §158 血统单元格交互（模块加载即绑一次，简约/弹窗两处共享）：
+ * hover 提亮 + 内描边（CSS 注入见下）；完整 5 代弹窗内点击单元格 → 新标签打开 JBIS 马页
+ * （id = 台账 jbis 口径，与 basic.json 的 jbis_id 同源）。简约 2 代网格点击 = 弹完整版（既有语义），
+ * 显式排除。空位格（.x）无 data-pid 天然不参与。 */
+document.addEventListener("click", function (e) {
+  var c = e.target && e.target.closest ? e.target.closest(".pcell[data-pid]") : null;
+  if (!c || !c.closest(".pg-modal")) return;
+  window.open("https://www.jbis.or.jp/horse/" + c.getAttribute("data-pid") + "/", "_blank", "noopener");
+});
+
+/* 注入网格样式（Tailwind utility 已覆盖配色/字号/间距；
+ * 仅 grid 布局机制与紧凑版行高需要少量结构性 CSS，定义在这里） */
   var css = `
 /* 血统网格（5 列，行列照抄旧版；配色用 Tailwind 类）
  * min-width:760px 是「5 代名字不被挤成省略号」的底线，PC 与窄屏同用：
@@ -169,6 +186,10 @@ YJ.pedigree = (function () {
 .pcell.x{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.02) 6px,rgba(0,0,0,.02) 12px);cursor:default}
 .pcell .name{font-weight:600;color:#0a0a0a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcell .meta{color:#737373;white-space:nowrap}
+/* §158 hover 提亮 + 内描边（简约/弹窗共用；空位格 .x 排除） */
+.pcell{transition:filter .15s ease,box-shadow .15s ease}
+.pcell:not(.x):hover{filter:brightness(.955);box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.10)}
+@media (prefers-reduced-motion:reduce){.pcell{transition:none}}
 .pcell:not(.inline) .name{display:block}
 .pcell:not(.inline) .meta{display:block;font-size:9px;margin-top:1px;overflow:hidden;text-overflow:ellipsis}
 .pcell.inline{flex-direction:row;align-items:center;gap:6px}

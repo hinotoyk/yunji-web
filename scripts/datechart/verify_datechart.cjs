@@ -1,11 +1,11 @@
 /* 日期图 · 正式数据版 冒烟断言（Node stub DOM，不动浏览器；挂 run_update --ci/--check 与 CI 门禁）
  * 三段验证：
- *   [A] data/datechart.json 产物断言：字段同构性（21 键契约）、着顺段位合法、排序稳定
+ *   [A] data/datechart.json 产物断言：字段同构性（29 键契约）、着顺段位合法、排序稳定
  *   [B] 产物 ↔ data/races 源数据 1:1 对账（独立第二实现，防 build 脚本单点 bug）
  *   [C] 页面冒烟（stub DOM + stub fetch 加载真实产物）：四口径 KPI / 场地范围 JRA·NAR·海外
  *       多选（默认 JRA）/ 日期选择器（Element 风格 日/周/月/年 面板）/ 点格下钻 / 周高亮（含跨月周
  *       补真实邻月日：邻月格灰显 M/D、不套 win/run 底色但数据照出）/
- *       年月卡 / 内嵌比赛表同款明细（PC 15 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
+ *       年月卡 / 内嵌比赛表同款明细（PC 18 列 = 基准字段子集 + mb 软分行卡片），期望值全部从源数据独立重算
  * 用法: node scripts/datechart/verify_datechart.cjs */
 "use strict";
 const fs = require("fs");
@@ -24,7 +24,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "ki", "nk", "tm", "ag", "ms", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "wk", "ub", "ki", "nk", "tm", "ag", "ms", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障", "障害", "AW"]);   /* 存放口径 = 障（racelib 归一），障害 兼容旧值 */
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -62,7 +62,7 @@ for (let i = 0; i < RUNS.length; i++) {
   if (!VT_SET.has(r.vt)) badField++;
   if (!(typeof r.bk === "string" && typeof r.tm === "string" && typeof r.dz === "string" && typeof r.hs === "string")) badField++;
   if (!(typeof r.jk === "string" && typeof r.tr === "string")) badField++;
-  if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw))) badField++;
+  if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw) && rawOk(r.wk) && rawOk(r.ub))) badField++;
   if (!(typeof r.hc === "string")) badField++;      /* hc = 中文名（切换马名用；无=空串） */
   if (!(typeof r.sx === "string") || !rawOk(r.ya)) badField++;   /* sx/ya = 性齢（明细列；ya int/str 原样） */
   if (!rawOk(r.rid)) badField++;                    /* rid = netkeiba 赛事 id（''=台账等无 id） */
@@ -110,6 +110,8 @@ for (const h of basic.horses) {
       pr,
       vt: String(r["venue_type"] || ""),
       bk: String(r["馬場"] || ""),
+      wk: raw(r["枠番"]),
+      ub: raw(r["馬番"]),
       ki: raw(r["斤量"]),
       nk: raw(r["人気"]),
       tm: String(r["タイム"] || ""),
@@ -156,6 +158,8 @@ function el(id) {
     closest() { return null; },
     querySelectorAll() { return []; },
     getBoundingClientRect() { return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 }; },
+    /* 页面 render/fadeIn 等用到 classList（2026-10-31 补：页面演进引入后 stub 缺失 → render 中途抛错、明细全空） */
+    classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
   };
 }
 global.document = {
@@ -249,7 +253,9 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === ay + "年" + am + "月", "窗口标签 → " + els["winLabel"].textContent + "（即选择器触发标签）");
   ok(kpiOf("出走", els["kpis"]._html) === String(starts(sm).length), "KPI 出走 " + starts(sm).length + "（仅 JRA，剔除未出走，与源数据一致）");
   ok(String(kpiOf("总赏金", els["kpis"]._html)) === man(prizeOf(sm)), "KPI 总赏金 " + man(prizeOf(sm)));
-  ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sm), "KPI 重赏胜利 🏆" + trophyOf(sm));
+  ok(/^<span class="trophy"><svg[\s\S]*<\/svg><\/span>\d+$/.test(String(kpiOf("重赏胜利", els["kpis"]._html) || "")) &&
+     (String(kpiOf("重赏胜利", els["kpis"]._html) || "").match(/<\/span>(\d+)$/) || [])[1] === String(trophyOf(sm)),
+    "KPI 重赏胜利 = trophy SVG 徽章 + " + trophyOf(sm) + "（🏆 emoji 已换内联 SVG，2026-10-31 页面美化）");
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sm).join("-") + "]",
     "KPI 通算战绩 4 段 [" + br4(sm).join("-") + "]（§76 去首位出走；标签剥离后逐段比对，格式保留 - 连字符）");
   const brkHtml = String(kpiOf("通算战绩", els["kpis"]._html) || "");
@@ -265,16 +271,17 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
   ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
 
-  console.log("[C2] 内嵌比赛表同款明细（PC 16 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
+  console.log("[C2] 内嵌比赛表同款明细（PC 18 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
-  /* 字段基准（§53.5/§78/§101）= 比赛记录页跨马主表 22 列；明细 = 隐藏 天候/枠番/馬番/頭数/着差/賠率 后的 16 列
-   * （§101 上り 解禁 → 上り 紧随着順），且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
+  /* 字段基准（§53.5/§78/§101/§159）= 比赛记录页跨马主表 22 列；明细 = 隐藏 天候/頭数/着差/賠率 后的 18 列
+   * （§101 上り 解禁 → 上り 紧随着順；§159 枠番/馬番 解禁 → 产物已补 wk/ub，与 profile 内嵌表同口径），
+   * 且列序必须与基准一致（馬名首列、跑道并入距离、马体重在赏金前） */
   const ths = (pcHtml.match(/<th[^>]*>[\s\S]*?<\/th>/g) || [])
     .map(h => h.replace(/<[^>]+>/g, "").replace(/⇄/g, "").trim());   /* 馬名列头含 ⇄ 切换按钮 → 取纯文案 */
   /* 期望列序用 stub 自己的 i18n 生成（断言的是**顺序与字段集**，不重复断言翻译文案本身） */
-  const EXPECT_TH = ["馬名", "性齢", "日付", "場名", "レース名", "距離", "馬場", "斤量", "人気", "着順", "上り", "タイム", "馬体重", "賞金", "騎手", "調教師"]
+  const EXPECT_TH = ["馬名", "性齢", "日付", "場名", "レース名", "距離", "馬場", "枠番", "馬番", "斤量", "人気", "着順", "上り", "タイム", "馬体重", "賞金", "騎手", "調教師"]
     .map(k => k === "賞金" ? YJ.i18n.t(k) + "(万円)" : YJ.i18n.t(k));
-  ok(ths.length === 16, "PC 表头 16 列（基准 22 列 − 隐藏 6 列，含 性齢 §78.1 + 上り §101）");
+  ok(ths.length === 18, "PC 表头 18 列（基准 22 列 − 隐藏 4 列，含 性齢 §78.1 + 上り §101 + 枠番/馬番 §159）");
   ok(JSON.stringify(ths) === JSON.stringify(EXPECT_TH), "列序随基准：" + ths.join("|"));
   ok(ths.indexOf("性龄") === 1, "性齢 列紧随马名（列头 性龄，§78.1）");
   ok(String(els["dBody"]._html).includes("yj-mb-sexage"), "mb 明细卡片含 性齢 槽（datechart 短键产物已补 sx/ya）");
@@ -373,7 +380,9 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === "2026/08/09（" + weekdayCn("2026-08-09") + "）", "点 8/9 → " + els["winLabel"].textContent);
   const sd = sDay("2026-08-09");
   ok(+kpiRuns() === starts(sd).length, "天 KPI 出走 " + starts(sd).length + "（J·GIII 胜日）");
-  ok(String(kpiOf("重赏胜利", els["kpis"]._html)) === '<span class="trophy">🏆</span>' + trophyOf(sd), "天 KPI 重赏胜利 🏆" + trophyOf(sd) + "（G1-3/JG1-3/Jpn1-3 口径）");
+  ok(/^<span class="trophy"><svg[\s\S]*<\/svg><\/span>\d+$/.test(String(kpiOf("重赏胜利", els["kpis"]._html) || "")) &&
+     (String(kpiOf("重赏胜利", els["kpis"]._html) || "").match(/<\/span>(\d+)$/) || [])[1] === String(trophyOf(sd)),
+    "天 KPI 重赏胜利 = trophy SVG + " + trophyOf(sd) + "（G1-3/JG1-3/Jpn1-3 口径）");
   /* 周口径 → 带周号日历面板 */
   seg("week");
   dpTrigger();
@@ -382,7 +391,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-w", v: "2026-08-06" });
   const iw831 = isoWeek("2026-08-06");
   const sw831 = sWeek(iw831.y, iw831.w);
-  ok(els["winLabel"].textContent === iw831.y + "年 第" + iw831.w + "週（8/3–8/9）", "点第 " + iw831.w + " 周行 → " + els["winLabel"].textContent);
+  ok(els["winLabel"].textContent === iw831.y + "年 第" + iw831.w + "周（8/3–8/9）", "点第 " + iw831.w + " 周行 → " + els["winLabel"].textContent);
   ok(+kpiRuns() === starts(sw831).length, "周 KPI 出走 " + starts(sw831).length + "（与源一致）");
   /* 周面板翻周：‹ › = ±7 天（跨月连续翻），« » = 翻月；翻页只改浏览态、面板保持打开 */
   dpTrigger();
@@ -393,7 +402,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(String(els["dpPanel"]._html).includes("2026年 8月"), "‹› 翻 3 周到 8/27 仍在 8月");
   dpClick({ name: "data-nav", v: "nw" });
   ok(String(els["dpPanel"]._html).includes("2026年 9月"), "翻第 4 周（9/3）跨月 → 2026年 9月 网格");
-  ok(els["winLabel"].textContent === iw831.y + "年 第" + iw831.w + "週（8/3–8/9）", "翻周只改浏览态，锚点不动");
+  ok(els["winLabel"].textContent === iw831.y + "年 第" + iw831.w + "周（8/3–8/9）", "翻周只改浏览态，锚点不动");
   dpClick({ name: "data-nav", v: "pw" });
   dpClick({ name: "data-nav", v: "pw" });
   dpClick({ name: "data-nav", v: "pw" });
@@ -402,7 +411,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   dpClick({ name: "data-w", v: "2026-08-13" });
   const iw810 = isoWeek("2026-08-13");
   const sw810 = sWeek(iw810.y, iw810.w);
-  ok(els["winLabel"].textContent === iw810.y + "年 第" + iw810.w + "週（8/10–8/16）", "选翻到的周 → " + els["winLabel"].textContent);
+  ok(els["winLabel"].textContent === iw810.y + "年 第" + iw810.w + "周（8/10–8/16）", "选翻到的周 → " + els["winLabel"].textContent);
   ok(+kpiRuns() === starts(sw810).length, "W" + iw810.w + " KPI 出走 " + starts(sw810).length + "（与源一致）");
   /* 年口径 → 十年面板 */
   seg("year");
@@ -435,13 +444,13 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   els["navNext"].handlers.click[0]();
   ok(els["winLabel"].textContent === dayInCur.replace(/-/g, "/") + "（" + weekdayCn(dayInCur) + "）", "› 回到原日");
 
-  console.log("[C6] 周口径（ISO 週 + 行高亮 + 跨月周补真实邻月日）");
+  console.log("[C6] 周口径（ISO 周 + 行高亮 + 跨月周补真实邻月日）");
   seg("week");
   const iw = isoWeek(dayInCur);
   const sw = sWeek(iw.y, iw.w);
-  ok(/第\d+週（\d+\/\d+–\d+\/\d+）/.test(els["winLabel"].textContent), "窗口标签 → " + els["winLabel"].textContent);
+  ok(/第\d+周（\d+\/\d+–\d+\/\d+）/.test(els["winLabel"].textContent), "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/dc-wrow hl/g) || []).length === 1, "所在周行高亮 ×1");
-  ok(+kpiRuns() === starts(sw).length, "周 KPI 出走 " + starts(sw).length + "（与源 ISO 週聚合一致）");
+  ok(+kpiRuns() === starts(sw).length, "周 KPI 出走 " + starts(sw).length + "（与源 ISO 周聚合一致）");
   /* 高亮行提取：行内只有 button/span（无嵌套 div）→ 首个 </div> 即行尾 */
   const rowOf = tag => { const h = String(els["cal"]._html), i = h.indexOf(tag); return i < 0 ? "" : h.slice(i + tag.length).split("</div>")[0]; };
   const rowDs = h => [...String(h).matchAll(/data-d="(\d{4}-\d{2}-\d{2})"/g)].map(x => x[1]);
@@ -458,7 +467,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
    * （2026-W31 JRA 出走 18 场全在这两天，补位若是空格则高亮行整行空白） */
   dpTrigger(); dpClick({ name: "data-nav", v: "pm" }); dpClick({ name: "data-nav", v: "pm" });
   dpClick({ name: "data-d", v: "2026-07-30" });
-  ok(els["winLabel"].textContent === "2026年 第31週（7/27–8/2）", "锚点回 7 月同一周 → " + els["winLabel"].textContent);
+  ok(els["winLabel"].textContent === "2026年 第31周（7/27–8/2）", "锚点回 7 月同一周 → " + els["winLabel"].textContent);
   const r31 = rowOf('class="dc-wrow hl">');
   ok(JSON.stringify(rowDs(r31)) === JSON.stringify(["2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31","2026-08-01","2026-08-02"]),
     "行尾补出 8/1·8/2（跨月周 7 日齐全）");

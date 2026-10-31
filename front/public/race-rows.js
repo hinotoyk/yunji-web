@@ -109,7 +109,7 @@ YJ.raceRows = (function () {
    *   中央 → race.netkeiba.com/race/result.html?race_id=
    *   地方 → nar.netkeiba.com/race/result.html?race_id=（地方独立子域）
    *   海外等其余 → db.netkeiba.com/race/{id}/ 兜底（字母混合 id 如 2025FPa00d08 只有 db 路由）
-   * 观感与普通文本完全一致（.yj-rlink 继承色/无下划线/无 hover 变化），新标签页打开 ---- */
+   * 观感仍近文本：浅灰虚线下划线提示可点（§158 用户定稿，theme.css .yj-rlink），新标签页打开 ---- */
   function raceLink(r) {
     var n = esc(raceNameText(r));
     var id = String((r && r.race_id) || "").trim();
@@ -368,7 +368,9 @@ YJ.raceRows = (function () {
    *   内嵌表（profile 下段）与日期统计明细 = 基准的**子集**：只通过 `hide` 清单隐藏字段，
    *   列序恒随基准（各视图**不再各写一份列清单**）→ 加列 / 调序 / 改列只改基准，各视图自动跟随。
    *   lib   = 基准全量（22 列，§78 增 性齢、§101 上り 紧随着順）
-   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/賠率 → 16 列（opts.horse 时含馬名，否则 15 列、
+   *   embed = 隐藏 天候/頭数/着差/賠率 → 18 列（§159 全站统一：profile 内嵌 / datechart 明细都展示
+   *     枠番/馬番——datechart.json 短键产物已同步补 wk/ub 字段；
+   *     opts.horse 时含馬名，否则 17 列、
    *     性齢 为首列；§78.1 用户要求 profile 下段/datechart 明细也展示 性齢，
    *     datechart 短键产物已同步补 sx/ya 字段 → 不再有空列问题；§101 上り 解禁 → profile 内嵌/明细展示）
    * 视图差异只允许三处：① hide 隐藏清单 ② th/mbLabel 短标签覆盖 ③ mbLines mb 卡片分组
@@ -390,12 +392,12 @@ YJ.raceRows = (function () {
   var VIEWS = {
     embed: {
       thCls: "px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]",
-      hide: ["tenki", "waku", "umaban", "tosu", "chakusa", "odds"],   /* §101 上り 解禁（profile 内嵌/datechart 明细展示） */
+      hide: ["tenki", "tosu", "chakusa", "odds"],   /* §159 枠番/馬番 解禁（profile 内嵌/datechart 明细统一展示） */
       onlyIfHorse: ["horse"],              /* 无馬名上下文（profile 下段单马）时整列不出现 */
       th: {}, mbLabel: {},
       mbLines: [
         ["race", "distMerged", "baba", "time", "agari", "prize"],   /* 後3F 隨 時間 相邻（同 lib 分組 time→agari 慣例，§101.2） */
-        ["kinryo", "ninki", "bw"],
+        ["waku", "umaban", "kinryo", "ninki", "bw"],                /* §158 枠番/馬番 解禁（随基准列序，同 lib 行3） */
         ["jockey", "trainer"]
       ]
     },

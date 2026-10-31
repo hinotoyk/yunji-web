@@ -79,6 +79,8 @@ def build_runs(horses):
                 "pr": artifacts.norm_prize(r.get("賞金")),
                 "vt": str(r.get("venue_type") or ""),
                 "bk": str(r.get("馬場") or ""),
+                "wk": _raw(r.get("枠番")),           # 枠番（int/str 原样，'' 缺失；明细列 §159 全站统一 18 列）
+                "ub": _raw(r.get("馬番")),           # 馬番（同上）
                 "ki": _raw(r.get("斤量")),
                 "nk": _raw(r.get("人気")),
                 "tm": str(r.get("タイム") or ""),

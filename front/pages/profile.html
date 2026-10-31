@@ -61,6 +61,36 @@
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
+/* §157/§158 数字滚动统一驱动：root 内所有 [data-cnt] 沿同一 rAF 时间轴滚动到目标值（650ms ease-out cubic）。
+ * data-fmt：缺省=整数；'pct'=整数+%；'man'=万円数 → 「X億Y,ZZZ」格式（賞金格，重建 ovM 的排版口径）。
+ * 数值槽是独立 span（不含単位/徽章子元素），滚动重写 textContent 安全。reduced-motion 直接终值不滚。 */
+function animateCounts(root){
+  if(!root) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els=Array.prototype.slice.call(root.querySelectorAll('[data-cnt]'));
+  if(!els.length) return;
+  var t0=null, DUR=650;
+  var fmtOf=function(el,v){
+    var f=el.getAttribute('data-fmt');
+    if(f==='pct') return Math.round(v)+'%';
+    if(f==='man'){
+      var oku=Math.floor(v/10000), rest=Math.round(v-oku*10000);
+      return (oku?oku+'億':'')+(rest?rest.toLocaleString():'');
+    }
+    return String(Math.round(v));
+  };
+  var step=function(ts){
+    if(t0===null) t0=ts;
+    var p=Math.min((ts-t0)/DUR,1), e=1-Math.pow(1-p,3);
+    els.forEach(function(el){
+      var v=parseFloat(el.getAttribute('data-cnt'))||0;
+      el.textContent=p<1?fmtOf(el,v*e):fmtOf(el,v);
+    });
+    if(p<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 /* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「回编辑台 ↗」等直跳编辑页的入口
    仅 URL 带 ?edit=1 时出现 —— 与外壳 index.html「编辑」导航组同一开关
    （外壳加载子页时把 edit=1 透传进 iframe；直接开本页也可自行拼接）。 */
@@ -265,7 +295,7 @@ function renderOverview(hs){
     return nb-na; /* 年份降序，最新在前 */
   });
   var group=function(label, sub, inner, right){
-    return '<div class="flex min-h-0 flex-1 flex-col rounded-[10px] border border-border bg-card p-5">'+
+    return '<div class="flex min-h-0 flex-1 flex-col rounded-[10px] border border-border bg-card p-5 max-md:p-3.5">'+
       '<div class="mb-3 flex items-center gap-2"><span class="text-[12px] font-bold uppercase tracking-[1px] text-secondary-foreground">'+label+'</span>'+(sub?'<span class="text-[10.5px] tracking-[.5px] text-muted-foreground">'+sub+'</span>':'')+
       (right?'<span class="ml-auto rounded-full bg-muted/60 px-3 py-1 text-[11px] text-muted-foreground">'+right+'</span>':'')+'</div>'+
       inner+'</div>';
@@ -358,7 +388,7 @@ function renderOverview(hs){
   /* 小类右栏：<2 匹的小类（当前=死亡 1、种马 0）在纯面积图里必然不可见/细成丝，硬等效放大会虚增其面积比
    * （0 匹块会被撑到和 14 匹块一样大，误导）→ 单列**右侧定宽格子栏**：块小即类小，诚实且全可读；
    * 死亡固定右栏末位（右栏贴右缘 → 末格=整图右下角，终点态语义）+ 固定浅灰（theme.css .yj-tm--dead）。 */
-  function tmPaint(){
+  function tmPaint(anim){
     var el=document.getElementById(tmId); if(!el) return;
     var W=el.clientWidth, H=el.clientHeight;
     if(W<40||H<40) return;
@@ -378,30 +408,34 @@ function renderOverview(hs){
       var mh=(H-(minis.length-1)*2)/minis.length;
       minis.forEach(function(it,i){ rects.push({k:it.k,x:W-mw,y:i*(mh+2),w:mw,h:mh}); });
     }
-    el.innerHTML=tmHTML(rects,bySt);
+    var tot=0; cats.forEach(function(c){ tot+=bySt[c.k]||0; });   /* 占比分母 = 全部状态匹数（§157 状态图大块也标占比） */
+    el.innerHTML=tmHTML(rects,bySt,tot,anim);
   }
   /* 块渲染单一出处（状态/概览两图共用）：按面积阈值选标签形态（竖排 / 横排一行 / 数字-only）；
-   * pctSum 传入时追加占比行（面积差肉眼难辨，标注占比才读得准） */
-  function tmHTML(rs,cnt,pctSum){
-    return rs.map(function(r){
+   * pctSum 传入时追加占比行（面积差肉眼难辨，标注占比才读得准）。
+   * anim=true（§157 首次入场）：加 .yj-tm-anim 交错淡入 + 按块序内联 animation-delay；
+   * data-name/data-tip = 悬停读数条数据源（原生 title 保留，读屏/触屏长按仍可用）；
+   * data-cnt = 首次渲染数字滚动目标（countUp 只跑一次，resize 重排重建的块直接显示终值）。 */
+  function tmHTML(rs,cnt,pctSum,anim){
+    return rs.map(function(r,i){
       var c=catMap[r.k]||{n:'',c:'',tip:''};
       var ix=Math.round(r.x)+1, iy=Math.round(r.y)+1, iw=Math.max(Math.round(r.w)-2,0), ih=Math.max(Math.round(r.h)-2,0), inner='';
       var pct=(pctSum&&ih>=64)?'<span class="yj-tm-p">'+(100*(cnt[r.k]||0)/pctSum).toFixed(1)+'%</span>':'';
-      if(iw>=50&&ih>=44) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v">'+(cnt[r.k]||0)+'</b>'+pct;
-      else if(iw>=64&&ih>=26) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v yj-tm-v--s">'+(cnt[r.k]||0)+'</b>';
-      else if(iw>=36&&ih>=22) inner='<b class="yj-tm-v yj-tm-v--s">'+(cnt[r.k]||0)+'</b>';
-      else if(iw>=22&&ih>=14) inner='<b class="yj-tm-v yj-tm-v--xs">'+(cnt[r.k]||0)+'</b>';
-      var cls='yj-tm '+c.c+((iw>=64&&ih>=26&&!(iw>=50&&ih>=44))?' yj-tm-h':'');
+      if(iw>=50&&ih>=44) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v" data-cnt="'+(cnt[r.k]||0)+'">'+(cnt[r.k]||0)+'</b>'+pct;
+      else if(iw>=64&&ih>=26) inner='<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v yj-tm-v--s" data-cnt="'+(cnt[r.k]||0)+'">'+(cnt[r.k]||0)+'</b>';
+      else if(iw>=36&&ih>=22) inner='<b class="yj-tm-v yj-tm-v--s" data-cnt="'+(cnt[r.k]||0)+'">'+(cnt[r.k]||0)+'</b>';
+      else if(iw>=22&&ih>=14) inner='<b class="yj-tm-v yj-tm-v--xs" data-cnt="'+(cnt[r.k]||0)+'">'+(cnt[r.k]||0)+'</b>';
+      var cls='yj-tm '+c.c+((iw>=64&&ih>=26&&!(iw>=50&&ih>=44))?' yj-tm-h':'')+(anim?' yj-tm-anim':'');
       /* 悬停说明（2026-10-30 UI 审查 §8）：块本身 overflow:hidden → 伪元素浮层会被裁掉，
        * 所以这里用原生 title（慢但不会被裁、且天然可被读屏/触屏长按读取）。
        * 文案 = 类别含义 · 匹数 · 占比（占比仅在传入 pctSum 的概览图里有意义）。 */
       var tipTxt=c.tip+' · '+(cnt[r.k]||0)+' 匹'+(pctSum?' · '+(100*(cnt[r.k]||0)/pctSum).toFixed(1)+'%':'');
-      return '<div class="'+cls+'" style="left:'+ix+'px;top:'+iy+'px;width:'+iw+'px;height:'+ih+'px" title="'+esc(tipTxt)+'">'+inner+'</div>';
+      return '<div class="'+cls+'" style="left:'+ix+'px;top:'+iy+'px;width:'+iw+'px;height:'+ih+'px'+(anim?';animation-delay:'+(i*45)+'ms':'')+'" data-name="'+esc(c.n)+'" data-tip="'+esc(c.tip)+'" title="'+esc(tipTxt)+'">'+inner+'</div>';
     }).join('');
   }
   var tmId='yjStm';
   var tmWrap='<div id="'+tmId+'" class="relative min-h-[190px] w-full flex-1 max-md:min-h-[170px]"></div>';
-  function paintAll(){ tmPaint(); ovPaint(); }   /* ovPaint 声明提升，定义在下方概览段 */
+  function paintAll(anim){ tmPaint(anim); ovPaint(anim); }   /* ovPaint 声明提升，定义在下方概览段；anim=仅首次入场动画（§157） */
   /* 概览 · 年份占比图：块面积 ∝ 匹数，块内 标签+匹数+占比（面积差肉眼难辨，标注才读得准）。
    * 总数在占比图里没有位置——它=全部面积的和，再摆一块必双重计数 → 抬到组标题右侧信息 chip（group 第 4 参）。
    * 年份色 y1..y12 按年份降序位次取色（一年一色零重色；新增年份插队拿 y1 顺移续色，未知年份排最后照常参与；
@@ -414,36 +448,79 @@ function renderOverview(hs){
   });
   var ovId='yjOvm';
   var ovWrap='<div id="'+ovId+'" class="relative min-h-[150px] w-full flex-1 max-md:min-h-[140px]"></div>';
-  function ovPaint(){
+  function ovPaint(anim){
     var el=document.getElementById(ovId); if(!el) return;
     var W=el.clientWidth, H=el.clientHeight;
     if(W<40||H<40) return;
     var items=ovItems.filter(function(v){ return v.n>0; });
     items.sort(function(a,b){ return b.n-a.n; });
     var sum=items.reduce(function(s,v){ return s+v.n; },0);
-    el.innerHTML=tmHTML(tmSquarify(items,W,H),byYear,sum);
+    el.innerHTML=tmHTML(tmSquarify(items,W,H),byYear,sum,anim);
   }
+  /* 悬停读数条（§157）：块 overflow:hidden 装不下浮层、原生 title 又慢 → 每组图下方
+   * 常驻一条读数行（色点 + 类别 + 含义说明），mouseover/mouseout 委托在 #ovStats 上；
+   * 块的 data-name/data-tip 是数据源，原生 title 保留（读屏/触屏长按仍可用）。
+   * 移动端 tap 色块同样触发 mouseover → 读数条更新（比长按等 title 快）。 */
+  var RD_DEF='悬停 / 点按色块查看分类说明';
+  var readout=function(){
+    return '<div class="mt-2.5 flex min-h-[18px] flex-none items-center gap-1.5 text-[12px] leading-snug text-muted-foreground">'+
+      '<i class="yj-rd-dot h-2 w-2 flex-none rounded-full bg-transparent"></i>'+
+      '<span class="yj-rd-t">'+RD_DEF+'</span></div>';
+  };
+  var sexSum=(bySex['牡']||0)+(bySex['牝']||0)+(bySex['セン']||0);
+  var sumChip=function(n){
+    return '合计 <b class="ml-1 text-[13px] font-bold tabular-nums text-primary">'+n+'</b> 匹';
+  };
   var statHTML=
-    group('概览','OVERVIEW', ovWrap,
+    group('概览','OVERVIEW',
+      '<div data-readwrap class="flex min-h-0 flex-1 flex-col">'+ovWrap+readout()+'</div>',
       '收录产驹总数 <b class="ml-1 text-[13px] font-bold tabular-nums text-primary">'+esc(total)+'</b>')+
     group('性别','BY SEX',
-      '<div class="grid min-h-0 flex-1 grid-cols-3 gap-3">'+
-        SEXCATS.map(function(c){
-          var n=bySex[c.k]||0;
-          return '<div class="yj-tile '+c.c+' flex flex-col items-center justify-center px-3 py-4" title="'+esc(c.tip+' · '+n+' 匹')+'">'+
-            '<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v">'+n+'</b></div>';
-        }).join('')+'</div>')+
-    group('状态','BY STATUS', tmWrap);
+      '<div data-readwrap class="flex min-h-0 flex-1 flex-col">'+
+        '<div class="grid min-h-0 flex-1 grid-cols-3 gap-3">'+
+          SEXCATS.map(function(c,i){
+            var n=bySex[c.k]||0;
+            return '<div class="yj-tile yj-tm-anim '+c.c+' flex flex-col items-center justify-center px-3 py-4" style="animation-delay:'+(i*45)+'ms" data-name="'+esc(c.n)+'" data-tip="'+esc(c.tip)+'" title="'+esc(c.tip+' · '+n+' 匹')+'">'+
+              '<span class="yj-tm-n">'+esc(c.n)+'</span><b class="yj-tm-v" data-cnt="'+n+'">'+n+'</b></div>';
+          }).join('')+'</div>'+readout()+'</div>',
+      sumChip(sexSum))+
+    group('状态','BY STATUS',
+      '<div data-readwrap class="flex min-h-0 flex-1 flex-col">'+tmWrap+readout()+'</div>',
+      sumChip(total));
   document.getElementById("body").innerHTML =
-    '<div class="flex min-h-full flex-col gap-4">'+
-      '<div class="rounded-[10px] border border-border bg-card p-6">'+
+    '<div id="ovStats" class="flex min-h-full flex-col gap-4">'+
+      '<div class="rounded-[10px] border border-border bg-card p-6 max-md:p-4">'+
         '<div class="text-[17px] font-bold">{{YJ_SITE_NAME}} · {{YJ_SITE_SUBTITLE}}</div>'+
         '<div class="mt-1.5 text-[13px] text-muted-foreground">{{YJ_SITE_TAGLINE}}</div>'+
       '</div>'+statHTML+
     '</div>';
 
-  paintAll();
-  /* 视口变化 → 重排两张面积图（按实测容器宽高铺排；选马后本 DOM 已被整体替换，paint 内部空判自动退出） */
+  paintAll(true);
+  /* 数字滚动（§157）：仅首次渲染跑一遍（rAF 统一时间轴，ease-out cubic 650ms）；
+   * resize 重排重建的块 innerHTML 直出终值，不重放；reduced-motion 用户直接终值 */
+  animateCounts(document.getElementById('ovStats'));
+  /* 读数条事件委托（§157）：绑定一次（选马后 DOM 整体替换，flag 挂函数上防重绑） */
+  if(!renderOverview._rdBound){
+    renderOverview._rdBound=true;
+    var host=document.getElementById('ovStats');
+    host.addEventListener('mouseover',function(e){
+      var b=e.target.closest?e.target.closest('.yj-tm,.yj-tile'):null; if(!b) return;
+      var wrap=b.closest('[data-readwrap]'); if(!wrap) return;
+      var t=wrap.querySelector('.yj-rd-t'), d=wrap.querySelector('.yj-rd-dot'); if(!t) return;
+      t.innerHTML='<b class="font-semibold text-foreground">'+esc(b.getAttribute('data-name')||'')+'</b> · '+esc(b.getAttribute('data-tip')||'');
+      if(d) d.style.backgroundColor=getComputedStyle(b).backgroundColor;   /* 色点跟随块色 */
+    });
+    host.addEventListener('mouseout',function(e){
+      var b=e.target.closest?e.target.closest('.yj-tm,.yj-tile'):null; if(!b) return;
+      if(b.contains(e.relatedTarget)) return;   /* 移到块内子元素：不重置，避免闪烁 */
+      var wrap=b.closest('[data-readwrap]'); if(!wrap) return;
+      var t=wrap.querySelector('.yj-rd-t'), d=wrap.querySelector('.yj-rd-dot');
+      if(t) t.textContent=RD_DEF;
+      if(d) d.style.backgroundColor='';
+    });
+  }
+  /* 视口变化 → 重排两张面积图（按实测容器宽高铺排；选马后本 DOM 已被整体替换，paint 内部空判自动退出）；
+   * 重排不传 anim：拖动窗口时块不该反复闪入场动画 */
   if(!renderOverview._tmBound){
     renderOverview._tmBound=true;
     var tmT=0;
@@ -480,11 +557,13 @@ function render(h){
 
   /* ── 上段 · 图片 + 基本信息 + 血统（一体式，无卡片无分割线）── */
 
-  /* ── 名字区：日本 / 英文 / 港译 / 自译 同款排版（上小标签 + 下名字），一行，/ 分隔 ── */
+  /* ── 名字区：日本 / 英文 / 港译 / 自译 同款排版（上小标签 + 下名字），一行，/ 分隔 ──
+   * §158.1 四格真值均可点击复制（.yj-cp 行 + .yj-cp-v 值槽，委托见文件尾；空槽 nslot 不可复制）。
+   * hover 淡底做成圆角小胶囊：px-1.5 py-1 + -mx-1.5 负边距抵消，布局位置不变 */
   var ncol=function(lbl,v,big){
-    return '<div class="flex min-w-0 flex-col justify-center">'+
+    return '<div class="yj-cp -mx-1.5 flex min-w-0 flex-col justify-center rounded-lg px-1.5 py-1" title="点击复制">'+
       '<span class="text-[10.5px] font-semibold uppercase tracking-[1.5px] '+(big?'text-primary':'text-muted-foreground')+'">'+lbl+'</span>'+
-      '<span class="mt-0.5 whitespace-nowrap '+(big?'text-[30px] font-bold leading-tight text-foreground':'text-[19px] font-semibold leading-tight text-secondary-foreground')+'">'+esc(v)+'</span></div>';
+      '<span class="yj-cp-v mt-0.5 whitespace-nowrap '+(big?'text-[30px] font-bold leading-tight text-foreground':'text-[19px] font-semibold leading-tight text-secondary-foreground')+'">'+esc(v)+'</span></div>';
   };
   /* 空值槽位：名字固定四格（日文/英文/港译/自译），缺名保留位置显示弱化「—」（沿用全站缺失=—惯例），
    * 标签与名字都比真值淡，一眼区分空槽 vs 数据；四格全空回退「母名の生年」（与选马器列表同款兜底） */
@@ -524,10 +603,12 @@ function render(h){
   var nameHeader='<div class="flex min-w-0 flex-col"><div class="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3">'+names.join(sep)+'</div>'+meaningLine+'</div>';
 
   /* ── 上段整体：照片（左，铺满占大） + 基本信息 + 血统（右，窄列，成为一体）── */
+  /* §158 字段行点击复制：行挂 .yj-cp（hover 提亮 + 手型）、值槽挂 .yj-cp-v（复制时取 textContent；
+   * 委托绑定见文件尾 bindDetailExtras——#body 元素常驻，仅 innerHTML 重建，一次绑定全页生效） */
   var fi=function(k,v,field){
     var dm = (field && dOv && Object.prototype.hasOwnProperty.call(dOv, field) && dOv[field] !== null)
       ? '<span class="flex-none rounded bg-chart3/15 px-1 py-px text-[9.5px] font-bold text-chart3" title="编辑台草稿 · 未提交">草稿</span>' : '';
-    return '<div class="flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+dm+'</div>';
+    return '<div class="yj-cp flex min-w-0 items-center gap-3 bg-card px-4 py-[9px]" title="点击复制"><span class="w-[80px] flex-none text-[11.5px] uppercase tracking-[.5px] text-muted-foreground">'+esc(k)+'</span><span class="yj-cp-v min-w-0 flex-1 text-[13.5px] font-medium text-foreground">'+v+'</span>'+dm+'</div>';
   };
   /* JRA 登录状态箭头链（2026-10 去向调查）：渲染单一出处 = public/yj-util.js statusChain
    * （编辑台预览共用 §48）。草稿预览时 hv 已被 draftOv 逐键叠加 → 自动反映草稿值。 */
@@ -611,14 +692,38 @@ function render(h){
   /* 色带格子：皮肤（渐变描边/径向雾/分格线/mb 堆叠）全部在 theme.css .yj-ov-*，此处只出结构 */
   /* 主胜鞍：色带第二行；空数组整行不渲染（不占色带高度，也不留空行） */
   var winsStrip=majorWinsStrip(hv.主勝鞍);
+  /* §158 KPI 数字滚动：数值槽包 <span data-cnt data-fmt>（animateCounts 统一驱动；
+   * span 只包数字不含単位 <em>，滚动重写 textContent 不会抹掉単位）。'—' 不参与滚动 */
   var ovRate=function(v,k,hi){
-    return '<div class="yj-ov-rate'+(hi?' yj-ov-hi':'')+'"><span class="yj-ov-k">'+esc(k)+'</span><b>'+esc(v)+'</b></div>';
+    var p=String(v).endsWith('%')?parseFloat(v):NaN;
+    var cnt=isFinite(p)?' data-cnt="'+p+'" data-fmt="pct"':'';
+    return '<div class="yj-ov-rate'+(hi?' yj-ov-hi':'')+'"><span class="yj-ov-k">'+esc(k)+'</span><b><span'+cnt+'>'+esc(v)+'</span></b></div>';
+  };
+  /* 賞金：m.v 形如 "3億4,429" / "580"（万円），manParse 还原成万円数供滚动 */
+  var manParse=function(s){
+    var m2=String(s).match(/(?:(\d+(?:\.\d+)?)億)?([\d,]+)?/);
+    if(!m2||(!m2[1]&&!m2[2])) return NaN;
+    return (parseFloat(m2[1]||0)*10000)+parseFloat(String(m2[2]||'0').replace(/,/g,''));
   };
   var ovM=function(k,m,sub){
     var dim=(m.v==="0"||m.v==="—")?' yj-ov-dim':'';
-    return '<div class="yj-ov-m"><span class="yj-ov-k">'+esc(k)+'</span><b'+dim+'>'+esc(m.v)+(m.u?'<em>'+esc(m.u)+'</em>':'')+'</b>'+
+    var raw=dim?NaN:manParse(m.v);
+    var cnt=isFinite(raw)?' data-cnt="'+raw+'" data-fmt="man"':'';
+    return '<div class="yj-ov-m"><span class="yj-ov-k">'+esc(k)+'</span><b'+dim+'><span'+cnt+'>'+esc(m.v)+'</span>'+(m.u?'<em>'+esc(m.u)+'</em>':'')+'</b>'+
       (sub?'<div class="yj-ov-sub">'+esc(sub)+'</div>':'')+'</div>';
   };
+  /* §158 着顺构成条：1着/2着/3着/着外 分段（段色=出走表着顺徽章同款 .yj-no1-3：
+   * 1着黄 #ffef7f / 2着蓝 #cbdeff / 3着橙 #efc79f，着外灰；段宽 ∝ 匹数，
+   * flex-grow 铺排；逐段 title = 悬停说明；未出赛不渲染。段类名字面量在此 → content 扫得到） */
+  var recBar='';
+  if(!isNR){
+    recBar='<span class="yj-ov-bar" role="img" aria-label="着顺构成条">'+
+      [['1着',car['1着']||0,'bg-[#ffef7f]'],['2着',car['2着']||0,'bg-[#cbdeff]'],['3着',car['3着']||0,'bg-[#efc79f]'],['着外',car['着外']||0,'bg-neutral-300']]
+        .filter(function(s){ return s[1]>0; })
+        .map(function(s,i){
+          return '<i class="'+s[2]+'" style="flex-grow:'+s[1]+';animation-delay:'+(150+i*90)+'ms" title="'+s[0]+' '+s[1]+'"></i>';
+        }).join('')+'</span>';
+  }
 
   var statsBand='<div class="mt-10">'+
     '<div class="mb-4 flex items-center gap-2.5"><span class="h-4 w-1 flex-none rounded bg-primary"></span><span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">数据概览 · OVERVIEW</span></div>'+
@@ -626,6 +731,7 @@ function render(h){
       '<div class="yj-ov-rec"><span class="yj-ov-lab">通算成績 · RECORD</span>'+
         '<span class="yj-ov-big">'+esc(mainBig)+'</span>'+
         (brack?'<span class="yj-ov-br">'+esc(brack)+'</span>':'')+
+        recBar+
       '</div>'+
       ovRate(ratePct(car?car['1着']:0, starts), "胜率", true)+
       ovRate(ratePct(car?(car['1着']+car['2着']):0, starts), "连对率", false)+
@@ -644,7 +750,7 @@ function render(h){
     '<div class="mb-2.5 flex items-center gap-2.5">'+
       '<span class="h-4 w-1 flex-none rounded bg-primary"></span>'+
       '<span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">比赛记录 · RACES</span>'+
-      '<a class="flex-none text-[12px] font-semibold text-accent-foreground hover:text-primary hover:underline" href="races.html?horse='+encodeURIComponent(h.id)+'">详细数据→</a>'+
+      '<a class="yj-more flex-none text-[12px] font-semibold text-accent-foreground hover:text-primary hover:underline" href="races.html?horse='+encodeURIComponent(h.id)+'">详细数据<span class="yj-more-arr">→</span></a>'+
     '</div>'+
     '<div class="relative"><iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div></div>';
 
@@ -663,9 +769,15 @@ function render(h){
   }
   document.getElementById("body").innerHTML =
     ribbon+
-    '<section id="sec-basic" class="scroll-mt-2">'+nameHeader+basicBlock+'</section>'+
-    '<section id="sec-stats" class="scroll-mt-2">'+statsBand+'</section>'+
-    '<section id="sec-races" class="scroll-mt-2">'+raceSection+'</section>';
+    '<section id="sec-basic">'+nameHeader+basicBlock+'</section>'+
+    '<section id="sec-stats">'+statsBand+'</section>'+
+    '<section id="sec-races">'+raceSection+'</section>';
+
+  /* §158 切马过渡：详情区淡入上浮（重绘后重触发动画；reduced-motion 由 CSS 关停）。
+   * 首次渲染也走一遍——与后续切马观感一致 */
+  var bd=document.getElementById('body');
+  bd.classList.remove('yj-view-in'); void bd.offsetWidth; bd.classList.add('yj-view-in');
+  animateCounts(bd);   /* KPI 数字滚动（构成条/胜率/赏金，§158） */
 
   avatarBind(); /* 多图相册：绑定点击切换 */
 
@@ -707,6 +819,40 @@ YJ.selector.init({
 }).catch(function(e){
   document.getElementById("body").innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">数据加载失败（'+esc(e.message)+'），请通过 http 服务器访问</div>';
 });
+
+/* §158 详情页一次性委托（#body / #detailCol 元素常驻，仅 innerHTML 重建 → 绑定一次全页生效）：
+ * 字段行点击复制：.yj-cp 行 → 取 .yj-cp-v 的 textContent → clipboard API（失败退 execCommand），
+ * 成功后在值槽尾部浮出「已复制」1.2s（.yj-cp-ok，动画见 theme.css @layer 外）；空值「—」不复制。 */
+(function bindDetailExtras(){
+  var bd=document.getElementById('body'), dcol=document.getElementById('detailCol');
+  if(!bd||!dcol||bindDetailExtras._done) return;
+  bindDetailExtras._done=true;
+  bd.addEventListener('click',function(e){
+    var row=e.target&&e.target.closest?e.target.closest('.yj-cp'):null;
+    if(!row) return;
+    var v=row.querySelector('.yj-cp-v'); if(!v) return;
+    var txt=(v.textContent||'').trim();
+    if(!txt||txt==='—') return;
+    var done=function(){
+      var ok=document.createElement('span');
+      ok.className='yj-cp-ok'; ok.textContent='已复制';
+      v.appendChild(ok);
+      setTimeout(function(){ if(ok.parentNode) ok.parentNode.removeChild(ok); },1250);
+    };
+    var fallback=function(){
+      try{
+        var ta=document.createElement('textarea');
+        ta.value=txt; ta.setAttribute('readonly','');
+        ta.style.cssText='position:fixed;opacity:0;left:-999px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta); done();
+      }catch(err){}
+    };
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done,fallback);
+    }else fallback();
+  });
+})();
 
 /* 血统「完整 5 代」：内嵌 iframe 弹窗会困在小框内 → 转发请求。
  * 有外壳（rehome 回壳）→ 转给外壳顶层渲染，遮罩全屏含侧栏（§149.2）；

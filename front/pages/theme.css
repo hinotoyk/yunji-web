@@ -146,6 +146,12 @@
   .yj-ov-win-y { margin-right:6px; font-size:11px; font-weight:600; letter-spacing:.5px; color:rgba(11,95,91,.5); font-variant-numeric:tabular-nums; }
   .yj-ov-win-n { font-size:13px; font-weight:600; color:#173330; }
   .yj-ov-wins .yj-grade { margin-left:6px; padding:1px 6px; font-size:10.5px; }
+  /* §158 着顺构成条：1着/2着/3着/着外 分段横条（宽度 ∝ 匹数，flex-grow 铺排；
+   * 段色 = 全站数据语义色 bg-primary/bg-chart2/bg-chart3/bg-neutral-300，类名在 profile.html）。
+   * 段内 title 即悬停说明；入场 scaleX 生长动画（keyframes 在 @layer 外） */
+  .yj-ov-bar { display:flex; overflow:hidden; border-radius:99px; margin-top:10px; width:150px; height:6px; background:#f5f5f5; }
+  .yj-ov-bar i { display:block; height:100%; transform-origin:left center; animation:yjBarIn .5s cubic-bezier(.22,.61,.36,1) backwards; transition:filter .15s ease; }
+  .yj-ov-bar:hover i { filter:brightness(1.06); }
   @media (max-width:767px){
     .yj-ov-band { padding:16px 18px; gap:14px 0; }
     .yj-ov-rec { width:100%; border-right:none; padding-right:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:10px; }
@@ -169,6 +175,8 @@
     .yj-ov-wins { margin-top:12px; padding:11px 0 0; gap:6px 14px; }
     .yj-ov-wins .yj-ov-k { flex:0 0 100%; }
     .yj-ov-win-n { font-size:12.5px; }
+    /* §158 构成条 mb：从大字下方定宽条改为通栏细条 */
+    .yj-ov-bar { width:100%; }
   }
 
   /* ---------- 比赛记录徽章与 mb 卡片（races.html / datechart.html 明细共用；单一出处） ----------
@@ -216,7 +224,10 @@
   .hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
   /* 赛事名跳转（比赛记录表 → netkeiba 结果页，§80）：用户点名「不需要任何提醒的样式」→
    * 继承色/无下划线/无 hover 变化，观感与普通文本一致（仅光标可感知可点） */
-  .yj-rlink{color:inherit;text-decoration:none}
+  /* 赛事名可点击提醒（§158 用户定稿）：浅灰虚线下划线暗示「有链接」，hover 加深；
+   * 观感仍近文本、不抢行，新标签页打开（race-rows.js raceLink 输出） */
+  .yj-rlink{color:inherit;text-decoration:underline;text-decoration-style:dashed;text-decoration-color:#d4d4d4;text-decoration-thickness:1px;text-underline-offset:3px}
+  .yj-rlink:hover{text-decoration-color:#a3a3a3}
   /* 马名语言切换（日文名/英文名 ⇄ 港译名/自译名）：比赛记录页（跨马主表列头 / mb 汇总行）与
    * 日期统计明细（列出马名列头 / 明细标题行）共用同一控件 —— 样式单一出处 = 此处；
    * 带 data-tip 时自绘悬停浮层（与 races.html 的 .filter-chip[data-tip] 同款观感） */
@@ -336,7 +347,9 @@
    * 配色 = 200 级低饱和浅底 + 同 hue 800/900 级深字 —— 中央/地方现役=青绿/蓝同族（现役两档）、
    * 繁殖=橙、乘马=黄绿、JRA抹消=中性灰（去向不明=灰）、种马=紫、未登录=蓝灰（尚无记录）、海外=primary/20、
    * 死亡=最浅灰（终点/退场=无彩色，比其他类「褪色」一档）；性别三列例外，用基本信息徽章指定色（见下方性别段注释）。 */
-  .yj-tm { @apply absolute flex flex-col items-center justify-center overflow-hidden rounded-[6px] leading-tight transition-[filter] duration-150 hover:brightness-95; }
+  /* hover/按压（§157 交互升级）：上浮 + 阴影 + 微降亮度；active 按压回弹（触屏点按也有反馈）。
+   * transition 含 transform/box-shadow —— 块为绝对定位，transform 不与 left/top 冲突 */
+  .yj-tm { @apply absolute flex flex-col items-center justify-center overflow-hidden rounded-[6px] leading-tight transition-[filter,transform,box-shadow] duration-200 will-change-transform hover:-translate-y-0.5 hover:shadow-md hover:brightness-95 active:translate-y-0 active:shadow-sm active:brightness-90; }
   .yj-tm-h { @apply flex-row items-center gap-x-1.5; }   /* 宽扁块横排标签：类名+数字一行（块渲染按面积选） */
   .yj-tm-n { @apply text-[11.5px] font-semibold tracking-[.3px]; }
   .yj-tm-v { @apply mt-0.5 text-[20px] font-bold tabular-nums; }
@@ -355,7 +368,7 @@
   /* 性别三等分列（male/female/gelding）配色 = 基本信息性别徽章同款指定色（profile sexBadge 全站基准，
    * leaderboard 名字色 / 搜索列表色条同源：牡蓝 #C9EFFE/#0B5A8C · 牝粉 #FFDBD5/#B03A30 · 骟灰 #EFEFEF/#5A5A5A）；
    * 概览总数不占面积 → 组标题右侧 chip（text-primary），不占用色类 */
-  .yj-tile { @apply flex flex-col rounded-[10px]; }
+  .yj-tile { @apply flex flex-col rounded-[10px] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0; }
   /* 概览年份占比块 y1..y12：按年份降序位次取色（新年份插队拿 y1、其余顺移，未知年份排最后照常参与）。
    * v1 仅 5 色且全在蓝青族（sky/indigo/cyan/blue/teal）→ 年份一多取模重色，整片蓝紫两族难分辨
    * （kzn 9 厩年每色两现，用户定调「有几个年份就有几个颜色」）；v2 扩 12 色全 hue 铺开、冷暖交替，
@@ -375,6 +388,15 @@
   .yj-tm--male { @apply bg-[#C9EFFE] text-[#0B5A8C]; }
   .yj-tm--female { @apply bg-[#FFDBD5] text-[#B03A30]; }
   .yj-tm--gelding { @apply bg-[#EFEFEF] text-[#5A5A5A]; }
+
+  /* §158 详情页交互（profile.html 专用，类名字面量在该页 JS → content 扫得到）：
+   * 字段行点击复制（.yj-cp 行 / .yj-cp-v 值槽 / .yj-cp-ok 复制成功浮标） */
+  .yj-cp { @apply cursor-pointer transition-colors duration-150 hover:bg-muted/70; }
+  .yj-cp-v { @apply relative; }
+  .yj-cp-ok { @apply relative -top-px ml-1.5 inline-block rounded bg-accent px-1.5 py-px align-middle text-[10px] font-semibold leading-normal text-accent-foreground; animation:yjCpOk 1.2s ease both; }
+  /* 「详细数据→」箭头 hover 位移（raceSection 链接） */
+  .yj-more-arr { @apply ml-px inline-block transition-transform duration-200; }
+  .yj-more:hover .yj-more-arr { @apply translate-x-0.5; }
 
   /* §150 照片网格（docs/UI优化记录.md §150）：120px 缩略图格（首图「封面」徽标 + 序号 + 悬停 ✕）
    * + 末尾虚线「＋」加号格（点击上传 / 外部文件拖入 / Ctrl+V 粘贴）；容器拖入高亮 = .yj-ed-extdrop。 */
@@ -442,3 +464,25 @@
   .yj-drop{animation:none}
 }
 
+
+/* ---------- profile 目录总览三组色块：入场动画（§157 · @layer 外防候选裁剪） ----------
+ * 交错淡入上浮：animation-delay 由 profile.html 按块序内联（i*45ms）；
+ * fill 模式 backwards —— 仅 delay 期间应用 from 态，动画结束回到普通样式，
+ * .yj-tm/.yj-tile 的 hover transform 过渡不被 animation fill 覆盖 */
+.yj-tm-anim{animation:yjTmIn .45s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes yjTmIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){
+  .yj-tm-anim{animation:none}
+  .yj-tm,.yj-tile{transition:none}
+}
+
+/* ---------- §158 详情页动画（profile.html 专用 · @layer 外防候选裁剪） ----------
+ * 切马淡入（render() 重绘 #body 时挂 .yj-view-in）/
+ * 已复制浮标（1.2s 出现→停留→消失）/ 着顺构成条逐段生长 */
+.yj-view-in{animation:yjViewIn .26s ease}
+@keyframes yjViewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes yjCpOk{0%{opacity:0;transform:translateY(2px)}15%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
+@keyframes yjBarIn{from{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){
+  .yj-view-in,.yj-cp-ok,.yj-ov-bar i{animation:none}
+}

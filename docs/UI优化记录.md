@@ -1493,3 +1493,55 @@ window.YJ_ECHARTS = echarts;
 用户实测：URL 修复后「好了一点，但还要切换照片图才出现」。根因不在 URL——lightbox.js 的 `front` 是模块级变量，`close()` 清 imgs/ov 却**不重置 front**；开灯箱切换过一次（flip 后 front=1）再关掉，复开时 `imgs[front].src` 写进的是 DOM 里带 `opacity-0` 的**隐藏层**（DOM 第一层的 opacity-100 可见层没有 src）→ 首眼空白，切一张走 show()/flip 路径才显现。此前 URL 全 404 时两张都空，此 bug 被掩盖；URL 修好后才浮出。修复：open() 里 `front = 0` 归零（入口状态归一，一处兜住所有复开路径）。
 
 **回归**（:8091 子路径镜像，390×844 触屏）：首开 img1 ✓ → 切 img2 ✓ → 关闭 → 卡切到图2 复开 **img2 立即有图**（修复前此处必空白）→ 反向切回 img1 ✓；全程 opacity=1、零报错。像素采样：背景 rgb≈30-35（遮罩压暗）、照片区全亮。截图 tests/ui-156b-reopen-mb.png。
+
+## §157 · 目录总览三组统计图交互升级（2026-10-31，用户：pc/mb 设计优化 + 加交互效果）
+
+**对象**：profile.html「未选马」目录总览的 概览(年份 treemap) / 性别(三等分列) / 状态(treemap) 三组。此前块只有 `hover:brightness-95` + 原生 title，整区静态。
+
+**改动**（全部收敛在 renderOverview 作用域 + theme.css 面积图皮肤段，不动数据）：
+1. **块 hover/按压升级**（theme.css `.yj-tm`/`.yj-tile`）：hover = 上浮 -2px + shadow-md + brightness-95；active = 按压回弹（触屏点按也有反馈）；transition 扩为 filter/transform/box-shadow 200ms。块为绝对定位，transform 与 left/top 不冲突。
+2. **入场动画**（theme.css @layer 外新增 `.yj-tm-anim` + `@keyframes yjTmIn`，防候选裁剪同 §147 先例）：块/性别瓦片交错淡入上浮（fade + translateY(6px) scale(.97)，450ms，块序 ×45ms 内联 delay）。fill 模式 **backwards**——只覆盖 delay 期，动画结束回归普通样式，不压 hover 的 transform 过渡。resize 重排不传 anim（拖窗口不反复闪）。
+3. **数字滚动**：块内匹数标 `data-cnt`，首次渲染 rAF 统一时间轴 650ms ease-out cubic 滚到目标值；只跑一次，resize 重建的块直出终值；`prefers-reduced-motion` 直接终值（CSS 侧动画/过渡同媒体查询全关）。
+4. **悬停读数条**：每组图下常驻一行（色点 + 类别 + 含义说明），`#ovStats` mouseover/mouseout 委托，数据源 = 块上 `data-name`/`data-tip`，色点取块 computed backgroundColor 跟随块色；mouseout 以 `b.contains(relatedTarget)` 排除块内子元素移动防闪烁。解决块 overflow:hidden 装不下浮层、原生 title 慢的双重限制（title 保留给读屏/触屏长按）；mb 端 tap 色块同样触发 mouseover 更新读数条。
+5. **状态图补占比**：tmPaint 传入全状态合计为 pctSum → 大块（ih≥64）显示占比，与概览图同语言。
+6. **组头合计 chip 统一**：性别/状态组头右侧补「合计 n 匹」chip（同概览组「收录产驹总数」语言）；mb 端组卡 p-5 → max-md:p-3.5、站点标题卡 p-6 → max-md:p-4。
+
+**验证**：build ✓（dist theme CSS 含 yjTmIn keyframes / .yj-tm:hover 上浮阴影 / reduced-motion 关停，:8091 服务 dist）；Edge 无头 dump-dom（?embed=1 避 rehome 回壳）——10 色块 + 3 读数条 + data-cnt 齐备，dump 抓到 count-up 中间帧（146→"11"）与入场动画中间帧（截图 tests/_ov_pc.png / tests/_ov_mb.png：PC 1200 / MB 390 布局无重叠无裁切，读数条默认文案「悬停 / 点按色块查看分类说明」就位）。
+
+## §158 · 马匹详情页交互八连（2026-10-31，用户点名 1/3/4/5/6/8/11/12 号提案）
+
+**对象**：profile.html 选中马后的详情视图（字段表 / 血统 iframe / 概览色带 / 出走表 iframe）。
+
+**改动**：
+1. **字段行点击复制**：`fi()` 行挂 `.yj-cp`（hover 提亮 + 手型 + title 提示）、值槽 `.yj-cp-v`；点击取 textContent（空值「—」跳过）→ clipboard API（失败退 execCommand 隐藏 textarea），成功后值槽尾部浮出「已复制」小签 1.2s（`.yj-cp-ok`，keyframes `yjCpOk`）。委托绑在常驻的 `#body` 上一次生效（bindDetailExtras，挂函数 flag 防重绑）。
+2. **血统块 hover 提亮 + 弹窗内 JBIS 直达**（public/pedigree.js）：`.pcell` hover = brightness(.955) + 1.5px 内描边（reduced-motion 关停）；cell() 输出 `data-pid`（台账 jbis 口径 id）；**完整 5 代弹窗内**点击单元格 → 新标签 `jbis.or.jp/horse/{id}/`（openModal 补 title「点击打开 JBIS 资料 ↗」）；简约 2 代网格点击仍是「弹完整版」既有语义，委托里显式排除。
+3. **切马过渡**：render() 重绘 `#body` 后重触发 `.yj-view-in`（260ms 淡入上浮；remove→reflow→add 重放；reduced-motion 关停）。
+4. **KPI 数字滚动**：§157 的 countUp 收口为 `animateCounts(root)`（data-cnt + data-fmt：缺省整数 / 'pct' / 'man'——'man' 把万円数滚成「X億Y,ZZZ」重建赏金排版口径）。数值槽 = 独立 span（不含単位 em），滚动重写 textContent 不伤子元素。概览页（#ovStats）与详情色带（胜率三率 + 四赏金格）共用；「—」格不参与。修过一 bug：`isFinite('')` 误真 → dim 格曾产出空 data-cnt，改 NaN 判定。
+5. **着顺构成条**：通算成績大字下 6px 圆角分段条（1着 bg-primary / 2着 bg-chart2 / 3着 bg-chart3 / 着外 bg-neutral-300，全站数据语义色；flex-grow ∝ 匹数；逐段 title=悬停说明；0 值段不渲染；未出赛不渲染条）。入场 scaleX 生长（yjBarIn，段序 stagger 90ms）；mb 端从定宽条改通栏。aria-label 配齐。
+6. **出走表行交互**（races-page.css，.yj-lib 容器前缀防误伤）：行 hover 淡底 + 1/2/3 着顺·人气徽章随行 hover scale(1.12) + 全表 td tabular-nums（賞金/タイム位对齐；CJK 不受影响）。
+7. **页内锚点小目录**：`.yj-anchor` sticky 吸顶在 `#detailCol`（PC 端真正的滚动容器——外壳 iframe 定高、详情列内滚，无需跨文档 postMessage）顶部，毛玻璃底；点击 detailCol.scrollTo 平滑滚到 sec-basic/sec-stats/sec-races；scroll 监听 spy 高亮当前段（段顶越过列口 140px）。mb 端 max-md:hidden（无内滚）。
+8. **「详细数据→」箭头**：箭头包 `.yj-more-arr`，hover 右移 2px（theme.css transition）。
+
+**验证**：build ✓（theme CSS 含全部新类/keyframes；races CSS 含 tr:hover）；profile 内联脚本 node --check ✓；Edge 无头 dump-dom（?embed=1&horse=1）——锚点 3 按钮 / 11 复制行 / yj-view-in / data-cnt（pct×3 + man×3，dim 格无空 attr）/ 构成条 2 段（1着1+着外4，0值段正确剔除）/ yj-more-arr 全部就位；截图 tests/_dt_pc.png 布局无破损（顶部右侧胶囊导航可见）。
+
+**待真机确认**：clipboard 在 GitHub Pages https 下走 navigator.clipboard（localhost/file 走 execCommand 兜底）；血统弹窗 JBIS 新标签由弹窗所在文档（外壳）的委托处理，外壳已加载 pedigree.js。
+
+## §159 · 详情页四项回调（2026-10-31 深夜，用户过目 §157/§158 后逐条反馈）
+
+1. **名字四格点击复制**：名字区 日文/英文/港译/自译 真值格挂 `.yj-cp`/`.yj-cp-v`（hover 圆角淡底胶囊：px-1.5 py-1 + -mx-1.5 负边距抵消不动布局；空槽 nslot 不可复制）。复用 §158 委托，零新增 JS。
+2. **锚点小目录下线**：§158-11 用户用不上 → 删 anchorNav/sticky nav/委托点击/scroll spy（profile.html）+ `.yj-anchor` 三条规则（theme.css）；section 顺带去掉 scroll-mt-2。
+3. **构成条段色 = 出走着顺徽章同款**：1着 `bg-[#ffef7f]` / 2着 `bg-[#cbdeff]` / 3着 `bg-[#efc79f]`（theme.css `.yj-no1-3` 原值），着外保持灰。类字面量在 profile.html → Tailwind content 扫得到。
+4. **赛事名可点击提醒**：`.yj-rlink` 由「观感同文本」改为 浅灰虚线下划线（underline dashed #d4d4d4, 1px, offset 3px）+ hover 加深 #a3a3a3；比赛记录页跨马表与 profile 内嵌表同时生效。
+5. **embed 视图解禁 枠番/馬番**（race-rows.js）：hide 清单去掉 waku/umaban → 18 列；embed mb 卡片行2 补 waku/umaban。**datechart 分叉**：datechart.json 短键产物无 枠番/馬番 字段 → 新增 `chart` 视图维持旧 16 列口径，embed API 三函数支持 `o.view` 覆盖，datechart.html 三处调用传 `view:"chart"`（避免明细表出现空列）。
+
+**验证**：build ✓；profile 内联 JS / race-rows.js node 语法 ✓；dist 核对：yj-anchor 0 残留、rlink 虚线规则、三个段色类编译产物、名字格 `yj-cp -mx-1.5`×4、VIEWS.chart；Edge 无头截图（profile?embed=1&horse=1，3800 高全页）目检 —— 表头 枠番/馬番 有数字、1着黄/上り金/3着橙 徽章与构成条同色系、赛名下浅灰虚线 6x 特写确认（#d4d4d4 像素全图扫描 294 命中集中赛名区）。**测法坑**：races.html?embed=1 不消费 query horse（只等父页 postMessage yj:horse，§53 bus 设计）→ 单开 URL 永远 loading，验证内嵌表必须走 profile 页截图。
+
+### §159.1 · datechart 明细补枠番/馬番，回归单列配置（2026-10-31 深夜，用户拍板：两个共用列配置的都加上）
+
+上一轮 embed 解禁枠番/馬番时给 datechart 造了 `chart` 视图分叉（16 列旧口径）；用户过目后拍板直接统一。改动：
+
+1. **数据产物补字段**：`build_datechart.py` runs[] 加 `wk`（枠番）/`ub`（馬番），27→29 键；`docs/SCHEMA.md` §6 字段模板同步。重建 `data/datechart.json`（849 条全量有值，海外/台账缺 → ''）。
+2. **前端回归单列**：race-rows.js 删 `VIEWS.chart` 分叉 + embed API 回滚 `o.view` 覆盖（§158.5 的临时方案撤销）；datechart.html toRow 补 `枠番: r.wk, 馬番: r.ub`、三处调用去掉 `view:"chart"`。datechart 明细与 profile 内嵌表共用 embed 18 列。
+3. **verify 同步 + 修过期断言**：EXPECTED_KEYS 29 键、rawOk 加 wk/ub、[B] 对账补字段、[C2] 16→18 列断言。顺带修 verify 三处既有漂移（HEAD 基线就在挂，非本次引入）：① stub el() 缺 `classList` → 页面 render/fadeIn 中途抛错、[C] 段明细全空；② 页面「週」已汉化「周」→ 5 处标签断言；③ trophy emoji 已换内联 SVG → 2 处 KPI 断言改正则。**112 断言 ALL PASS**。
+
+**验证**：build ✓（dist datechart.json 29 键含 wk/ub）；Edge 无头截图 datechart 明细——枠番/馬番列数据在位（枠8 馬15 斤55 序列正常）。
