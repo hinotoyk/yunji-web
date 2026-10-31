@@ -1412,3 +1412,53 @@ window.YJ_ECHARTS = echarts;
 - **§149 补记 5（mb 血统弹窗改回横滚版，2026-10-31 用户拍板）**：撤销 2026-10-30 §23/§2.7 的窄屏缩档（≤768px 取消 min-width、字号降 9px → 名字大面积省略号），恢复 PC 同款正常字号 + 横向滚动；并把窄屏横滚宽度提到 **1120px**（= PC 弹窗自然宽度实测 1124px——反正要横滚，滚距换零省略号：760px 底线下 62 名字仍截 24 个）。简约 2 代内嵌卡（.pside-simple 自身锁 min-width:0）不受影响。验证：build ✓；375px 视口实测弹窗网格 1120px 可横滚、截断 0/62、内嵌简约卡 317px 无滚动（截图 `tests/ui-149-pedmb.png`）。
 - **§149 补记 6（mb 横滚版滚动适配，2026-10-31）**：横滚不能只搬 PC 原样——openModal 补 mb 专属引导与反馈：①弹窗 body 包 `relative` 层加**左右渐隐提示**（`pg-fade-l/r`，黑 10% 渐变 28px），scroll 监听状态机：未滚动右缘亮、到最右左缘亮、居中两缘同亮，不可横滚（PC）全部隐藏；②底部 **「⇄ 左右滑动查看全部世代」提示条**（`pg-hint`，`hidden max-md:flex` + JS 按可滚性显隐）；③`.pg-modal-body` 补 iOS 惯性滚动。**修弹窗高度链**：原 `.pg-modal-wrap`（block）最小高度被内容撑破——16 行网格 962px 把提示条推出 `max-h-96vh` 弹窗外（overflow-hidden 裁掉不可见）；改嵌套 flex 收缩链 `wrap: flex-1 min-h-0 flex-col + body: flex-1 min-h-0`（`h-full` 对 max-h 派生高度不生效，百分比链路要靠 flex-1）。close() 统一清 resize 监听。验证：build ✓（另发现一次构建瞬时丢 dist/bus.js——Windows 文件锁竞态，重跑恢复，**build 后应核对 dist 完整性**）；375px 实测几何 body 697/hint 25 全收进 780 弹窗、初始 fadeR=1/fadeL=0 → 滚到头 fadeR=0/fadeL=1、提示条显隐正确、PC 零变化（hint display:none、无渐隐）；截图 `tests/ui-149-pedmb-hint2.png`。
 - **§149 补记 7（mb 横滚版二轮瘦身，2026-10-31 用户反馈「太臃肿」）**：横滚版初版直接沿用 PC 行高 26px/字号 14-12px/宽 1120px，手机上观感臃肿。mb（≤768px，仅 `.pg-modal` 作用域）缩一档：行高 26→19px、名字 14/13/12→11/10.5/10px（`!important` 压过 cell() 的 inline 字号）、meta 9→8px、内距 2px8→1px6、横滚宽 1120→**880px**（字小同宽容纳更多字符，实测仍 **0/62 截断**）。整树高度 832→641px 一屏收住；提示条/渐隐/触滚不受影响。验证：375px 实测 gridW 880、fontSize 11px、truncated 0/62、hint 可见、无报错（截图 `tests/ui-149-pedmb-compact.png`）。
+
+## §150 · 编辑台三页 + 批量表格改版（2026-10-31，用户四点诉求全选 + 三附加项）
+
+**对象**：`public/editor.js` + `public/editor-table.js` + `pages/edit.html`（无改动，纯壳）+ `pages/edit-table.html`（工具条）+ `pages/theme.css`（编辑台组件层）。数据契约 / 草稿链路 / 提交管线零改动。
+
+**最终思路**（方案先经 4 张 mockup 确认，用户 4 模块 + 3 附加项全选）：
+1. **基本信息表单分组化**：14 行单列台账 → 「名字 / 状态 / 抹消去向(条件) / 阵营 / 成绩与赏金 / 备注」六组（`.yj-ed-groups/.yj-ed-ghead/.yj-ed-grid2`），短字段两列网格（`max-md:` 降单列）；字段行改竖排 cell（`.yj-ed-cell`：标签行内联状态胶囊 + 「恢复官方值」小钮），状态着色从整行底色下沉为控件描边（`--pin` 浅青 / `--dry` 橙）；金额字段（セリ/総賞金/中央/地方）`f.num` 右对齐 tabular-nums + 「円」后缀。`softRefreshRow` 仍按 `[data-row]` 等值替换，逐键刷新不丢焦点；抹消组条件展开 + 组尾预览行机制原样保留。
+2. **图片区拖拽网格**：大图位（🐎占位 slot）退役，改 120px 瓦片网格（`.yj-ed-thumbs/.yj-ed-thumb`）：首图「封面」青绿徽标、其余序号角标、悬停 ✕、压缩结果条；末尾恒挂虚线「＋」加号格（点击上传 / 空态通栏放大）；**外部文件拖入** = `dataTransfer.types` 含 `Files` 分流到 uploadQueue（与缩略图重排序同一容器两套语义，`isFileDrop` 判别 + `.yj-ed-extdrop` 整区高亮）；**Ctrl+V 粘贴图片**直进压缩入库（仅 horse 页装 document paste 监听，文本粘贴不拦截）；外链导入收进工具行小钮（`state.photos.open` 面板复用）。草稿链路（IndexedDB / persistPhotosOf / §107 即时落箱）不动。
+3. **航迹线节点表单**：date+title / cn+note 两列；**图片从手填路径文本框改 84×60 小格**（`.yj-ed-tlph`：有图缩略图+✕、无图图标占位）+「＋上传图片」钮，手填路径降为紧凑小输入框（兼容保留，`data-tf="photo"` 链路不变）；标签改**胶囊流**（`.yj-ed-tagpill`：色点+文字+✕，点胶囊展开该枚编辑 `state.tl.tagEdit`，一次一个；新标签自动进编辑态）；实时预览卡（§91）与落表校验零改动。
+4. **批量表格**：页签挂待保存计数徽章（`updateSummary` 同步 `#cntBasic/#cntRaces`，0 隐藏）；新增「只看待保存」开关（`S.onlyDirty` + `rowDirty`：基本信息按 pendOv、比赛按 _st/_pend，过滤进 computeView）；待保存格悬停**原值对照 title**（基本信息=官方值+已保存双基线，比赛=_base）；基本信息页签马名格附「↗ 去编辑」锚点（新标签 `edit.html?id=`，rehome 回壳；grid click 先行 guard 防触发就地编辑）；**粘贴导入先预览后入表**（`showPastePreview`：行数+前 8 行样例+未匹配马名警示，确认才 doPasteImport）；搜索支持 `列名:值`（表头中文名或字段键，认不出回退全文本）。键盘流按 §142 定稿不复活。
+5. **附加项**：保存条「变更摘要」恒显折叠 chip（无改动灰/有改动橙，点击展开 `state.sumOpen`；`renderSummary` 对 table 页守卫——顺带修掉 editor.render 用「未选马」覆写表格页摘要的隐患，显隐收口 `syncSummaryVis()`）；`.yj-ed-in` 36→34px 统一；时间线节点行加 ↑↓ 快速调序（`tlMove` 相邻交换 + persistTlDraft，落表仍按 date 稳定排序——同日期节点间有效，title 已注明）。
+
+**验证**：`node --check editor.js / editor-table.js` ✓；`npm run build` ✓；dist 核对 theme-*.css 含 `yj-ed-groups/ghead/grid2/cell--pin/cell--dry/thumbs/cover/thumb--add/extdrop/tagpill/tlph` + `outline-style:dashed`/`pr-8`（⚠ `outline-dashed` 经 @apply 内联，直 grep 类名假阴性）、dist/editor.js 含 `isFileDrop/tlMove/sumToggle`、dist/editor-table.js 含 `showPastePreview/onlyDirty/data-hedit`、edit-table.html 含 `cntBasic/dirtyBtn`。无头实测（playwright-core channel msedge，外壳 iframe frameLocator，脚本 `tests/_pw/check150.mjs`，截图 `tests/ui-150-{edit,table,timeline}.png`）：edit 页 5 分组 + 两列网格 + 4 个金额右对齐 + 封面徽标/加号格 + 摘要 chip 点开有明细；table 页改格后页签徽章 0→1、橙格 title 原值对照、277 个「↗」锚点 href=edit.html?id=N、「只看待保存」277→1 行、粘贴预览弹窗出现/取消关闭；tl 页编辑卡图片小格 + 标签胶囊自动进编辑态 + 两个同日期节点 ↑↓ 调序后首行互换；全程 console/pageerror 零报错。**修一处测试中发现的接线遗漏**：edit-table.html 的 `YJ.editorTable.init({...})` 初版漏传 `dirtyBtn/cntBasic/cntRaces`（els 查表有了、html 没传 → 徽章/开关静默失效），已补。
+
+## §151 · §150 修复三连：幽灵待保存 / 下拉统一 / 引用比赛自动带图（2026-10-31，用户实测反馈）
+
+1. **幽灵待保存**（基本信息页）：官方无图的马「上传→清空」后 draft=[] 与官方等值，但 setDraft 无条件 mode="set" → 仍亮「待保存：确无图片」并要求确认/放弃。修复：新增 photoKeys() 等值比较，setDraft 里净效果=盘上生效值时 mode 归零（persistPhotosOf 随 phPut(null) 清掉草稿箱记录）；markNoPhoto 收口进 setDraft 并逐个 blobDel 已删草稿图（补整清的账，原只删记录不清 blob）。
+2. **下拉统一**：a) 新组件 .yj-ed-sel（appearance-none + data-URI 自绘灰箭头 + pr-8，34px 与 .yj-ed-in 同高）——登録状態/性別/抹消_去向種別/选比赛/标签类别 全部换装；b) 原生 datalist（馬主/調教師/抹消_去向場所）弹层跟随系统深色主题且无法定制 → 换受控建议浮层 #yjSugPanel（.yj-ed-sugpanel，fixed 挂 body——台账 overflow-hidden 会裁内嵌面板；宽=触发框、下方空间不足自动上翻；focusin 开 / input 逐键过滤 / 点击拾取 / ↑↓+Enter 键盘流 / Esc 关 / 点外·滚动·resize 关）。sugJustPicked 抑制位防 softRefreshRow 重建 input 的 focusin 立刻重开浮层。edit-table.html 的 et-name-list（表格行内编辑）本轮不动。
+3. **引用比赛自动带图**：build_timeline 自动比赛节点取图链=人工配图>race.photo>马照片，但编辑台 applyRefRace 不填 photo → 同一场比赛自动节点有图、人工节点落表无图（timeline_manual.json 里 manual 节点也不做马图回退）。修复：applyRefRace 末尾补第三级——photo 为空时填 refHorse 的 normList(h.photo)[0]；表单图片栏加 tip「引用比赛自动带马首图（与自动节点同规则）；清空=落表无图」。
+
+**验证**：node --check ✓；npm run build ✓；tests/_pw/check151.mjs（msedge 无头）全绿——幽灵待保存：上传出徽章→清空回「无改动」+提交钮禁用；下拉：select appearance:none+自绘箭头、浮层开/过滤/拾取/Esc/↑↓+Enter 全过；带图：菊花赏选中后 photo=data/photos/40-3.webp、84px 小格 <img> 回显、预览带图。零 console 错误。截图 tests/ui-151-{edit,timeline}.png。
+
+## §152 · 时间线净零快照 + 「钉住值」文案换装（2026-10-31，用户反馈）
+
+1. **草稿箱不同步（加了节点又删）**：TL 草稿 = 整表快照（tlPut），删除唯一节点后快照仍在（events=0 与盘上等值）却仍要求确认/放弃。修复（与 §151 照片修法同思路）：loadTimeline 存 `state.tl.base` 远端原值快照；persistTlDraft 里 `JSON.stringify(tlPayload()) === stringify(base)` → tlDrop + dirty=false（加了又删/改回原样/调序复原均净零）；loadTimeline 同时丢弃历史遗留的净零快照——用户现存的脏快照下次打开自动清掉。
+2. **文案**：用户定稿「人工钉住值」→「人工维护（不被自动更新覆盖）」。换装四处页面文案：edit.html 头注、edit-table.html 图例 chip、草稿箱抽屉「已保存人工表值」→「已保存人工维护值」（tip 合并不被自动更新覆盖）、edit-drafts.html 页首说明。剩余「钉」全为代码注释（editor-table.js / profile.html 排序注释），不属页面文案。
+
+**验证**：node --check ✓；npm run build ✓；tests/_pw/check152.mjs 全绿——加节点「草稿箱·1」→删除后「草稿箱」清空+提交钮禁用+chip 消失；刷新不复活；两页面文案断言通过。零 console 错误。截图 tests/ui-152-timeline.png。
+
+## §153 · 批量表格净零草稿 + 建议浮层两项修复（2026-10-31，用户反馈）
+
+1. **批量表格改前改后同值仍进草稿箱**：setBasicCell 只与官方 base 比对——当「已保存人工值 == 官方值」（CI 合并后常见）时回填同值会产生无意义的「恢复官方值」意图（v:null）。修复：先与会话基线（人工值 ?? 官方值）比，同值 → nu=null 不产生条目；恢复官方值意图仅在与人工值确实不同时保留。hydrateBasic 同步兜底：已存的净零条目（v===null 且 saved==base、v===saved）重开页面时丢弃。
+2. **建议浮层两个交互 bug**：a) 滚动关闭监听（capture）把浮层自身滚动也吞掉 → 一滚面板就消失没法翻页——scroll handler 排除面板内部滚动（target 在面板内则忽略）；b) 输入框自带现值，聚焦即按现值过滤 → 候选只剩它自己——sugSync 分模式：focusin 开「all」全量清单（对齐 datalist 行为）、input 才「filter」；sugKey 的 ↑↓ 改为只 sugRender 重画高亮（重算会打回全量）。
+
+**验证**：node --check ✓；npm run build ✓；tests/_pw/check153.mjs 全绿——已保存格(抹消_去向種別=乗馬)同值重选徽章隐藏；文本格 A→B→A 净零；聚焦带现值調教師出 12 项全量；面板内 wheel 滚动不消失且 scrollTop>0；滚动后点击拾取、输入过滤均正常。零 console 错误。截图 tests/ui-153-table.png。
+
+## §154 · 草稿判脏「净效果等值」收口为单一函数 YJ.util.effEqual（2026-10-31，用户提问驱动）
+
+**现状核实**：判脏散落 7 个调用点、4 种写法——字段/表格 `String(a)===String(b)` 裸比 ×5（editor.js putFieldDraft；editor-table.js setBasicCell×2 / hydrateBasic×2 / setRaceCell）、照片 `photoKeys()` 键串 `===` ×1、时间线 `JSON.stringify` 内联重复 ×2（loadTimeline / persistTlDraft）。语义同源（净效果 vs 基线），≥3 处跨页 → 按 §48 收口进 yj-util.js。
+
+**实现**：`YJ.util.canon(v)` 稳定序列化 + `YJ.util.effEqual(a,b)` = canon 等值。设计取舍：
+- 原始值走 `String()`（表单口径：1 与 "1" 同值，保持既有字段/表格语义；调用侧标量先 String() 归一）；
+- 对象键**排序**——比 JSON.stringify 更稳：磁盘 JSON 与内存重建的同内容对象键序可能不同，stringify 会插入序敏感误判 dirty（原 TL 判定潜在假阳性，顺手修复）；
+- 数组保序（照片/节点顺序是语义）；
+- 字符串值不加引号转义（松散表单等值），边界注释注明「仅限同 schema 两份数据的等值判定」。
+- editor.js 1302/1654 两处 `String()===String()` 是 **ID 等值**非脏判定，语义不同不收口（仅 2 处不动）。
+
+**为什么不用哈希**：本场景数据量 KB 级、单次比较，canon 比较即 O(n) 最优；哈希仍需 O(n) 计算、还引入碰撞风险（32/53-bit 非加密哈希的生日碰撞对「免确认净零」判定不可接受），只有跨会话指纹/远端同步/大 blob 去重才值得上 SHA-256（crypto.subtle，需 https/localhost）。
+
+**验证**：node --check ×3 ✓；npm run build ✓（dist editor.js/editor-table.js/yj-util.js 均含 effEqual）；回归 check151（照片净零+引用比赛带图）/check152（TL 净零快照+文案）/check153（表格净零+建议浮层）三轮全绿，零 console 错误。

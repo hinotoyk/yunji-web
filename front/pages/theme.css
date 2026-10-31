@@ -252,9 +252,29 @@
   /* 已存人工值行「官方值对照」的划线（officialHTML：表示「已被人工值替代」） */
   .yj-ed-struck { @apply text-muted-foreground line-through decoration-muted-foreground/60 decoration-1; }
 
-  /* 控件：文本 / 下拉 / 备注（v3：38px semibold → 36px medium，减重） */
-  .yj-ed-in { @apply h-9 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-[13.5px] font-medium text-foreground; }
+  /* 控件：文本 / 下拉 / 备注（§150 统一 34px；v3 曾 38px semibold → 36px medium → 34px） */
+  .yj-ed-in { @apply h-[34px] w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-[13.5px] font-medium text-foreground; }
   .yj-ed-in:focus { @apply border-primary outline-none ring-2 ring-primary/15; }
+
+  /* §151 下拉统一：select 一律 appearance-none + 自绘箭头（与文本输入同框同高；弹层仍是原生的，
+   * 但开合前的外观三页一致）。箭头色 = muted-foreground 同档灰。 */
+  .yj-ed-sel {
+    @apply h-[34px] min-w-0 appearance-none rounded-lg border border-input bg-card px-2.5 pr-8 text-[13.5px] font-normal text-foreground;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 13px;
+  }
+  .yj-ed-sel:focus { @apply border-primary outline-none ring-2 ring-primary/15; }
+  .yj-ed-sel:disabled { @apply cursor-not-allowed opacity-50; }
+
+  /* §151 datalist 替身：f.list 字段（馬主/調教師/抹消_去向場所）的自定义建议浮层。
+   * 原生 datalist 弹层跟随系统主题（深色系统下突兀）且无法定制 → 收敛为这张受控卡。
+   * fixed 定位挂 body（台账 overflow-hidden 会裁内嵌面板），宽 = 触发输入框。 */
+  .yj-ed-sugpanel { @apply fixed z-[70] max-h-[248px] overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-lg; }
+  .yj-ed-sugpanel button { @apply block w-full cursor-pointer truncate rounded-md px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-accent; }
+  .yj-ed-sugpanel button[data-sugon] { @apply bg-accent; }
+  .yj-ed-sugpanel .yj-ed-sugempty { @apply px-2 py-1.5 text-[12px] text-muted-foreground; }
 
   /* 小按钮（保存条 / 图片区 / 时间线区同一套） */
   .yj-ed-op { @apply inline-flex h-7 flex-none items-center rounded-md border border-input bg-card px-2.5 text-[11.5px] font-medium text-secondary-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40; }
@@ -272,15 +292,20 @@
   .yj-ed-sechead { @apply w-full cursor-pointer select-none text-left; }
   .yj-ed-sec[data-open="false"] > .yj-ed-secbody { @apply hidden; }
 
-  /* 台账本体：一行一字段 + 发丝分隔（gap-px over bg-border）。
-   * 行标签 §94 定稿：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写）。 */
-  .yj-ed-ledger { @apply grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border; }
-  .yj-ed-row { @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 bg-card px-4 py-2 max-md:px-3; }
-  .yj-ed-row-k { @apply w-[92px] flex-none text-[13px] font-medium leading-tight text-secondary-foreground max-md:w-[78px]; }
-  .yj-ed-row-orig { @apply min-w-0 flex-none text-[11px] leading-[1.4] text-muted-foreground; }
-  /* 已保存 = 浅青底 · 待保存 = 橙底（沉默 = 官方：idle 行无底色、无徽章） */
-  .yj-ed-row--pin { @apply bg-accent/45; }
-  .yj-ed-row--dry { @apply bg-chart3/[.07]; }
+  /* §150 表单改版（docs/UI优化记录.md §150）：分组 + 两列网格。
+   * 字段 = 竖排 cell（标签行内联状态胶囊 + 「恢复官方值」小钮），组头青绿小标；
+   * 状态着色下沉到控件描边（已保存浅青 · 待保存橙），沉默 = 官方一致无装饰。
+   * 行标签 §94 定稿维持：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写）。 */
+  .yj-ed-groups { @apply flex flex-col gap-4; }
+  .yj-ed-ghead { @apply mb-1.5 flex items-center gap-1.5 text-[10.5px] font-bold tracking-[1px] text-primary; }
+  .yj-ed-ghead::before { content:""; @apply h-[11px] w-[3px] flex-none rounded-full bg-primary; }
+  .yj-ed-grid2 { @apply grid grid-cols-2 gap-x-3 gap-y-2.5 max-md:grid-cols-1; }
+  .yj-ed-cell { @apply min-w-0; }
+  .yj-ed-cell--full { grid-column: 1 / -1; }
+  .yj-ed-cell-k { @apply mb-1 flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground; }
+  .yj-ed-cell--dry .yj-ed-in { @apply border-chart3/60; }
+  .yj-ed-cell--pin .yj-ed-in { @apply border-primary/40 bg-accent/20; }
+  .yj-ed-row-orig { @apply min-w-0 text-[11px] leading-[1.4] text-muted-foreground; }
 
   /* 值位徽章（現役/牡/牝… 枚举只读形态，配色由调用处补既有 token） */
   .yj-ed-vbadge { @apply inline-flex flex-none items-center rounded-full px-2 py-[2px] text-[11.5px] font-semibold leading-[1.5]; }
@@ -351,10 +376,27 @@
   .yj-tm--female { @apply bg-[#FFDBD5] text-[#B03A30]; }
   .yj-tm--gelding { @apply bg-[#EFEFEF] text-[#5A5A5A]; }
 
-  /* 照片位（左列：有图显示图、无图占位 🐎）+ 其下缩略图行 */
-  .yj-ed-slot { @apply relative flex min-h-[190px] w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 transition-colors hover:border-primary max-md:min-h-[150px]; }
-  .yj-ed-slotimg { @apply absolute inset-0 h-full w-full object-contain; }
-  .yj-ed-thumb { @apply relative m-0 flex w-[104px] max-w-full flex-none flex-col overflow-hidden rounded-lg border border-border bg-muted/20; }
+  /* §150 照片网格（docs/UI优化记录.md §150）：120px 缩略图格（首图「封面」徽标 + 序号 + 悬停 ✕）
+   * + 末尾虚线「＋」加号格（点击上传 / 外部文件拖入 / Ctrl+V 粘贴）；容器拖入高亮 = .yj-ed-extdrop。 */
+  .yj-ed-thumbs { @apply mt-2 flex list-none flex-wrap gap-2.5 p-0; }
+  .yj-ed-thumb { @apply relative m-0 flex w-[120px] flex-none flex-col overflow-hidden rounded-[10px] border border-border bg-muted/20; }
+  .yj-ed-cover { @apply absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-px text-[10px] font-semibold text-primary-foreground; }
+  .yj-ed-index { @apply absolute left-1.5 top-1.5 rounded bg-black/55 px-1.5 py-px text-[10px] font-semibold tabular-nums text-white; }
+  .yj-ed-thumb--add { border-style: dashed; }
+  .yj-ed-thumb-add { @apply flex h-full w-full cursor-pointer select-none flex-col items-center justify-center gap-1 py-5 text-muted-foreground; }
+  .yj-ed-thumb--empty { @apply w-full; }
+  .yj-ed-thumb--empty .yj-ed-thumb-add { @apply py-9; }
+  .yj-ed-extdrop { @apply rounded-xl outline-2 outline-dashed outline-offset-4 outline-primary/50; }
+  .yj-ed-extdrop .yj-ed-thumb--add { @apply border-primary bg-accent/25; }
+
+  /* §150 航迹线表单：标签胶囊流（点胶囊就地展开编辑）+ 图片小格（84×60，替换手填路径文本框）。 */
+  .yj-ed-tagpill { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full border border-border bg-card py-[3px] pl-2.5 pr-1.5 text-[12px] text-foreground transition-colors hover:border-primary; }
+  .yj-ed-tagdot { @apply inline-block h-2 w-2 flex-none rounded-full; }
+  .yj-ed-tagx { @apply flex h-4 w-4 flex-none items-center justify-center rounded-full text-[10px] leading-none text-muted-foreground hover:bg-muted hover:text-destructive; }
+  .yj-ed-tlph { @apply relative block h-[60px] w-[84px] flex-none overflow-hidden rounded-lg border border-border bg-muted/20; }
+  .yj-ed-tlph img { @apply h-full w-full object-contain; }
+  .yj-ed-tlph-x { @apply absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded bg-black/55 text-[10px] leading-none text-white hover:bg-destructive; }
+  .yj-ed-tlph--empty { @apply flex items-center justify-center; }
 
   /* 航迹线空态入口卡（v3 signature）：「引用比赛 / 自填荣誉」两张邀请卡，图标 + 标题 + 一句说明 */
   .yj-ed-card { @apply flex min-w-0 flex-1 cursor-pointer flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-50; }

@@ -35,7 +35,7 @@
     </div>
     <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-chart3"></i>待保存（本页改动）</span>
-      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-accent"></i>已保存（人工钉住值）</span>
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-accent"></i>已保存（人工维护 · 不被自动更新覆盖）</span>
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-primary"></i>新增行</span>
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-destructive"></i>删除行（提交前可撤销）</span>
     </div>
@@ -45,8 +45,8 @@
   <section id="fsTarget" class="mt-3 rounded-[14px] border border-border bg-card shadow-sm">
     <div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
       <div id="sheets" class="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-        <button type="button" data-sheet="basic" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">基本信息</button>
-        <button type="button" data-sheet="races" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">比赛记录</button>
+        <button type="button" data-sheet="basic" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">基本信息<span id="cntBasic" class="ml-1.5 hidden rounded-full bg-chart3/15 px-1.5 text-[10px] font-semibold text-chart3">0</span></button>
+        <button type="button" data-sheet="races" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">比赛记录<span id="cntRaces" class="ml-1.5 hidden rounded-full bg-chart3/15 px-1.5 text-[10px] font-semibold text-chart3">0</span></button>
       </div>
       <span class="mx-1 h-5 w-px bg-border"></span>
       <button id="addBtn" class="yj-ed-op h-7 px-2.5 text-[11.5px]" type="button">＋ 追加行</button>
@@ -55,8 +55,9 @@
       <button id="undoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↶ 撤销</button>
       <button id="redoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↷ 重做</button>
       <button id="pasteBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">📋 粘贴导入</button>
+      <button id="dirtyBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">只看待保存</button>
       <span class="relative ml-auto flex items-center gap-2">
-        <input id="search" type="text" placeholder="筛选行…"
+        <input id="search" type="text" placeholder="筛选行…（支持 列名:值）"
                class="h-7 w-[180px] rounded-md border border-input bg-background px-2.5 text-[12px] text-foreground placeholder:text-muted-foreground/70">
         <button id="fsBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">⛶ 全屏</button>
         <button id="colBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">列 ▾</button>
@@ -117,7 +118,8 @@ YJ.editor.init({
     addBtn: "addBtn", delBtn: "delBtn", undoBtn: "undoBtn", redoBtn: "redoBtn",
     pasteBtn: "pasteBtn", colBtn: "colBtn", colMenu: "colMenu",
     resetBtn: "reset", summary: "summary", sheets: "sheets", toast: "toast",
-    nameList: "et-name-list", fsBtn: "fsBtn", fsTarget: "fsTarget"
+    nameList: "et-name-list", fsBtn: "fsBtn", fsTarget: "fsTarget",
+    dirtyBtn: "dirtyBtn", cntBasic: "cntBasic", cntRaces: "cntRaces"
   });
 });
 </script>

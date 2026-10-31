@@ -73,7 +73,8 @@ YJ.editorTable = (function () {
     startRc: null,         /* 会话开始时 d.rc 快照 */
     cur: null, editing: null,
     undoJ: [], redoJ: [],
-    batch: 0, jbuf: []     /* 复合操作（粘贴导入等）的日志合并 */
+    batch: 0, jbuf: [],     /* 复合操作（粘贴导入等）的日志合并 */
+    onlyDirty: false        /* §150「只看待保存」开关（会话态，跨页签生效） */
   };
   var els = {};
 
@@ -165,9 +166,15 @@ YJ.editorTable = (function () {
     var hadPend = !!(S.pendOv[id] && S.pendOv[id][key]);
     var oldEff = effBasic(id, key);
     var base = baseOf(id, key), saved = savedOf(id, key);
+    /* §152：先和「会话基线」比（已保存生效值 = 人工值 ?? 官方值）——改前改后同值（含 已保存值==官方值
+     * 时回填同值）不算改动，不进草稿箱；恢复官方值意图只在与人工值确实不同时才有意义 */
+    var baseline = saved != null ? saved : base;
     var nu;
-    if (String(val) === String(base)) {
-      nu = saved != null ? { v: null, base: base, saved: saved } : null;   /* 回官方：有钉 → 恢复官方值意图；无钉 → 不产生条目 */
+    /* §154：等值判定统一走 YJ.util.effEqual（canon 序列化），标量先 String() 归一 */
+    if (YJ.util.effEqual(String(val), String(baseline))) {
+      nu = null;
+    } else if (YJ.util.effEqual(String(val), String(base))) {
+      nu = saved != null ? { v: null, base: base, saved: saved } : null;   /* 回官方但≠人工值 → 恢复官方值意图 */
     } else {
       nu = { v: val, base: base, saved: saved };
     }
@@ -363,8 +370,12 @@ YJ.editorTable = (function () {
         if (!fieldOf(k)) return;                                /* photo 等非白名单键不在表格列 */
         var sv = savedOf(id, k), base = baseOf(id, k);
         var v = ent[k];
-        if (v === null) S.pendOv[id][k] = { v: null, base: base, saved: sv };
-        else if (sv == null && String(v) === String(base)) { /* 无钉同值 → 不算待保存（2026-10-26 修：原写 saved，未声明标识符 → 带草稿重开本页 ReferenceError） */ }
+        if (v === null) {
+          /* §152：恢复官方值意图仅在 人工值≠官方值 时才算改动（相等 = 值不变，净零丢弃） */
+          if (sv != null && !YJ.util.effEqual(String(sv), String(base))) S.pendOv[id][k] = { v: null, base: base, saved: sv };
+        }
+        else if (sv == null && YJ.util.effEqual(String(v), String(base))) { /* 无钉同值 → 不算待保存（2026-10-26 修：原写 saved，未声明标识符 → 带草稿重开本页 ReferenceError） */ }
+        else if (sv != null && YJ.util.effEqual(String(v), String(sv))) { /* §152：有钉但回填同值 → 值不变，净零丢弃 */ }
         else S.pendOv[id][k] = { v: v, base: base, saved: sv };
       });
       if (!Object.keys(S.pendOv[id]).length) delete S.pendOv[id];
@@ -390,11 +401,31 @@ YJ.editorTable = (function () {
   }
   function computeView() {
     var s = sh(), q = s.filter.trim().toLowerCase();
+    /* §150 筛选增强：q 形如「列名:值」时只匹配该列（列名 = 表头中文名或字段键；认不出列名则回退全文本检索） */
+    var colQ = null, mq = q.match(/^([^\s:]+):(.*)$/);
+    if (mq && mq[2] !== "") {
+      var want = mq[1], val = mq[2].trim();
+      layout().forEach(function (c) {
+        if (colQ) return;
+        if (c.k === want || label(c.k) === want) colQ = { k: c.k, v: val };
+      });
+    }
     s.view = [];
     s.rows.forEach(function (r, i) {
-      var txt = S.sheet === "basic" ? rowTextBasic(r) : rowTextRaces(r);
-      if (!q || txt.indexOf(q) >= 0) s.view.push({ r: r, i: i });
+      if (S.onlyDirty && !rowDirty(r)) return;      /* §150「只看待保存」：只列出有本页改动的行 */
+      var hit;
+      if (colQ) hit = String(r[colQ.k] == null ? "" : r[colQ.k]).toLowerCase().indexOf(colQ.v) >= 0;
+      else {
+        var txt = S.sheet === "basic" ? rowTextBasic(r) : rowTextRaces(r);
+        hit = !q || txt.indexOf(q) >= 0;
+      }
+      if (hit) s.view.push({ r: r, i: i });
     });
+  }
+  /* §150 行级「有待保存改动」判定：基本信息 = 本页 pendOv 有该马条目；比赛 = 新增/删除/格级 _pend */
+  function rowDirty(r) {
+    return S.sheet === "basic" ? hasOvPend(r)
+      : r._st === "new" || r._st === "del" || !!(r._pend && Object.keys(r._pend).length);
   }
   function cellInner(c, r) {
     var v = r[c.k];
@@ -461,7 +492,20 @@ YJ.editorTable = (function () {
         if (!isB && r._pend && r._pend[c.k]) cls += "bg-chart3/10 ";
         var t = cellInner(c, r);
         if (r._st === "del") t = '<s class="decoration-destructive/60">' + t + "</s>";
-        h.push('<td class="' + cls + '" style="' + (c.stick ? "left:" + (isB ? 42 : 76) + "px;" : "") +
+        /* §150 原值对照悬停（橙格 = 待保存）：基本信息给 官方值/已保存 双基线，比赛给 _base 原值 */
+        var tip = "";
+        if (isB && pendCellOv(r, c.k)) {
+          var b0 = String(baseOf(String(r.id), c.k)), s0 = savedOf(String(r.id), c.k);
+          tip = ' title="官方值：' + esc(b0) + (s0 != null ? " · 已保存：" + esc(String(s0)) : "") + '"';
+        } else if (!isB && r._pend && r._pend[c.k]) {
+          tip = ' title="原值：' + esc(String(r._base[c.k] == null ? "" : r._base[c.k])) + '"';
+        }
+        /* §150 基本信息页签：马名格附「↗ 去编辑」锚点（新标签开 edit.html?id=，rehome 自动回壳） */
+        if (isB && c.k === "馬名" && r._st !== "del") {
+          t += ' <a data-hedit href="edit.html?id=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener"' +
+            ' class="ml-1 text-[10.5px] text-primary hover:underline" title="在基本信息编辑页打开（新标签）">↗</a>';
+        }
+        h.push('<td class="' + cls + '"' + tip + ' style="' + (c.stick ? "left:" + (isB ? 42 : 76) + "px;" : "") +
           '" data-ri="' + ri + '" data-gk="' + esc(r._gk || String(r.id)) + '" data-c="' + esc(c.k) + '">' + t + "</td>");
       });
       h.push("</tr>");
@@ -493,6 +537,16 @@ YJ.editorTable = (function () {
     if (rc.mod && rc.mod.length) parts.push('<span class="text-chart3">比赛改 ' + rc.mod.length + "</span>");
     if (rc.del && rc.del.length) parts.push('<span class="text-destructive">比赛删 ' + rc.del.length + "</span>");
     els.summary.innerHTML = parts.length ? "待提交：" + parts.join(" · ") : "";
+    /* §150 页签待保存计数徽章：基本信息 = 格数；比赛记录 = 增+改+删条数（0 时藏） */
+    if (els.cntBasic) {
+      els.cntBasic.textContent = String(nB);
+      els.cntBasic.classList.toggle("hidden", !nB);
+    }
+    if (els.cntRaces) {
+      var nR = (rc.add ? rc.add.length : 0) + (rc.mod ? rc.mod.length : 0) + (rc.del ? rc.del.length : 0);
+      els.cntRaces.textContent = String(nR);
+      els.cntRaces.classList.toggle("hidden", !nR);
+    }
   }
   function syncToolbar() {
     if (els.addBtn) els.addBtn.disabled = S.sheet !== "races";
@@ -617,7 +671,7 @@ YJ.editorTable = (function () {
         } else {
           var baseV = t._base[key] == null ? "" : t._base[key];
           if (!t._pend) t._pend = {};
-          if (String(val) === String(baseV)) delete t._pend[key];
+          if (YJ.util.effEqual(String(val), String(baseV))) delete t._pend[key];
           else t._pend[key] = 1;
         }
         t[key] = commitVal(val);
@@ -660,46 +714,85 @@ YJ.editorTable = (function () {
     var lines = txt.replace(/\r/g, "").split("\n").filter(function (l) { return l.trim() !== ""; });
     return lines.map(function (l) { return l.split("\t"); });
   }
+  /* §150 粘贴导入：先解析 → 预览确认（行数 + 前 8 行样例 + 未匹配马名警示）→ 确认才写入。
+   * 静默直入版曾直接改表，TSV 列序错位/马名打错没有任何拦截就进草稿。 */
   function pasteImport() {
     if (S.sheet !== "races") { toast("粘贴导入只在比赛页签开放（基本信息不支持表格新增）"); return; }
-    var doImport = function (txt) {
+    var read = (navigator.clipboard && navigator.clipboard.readText)
+      ? navigator.clipboard.readText().catch(function () { return ""; })
+      : Promise.resolve("");
+    read.then(function (txt) {
+      if (!txt) {
+        txt = window.prompt("请 Ctrl+V 粘贴 TSV（每行一条，Tab 分列，按表格列序）：") || "";
+      }
       var grid = parseTsv(txt);
       if (!grid.length) { toast("剪贴板没有可解析的内容"); return; }
-      var editable = layout().filter(function (c) { return !c.ro; });   /* 列序 = 表格可见列序（新行全部可写） */
-      jBegin();
-      grid.forEach(function (cells) {
-        var rec = { id: null, 來源: "人工", 結果: "" };
-        RACE_LAYOUT.forEach(function (c) { if (rec[c.k] == null) rec[c.k] = ""; });
-        editable.forEach(function (c, i2) {
-          if (cells[i2] !== undefined && cells[i2] !== "") rec[c.k] = commitVal(cells[i2]);
-        });
-        var h = resolveHorse(rec.出走馬名);
-        rec.出走馬名 = String(rec.出走馬名 || "").trim();
-        rec.id = h ? h.id : null;
-        if (!h && rec.出走馬名) toast("「" + rec.出走馬名 + "」未匹配到档案马名——该行不会提交");
-        var r = {
-          hid: h ? String(h.id) : "", _gid: gidOf(rec), _gk: "new|" + Math.random().toString(36).slice(2, 7),
-          _base: clone(rec), _baseIdent: { race_id: "", 日付: String(rec.日付 || ""), 馬名: String(rec.出走馬名 || "") },
-          _pend: {}, _st: "new", _add: rec
-        };
-        RACE_LAYOUT.forEach(function (c) { r[c.k] = rec[c.k]; });
-        sh().rows.push(r);
+      showPastePreview(grid);
+    });
+  }
+  function showPastePreview(grid) {
+    var editable = layout().filter(function (c) { return !c.ro; });
+    var nameIdx = -1;
+    editable.forEach(function (c, i2) { if (c.k === "出走馬名") nameIdx = i2; });
+    var bad = [];
+    grid.forEach(function (cells) {
+      var nm = nameIdx >= 0 ? String(cells[nameIdx] || "").trim() : "";
+      if (nm && !resolveHorse(nm)) bad.push(nm);
+    });
+    var uniqBad = bad.filter(function (x, i2) { return bad.indexOf(x) === i2; });
+    var sample = grid.slice(0, 8).map(function (cells) {
+      return "<tr>" + editable.slice(0, 4).map(function (c, i2) {
+        return '<td class="border-b border-border/60 px-2 py-1">' + esc(cells[i2] == null ? "" : cells[i2]) + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+    var ov = document.createElement("div");
+    ov.id = "yj-paste-ov";
+    ov.className = "fixed inset-0 z-[80] flex items-center justify-center bg-black/30";
+    ov.innerHTML = '<div class="w-[560px] max-w-[92vw] rounded-xl border border-border bg-card p-4 shadow-lg">' +
+      '<div class="text-[13.5px] font-bold text-foreground">粘贴导入预览</div>' +
+      '<div class="mt-1 text-[11.5px] text-muted-foreground">解析到 <b class="text-foreground">' + grid.length + "</b> 行，按当前可见列序写入新增行（提交「到 GitHub」后才落库）。</div>" +
+      '<table class="mt-2.5 w-full border-collapse text-[11.5px]"><thead><tr>' +
+        editable.slice(0, 4).map(function (c) {
+          return '<th class="border-b border-border px-2 py-1 text-left text-[10.5px] font-semibold text-muted-foreground">' + esc(label(c.k)) + "</th>";
+        }).join("") + "</tr></thead><tbody>" + sample + "</tbody></table>" +
+      (grid.length > 8 ? '<div class="mt-1 text-[10.5px] text-muted-foreground">…仅展示前 8 行，共 ' + grid.length + " 行</div>" : "") +
+      (uniqBad.length ? '<div class="mt-2 rounded-md bg-destructive/10 px-2.5 py-1.5 text-[11.5px] text-destructive">⚠ 未匹配到档案马名：' +
+        esc(uniqBad.join("、")) + "——这些行不会提交（新增马请走抓取建档）</div>" : "") +
+      '<div class="mt-3 flex justify-end gap-2">' +
+        '<button id="ppCancel" class="yj-ed-op yj-ed-op--ghost h-8 px-3 text-[12px]" type="button">取消</button>' +
+        '<button id="ppOk" class="yj-ed-op yj-ed-op--primary h-8 px-4 text-[12px]" type="button">确认导入</button>' +
+      "</div></div>";
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.querySelector("#ppCancel").addEventListener("click", close);
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    ov.querySelector("#ppOk").addEventListener("click", function () { close(); doPasteImport(grid); });
+  }
+  function doPasteImport(grid) {
+    var editable = layout().filter(function (c) { return !c.ro; });   /* 列序 = 表格可见列序（新行全部可写） */
+    jBegin();
+    grid.forEach(function (cells) {
+      var rec = { id: null, 來源: "人工", 結果: "" };
+      RACE_LAYOUT.forEach(function (c) { if (rec[c.k] == null) rec[c.k] = ""; });
+      editable.forEach(function (c, i2) {
+        if (cells[i2] !== undefined && cells[i2] !== "") rec[c.k] = commitVal(cells[i2]);
       });
-      syncRc();
-      jEnd();
-      sh().filter = ""; if (els.search) els.search.value = "";
-      rebuild(); YJ.editor.render();
-      toast("粘贴导入 " + grid.length + " 行（青底=新增；馬名未匹配的行不会提交）");
-    };
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText().then(doImport).catch(function () {
-        var t = window.prompt("剪贴板读取被拒绝——请 Ctrl+V 粘贴到这里（每行一条，Tab 分列，首列=日期、次列=馬名…按表格列序）：");
-        if (t) doImport(t);
-      });
-    } else {
-      var t = window.prompt("请 Ctrl+V 粘贴 TSV（每行一条，Tab 分列，按表格列序）：");
-      if (t) doImport(t);
-    }
+      var h = resolveHorse(rec.出走馬名);
+      rec.出走馬名 = String(rec.出走馬名 || "").trim();
+      rec.id = h ? h.id : null;
+      var r = {
+        hid: h ? String(h.id) : "", _gid: gidOf(rec), _gk: "new|" + Math.random().toString(36).slice(2, 7),
+        _base: clone(rec), _baseIdent: { race_id: "", 日付: String(rec.日付 || ""), 馬名: String(rec.出走馬名 || "") },
+        _pend: {}, _st: "new", _add: rec
+      };
+      RACE_LAYOUT.forEach(function (c) { r[c.k] = rec[c.k]; });
+      sh().rows.push(r);
+    });
+    syncRc();
+    jEnd();
+    sh().filter = ""; if (els.search) els.search.value = "";
+    rebuild(); YJ.editor.render();
+    toast("粘贴导入 " + grid.length + " 行（青底=新增；馬名未匹配的行不会提交）");
   }
 
   /* ---------------- 列显隐 ---------------- */
@@ -745,6 +838,15 @@ YJ.editorTable = (function () {
 
   /* ---------------- 页签切换 ---------------- */
   var TAB_BASE = "rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ";
+  /* §150「只看待保存」开关两态样式（类名字面量须留在本文件，Tailwind content 可扫到） */
+  var DIRTY_OFF = "yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]";
+  var DIRTY_ON = "yj-ed-op h-7 px-2.5 text-[11.5px] border-primary bg-accent/25 text-primary";
+  function syncDirtyBtn() {
+    if (!els.dirtyBtn) return;
+    els.dirtyBtn.className = S.onlyDirty ? DIRTY_ON : DIRTY_OFF;
+    els.dirtyBtn.textContent = S.onlyDirty ? "只看待保存 ✓" : "只看待保存";
+    els.dirtyBtn.title = "只列出有本页改动的行（新增/删除/待保存格）";
+  }
   function switchSheetUI(sheet) {
     S.sheet = sheet;
     $all("button", els.sheets).forEach(function (x) {
@@ -764,7 +866,8 @@ YJ.editorTable = (function () {
   /* ---------------- init ---------------- */
   function init(opts) {
     ["grid", "search", "meta", "addBtn", "delBtn", "undoBtn", "redoBtn", "pasteBtn",
-      "colBtn", "colMenu", "resetBtn", "summary", "sheets", "toast", "nameList", "fsBtn", "fsTarget"].forEach(function (k) {
+      "colBtn", "colMenu", "resetBtn", "summary", "sheets", "toast", "nameList", "fsBtn", "fsTarget",
+      "dirtyBtn", "cntBasic", "cntRaces"].forEach(function (k) {
       els[k] = opts[k] ? document.getElementById(opts[k]) : null;
     });
     els.thead = els.grid ? els.grid.querySelector("thead") : null;
@@ -782,6 +885,7 @@ YJ.editorTable = (function () {
       hydrateBasic(); hydrateRaces();
       buildNameList();
       bind();
+      syncDirtyBtn();
       buildColMenu(); rebuild();
       document.addEventListener("yj-rc-dropped", function () {
         S.startRc = null; hydrateRaces(); rebuild(); updateSummary();
@@ -828,6 +932,7 @@ YJ.editorTable = (function () {
   }
   function bind() {
     els.grid.addEventListener("click", function (e) {
+      if (e.target.closest && e.target.closest("[data-hedit]")) return;   /* §150「去编辑」锚点走默认导航 */
       var td = e.target.closest("td[data-c]");
       if (td && !e.target.classList.contains("yjx-ck")) startEdit(td);
     });
@@ -854,6 +959,11 @@ YJ.editorTable = (function () {
     if (els.undoBtn) els.undoBtn.addEventListener("click", undo);
     if (els.redoBtn) els.redoBtn.addEventListener("click", redo);
     if (els.pasteBtn) els.pasteBtn.addEventListener("click", pasteImport);
+    if (els.dirtyBtn) els.dirtyBtn.addEventListener("click", function () {
+      S.onlyDirty = !S.onlyDirty;
+      syncDirtyBtn();
+      rebuild();
+    });
     if (els.resetBtn) els.resetBtn.addEventListener("click", resetSession);
     if (els.fsBtn) els.fsBtn.addEventListener("click", toggleFs);
     document.addEventListener("keydown", function (e) {       /* ESC 退出全屏（格内编辑中先归格编辑器处理） */
