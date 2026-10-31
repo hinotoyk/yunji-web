@@ -111,11 +111,11 @@
   .yj-ov-outer { border-radius:17px; padding:1px; background:linear-gradient(100deg,#0aa7a0 0%,#6fcac4 35%,#d9efed 70%,#eef7f6 100%); }
   .yj-ov-band { border-radius:16px; background:radial-gradient(420px 200px at 6% 0%,#e7f6f4 0%,rgba(231,246,244,0) 62%),radial-gradient(520px 260px at 100% 100%,#d8f0ed 0%,rgba(216,240,237,0) 55%),#fff; display:flex; align-items:center; flex-wrap:wrap; padding:21px 0 21px 28px; color:#173330; }
   .yj-ov-lab, .yj-ov-k { font-size:9.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#5f8a86; white-space:nowrap; }
-  .yj-ov-rec { padding-right:28px; border-right:1px solid rgba(10,167,160,.22); }
+  .yj-ov-rec { padding-right:24px; border-right:1px solid rgba(10,167,160,.22); }
   .yj-ov-lab { display:block; margin-bottom:9px; }
   .yj-ov-big { display:block; font-size:38px; font-weight:700; letter-spacing:-.5px; line-height:1; color:#0b5f5b; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .yj-ov-br { display:block; margin-top:8px; font-size:12px; font-weight:500; letter-spacing:1px; color:rgba(11,95,91,.55); font-variant-numeric:tabular-nums; }
-  .yj-ov-rate { padding:0 22px; border-right:1px solid rgba(10,167,160,.22); text-align:center; }
+  .yj-ov-rate { padding:0 18px; border-right:1px solid rgba(10,167,160,.22); text-align:center; }
   .yj-ov-rate .yj-ov-k { display:block; margin-bottom:9px; }
   .yj-ov-rate b { display:block; min-width:2.7em; font-size:24px; font-weight:700; letter-spacing:-.5px; line-height:1; font-variant-numeric:tabular-nums; color:#173330; }
   .yj-ov-hi b { color:#0aa7a0; }
@@ -127,7 +127,16 @@
   .yj-ov-m b em { font-style:normal; font-size:11.5px; font-weight:500; color:rgba(11,95,91,.55); margin-left:3px; }
   .yj-ov-dim { color:rgba(11,95,91,.26) !important; }
   .yj-ov-sub { margin-top:3px; font-size:10.5px; color:rgba(11,95,91,.5); white-space:nowrap; }
-  /* 主胜鞍：概览色带第二行（全宽脚注行）——在「通算成绩 / 三率 / 三赏金」之后另起一行，细分隔线隔开。
+  /* 四格均分变体（2026-10-31 方案B定稿）：赏金组加「总赏金」后 4 格并列。
+   * 容器 flex-wrap：右栏宽（≥~1250px 视口）1×4，中等宽度自动折 2×2，窄屏不重叠
+   * （profile 右栏 = 视口-450 左右；候选对比见 tests/prize-band-variants.html）。
+   * 数值 24px = 与三率 .yj-ov-rate b 同级（二轮 20px 被用户否掉：比 42.9% 还小、主次颠倒） */
+  .yj-ov-prizes--4 { flex-wrap:wrap; row-gap:6px; }
+  .yj-ov-prizes--4 .yj-ov-m { flex:1 1 120px; }
+  .yj-ov-prizes--4 .yj-ov-m b { font-size:24px; }
+  .yj-ov-prizes--4 .yj-ov-m .yj-ov-k { letter-spacing:.8px; }
+  .yj-ov-prizes--4 { padding-right:16px; }
+  .yj-ov-prizes--4 .yj-ov-m { padding-left:12px; }  /* 主胜鞍：概览色带第二行（全宽脚注行）——在「通算成绩 / 三率 / 三赏金」之后另起一行，细分隔线隔开。
    * 空数组时整行不渲染（由 profile.html 决定是否输出），所以这里只负责有内容时的排布；
    * 条目 = 年份 + 赛名 + 等级徽章（徽章复用 race-rows.js 的 .yj-grade）。 */
   .yj-ov-wins { flex:0 0 100%; display:flex; flex-wrap:wrap; align-items:baseline; gap:7px 20px;
@@ -146,10 +155,17 @@
     .yj-ov-rate { flex:1; padding:0 10px; text-align:left; border-right:none; }
     .yj-ov-rate b { font-size:18px; min-width:0; }
     .yj-ov-prizes { flex:0 0 100%; width:100%; flex-direction:column; padding:4px 0 0; border-top:1px solid rgba(10,167,160,.22); }
-    .yj-ov-m { display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-left:none; text-align:left; }
+    .yj-ov-m { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; padding:9px 0; border-left:none; text-align:left; }
     .yj-ov-m + .yj-ov-m { border-top:1px solid rgba(10,167,160,.14); }
     .yj-ov-m .yj-ov-k { margin-bottom:0; }
+    /* sub 细注（収得副行 / 总赏金明细）独占第二行：mb 端 .yj-ov-m 横排 + sub flex:0 0 100% 换行，
+       不然会挤成 k|b|sub 三段散布（2026-10-31 总赏金上格时顺手修正） */
+    .yj-ov-m .yj-ov-sub { flex:0 0 100%; order:3; margin-top:1px; }
+    /* 四格变体在 mb 纵排里 flex-basis 要还原 auto：120px 的行向 basis 会变成每行最小高（撑出大空行） */
+    .yj-ov-prizes--4 .yj-ov-m { flex-basis:auto; }
     .yj-ov-m b { font-size:20px; }
+    /* --4 的 24px（PC 与三率同级）特异性更高会盖过上一行；mb 端回到 20px 紧凑行 */
+    .yj-ov-prizes--4 .yj-ov-m b { font-size:20px; }
     .yj-ov-wins { margin-top:12px; padding:11px 0 0; gap:6px 14px; }
     .yj-ov-wins .yj-ov-k { flex:0 0 100%; }
     .yj-ov-win-n { font-size:12.5px; }

@@ -113,7 +113,8 @@ function fitFrames(){
   });
 }
 
-/* 头像：photo 兼容 数组/网络/本地；多图 → 相册：点击左/右切换，悬停提示
+/* 头像：photo 兼容 数组/网络/本地；多图 → 相册（§149 交互升级：双层交叉淡入切换 + 玻璃圆钮 +
+ * 圆点指示器 + 触摸滑动 + 键盘 ←/→，点击左/右半切换保留）
  * 照片区为弹性大区域（flex-1 撑满剩余宽度）；照片完整展示（object-contain + max 约束，
  * 不拉伸不裁切），铺满宽度/高度中取最大适配，放不下/不够大时居中 */
 function avatarHTML(photo){
@@ -121,7 +122,7 @@ function avatarHTML(photo){
   if(Array.isArray(photo)) list=photo.slice();
   else if(typeof photo==="string" && photo) list=[photo];
   list=list.filter(function(p){return p;});
-  var wrap='relative flex min-h-[340px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 max-md:h-[240px] max-md:min-h-0 max-md:flex-none max-md:w-full';
+  var wrap='relative flex min-h-[340px] min-w-0 flex-1 items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 max-md:h-[240px] max-md:min-h-0 max-md:flex-none max-md:w-full';
   if(!list.length) return '<div class="'+wrap+'"><span class="text-[64px] text-muted-foreground opacity-50">🐎</span></div>';
   list=list.map(function(p){ return (String(p).indexOf("data/")===0) ? YJ_DATA.url(p) : p; });
   /* 图片标记统一走 YJ.ui.img：loading=lazy + decoding=async + 写死占位尺寸（防 CLS）。
@@ -131,22 +132,41 @@ function avatarHTML(photo){
     return '<div class="'+wrap+'">'+YJ.ui.img({src:list[0], cls:'absolute inset-0 h-full w-full object-contain', w:1108, h:1477,
       attrs:'alt="头像" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<span class=&quot;text-[64px] text-muted-foreground opacity-50&quot;>🐎</span>\'"'})+'</div>';
   }
-  return '<div class="'+wrap+' group" data-photos="'+esc(list.join("|"))+'">'+
-    YJ.ui.img({src:list[0], cls:'pav-img absolute inset-0 h-full w-full object-contain', w:1108, h:1477, alt:'头像', attrs:'onerror="this.style.display=\'none\'"'})+
-    '<button type="button" class="pav-nav pav-prev absolute top-1/2 left-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="上一张">‹</button>'+
-    '<button type="button" class="pav-nav pav-next absolute top-1/2 right-2.5 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-[34px] font-light leading-none text-foreground/90 [text-shadow:0_1px_1px_rgba(0,0,0,0.3),0_0_12px_rgba(255,255,255,0.85)] transition-all duration-200 hover:scale-110 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 cursor-pointer select-none" title="下一张">›</button>'+
-    '<div class="pav-count absolute top-2.5 right-3 rounded-full border border-black/15 bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums tracking-[.5px] text-foreground/75 shadow-md backdrop-blur-sm">1/'+list.length+'</div>'+
+  /* 多图：双层 img 交叉淡入（transition-opacity），active 层 opacity-100、备用层常驻 DOM 且 opacity-0
+   * —— 切换时把新 src 写进备用层、加载完（或缓存命中 complete）再翻透明度，无白闪；
+   * 备用层不带 src（避免空 src 请求当前页）。圆点指示器 ≤8 张才出（再多挤且没人在上面找位次）。
+   * 浮层控件语言（2026-10-31 二轮定稿）：暗色玻璃三件套（箭头/计数/圆点同语言），
+   * 箭头 PC 默认半隐、悬停相册浮现（group-hover；mb 无 hover 常显）；底部渐变暗部承托圆点。 */
+  var imgCls='pav-img absolute inset-0 h-full w-full object-contain transition-opacity duration-300';
+  var navBtn=function(dir,glyphPath,label){
+    return '<button type="button" aria-label="'+label+'" title="'+label+'" class="pav-nav pav-'+dir+' absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white opacity-0 shadow-lg ring-1 ring-white/25 backdrop-blur-md transition-all duration-200 hover:scale-110 hover:bg-black/55 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 group-hover:opacity-100 max-md:opacity-100 cursor-pointer select-none '+(dir==='prev'?'left-2.5':'right-2.5')+'">'+
+      '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+glyphPath+'"/></svg></button>';
+  };
+  var dots = list.length<=8
+    ? '<div class="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-16 bg-gradient-to-t from-black/40 to-transparent max-md:h-12" aria-hidden="true"></div>'+
+      '<div class="pav-dots absolute bottom-3.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5" aria-hidden="true">'+
+      list.map(function(_,i){ return '<i data-dot="'+i+'" class="h-1.5 w-1.5 rounded-full bg-white/50 shadow-md transition-all duration-200'+(i===0?' w-4 bg-white':'')+'"></i>'; }).join("")+'</div>'
+    : '';
+  return '<div class="'+wrap+' group" tabindex="0" role="region" aria-label="头像相册（左右方向键切换）" data-photos="'+esc(list.join("|"))+'">'+
+    YJ.ui.img({src:list[0], cls:imgCls, w:1108, h:1477, alt:'头像', attrs:'data-active="1" onerror="this.style.display=\'none\'"'})+
+    '<img alt="" aria-hidden="true" decoding="async" class="'+imgCls+' opacity-0" data-active="0">'+
+    navBtn('prev','M15 18l-6-6 6-6','上一张')+
+    navBtn('next','M9 18l6-6-6-6','下一张')+
+    '<div class="pav-count absolute top-2.5 right-2.5 z-10 rounded-full bg-black/35 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums tracking-[.5px] text-white shadow-lg ring-1 ring-white/20 backdrop-blur-md">1/'+list.length+'</div>'+
+    dots+
   '</div>';
 }
 
-/* 相册切换：点击左半/右半 → 上一张/下一张（‹ › 箭头同理，环形循环） */
+/* 相册切换（§149 升级版）：点击左/右半、‹ › 圆钮、触摸滑动、←/→ 键均可；环形循环；
+ * 双层交叉淡入（层翻转前等新图解码/缓存，complete 即时翻），相邻一张预加载（§5.3.2 保留） */
 function avatarBind(){
-  var el=document.querySelector(".pava.multi") || document.querySelector("[data-photos]");
+  var el=document.querySelector("[data-photos]");
   if(!el) return;
   var photos=el.getAttribute("data-photos").split("|");
-  var img=el.querySelector(".pav-img");
+  var layers=[el.querySelector('.pav-img[data-active="1"]'), el.querySelector('.pav-img[data-active="0"]')];
   var count=el.querySelector(".pav-count");
-  var idx=0;
+  var dots=el.querySelectorAll("[data-dot]");
+  var cur=0, front=0;   /* cur=当前张序号；front=正显示的层下标（layers 里另一层做备用画布） */
   /* 相邻一张预加载（§5.3.2）：头像已改 loading=lazy，切换时不该再等一次网络往返；
    * 同一 src 只预拉一次（seen 去重），环形序列 = 下一张 + 上一张 */
   var seen={};
@@ -158,21 +178,54 @@ function avatarBind(){
     im.decoding="async";
     im.src=src;
   }
+  function setDot(n){
+    for(var i=0;i<dots.length;i++){
+      dots[i].classList.toggle("w-4", i===n);
+      dots[i].classList.toggle("bg-white", i===n);
+      dots[i].classList.toggle("w-1.5", i!==n);
+      dots[i].classList.toggle("bg-white/50", i!==n);
+    }
+  }
   function show(n){
-    idx=(n+photos.length)%photos.length;
-    img.src=photos[idx];
-    if(!img.decoding) img.decoding="async";
-    count.textContent=(idx+1)+"/"+photos.length;
-    preload(idx+1); preload(idx-1);
+    n=((n%photos.length)+photos.length)%photos.length;
+    if(n===cur) return;
+    cur=n;
+    var back=1-front, im=layers[back];
+    function flip(){   /* 新层就位 → 翻透明度，旧层退为下一个备用画布（src 保留——淡出 300ms 内还要显示，下次被覆写） */
+      layers[front].classList.add("opacity-0");
+      layers[front].setAttribute("data-active","0");
+      im.classList.remove("opacity-0");
+      im.setAttribute("data-active","1");
+      front=back;
+    }
+    im.onload=function(){ im.onload=im.onerror=null; flip(); };
+    im.onerror=function(){ im.onload=im.onerror=null; flip(); };
+    im.src=photos[n];
+    if(im.complete) flip();                 /* 缓存命中：立即翻，不闪 */
+    count.textContent=(n+1)+"/"+photos.length;
+    setDot(n);
+    preload(n+1); preload(n-1);
   }
   preload(1); preload(photos.length-1);   /* 首图已在外层懒加载，先把两端挂上 */
   el.addEventListener("click",function(e){
     var rect=el.getBoundingClientRect();
-    if(e.clientX-rect.left < rect.width/2) show(idx-1); else show(idx+1);
+    if(e.clientX-rect.left < rect.width/2) show(cur-1); else show(cur+1);
   });
   var prev=el.querySelector(".pav-prev"), next=el.querySelector(".pav-next");
-  if(prev) prev.addEventListener("click",function(e){e.stopPropagation();show(idx-1);});
-  if(next) next.addEventListener("click",function(e){e.stopPropagation();show(idx+1);});
+  if(prev) prev.addEventListener("click",function(e){e.stopPropagation();show(cur-1);});
+  if(next) next.addEventListener("click",function(e){e.stopPropagation();show(cur+1);});
+  /* 触摸滑动（mb）：>40px 水平位移判翻页 */
+  var tx=0;
+  el.addEventListener("touchstart",function(e){ tx=e.changedTouches[0].clientX; },{passive:true});
+  el.addEventListener("touchend",function(e){
+    var dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>40) show(cur+(dx<0?1:-1));
+  },{passive:true});
+  /* 键盘 ←/→（wrap 有 tabindex=0，点选/Tab 聚焦后可用） */
+  el.addEventListener("keydown",function(e){
+    if(e.key==="ArrowLeft"){ e.preventDefault(); show(cur-1); }
+    else if(e.key==="ArrowRight"){ e.preventDefault(); show(cur+1); }
+  });
 }
 
 var detailCol=document.getElementById("detailCol");
@@ -479,7 +532,7 @@ function render(h){
   '</div>';
   /* 血统图：fitFrames 撑到 max(内容高度, 右栏高度)，内容矮时填满对齐资料表、内容高时撑开整块 */
   var pedBlock='<div class="pedcard overflow-hidden rounded-[10px] border border-border bg-card">'+
-    '<div class="p-3"><iframe class="pedframe w-full bg-background" src="pedigree.html?embed=1" title="血统图"></iframe></div>'+
+    '<div class="p-3 relative"><iframe class="pedframe w-full bg-background" src="pedigree.html?embed=1" title="血统图"></iframe></div>'+
   '</div>';
   /* 上段宽度比例（PC）：左中右三栏 1:1:1 等高（照片 / 基本信息 / 血统图）。
    * 容器等高由 items-stretch 保证，总高度以基本资料表为基准；
@@ -521,6 +574,24 @@ function render(h){
 
   var mC=money(h["獲得賞金 (中央)"]), mL=money(h["獲得賞金 (地方)"]), mF=money(prizeFlat);
 
+  /* 总赏金（2026-10-31 用户要求补格 · 四格均分方案B定稿）= 獲得賞金(中央) + 獲得賞金(地方)，JBIS 口径
+   * （収得賞金是另一口径，不入和）。源值是「3億4,429万円 / 0万円」混合字符串 → 解析成万円数相加，
+   * 再回排「X億Y,ZZZ + 万円」与相邻格同构；两格都缺（0 也按缺省渲染「—」）→ 总格同样「—」。
+   * manOf 仅此 1 处使用，不抽公共（§48 门槛）。 */
+  function manOf(s){
+    var str=String(s==null?"":s).replace(/,/g,"");
+    var m=str.match(/(?:(\d+(?:\.\d+)?)億)?(\d+(?:\.\d+)?)万/);
+    return m ? (parseFloat(m[1]||0)*10000+parseFloat(m[2]||0)) : null;   /* 万円 */
+  }
+  var cMan=manOf(h["獲得賞金 (中央)"]), lMan=manOf(h["獲得賞金 (地方)"]);
+  var mT;
+  if(cMan==null && lMan==null){ mT={v:"—",u:""}; }
+  else{
+    var tMan=(cMan||0)+(lMan||0), tOku=Math.floor(tMan/10000), tRest=Math.round(tMan-tOku*10000);
+    if(tOku===0 && tRest===0){ mT={v:"—",u:""}; }   /* 中央+地方 合计 0 → 同 money() 的 0=缺失惯例 */
+    else mT={v:(tOku?tOku+"億":"")+(tRest?tRest.toLocaleString():""),u:tOku||tRest?"万円":""};
+  }
+
   /* 色带格子：皮肤（渐变描边/径向雾/分格线/mb 堆叠）全部在 theme.css .yj-ov-*，此处只出结构 */
   /* 主胜鞍：色带第二行；空数组整行不渲染（不占色带高度，也不留空行） */
   var winsStrip=majorWinsStrip(hv.主勝鞍);
@@ -543,9 +614,10 @@ function render(h){
       ovRate(ratePct(car?car['1着']:0, starts), "胜率", true)+
       ovRate(ratePct(car?(car['1着']+car['2着']):0, starts), "连对率", false)+
       ovRate(ratePct(car?(car['1着']+car['2着']+car['3着']):0, starts), "复胜率", false)+
-      '<div class="yj-ov-prizes">'+
-        ovM(t("獲得賞金 (中央)"), mC)+
-        ovM(t("獲得賞金 (地方)"), mL)+
+      '<div class="yj-ov-prizes yj-ov-prizes--4">'+
+        ovM("总赏金", mT)+
+        ovM("中央赏金", mC)+
+        ovM("地方赏金", mL)+
         ovM(t("収得賞金"), mF, prizeSub.length?prizeSub.join(' · '):'')+
       '</div>'+
       winsStrip+
@@ -558,7 +630,7 @@ function render(h){
       '<span class="text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">比赛记录 · RACES</span>'+
       '<a class="flex-none text-[12px] font-semibold text-accent-foreground hover:text-primary hover:underline" href="races.html?horse='+encodeURIComponent(h.id)+'">详细数据→</a>'+
     '</div>'+
-    '<iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div>';
+    '<div class="relative"><iframe class="raceframe w-full bg-background" src="races.html?embed=1" title="比赛记录"></iframe></div></div>';
 
   document.title=title+' · 基本信息 · '+YJ_SITE.name;
   /* 草稿预览提示条：本马在编辑台有未提交改动（含图片草稿张数）时才出现 */
@@ -580,6 +652,14 @@ function render(h){
     '<section id="sec-races" class="scroll-mt-2">'+raceSection+'</section>';
 
   avatarBind(); /* 多图相册：绑定点击切换 */
+
+  /* 内嵌 iframe 加载遮罩（§149）：盖住子页文档加载 + 首次取数期；子页 ready 消息 / load 兜底后淡出 */
+  if (YJ.ui && YJ.ui.frameSpin) {
+    [".raceframe",".pedframe"].forEach(function(sel){
+      var fr=document.querySelector(sel);
+      if(fr) YJ.ui.frameSpin(fr);
+    });
+  }
 
   /* 通知内嵌 races / 血统联动 */
   YJ.bus.broadcast(h.id);

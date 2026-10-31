@@ -1384,3 +1384,26 @@ window.YJ_ECHARTS = echarts;
 4. **日期+统计条**：日期年份 `<b>` 加粗加深（`#555b61`，月日维持浅灰 tabular-nums；`dateHTML()` 拆年月日，editor.js 预览同构）；顶部 stats 一行灰字 → 「数字+量词标签」迷你统计块（17px 粗体数字，重赏/父子制覇数字走 `text-primary` 青绿=胜语义色；Tailwind utility 内联，pages/*.html 在 content globs 内可编译）。
 
 **验证**：`node --check editor.js` ✓；`npm run build` ✓（⚠ 构建须带数据拷贝：试跑 `COPY_DATA=skip` 后 dist/data 被清空未回填，截图 401/404——**dist 会先清空**，skip 只该在确认数据无需回填时用）；dist 核对 `timeline-*.css` 含 `tl-yc/tl-anim/tl-group/hover 节点/reduced-motion/pointer-events:none`、`timeline-cards-*.css` 含 `tl-date b/scale(1.04)`、`tl-photo.empty` 与 🐎 全站清零。截图 `tests/timeline-review/`（`pc.png/mb.png`=改前，`pc-after.png/mb-after.png`=改后）。注：无头截图中个别图片灰块 = 懒加载与本地单线程服务器的传输竞态（图片 curl 全 200、每轮失败卡片随机），非页面问题；编辑台空态正常无报错。
+
+## §149 · 全局加载动画 + 相册交互升级（2026-10-31，用户三项诉求）
+
+**对象**：`public/loading.js`（新组件）+ `pages/profile.html`（相册/iframe 遮罩）+ `pages/pedigree.html`、`pages/races.html`、`pages/stats.html`（加载态接入）。数据/后端零改动。
+**背景**：2026-09-21 任务 #18 撤销过骨架屏/spinner 一整套（各页保留「正在加载…」纯文案）；本条经用户**重新立项**，只恢复最轻量的 spinner（数据等齐一次性渲染口径不变），专治 iframe 内嵌子页与跨站图表的冷加载空白期。
+
+**最终思路**：
+1. **全局加载动画 `YJ.ui.spin(o)`**（loading.js，全站可自由调用）：环形 spinner（`animate-spin` 核心 utility，浅轨道 + 1/4 圆弧，`text-primary`）+ 可选文案；`{label, sm}` 两档（sm=卡内紧凑）。⚠ 注释里不得出现 `**/*.js` 之类含 `*/` 的 glob 字面量——会把块注释提前闭合（verify_stats eval 当场炸过，已改写措辞）。
+2. **iframe 加载遮罩 `YJ.ui.frameSpin(fr)`**：spinner 覆盖层盖在 iframe 容器上（容器须 relative）。退场三保险：主信号 = 子页渲染完 postMessage `{type:"yj:frameReady"}`（`e.source` 校验只认自己这个 frame）；兜底 = iframe load+1.2s；保险 = 9s。profile 的 pedframe（`.p-3` 补 `relative`）与 raceframe（新包 `relative` 容器）接入；pedigree/races 内嵌分支在首次渲染定形（成败都算）时发 ready 消息。races 内嵌初始态由「请在上方选择一匹马」改为 spinner（该文案在内嵌里本就不成立）。
+3. **加载态接入**：pedigree 内嵌「加载中…」、races 全库加载「正在加载全库比赛数据…」、stats 种马榜走势「読み込み中…」→ spinner（页面无 loading.js/组件缺失时 `YJ.ui &&` 守卫退回纯文案）；stats 数据概览卡加 `#kpisLoad` 占位（stats.json 冷加载期间 spinner，renderKpis 取数后整体覆写）。
+4. **相册交互升级（profile avatarHTML/avatarBind 重写）**：
+   - **双层交叉淡入**：两层 `pav-img` 叠放（备用层建时无 src，避免空 src 请求当前页），切换 = 新 src 写进备用层 → onload/complete 后翻 `opacity`（duration-300），无白闪；旧层淡出后留作下一个备用画布（src 保留防淡出中破图）。相邻一张预加载（§5.3.2 保留）。
+   - **箭头钮**：透明大字Glyph → 36px 白玻璃圆钮（`bg-white/85 + border-black/10 + shadow-md + backdrop-blur`），hover 放大 + 主色，active 按压回缩，带 aria-label。
+   - **圆点指示器**：底部居中黑玻璃胶囊（≤8 张才出），当前张 = 加长白点，切换动画 `transition-all`。
+   - **输入面**：保留点击左/右半切换；新增触摸滑动（>40px 判翻页）与键盘 ←/→（wrap `tabindex=0`，焦点环 focus-visible）。
+   - 计数 chip 补 `z-10`（旧层次偏低会被图盖住的理论隐患）。
+
+**验证**：`npm run build` ✓；dist 核对 theme css 含 `@keyframes spin/animate-spin`、loading.js 含 `yj-frameload`、pedigree/races 含 `frameReady`、profile 含 `pav-dots`、stats 含 `kpisLoad`、`dist/data/basic.json` 在。门禁 verify_stats 211/0（首跑曾炸于注释 glob，见上）、verify_drill 60/0、verify_yj-cache 16/0。playwright-core（channel msedge）实测：profile ?horse=40 遮罩退场、相册点击 ‹›→ 计数 1/2→2/2 + 圆点翻位（截图 `tests/ui-149-overlay.png`/`ui-149-profile.png`）；stats 图表出图、KPI 覆写正常（`ui-149-stats.png`；调试注意：子页直开会被 rehome 回壳，须从外壳 iframe 里断言）。
+
+- **§149 补记（相册浮层二轮定稿，2026-10-31 用户反馈「逻辑没问题、样式丑」）**：浮层控件从「白玻璃三件套」改**暗色玻璃语言**（macOS/图库式）：箭头 = `bg-black/35 + ring-white/25 + backdrop-blur-md` 圆钮 + SVG 细箭头（替换文字 ‹›），PC 默认 `opacity-0` 悬停相册 `group-hover` 浮现（mb 无 hover 常显、键盘 focus-visible 浮现）；计数 chip 同语言暗玻璃；圆点去掉灰胶囊底，改**底部渐变暗部**（`from-black/40`，h-16/mb 12）承托裸点（激活 = 加长白点）。逻辑（双层淡入/预加载/输入面）零改动。验证：build ✓（⚠ grep css 时注意 Tailwind 产物里 `/` 转义为 `\/`，直 grep `from-black/40` 会假阴性）；无头实测悬停浮现/点箭头 2/2 + 圆点翻位（截图 `tests/ui-149-style-hover.png`/`ui-149-style-next.png`）。
+
+- **§149 补记 2（总赏金上格 · 方案B定稿，2026-10-31）**：数据概览色带赏金组补「总赏金」格 = 獲得賞金(中央)+獲得(地方)（JBIS 口径，収得是另一口径不入和；源值「3億4,429万円」混合字符串 → `manOf` 解析成万円相加再回排，0/双缺 =「—」同 money() 惯例）。用户从 4 候选（B 四格均分 / C 升主格前插 / D 收单格 / E 并入战绩行，对比页 `tests/prize-band-variants.html` + 截图 `tests/ui-prize-variants.png`）中**拍板方案 B**。落地：`.yj-ov-prizes--4` 变体（数值 20px、字距/格距收紧、`flex:1 1 120px` + 容器 wrap → 宽屏 1×4、中等宽自动 2×2 不重叠）；连带微调 `.yj-ov-rec` padding 28→24、`.yj-ov-rate` 22→18（腾宽度）；mb 端 `.yj-ov-prizes--4 .yj-ov-m` flex-basis 还原 auto（120px 行向 basis 在纵排会变每行最小高、撑出大空行）。中间被否的「hero+sub 明细降级」与 22px 一刀切均已回退。验证：build ✓、fit 实测 854/854 无溢出、PC 2×2 与 mb 紧凑行截图 `tests/ui-149-band*.png`。
+- **§149 补记 3（四格数值字号回调，2026-10-31 用户反馈「比三率还小」）**：`--4` 数值 20→**24px**（= 三率 `.yj-ov-rate b` 同级，主次不再颠倒），格距 padding-left 14→12；实测 1500 视口 854/854 单屏无溢出（超宽自动折 2×2）。连带修：mb 媒体查询里 `.yj-ov-m b{20px}` 特异性低于 `--4` 的 24px 规则会失效，补同特异性 `.yj-ov-prizes--4 .yj-ov-m b{20px}` 覆盖（截图 `tests/ui-149-band24.png` / `ui-149-band-mb.png`）。

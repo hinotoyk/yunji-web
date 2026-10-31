@@ -19,3 +19,5 @@ data/_tmp/
 
 # AI 助手的工作记忆（会话日志，非项目源码）
 /.workbuddy-ai/
+# WorkBuddy 会话工作数据（memory 工作日志等，同上不入库）
+/.workbuddy/

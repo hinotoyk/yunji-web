@@ -24,6 +24,7 @@
 <script src="../data-config.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../loading.js"></script>
 <script src="../race-bundle.js"></script>
 <script src="../i18n.js"></script>
 <script src="../site-config.js"></script>
@@ -120,6 +121,8 @@ function renderRaces(h, races){
   document.getElementById("body").innerHTML = mb
     ? RR.mbListHTML(races.length ? races.map(rowEmbedMbHTML).join("") : emptyMb)
     : embedTableHTML(races.length ? races.map(rowEmbedHTML).join("") : emptyPc);
+  /* 内嵌模式首次渲染已定 → 通知父页（profile）iframe 遮罩退场（§149；重复 post 无害，遮罩只在首次存在） */
+  if (EMBED) { try { parent.postMessage({ type:"yj:frameReady" }, "*"); } catch(e){} }
 }
 
 function renderHorse(id){
@@ -162,6 +165,10 @@ if (EMBED) {
   document.getElementById("filters").style.display="none";
   var pt=document.querySelector(".page-title");
   if (pt) pt.style.display="none";
+  /* 内嵌初始态（§149）：独立模式的「请选择一匹马」提示在内嵌里不成立——父页马上会广播选中马，
+   * 先给全局 spinner 占位（bundle 首次取数期间不再空白） */
+  document.getElementById("body").innerHTML =
+    (window.YJ && YJ.ui && YJ.ui.spin) ? YJ.ui.spin({ label: "正在加载比赛记录…" }) : document.getElementById("body").innerHTML;
   YJ.bus.onChange(function(id){ renderHorse(id); });
 } else {
   initLibrary();
@@ -897,7 +904,9 @@ function bindPager(){
 function initLibrary(){
   var body=document.getElementById("body");
   document.getElementById("selector").style.display="none";
-  body.innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">正在加载全库比赛数据…</div>';
+  body.innerHTML=(window.YJ && YJ.ui && YJ.ui.spin)
+    ? YJ.ui.spin({ label: "正在加载全库比赛数据…" })
+    : '<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">正在加载全库比赛数据…</div>';
   function finish(horses, entries){
     LIB={horses:horses, entries:entries};
     /* ?horse=id 跳转（基本信息内嵌 RACES → 独立模式查看详情）：预置出走马筛选 */
