@@ -1462,3 +1462,34 @@ window.YJ_ECHARTS = echarts;
 **为什么不用哈希**：本场景数据量 KB 级、单次比较，canon 比较即 O(n) 最优；哈希仍需 O(n) 计算、还引入碰撞风险（32/53-bit 非加密哈希的生日碰撞对「免确认净零」判定不可接受），只有跨会话指纹/远端同步/大 blob 去重才值得上 SHA-256（crypto.subtle，需 https/localhost）。
 
 **验证**：node --check ×3 ✓；npm run build ✓（dist editor.js/editor-table.js/yj-util.js 均含 effEqual）；回归 check151（照片净零+引用比赛带图）/check152（TL 净零快照+文案）/check153（表格净零+建议浮层）三轮全绿，零 console 错误。
+
+## §155 · mb 端开放编辑（2026-10-31，用户定稿：mb 体验接近 PC）
+
+**旧门**（§82.13 作废）：四编辑页（edit / edit-table / edit-timeline / edit-drafts）是纯 CSS 门——「🖥️ 请在电脑端使用」占位块 + 主容器/保存条 `max-md:hidden`，代码逻辑本身设备无关。拆除即通。
+
+**改动**：
+1. 四页删占位块，主容器与 savebar 去 `max-md:hidden`；§82.13 注释改 §155 定稿。
+2. **触屏可达性**：照片瓦片 ✕ 原为 `hidden group-hover:inline-flex`（触屏无 hover 不可达）→ 加 `max-md:inline-flex` 常显；PC 行为不变。
+3. **触屏调序**：HTML5 DnD 不触发于触屏 → 瓦片左下 ‹› 小钮（`md:hidden`，`data-pmv` 委托到 movePhoto + render），首/尾位相应钮隐藏；PC 仍走拖拽。
+4. 顺带修文案残留：抽屉「已保存（人工表现值）」→「人工维护值」。
+5. 已核实无需改的：抽屉/建议浮层/selector 均自带 max-w-full；表格 sticky 列 + overflow 触屏横滚；工具条 flex-wrap 自然换行；shell 侧栏 mb 有 menuBtn 开关、编辑组注入只看 ?edit=1 与设备无关。
+
+**触屏不具备的 PC 能力**（点按上传/外链已覆盖核心链路）：拖文件入库、Ctrl+V 粘贴、拖拽排序（已由 ‹› 补齐）。
+
+**验证**：build ✓；tests/_pw/check155.mjs（390×844 isMobile+hasTouch）——四页真实界面渲染、保存条可见、照片 ‹› 换位双向通过（img 身份比对）、✕ 免 hover 可见、改馬主字段提交钮解锁、表格 277 行 + 点格出 select 编辑器、PC 1400 回归调序钮/✕ 正确隐藏；check151-153 PC 回归全绿；零 console 错误。截图 tests/ui-155-{edit,table,timeline}-mb.png。
+
+## §156 · mb 灯箱图片不显示（跨文档相对 URL 404，2026-10-31 用户实测反馈）
+
+**现象**：部署站手机端点放大 → 灯箱壳正常（X/大箭头/计数），但大图空白，只见底下相册卡透出来（小箭头/🔍/2/2 幽灵重影），像「放大出了异常」。
+
+**根因**：跨文档相对路径解析。profile 在 iframe 内把 `YJ_DATA.url()` 产物（`../data/photos/x.webp`，「页相对」）经 postMessage 发给外壳，外壳文档在站点根（部署子路径 `/yunji-web/` 下）解析时多退一级 → `/data/...` 404 → 灯箱 img 空白（onerror 仍 flip，双层都透明）。本地 dev 服务（项目根含源 data/ 目录）恰好掩盖了问题；pages 自身加载数据不受影响（pages 在 1 层子目录，`../data` 解析正确），唯独灯箱这种「外壳层渲染」的跨文档场景踩中。
+
+**修复**（front/index.html 接收侧收口，sender 零约束）：收到 `yj:lightbox` 后以 `frameEl.contentWindow.location.href`（同源可读）为 base，`new URL(u, base).href` 归一成绝对 URL 再交 YJ.lightbox.open——相对/绝对/data: 均兼容，未来其他 sender 也不会再犯。
+
+**验证**：搭子路径镜像（tests/_pw/_sub/yunji-web ← dist，:8091）复现部署形态——修复前 img `natural 0x0`、src 解析到站点根（404 实锤）；构建修复后 img `854x1280 → rendered 367x549`、src 正确落子路径、翻页计数 2/2；像素采样确认遮罩（背景 rgb≈37 = 白字×15%）与照片层（rgb≈229 全亮）层级正确；直开本页（无外壳）本地兜底不经此路径、本就正确。390×844 触屏视口，零 console 错误。截图 tests/ui-156-{before,after-mb}.png。
+
+### §156b · 灯箱「复开首图空白」（front 状态残留，2026-10-31 用户二轮反馈）
+
+用户实测：URL 修复后「好了一点，但还要切换照片图才出现」。根因不在 URL——lightbox.js 的 `front` 是模块级变量，`close()` 清 imgs/ov 却**不重置 front**；开灯箱切换过一次（flip 后 front=1）再关掉，复开时 `imgs[front].src` 写进的是 DOM 里带 `opacity-0` 的**隐藏层**（DOM 第一层的 opacity-100 可见层没有 src）→ 首眼空白，切一张走 show()/flip 路径才显现。此前 URL 全 404 时两张都空，此 bug 被掩盖；URL 修好后才浮出。修复：open() 里 `front = 0` 归零（入口状态归一，一处兜住所有复开路径）。
+
+**回归**（:8091 子路径镜像，390×844 触屏）：首开 img1 ✓ → 切 img2 ✓ → 关闭 → 卡切到图2 复开 **img2 立即有图**（修复前此处必空白）→ 反向切回 img1 ✓；全程 opacity=1、零报错。像素采样：背景 rgb≈30-35（遮罩压暗）、照片区全亮。截图 tests/ui-156b-reopen-mb.png。

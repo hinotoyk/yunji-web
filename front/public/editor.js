@@ -1724,14 +1724,20 @@ YJ.editor = (function () {
     return photoPinned(state.horse.id) !== undefined ? '<span class="' + BADGE_PIN + '">已保存</span>'
       : '<span class="' + TIP + '">与官方一致</span>';
   }
-  function thumbHTML(p, i) {
+  function thumbHTML(p, i, n) {
     var key = (p && typeof p === "object") ? "draft:" + p.ref : String(p);
     var m = state.photos.meta[key] || {};
-    /* §150 网格瓦片：首图「封面」徽标，其余序号角标；✕ 维持悬停浮现（盘上文件保留） */
+    /* §150 网格瓦片：首图「封面」徽标，其余序号角标；✕ PC 悬停浮现 / mb 常显（触屏无 hover，§155）。
+     * §155 触屏调序：HTML5 DnD 不触发于触屏 → 左下 ‹ › 小钮（mb only，md:hidden）补齐调序能力。 */
+    var mv = '<span class="absolute bottom-1 left-1 flex gap-1 md:hidden">' +
+      (i > 0 ? '<button data-pmv="' + (i - 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="前移一位">‹</button>' : "") +
+      (n === undefined || i < n - 1 ? '<button data-pmv="' + (i + 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="后移一位">›</button>' : "") +
+      "</span>";
     return '<li draggable="true" data-pi="' + i + '" class="yj-ed-thumb group">' +
       '<img src="' + esc(photoSrc(p)) + '" alt="" draggable="false" loading="lazy" decoding="async" class="h-[92px] w-full object-contain">' +
       (i === 0 ? '<span class="yj-ed-cover">封面</span>' : '<span class="yj-ed-index">' + (i + 1) + "</span>") +
-      '<button data-pdel="' + i + '" type="button" class="' + BTN_DANGER + ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex" title="移出列表（盘上文件保留）">✕</button>' +
+      mv +
+      '<button data-pdel="' + i + '" type="button" class="' + BTN_DANGER + ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex max-md:inline-flex" title="移出列表（盘上文件保留）">✕</button>' +
       '<span class="block truncate border-t border-border bg-card px-1.5 py-1 text-[10px] text-muted-foreground" title="' + esc(photoName(p)) + '">' +
         esc(photoName(p)) + (m.bytes ? " · " + kb(m.bytes) : "") + "</span>" +
       "</li>";
@@ -1758,7 +1764,7 @@ YJ.editor = (function () {
           '<button id="photoURLBtn" class="' + BTN_DIS + '" type="button"' + dis + ">本地化</button>" +
           '<button data-pclose="1" class="' + BTN + '" type="button">收起</button></div>'
       : "";
-    var tiles = list.map(function (p, i) { return thumbHTML(p, i); }).join("");
+    var tiles = list.map(function (p, i) { return thumbHTML(p, i, list.length); }).join("");
     var addTile = '<li class="yj-ed-thumb yj-ed-thumb--add' + (list.length ? "" : " yj-ed-thumb--empty") + '">' +
       '<label class="yj-ed-thumb-add' + (dis ? " opacity-40" : "") + '">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5"><path d="M12 5v14M5 12h14"/></svg>' +
@@ -2623,7 +2629,7 @@ YJ.editor = (function () {
     var savedSec = savedN ? (
       '<div class="border-t border-border bg-muted/20 px-3 py-2">' +
         '<button data-savedsec="1" class="flex w-full items-baseline gap-2 text-left" type="button" title="' + (state.savedOpen ? "收起" : "展开") + "已保存列表\">" +
-          '<span class="yj-ed-lbl">已保存（人工表现值）</span>' +
+          '<span class="yj-ed-lbl">已保存（人工维护值）</span>' +
           '<span class="text-[10px] font-semibold tabular-nums text-muted-foreground">' + savedN + " 匹</span>" +
           '<span class="ml-auto text-[11px] text-muted-foreground">' + (state.savedOpen ? "▾" : "▸") + "</span>" +
         "</button>" +
@@ -3062,11 +3068,12 @@ YJ.editor = (function () {
     });
     if (els.photos) els.photos.addEventListener("click", function (ev) {
       var b = ev.target.closest ? ev.target.closest(
-        "button[data-pdel],button[data-pnone],button[data-punpin],button[data-pslot],button[data-pclose],#photoURLBtn") : null;
+        "button[data-pdel],button[data-pnone],button[data-punpin],button[data-pslot],button[data-pclose],button[data-pmv],#photoURLBtn") : null;
       if (!b) return;
       /* 纯 UI：照片位 / 「上传/外链」钮展开入库面板，「收起」关掉 —— 不要求服务端在线 */
       if (b.dataset.pslot !== undefined) { state.photos.open = !state.photos.open; renderPhotos(); return; }
       if (b.dataset.pclose !== undefined) { state.photos.open = false; renderPhotos(); return; }
+      if (b.dataset.pmv !== undefined) { movePhoto(Number(b.closest("[data-pi]").dataset.pi), Number(b.dataset.pmv)); render(); return; }   /* §155 触屏调序 */
       if (b.id === "photoURLBtn") {
         var u = (state.photos.url || "").trim();
         if (u) uploadURL(u); else photoLog("先粘贴一个图片 URL", "err");

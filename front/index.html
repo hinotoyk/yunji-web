@@ -247,7 +247,19 @@ window.addEventListener('message',function(e){
   /* 全屏浮层请求（§149.2）：血统完整弹窗 / 照片灯箱，都在外壳层渲染（遮罩全屏含侧栏）。
    * 渲染后把焦点从 iframe 归还顶层：否则 Esc/←→ 键盘事件仍发给 iframe，外壳监听收不到 */
   if(d.type==='yj:pedigreeFull' && window.YJ && YJ.pedigree){ YJ.pedigree.openModal(d.ped,d.title); try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){} }
-  else if(d.type==='yj:lightbox' && window.YJ && YJ.lightbox){ YJ.lightbox.open(d.photos,d.index); try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){} }
+  else if(d.type==='yj:lightbox' && window.YJ && YJ.lightbox){
+    /* §156 修复：子页传来的图片 URL 是「子页相对路径」（YJ_DATA.url → ../data/...），
+     * 在外壳文档解析会多退一级（pages/ → 站点根），部署站上 404 → 灯箱只有壳没有图
+     * （本地 dev 因项目根恰好有源 data/ 目录而碰巧通过，掩盖了问题）。
+     * 统一以 iframe 真实地址为 base 归一成绝对 URL（同源可读 location），sender 侧零约束。 */
+    var base="";
+    try { base = frameEl.contentWindow.location.href; } catch(err3){}
+    var urls=(d.photos||[]).map(function(u){
+      try { return new URL(String(u), base || undefined).href; } catch(err4){ return String(u); }
+    });
+    YJ.lightbox.open(urls,d.index);
+    try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){}
+  }
 });
 </script>
 </body>

@@ -94,6 +94,8 @@ YJ.lightbox = (function () {
           '<div class="lb-count absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[12px] font-semibold tabular-nums text-white/85 ring-1 ring-white/15 backdrop-blur-sm">' + (idx + 1) + ' / ' + photos.length + '</div>'
         : "");
     imgs = [ov.querySelector(".lb-img"), ov.querySelectorAll(".lb-img")[1]];
+    front = 0;                       /* §156 修复：close() 只清 imgs 不清 front——上次开着切换过（flip 后 front=1）
+                                      * 复开时首图 src 会写进 opacity-0 隐藏层 → 第一眼空白、切换一张才显现 */
     document.body.appendChild(ov);
 
     imgs[front].src = photos[idx];                   /* 首图直接进前层 */
