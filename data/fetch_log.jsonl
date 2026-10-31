@@ -22008,3 +22008,11 @@
 {"ts": "2026-10-31 01:55:51", "script": "fetch_detail.py", "host": "db.netkeiba.com", "path": "/horse/2024102476/", "status": "200", "dur_s": 0.46, "retries": 1, "note": ""}
 {"ts": "2026-10-31 01:55:57", "script": "fetch_detail.py", "host": "db.netkeiba.com", "path": "/horse/2024102481/", "status": "200", "dur_s": 0.44, "retries": 1, "note": ""}
 {"ts": "2026-10-31 01:56:07", "script": "fetch_detail.py", "host": "db.netkeiba.com", "path": "/horse/2024100457/", "status": "200", "dur_s": 4.37, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:25", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:25", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:25", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:25", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:26", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.34, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:26", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.44, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:27", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-10-31 17:37:27", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
