@@ -486,3 +486,16 @@
 @media (prefers-reduced-motion:reduce){
   .yj-view-in,.yj-cp-ok,.yj-ov-bar i{animation:none}
 }
+
+/* ---------- §160 奖杯「金光闪闪」（stats / datechart 重赏 KPI、日历胜格、月卡共用 · @layer 外防候选裁剪） ----------
+ * 图案本体 = 页面 JS 注入的内联 SVG（class yj-trophy，内嵌 linearGradient #yj-tg：
+ * 亮金 #fde68a → #fbbf24 → 基线金 #e8a013 → 深金 #d97706），此处只管「闪闪」：
+ * 金色 drop-shadow 辉光 2.6s 呼吸脉冲，高光段轻微提亮；prefers-reduced-motion 时静止。 */
+.yj-trophy{animation:yjTrophyShine 2.6s ease-in-out infinite}
+@keyframes yjTrophyShine{
+  0%,100%{filter:drop-shadow(0 0 1px rgba(232,160,19,.4))}
+  50%{filter:drop-shadow(0 0 3px rgba(251,191,36,.95)) drop-shadow(0 0 8px rgba(253,230,138,.55)) brightness(1.12)}
+}
+@media (prefers-reduced-motion:reduce){
+  .yj-trophy{animation:none}
+}

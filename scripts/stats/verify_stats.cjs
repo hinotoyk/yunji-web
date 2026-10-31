@@ -515,7 +515,10 @@ setTimeout(function () {
   const b0 = sumB(["中央"], "all");
   const r0 = ratesOf(b0);
   ok(kpiV("总赏金") === manYenOf(b0.pr), "KPI 总赏金 " + manYenOf(b0.pr));
-  ok(kpiV("重赏胜利") === '<span class="st-trophy">🏆</span>' + byv["中央"].scopes.all.trophies.length, "KPI 重赏 🏆" + byv["中央"].scopes.all.trophies.length);
+  const trH = String(kpiV("重赏胜利") || "");
+  ok(/^<span class="st-trophy"><svg[\s\S]*<\/svg><\/span>(\d+)$/.test(trH) &&
+     (trH.match(/<\/span>(\d+)$/) || [])[1] === String(byv["中央"].scopes.all.trophies.length),
+    "KPI 重赏胜利 = 金渐变奖杯 SVG + " + byv["中央"].scopes.all.trophies.length + "（🏆 emoji 已换内联 SVG，§160 与 datechart 统一）");
   ok(kpiBrk() === "[" + brk4(b0).join("-") + "]",
     "KPI 通算战绩 4 段 [" + brk4(b0).join("-") + "]（§76 去首位出走段；着外=出走−前三含未完赛 → 四段之和==出走）");
   const brkH = String(kpiV("通算战绩") || "");

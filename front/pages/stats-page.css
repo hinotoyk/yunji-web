@@ -19,8 +19,8 @@
 /* 分段控件样式单一出处 = theme.css @layer components（.seg，与 datechart 单位切换同款；2026-xx 收口） */
 /* KPI 条（2026-10-30 UI 审查 §29）：原 .st-kpis/.st-kpi 六行定义与 datechart .dc-* / leaderboard
  * .lb-* 逐字节相同 → 收口到 theme.css 的 .yj-kpis/.yj-kpi（三页共用），本页不再本地定义。
- * 下方 .st-trophy 是奖杯图标尺寸，属本页特有，保留。 */
-.st-trophy{font-size:15px;margin-right:2px}
+ * 下方 .st-trophy 是奖杯图标尺寸，属本页特有，保留（§160 起内为金渐变 SVG，16px 与 datechart KPI §147 定稿基准一致）。 */
+.st-trophy{font-size:16px;margin-right:2px;display:inline-flex;align-items:center;vertical-align:-2px}
 /* 通算战绩 [73-70-69-466]：**格式保留连字符**，四段底色连成「一整条」——
  * 各段底色按名次不同，接缝由连字符自身承担「上一色 → 下一色」的线性渐变，
  * 因此底色连续、过渡柔和无硬边；圆角只留在整条两端（首段左圆 / 末段右圆），中缝直角。 */

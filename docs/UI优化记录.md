@@ -1545,3 +1545,19 @@ window.YJ_ECHARTS = echarts;
 3. **verify 同步 + 修过期断言**：EXPECTED_KEYS 29 键、rawOk 加 wk/ub、[B] 对账补字段、[C2] 16→18 列断言。顺带修 verify 三处既有漂移（HEAD 基线就在挂，非本次引入）：① stub el() 缺 `classList` → 页面 render/fadeIn 中途抛错、[C] 段明细全空；② 页面「週」已汉化「周」→ 5 处标签断言；③ trophy emoji 已换内联 SVG → 2 处 KPI 断言改正则。**112 断言 ALL PASS**。
 
 **验证**：build ✓（dist datechart.json 29 键含 wk/ub）；Edge 无头截图 datechart 明细——枠番/馬番列数据在位（枠8 馬15 斤55 序列正常）。
+
+## §160 · 奖杯统一为金渐变 SVG +「金光闪闪」辉光（2026-11-01 凌晨）
+
+**背景**：两页重赏奖杯图案不一致——stats.html KPI 仍是彩色 🏆 emoji（15px），datechart.html 已是 §146-5 的单色 currentColor SVG。用户拍板统一为 SVG，并加「金光闪闪」效果。
+
+**方案（两层质感）**：
+1. **金色渐变填充（金属质感）**：TROPHY SVG 内嵌 `linearGradient#yj-tg`（微对角 x2=.2）：亮金 `#fde68a` → `#fbbf24` → 基线金 `#e8a013`（沿用 §146-5 原 currentColor 定的亮金，视觉延续）→ 深金 `#d97706`。多实例重复 id 由浏览器取首个解析，defs 逐字节相同无视觉差。
+2. **辉光呼吸动画（闪闪）**：theme.css 末尾 `.yj-trophy{animation:yjTrophyShine 2.6s ease-in-out infinite}`（@layer 外防候选裁剪）——金色 `drop-shadow` 双层辉光脉冲 + 高光段 `brightness(1.12)` 提亮；`prefers-reduced-motion` 时静止（与全站动画约定一致）。
+
+**改动点**：
+- `datechart.html`：TROPHY 常量升级金渐变版（KPI/明细胜格 dc-gw/月卡 dc-ym-top 三处共用点自动生效）。
+- `stats.html`：新增逐字节相同的 TROPHY 副本（仅 2 页，§48 门槛内不抽离，注释互指），KPI「重赏胜利」emoji → SVG；`.st-trophy` 15px → 16px 并补 `inline-flex/vertical-align:-2px`（对齐 datechart KPI §147 的 16px 用户定稿基准）。
+- `theme.css`：追加 §160 动画块。
+- `verify_stats.cjs`：KPI 重赏断言由写死 emoji 字符串改为与 verify_datechart 同款正则（svg 前缀匹配 + 尾部数字比对）。
+
+**验证**：build ✓（dist theme CSS 含 `yjTrophyShine`/`.yj-trophy`；两页 SVG 常量在；🏆 两页 0 残留）；`verify_stats.cjs` 211 通过 · `verify_datechart.cjs` 112 ALL PASS。
