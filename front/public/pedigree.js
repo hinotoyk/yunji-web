@@ -121,8 +121,12 @@ YJ.pedigree = (function () {
   .pcell:not(.inline) .meta{font-size:7.5px;margin-top:0}
 }
 .pcell{min-width:0;padding:2px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;cursor:pointer;background:#fff}
-.pcell.m{background:#e9f1f7}
-.pcell.f{background:#f8eeee}
+/* 父系/母系配色 = 基本信息性别徽章全站基准（profile sexBadge / theme.css §性别三等分列同源）：
+ * 牡蓝 #C9EFFE/#0B5A8C · 牝粉 #FFDBD5/#B03A30（2026-10-31 用户要求统一，替换旧 #e9f1f7/#f8eeee） */
+.pcell.m{background:#C9EFFE}
+.pcell.f{background:#FFDBD5}
+.pcell.m .name{color:#0B5A8C}
+.pcell.f .name{color:#B03A30}
 .pcell.x{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.02) 6px,rgba(0,0,0,.02) 12px);cursor:default}
 .pcell .name{font-weight:600;color:#0a0a0a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcell .meta{color:#737373;white-space:nowrap}

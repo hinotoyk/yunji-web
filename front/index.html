@@ -25,6 +25,13 @@
      由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
      （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/UI优化记录.md §97（§85 不蒜子 → §87 Vercount）。 -->
 <script src="yj-visit.js?v=3"></script>
+<!-- 全屏浮层渲染端（§149.2，2026-10-31）：内容页都在外壳 iframe 里，页内 fixed 遮罩只能盖到内容区、
+     盖不到左侧栏（血统图弹窗「一边遮住一边没盖住」的根因）。约定：内容页把弹窗/灯箱请求
+     postMessage 给外壳，由外壳在顶层文档渲染 → 遮罩真正全屏。渲染依赖：
+     yj-util(esc) + pedigree(openModal) + lightbox(照片放大，§149.3)。直开子页（无外壳）时各页自行本地兜底。 -->
+<script src="yj-util.js" defer></script>
+<script src="pedigree.js" defer></script>
+<script src="lightbox.js" defer></script>
 <!-- 「友情档案」三站互跳（yunji / kzn / jbis；方案说明 = docs/友情跳转方案.md）：
      挂载点在侧栏底部（桌面常驻 + 手机抽屉内），渲染由 public/friend-links.js 完成，
      版本戳由 auto-version 插件自动补。脚本缺失/渲染失败时挂载点保持空白，无占位观感。 -->
@@ -228,12 +235,19 @@ document.getElementById('frame').addEventListener('load',function(){
    只认内容 iframe 自己发来的消息（e.source 比对），外域伪造无效。 */
 window.addEventListener('message',function(e){
   var d=e&&e.data;
-  if(!d||d.type!=='yj:page'||e.source!==frameEl.contentWindow) return;
-  if(d.page==='edit-table'){
-    var navid=d.sheet==='races'?'etb-races':'etb-basic';
-    var hit=items.filter(function(it){ return it.dataset.navid===navid; });
-    if(hit.length) light(hit[0]);
+  if(!d||e.source!==frameEl.contentWindow) return;
+  if(d.type==='yj:page'){
+    if(d.page==='edit-table'){
+      var navid=d.sheet==='races'?'etb-races':'etb-basic';
+      var hit=items.filter(function(it){ return it.dataset.navid===navid; });
+      if(hit.length) light(hit[0]);
+    }
+    return;
   }
+  /* 全屏浮层请求（§149.2）：血统完整弹窗 / 照片灯箱，都在外壳层渲染（遮罩全屏含侧栏）。
+   * 渲染后把焦点从 iframe 归还顶层：否则 Esc/←→ 键盘事件仍发给 iframe，外壳监听收不到 */
+  if(d.type==='yj:pedigreeFull' && window.YJ && YJ.pedigree){ YJ.pedigree.openModal(d.ped,d.title); try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){} }
+  else if(d.type==='yj:lightbox' && window.YJ && YJ.lightbox){ YJ.lightbox.open(d.photos,d.index); try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){} }
 });
 </script>
 </body>
