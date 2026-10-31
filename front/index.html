@@ -244,6 +244,17 @@ window.addEventListener('message',function(e){
     }
     return;
   }
+  /* 子页筛选状态回写（RACES ?f= 持久化，2026-11-01）：内容页 replaceState 改的是 iframe 自身
+   * URL（外显不可见、复制分享的是顶层地址）→ 子页发 yj:url 请外壳把顶层 ?page= 刷成当前
+   * 子页地址（含 ?f=）。只认内容 iframe 来源（e.source 比对），url 白名单校验同 ?page= 直达。 */
+  if(d.type==='yj:url' && typeof d.url==='string' && /^pages\/[\w.-]+\.html(\?|$)/.test(d.url)){
+    try{
+      var u2=new URL(d.url,location.href);
+      var pn2=u2.pathname; if(!/\.html$/.test(pn2)) pn2+=".html";
+      history.replaceState(null,"",location.pathname+"?page="+encodeURIComponent(pn2+u2.search)+(EDIT_MODE?"&edit=1":""));
+    }catch(err){}
+    return;
+  }
   /* 全屏浮层请求（§149.2）：血统完整弹窗 / 照片灯箱，都在外壳层渲染（遮罩全屏含侧栏）。
    * 渲染后把焦点从 iframe 归还顶层：否则 Esc/←→ 键盘事件仍发给 iframe，外壳监听收不到 */
   if(d.type==='yj:pedigreeFull' && window.YJ && YJ.pedigree){ YJ.pedigree.openModal(d.ped,d.title); try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){} }

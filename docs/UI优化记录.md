@@ -1561,3 +1561,54 @@ window.YJ_ECHARTS = echarts;
 - `verify_stats.cjs`：KPI 重赏断言由写死 emoji 字符串改为与 verify_datechart 同款正则（svg 前缀匹配 + 尾部数字比对）。
 
 **验证**：build ✓（dist theme CSS 含 `yjTrophyShine`/`.yj-trophy`；两页 SVG 常量在；🏆 两页 0 残留）；`verify_stats.cjs` 211 通过 · `verify_datechart.cjs` 112 ALL PASS。
+
+## §161 · RACES 筛选：新增 后3F 维度 + 三项面板优化（2026-11-01 凌晨，用户点名）
+
+**背景**：用户要求 RACES 独立模式筛选①新增「后3F」维度（金末脚/银末脚/铜末脚 + <33/33-34/>34，边界 33-34 含 33 与 34）；②评估筛选面板剩余优化空间。优化三项经用户多选拍板：已选条件摘要 + URL 同步、chip 命中场数、金银铜语义配色（折叠方案未选，未做）。
+
+### 1. 后3F 维度（races.html）
+
+- **双口径一维**：金/银/铜 = 末脚徽章（该场全场上がり3F 密集排名 1/2/3，SCHEMA §末脚 同口径）；<33 / 33-34 / >34 = 上り 绝对用时桶（`agariBucket`，parseFloat；缺失/非数不入桶）。同维度多选=OR（金银铜与数值档可混选）。
+- **实现**：FLT/DIM_KEYS 增 `agari`；匹配判定抽 `dimHit(en,k,v)` 单值命中（matchEntry/facetCounts 共用，改口径只改一处）；`matchEntryX(en,skip)` 支持跳过指定维度；`validFilterValue` 增 AGARI_OPTS 白名单 → 统计页 `?f=agari:金` 下钻直接可用。
+- **行位**：着顺之后、级别之前，wide 独行（避免半列空洞）。
+
+### 2. 面板三项优化
+
+1. **chip 命中场数（faceted）**：每枚 chip 尾部小数字 = 「除本维度外其它已选条件」过滤后的命中数（`facetCounts(key,opts)` 单维度一次扫描）；0 命中整枚置灰（仍可点，选中无记录场=空结果口径一致）。chip 行（跑道/场地/马场/距离/方向/年份×2/性别/着顺/后3F/级别/竞马场×3）全覆盖；搜索下拉维度不加（下拉本身已有 n 计数）。
+2. **已选条件摘要条**：filter-head 与筛选卡之间一行「已选 N 项」+ 全维度已选值胶囊（含 chip 维度与搜索下拉维度，值显示名经 `DIM_LABEL`/`dimValLabel` 换算），× 直接删。胶囊删除统一走 renderFilters 整体重建（摘要/底行 chip/下拉排除三处同步；bindFilters 原先「selector 标签只刷局部」与「出走马局部刷新」两条路径合并为一条）。
+3. **金银铜 chip 语义配色**：与结果表 上り 徽章 yj-no1/2/3 同色系——未选中左侧色点（金 #e2cc38/银 #87aee6/铜 #dca167），选中整枚换语义色底黑字（#ffef7f/#cbdeff/#efc79f），类名 `ag-gold/ag-silver/ag-bronze`（chip() 内 key+v 判定注入，特异性 3 类压过 .filter-chip.on）。
+
+### 3. 筛选状态 ↔ URL 双向持久化（含回壳协作）
+
+- **格式**：`?f=k:v,k:v` 与统计页下钻同一格式（本来只进不出，现双向）。
+- **独立打开（含 embed=1 直链）**：`syncURL()` 在 renderResults 顶部 replaceState 本窗 URL（不产生历史条目；空筛选删参）。
+- **回壳后（rehome 进 index.html iframe）**：子页 URL 不外显、复制分享的是顶层地址 → 子页 postMessage `{type:"yj:url", url:"pages/races.html?f=…"}`，外壳（index.html message 监听）经 e.source 比对 + `/^pages\/[\w.-]+\.html(\?|$)/` 白名单后，把顶层 `?page=` replaceState 成当前子页地址（edit=1 时保留）。刷新/重开 → ?page= 直达机制把 ?f= 透传进 iframe → URL_F 预置还原。
+- 摘要条命中数等即时重算，URL 不含分页页码（PG 仍是会话态）。
+
+**验证**：build ✓（dist races.html 含 agariBucket/facetCounts/syncURL、races CSS 含 ag-*/chip-n/filter-sum）；Edge 无头冒烟（tests/.pw/agari-verify.js，msedge channel + frameLocator）：6 chip 计数 金100/银108/铜100/<33:3/33-34:82/>34:750 ✓；点金末脚 849→100 且 chip `filter-chip on ag-gold` ✓；叠加一着 AND ✓、顶层 URL 回写 `?page=…%3Ff%3D…` ✓；带 URL 重开 chip on 态+摘要 2 胶囊全还原 ✓；摘要条 × 删除同步 chip 与 URL ✓；无 JS 报错。截图 tests/_agari-filter.png 目检：色点/选中配色/计数/摘要条排版正常。
+
+## §162 · RACES mb 端高级筛选折叠（2026-11-01，用户点名）
+
+**背景**：mb 端筛选行太多（20+ 行全量展开首屏占满）。用户定稿：默认展示 出走马/跑道/场地/马场/距离/性别/着顺/后3F/级别 共 9 行，其余收进「高级筛选」。
+
+**实现（races.html + races-page.css）**：
+- 行集二分：`primaryRows`（常用 9 行）/ `advRows`（赛道方向/出生年份/比赛年份/竞马场×3/人气/母父/骑手/调教师/生产牧场/马主/体重）。**仅 mb 渲染**时把 advRows 包进 `.f-adv` 折叠区（默认 `display:none`，`.open` 才显示）；PC 平铺不产生包裹，行为零变化。
+- 开合状态：`ADV_MANUAL`（null=自动：隐藏维度有已选值即展开，如 `?f=year:2026` 下钻自动展开；用户点过 #fAdv 后固定 true/false）。按钮文案带已选数徽标（`高级筛选 · N ▾/▴`），N = 隐藏维度已选值总数。
+- 摘要条照常显示隐藏维度已选值（收起也能看到/删除）。#fAdv 只重建筛选条不动结果。
+- 设备切换补 `renderFilters()`：mb/PC 行集不同，翻转（转屏/跨 768px）时重建筛选条（此前只重渲染结果表）。
+
+**验证**：build ✓；tests/.pw/mb-adv-verify.js（Edge 无头 390px）：默认折叠（赛道方向/竞马场不可见、出走马/后3F 可见）✓；点开/收起 ✓；`?f=year:2026` 自动展开+徽标「高级筛选 · 1」✓；摘要条在折叠态可见 ✓；转 1440px 后 #fAdv 消失、全行平铺 ✓；无 JS 报错。截图 tests/_mb-filter.png。
+
+**§162 位置修正（用户实测反馈）**：「高级筛选」按钮从 filter-head 移到**筛选卡底部整行**（常用 9 行末尾、级别行下方）——放头部不显眼，用户圈定要放在常用行收尾处。样式改为虚线边框整行按钮（`.f-adv-btn{grid-column:1/-1;height:34px;border:1px dashed}`），展开后高级行出现在按钮下方；文案徽标/自动展开逻辑不变。build ✓ + mb-adv-verify 全过 + 截图目检落位。
+
+**§162 行集追加（用户追加定稿）**：mb 默认行再收两项——马场、后3F 也进高级筛选折叠区，mb 默认只留 7 行（出走马/跑道/场地/距离/性别/着顺/级别），折叠区内保持卡片相对顺序（马场、后3F 在赛道方向之前）；PC 全行平铺不变。build ✓ + mb-adv-verify 全过 + 截图目检。
+
+## §163 · 金银铜 chip 色点与 tooltip 箭头伪元素冲突（2026-11-01，用户实测反馈）
+
+**现象**：金银铜 chip 鼠标悬停出 tooltip 时，左侧色点跳位/样式突变。
+
+**根因**：chip tooltip 的气泡箭头本就占用 `.filter-chip[data-tip]:hover::before`（border 三角），§161 给金银铜色点也用了 `::before` —— hover 时箭头规则特异性更高（3 类+attr+:hover > 2 类），把色点伪元素整个顶掉换成箭头，色点消失导致布局跳动。
+
+**修复**：色点改真实元素 `span.chip-dot`（chip() 内金银铜注入，CSS `.filter-chip.ag-* .chip-dot` 上色），`::before` 让还给 tooltip 箭头。规则照旧：**同一元素上自定义伪元素与既有 tooltip/浮层伪元素互斥，装饰一律用真实节点**。
+
+**验证**：build ✓；Edge 无头（tests/.pw/dot-verify.js）hover 前后色点 boundingBox 逐字节一致 ✓、chip 尺寸不变 ✓、tooltip 气泡+箭头正常 ✓；截图 tests/_dot-hover.png 目检。

@@ -2636,7 +2636,7 @@ YJ.editor = (function () {
       "</div>" +
       (state.savedOpen
         ? '<div class="space-y-1.5 p-2">' +
-            '<input id="savedQ" type="text" value="' + esc(state.savedQ) + '" placeholder="按马名检索改了什么…" autocomplete="off" class="' + INPUT + ' h-8 w-full font-normal">' +
+            '<input id="savedQ" type="text" value="' + esc(state.savedQ) + '" placeholder="按 马名 / 译名 / #编号 过滤（例：ヴァル、#003）" autocomplete="off" class="' + INPUT + ' h-8 w-full font-normal">' +
             pinsHTML() +
           "</div>"
         : "")
@@ -2710,7 +2710,7 @@ YJ.editor = (function () {
           '<span class="' + TIP + '">线上生效中（不被自动更新覆盖；已叠加本浏览器未提交草稿）</span>' +
           '<span class="ml-auto text-[11px] font-semibold tabular-nums text-muted-foreground">' + pinN + " 匹</span>" +
         "</div>" +
-        '<input data-draftq type="text" value="' + esc(state.savedQ) + '" placeholder="按马名 / NK-ID 检索改了什么…" autocomplete="off" class="' + INPUT + ' mt-3 w-full font-normal">' +
+        '<input data-draftq type="text" value="' + esc(state.savedQ) + '" placeholder="按 马名 / 译名 / #编号 过滤，支持部分匹配（例：ヴァル、#003）" autocomplete="off" class="' + INPUT + ' mt-3 w-full font-normal">' +
         '<div class="mt-2">' + (pinsHTML() || '<div class="py-2 text-[12px] text-muted-foreground">还没有已保存的人工值。</div>') + "</div>" +
       "</div>";
   }

@@ -31,6 +31,12 @@
 .filter-title::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:#0aa7a0;margin-right:8px;vertical-align:-2px}
 .f-reset{margin-left:auto;border:1px solid #e5e5e5;border-radius:8px;padding:4px 12px;font-size:12px;color:#737373;background:#fff;cursor:pointer;transition:all .15s}
 .f-reset:hover{border-color:rgba(239,68,68,.55);color:#ef4444;background:#fef2f2}
+/* 高级筛选折叠（§162，仅 mb 渲染）：默认行之外的行收进 .f-adv，#fAdv 切换 open；
+ * 按钮放常用行末尾（筛选卡底部整行，§162 用户指正：放头部不显眼），展开后高级行在其下方 */
+.f-adv{display:none}
+.f-adv.open{display:block}
+.f-adv-btn{grid-column:1/-1;height:34px;margin-top:4px;border:1px dashed #e0e0e0;border-radius:8px;background:#fff;color:#737373;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.f-adv-btn:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
 .filter-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:14px 16px 10px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
 .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px}
 @media (max-width:768px){.filter-grid{grid-template-columns:1fr}}
@@ -42,6 +48,23 @@
 .filter-chip:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
 .filter-chip.on{border-color:#0aa7a0;background:#e6f6f5;color:#0b6b64;font-weight:600;box-shadow:inset 0 0 0 1px #0aa7a0}
 .filter-chip.on:hover{background:#d9f1ef}
+/* chip 命中场数（§161）：chip 内尾部小数字，faceted 口径（除本维度外）；0 命中整枚置灰（仍可点） */
+.filter-chip .chip-n{margin-left:5px;padding-left:6px;border-left:1px solid currentColor;font-size:10px;font-weight:400;opacity:.55}
+.filter-chip.zero{opacity:.4}
+.filter-chip.zero .chip-n{opacity:.8}
+/* 后3F 金银铜 chip（§161/§162.2）：与结果表 上り 徽章 yj-no1/2/3 同色系（1着黄/2着蓝/3着橙）——
+ * 未选中=左侧色点提示，选中=整枚换语义色（黑字，同徽章）。
+ * ⚠ 色点用真实元素 .chip-dot，不能用 ::before —— tooltip 箭头占用 :hover::before，会顶掉色点 */
+.filter-chip .chip-dot{width:8px;height:8px;border-radius:50%;margin-right:5px;flex:none}
+.filter-chip.ag-gold .chip-dot{background:#e2cc38}
+.filter-chip.ag-silver .chip-dot{background:#87aee6}
+.filter-chip.ag-bronze .chip-dot{background:#dca167}
+.filter-chip.ag-gold.on{border-color:#e2cc38;background:#ffef7f;color:#000;box-shadow:inset 0 0 0 1px #e2cc38}
+.filter-chip.ag-silver.on{border-color:#87aee6;background:#cbdeff;color:#000;box-shadow:inset 0 0 0 1px #87aee6}
+.filter-chip.ag-bronze.on{border-color:#dca167;background:#efc79f;color:#000;box-shadow:inset 0 0 0 1px #dca167}
+/* 已选条件摘要条（§161）：标题与筛选卡之间的胶囊汇总，× 直接删 */
+.filter-sum{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
+.filter-sum .fs-lab{flex:none;font-size:11px;font-weight:700;letter-spacing:.5px;color:#8a8a8a;text-transform:uppercase}
 .filter-grp{flex:none;align-self:center;margin-right:2px;padding:2px 8px;border-radius:6px;background:#f2f4f5;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#7a7a7a;text-transform:uppercase}
 /* ===== 出走马筛选（tag 型多选）：已选马胶囊；搜索添加复用 public/selector.js 组件（compact+multi） ===== */
 .f-tag{display:inline-flex;align-items:center;gap:1px;height:26px;padding:0 3px 0 11px;border:1px solid #0aa7a0;border-radius:7px;background:#e6f6f5;color:#0b6b64;font-size:12px;font-weight:600;white-space:nowrap}
