@@ -56,6 +56,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../loading.js"></script>
 <script src="../i18n.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../site-config.js"></script>
@@ -74,6 +75,14 @@
  *       点日历格下钻（月/周 → 天，年 → 月）；‹ › 按口径步进（天±1日 / 周±7日 / 月±1月 / 年±1年），
  *       边界自动禁用。明细 = races.html 内嵌比赛表同款（PC 14 列表 + mb 软分行卡片）。 */
 var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js（原页内副本 > 分支已漂移为无操作，此处一并修正） */
+/* 初始占位（§169 统一加载态）：datechart.json 取数期间 cal/kpis/dBody 给全局 spinner
+ * （三个渲染入口均整体 innerHTML 覆写，占位可安全被覆写；loading.js 缺失退回 HTML 纯文案）。 */
+if (window.YJ && YJ.ui && YJ.ui.spin) {
+  ["cal", "kpis", "dBody"].forEach(function (id) {
+    var n = document.getElementById(id);
+    if (n) n.innerHTML = YJ.ui.spin({ label: "正在加载数据…", sm: id !== "cal" });
+  });
+}
 function pad2(n){return n<10?"0"+n:""+n;}
 
 /* ---- 渲染就绪出走记录：fetch data/datechart.json（scripts/datechart/build_datechart.py 预计算，

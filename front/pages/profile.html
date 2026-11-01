@@ -91,10 +91,10 @@ function animateCounts(root){
   requestAnimationFrame(step);
 }
 
-/* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「回编辑台 ↗」等直跳编辑页的入口
-   仅 URL 带 ?edit=1 时出现 —— 与外壳 index.html「编辑」导航组同一开关
-   （外壳加载子页时把 edit=1 透传进 iframe；直接开本页也可自行拼接）。 */
-var EDIT_MODE = YJ.util.qs("edit") === "1";
+/* 编辑入口默认不进视野（2026-10-02 用户定稿；§160 改版）：本页「回编辑台 ↗」等直跳编辑页的入口
+   仅在编辑模式开启时出现 —— 开关单一出处 = YJ.util.editUnlocked()（本站仓库 PAT 已验证存机）。
+   iframe 与外壳同源共享 localStorage，直开本页与回壳内嵌判定一致；?edit=1 URL 开关已废除。 */
+var EDIT_MODE = YJ.util.editUnlocked();
 
 /* ── 编辑台草稿叠加（2026-09 预览定稿）：读 editor.js 草稿箱（localStorage，键同源）──
  * 把本马未提交的五字段改动叠加在 basic 值上渲染 + 页顶「草稿预览」提示条；

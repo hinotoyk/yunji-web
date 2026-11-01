@@ -64,8 +64,12 @@
         <div class="seg" id="srkDivSeg"></div>
         <div class="st-legend" id="srkLegend"></div>
       </div>
-      <div class="yj-kpis" id="srkKpis"></div>
-      <div id="srkChart" class="mt-3"></div>
+      <div class="yj-kpis transition-opacity duration-200" id="srkKpis"></div>
+      <!-- §169：固定占位 + 浮层 loading —— 切维度/切板不再清空重画（旧版 innerHTML=spinner，
+           图表整块闪没再闪回）。首次渲染后按实测图高锁定 min-height（图高 = 组件 heights 配置
+           主图180+增量70+标注/轴区，约 330px，min-h 只兜首次取数期）；浮层盖在 wrap 上
+           （JBIS render 会整体重写 #srkChart，浮层必须是兄弟节点才不会被一并清掉）。 -->
+      <div id="srkWrap" class="relative mt-3 min-h-[320px]"><div id="srkChart"></div></div>
     </div>
   </section>
 
@@ -824,8 +828,29 @@ function srkKpis(data) {
     kpiHTML("最新快照", last.date ? last.date.slice(5).replace("-", "/") : "—", "dim");
 }
 var srkSeq = 0;
+/* §169 浮层 loading（常驻引用；node 门禁 stub 无 createElement → 跳过，chart 内容断言不依赖它）：
+ * 盖在 srkWrap 上而不是 srkChart 里 —— JBIS render 整体重写 #srkChart，浮层作兄弟节点才安全。 */
+var srkOv = null, srkLoaded = false;
+function srkLoading(on) {
+  if (typeof document.createElement !== "function") return;
+  var wrap = document.getElementById("srkWrap");
+  if (!wrap) return;
+  if (on) {
+    if (srkOv && srkOv.parentNode) srkOv.parentNode.removeChild(srkOv);
+    srkOv = document.createElement("div");
+    srkOv.className = "absolute inset-0 z-10 flex items-center justify-center rounded-[10px] bg-background/80";
+    srkOv.innerHTML = (window.YJ && YJ.ui && YJ.ui.spin)
+      ? YJ.ui.spin({ label: "加载种马榜走势…" })
+      : '<div class="hint-empty">読み込み中…</div>';
+    wrap.appendChild(srkOv);
+  } else if (srkOv && srkOv.parentNode) {
+    srkOv.parentNode.removeChild(srkOv);
+    srkOv = null;
+  }
+}
 function renderSireRank() {
   var el = document.getElementById("srkChart");
+  var kpis = document.getElementById("srkKpis");
   var board = srkBoard(), seq = ++srkSeq;   /* 过期渲染丢弃：切板后迟到的旧数据不回写 */
   document.getElementById("srkDimSeg").innerHTML = SRK_DIMS.map(function (d) {
     return '<button type="button" data-d="' + d.k + '" data-on="' + (SRK.dim === d.k ? "true" : "false") +
@@ -835,11 +860,14 @@ function renderSireRank() {
     return '<button type="button" data-v="' + d.k + '" data-on="' + (SRK.div === d.k ? "true" : "false") + '">' + d.l + '</button>';
   }).join("");
   srkLegend();
-  document.getElementById("srkKpis").innerHTML = "";
-  /* 跨站组件 + 跨站数据，冷加载可感（§149）：全局 spinner 占位（loading.js 缺失退回纯文案） */
-  el.innerHTML = (window.YJ && YJ.ui && YJ.ui.spin)
-    ? YJ.ui.spin({ label: "加载种马榜走势…" })
-    : '<div class="hint-empty">読み込み中…</div>';
+  /* §169：首载 KPI 区给 spinner 占位；切板期间保留旧值仅半透明示意（不再清空 → 数字不闪没） */
+  if (!srkLoaded) {
+    kpis.innerHTML = (window.YJ && YJ.ui && YJ.ui.spin) ? YJ.ui.spin({ label: "加载中…", sm: true }) : "";
+  } else {
+    kpis.classList.add("opacity-50");
+  }
+  /* 图表区不清空：旧图原位保留（首载为空），浮层示意加载中 → 数据到位后原位换新 */
+  srkLoading(true);
   Promise.all([YJ.cache.fetch("sireRank", { arg: board }), srkEmbed()]).then(function (r) {
     if (seq !== srkSeq) return;
     window.JBIS_RANK_EMBED.render(el, r[0], {
@@ -848,9 +876,19 @@ function renderSireRank() {
       colors: SRK_COLORS,
       labels: { prize: "赏金", rank: "名次", delta: "单日增量", empty: "暂无快照数据" }
     });
+    /* 高度锁定（§169）：首次渲染成功后按实测图高锁 wrap 的 min-height → 后续切板浮层期不再塌陷/跳动 */
+    var wrap = document.getElementById("srkWrap");
+    if (wrap && !wrap.style.minHeight && el.offsetHeight > 120) wrap.style.minHeight = el.offsetHeight + "px";
     srkKpis(r[0]);
+    kpis.classList.remove("opacity-50");
+    srkLoaded = true;
+    srkLoading(false);
   }).catch(function (e) {
     if (seq !== srkSeq) return;
+    srkLoading(false);
+    kpis.classList.remove("opacity-50");
+    var wrap = document.getElementById("srkWrap");
+    if (wrap) wrap.style.minHeight = "";   /* 错误态不锁高，提示文案自然撑开 */
     el.innerHTML = '<div class="hint-empty">数据加载失败（' + esc(e.message || "网络异常") +
       '） · <button type="button" id="srkRetry" class="underline text-primary">重试</button></div>';
     document.getElementById("srkRetry").addEventListener("click", renderSireRank);
@@ -953,6 +991,11 @@ window.addEventListener("resize", function () {
   /* 首次取数占位（§149）：stats.json 冷加载期间数据概览卡不再空白（renderKpis 取数后整体覆写 #kpis） */
   var kl = document.getElementById("kpisLoad");
   if (kl && window.YJ && YJ.ui && YJ.ui.spin) kl.innerHTML = YJ.ui.spin({ label: "加载统计数据…", sm: true });
+  /* §169 统一加载态：概览卡其余两块同步占位（renderDistBar/renderRateBand 均整体 innerHTML 覆写，占位安全） */
+  ["distBar", "rateBand"].forEach(function (id) {
+    var n = document.getElementById(id);
+    if (n && window.YJ && YJ.ui && YJ.ui.spin) n.innerHTML = YJ.ui.spin({ label: "加载统计数据…", sm: true });
+  });
   renderSireRank();                                    /* 种马榜走势数据独立（JBIS 跨站引用），与 stats.json 并行加载 */
   YJ.cache.fetch("stats").then(function (data) {
     STATS = data;

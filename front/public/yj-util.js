@@ -141,6 +141,15 @@ YJ.util = (function () {
   function siteId() { return (window.YJ_SITE && YJ_SITE.id) || "yj"; }
   function storeKey(k) { return siteId() + "." + k; }
 
+  /* ---------------- 编辑模式开关（§160 · PAT 校验解锁） ----------------
+   * 语义 = 「本站仓库 PAT 已验证并存在本机」→ 编辑模式开启。单一判定出处：
+   * 外壳 index.html（注入编辑导航 / PAT 解锁对话框）与内容页（profile / timeline 的
+   * 编辑入口显隐）共用；2026-11-01 起 ?edit=1 URL 开关彻底废除。
+   * ⚠ 调用时求值（理由同 storeKey），且 iframe 与外壳同源共享 localStorage → 子页直开同样生效。 */
+  function editUnlocked() {
+    try { return !!((localStorage.getItem(storeKey("gh.token")) || "").trim()); } catch (e) { return false; }
+  }
+
   /* ---------------- 净效果等值（§154 · 编辑台草稿判脏的统一口径） ----------------
    * 背景：判脏散落 4 种写法（String 裸比 / photoKeys join / JSON.stringify 内联重复×2），
    * 收口为 canon 序列化 + 字符串比较。语义 = 「净效果是否与基线等值」：
@@ -164,7 +173,7 @@ YJ.util = (function () {
    * 2026-xx 收口单一出处 —— 升级草稿 schema 只改这一处，防双处字符串漂移。
    * defineProperty getter 惰性求值（理由见上），保持 YJ.util.DRAFT_KEY 属性形态 → 调用点零改动。 */
   var api = { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen,
-    siteId: siteId, storeKey: storeKey, canon: canon, effEqual: effEqual,
+    siteId: siteId, storeKey: storeKey, editUnlocked: editUnlocked, canon: canon, effEqual: effEqual,
     splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
     mainName: mainName, sexOf: sexOf, statusChain: statusChain };
   Object.defineProperty(api, "DRAFT_KEY", { get: function () { return storeKey("edit.drafts.v1"); } });

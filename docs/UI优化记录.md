@@ -1685,3 +1685,42 @@ window.YJ_ECHARTS = echarts;
 - 用户反馈：机械的两端对齐铺满不满意，**原自然流式排布挺好**，只需把字段左右间隔分开一些。
 - 改动：`theme.css` `.yj-mb-line` 回退 `display:block`（撤 flex/space-between），`.yj-mb-item` margin-right 12→20px。
 - 验证：build ✓（theme-v5wP16K1.css）；Edge 无头 390px（tests/.pw/mb-line-gap-verify.js）：行内字段间隔实测 20px、无 JS 报错；截图 tests/_mb-line-gap-v2.png 目检（自然左对齐 + 宽松间隔）。
+
+## §168 · 编辑模式入口改版：PAT 校验解锁，废除 ?edit=1 URL 开关（2026-11-01，用户提案）
+
+**背景**：`?edit=1` 开编辑模式不优雅。用户提案：主页放一个交互动作，输入正确 PAT 才进入编辑模式。评估结论：纯静态站本就无真闸门（编辑导航 template 明文在源码里、真闸门 = GitHub PAT），入口从「知道 URL」换成「持有 PAT」语义更自洽，安全模型不变，纯 UX 收益 → 采纳。
+
+**方案定稿（用户两选）**：触发 = **侧栏 logo 800ms 内三连点**；`?edit=1` **彻底移除**（不留兜底）。
+
+**改动**：
+1. `yj-util.js`：新增 `editUnlocked()` 单一判定出处 = 「本站仓库 PAT 已验证存机」（读 `storeKey("gh.token")`，站点前缀键，调用时求值）。外壳与内容页共用（§48：3 处使用达标抽离）。
+2. `index.html`：
+   - `EDIT_MODE` 由 URL 参数改为函数 `EDIT_MODE() = YJ.util.editUnlocked()`；删 `withEdit()` 透传（子页同源共享 localStorage 自读开关）；`yj:url` 回写的顶层 URL 不再附加 edit=1。
+   - **yj-util.js 改同步加载**（原 defer）：body 末内联脚本启动期要调 `YJ.util.editUnlocked()`，defer 会排在其后取不到。
+   - logo 挂 `#logoTap`；新增 `#editGate` 对话框（fixed 遮罩 + max-w-sm 卡片）：锁定态 = PAT 输入（password）+「验证并进入」；已解锁态 = 状态提示 +「退出编辑模式」（destructive 描边）+ Esc/点遮罩/「关闭」均收起。
+   - 校验 = GitHub API 真实验证 `GET /repos/hinotoyk/yunji-web`（fine-grained PAT 的 metadata:read 为必选权限）：200 = 有效且属本站仓库（**双站防串**：kzn 的 PAT 会被 403/404 拒绝）；401 = token 错；403/404 = 非本站仓库令牌；网络失败不改本地状态。通过后 token 写入 `gh.token`（**与编辑台「连接 GitHub」同一把键 → 编辑台无需再粘贴**）+ 注入编辑导航 + 重载当前 iframe（子页编辑入口立即出现）。退出 = 清 token + 撤导航 + 重载。
+   - 导航注入/撤除收口 `injectEditNav()/removeEditNav()`：均重建 items 并重挂点击（editNodes 记录注入节点整组可撤）。
+   - `EG_REPO` 常量与 editor.js `GH_REPO` 重复一份（外壳不加载 editor.js，注释互指同步）。
+3. `profile.html` / `timeline.html`：编辑入口判定改 `YJ.util.editUnlocked()`，URL 参数逻辑删除。
+
+**已知局限**：GET 校验只证「有读权限」，read-only PAT 能解锁但提交时会失败——编辑台既有提交错误处理已兜住，可接受。
+
+**验证**：build ✓（dist theme CSS 含 z-50/max-w-sm/bg-black\/40 等 6 个新类；dist index/profile/timeline 均含 editUnlocked、withEdit 0 残留）；内联脚本 node 语法 ✓；Edge 无头冒烟（临时 playwright + `--channel msedge` + route 拦截 api.github.com mock 401/200）**14 项全过**：默认无编辑导航 → 三连点呼出 → 假 PAT 401 报错 → mock 200 解锁后 token 落 `yunji.gh.token`（站点前缀实证）+ 导航注入 + iframe 内 EDIT_MODE=true + 航迹线页编辑入口可见 + 顶层 URL 无 edit=1 → 已解锁态/退出按钮 → 退出后 token 清除/导航撤除/子页 EDIT_MODE=false → Esc 关闭。**未 commit。**
+
+## §169 · 顶层 URL 同步收口 + 全页初始 loading 统一 + SIRE RANK 稳定占位（2026-11-01，用户三点反馈）
+
+**① 顶层 ？page= 为什么只刷比赛记录、还带 %2Fdist%2F**
+- 根因：只有 races.html 因 ？f= 持久化会 postMessage `yj:url`（§164），其余页从不回写 → 点其他导航 URL 不动；且外壳 yj:url 分支把相对地址经 `new URL()` 解析成绝对路径 `/dist/pages/...` 再编码 → `%2Fdist%2Fpages%2F...`（部署子路径烤进链接）。
+- 收口：外壳新增 `syncTopUrl(rel)`（topPageUrl 白名单 `^pages/[\w.-]+\.html` + 相对形态编码），三个来源统一走它 —— ① 侧栏 `go()` 点击即刷；② iframe load 回调回写实际地址（覆盖页内链接跳转 + 旧绝对路径深链自愈；顶层无 query 时不回写，首次进站保持干净地址）；③ 子页 `yj:url` 消息（不再自行解析）。
+- 效果：任意导航顶层 URL 都跟随当前子页（刷新/分享保状态）；URL 恒为 `?page=pages%2Fxxx.html` 相对形态。
+
+**② 初始 loading 只有个别页有**
+- 现状盘点：profile（血统图 frameSpin + spin）/races（spin×2）/stats（kpisLoad + SIRE RANK）有；timeline/datechart/leaderboard 只有纯文案或空白。
+- 统一：三页引入 loading.js，初始取数期给 `YJ.ui.spin`（守卫 `window.YJ && YJ.ui` 缺组件退回旧行为；datechart 门禁 stub 不加载 loading.js → 自动跳过不踩测试）。datechart 占 #cal/#kpis/#dBody、leaderboard 占 #kpis/#legend/#chart（#chart 首次 ECharts init 前本有 innerHTML="" 清占位，安全）、timeline 占 #body。stats 补 #distBar/#rateBand（renderDistBar/renderRateBand 均 innerHTML 覆写；#curve 是 ECharts 复用实例域、matTable 是 table 元素，均不塞占位）。
+
+**③ SIRE RANK 切世代/分类图表闪没**
+- 根因：renderSireRank 每次切板 `el.innerHTML = spinner` → 旧图整块消失、数据到位再闪回。
+- 改造：`#srkChart` 外包 `#srkWrap`（relative + min-h-[320px] 兜首载）；加载浮层挂 **wrap**（兄弟节点 —— JBIS render 会整体重写 srkChart，浮层放里面会被一并清掉）；切板不清空旧图，浮层（bg-background/80）盖住示意，KPI 保留旧值仅 opacity-50 半透明；渲染成功后按实测图高锁 wrap minHeight（后续切板不再塌陷）；失败态清 minHeight 显示错误+重试。
+- node 门禁兼容：`srkLoading` 以 `typeof document.createElement !== "function"` 判 stub 环境跳过（verify_stats 的 document 桩无 createElement，且 Promise executor 内抛错只变 rejection —— 现有 211 断言不受影响）。
+
+**验证**：build ✓；verify_stats 211·0 ✓、verify_datechart 112 ALL PASS ✓、verify_result 全过 ✓；verify_drill 58·2 —— 与改动无关的既有漂移（git stash 基线复跑同样 58·2）。Edge 无头冒烟（playwright --channel msedge + 路由延迟 600/700ms + addInitScript 禁 caches 强制走网络）**18 项全过**：URL 四项（相对形态/无 %2Fdist%2F/点击即刷/深链自愈）+ 三页 spinner 出现与撤除 + SIRE RANK 六项（首载浮层/渲染内容/高度锁定/切板旧图保留/浮层出现/KPI 半透明→恢复）+ 无 pageerror。**未 commit。**

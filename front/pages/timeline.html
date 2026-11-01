@@ -27,10 +27,16 @@
 <script src="../loading.js"></script>
 <script src="../lightbox.js"></script>
 <script>
-/* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「编辑 ↗」仅 URL 带 ?edit=1 时显示
-   —— 与外壳 index.html「编辑」导航组同一开关（外壳加载子页时把 edit=1 透传进 iframe）。
-   保持内联（不引 YJ.util.qs，F1.3）：头部极早执行的一行原生 URLSearchParams 开关，先于任何工具依赖。 */
-if(new URLSearchParams(location.search).get("edit")==="1"){ var ee=document.getElementById("editEntry"); if(ee) ee.classList.remove("hidden"); }
+/* 编辑入口默认不进视野（2026-10-02 用户定稿；§160 改版）：本页「编辑 ↗」仅编辑模式开启时显示
+   —— 开关单一出处 = YJ.util.editUnlocked()（本站仓库 PAT 已验证存机；iframe 与外壳同源共享
+   localStorage，直开本页与回壳内嵌判定一致）；?edit=1 URL 开关已废除。 */
+if(YJ.util.editUnlocked()){ var ee=document.getElementById("editEntry"); if(ee) ee.classList.remove("hidden"); }
+/* 初始占位（§169 统一加载态）：timeline.json 取数期间给全局 spinner（渲染入口整体覆写 #body；
+ * loading.js 缺失时保持 HTML 里的纯文案，与各页约定一致）。 */
+(function () {
+  var b = document.getElementById("body");
+  if (b && window.YJ && YJ.ui && YJ.ui.spin) b.innerHTML = YJ.ui.spin({ label: "正在加载时间线数据…" });
+})();
 /* ================= 时间线 · 里程碑事件页 =================
  * 数据：data/timeline.json —— 后端预计算（scripts/timeline/build_timeline.py 生成，
  *       run_update.py 各策略在数据更新后自动重算），前端只做渲染，不再实时计算。

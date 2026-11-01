@@ -28,8 +28,10 @@
 <!-- 全屏浮层渲染端（§149.2，2026-10-31）：内容页都在外壳 iframe 里，页内 fixed 遮罩只能盖到内容区、
      盖不到左侧栏（血统图弹窗「一边遮住一边没盖住」的根因）。约定：内容页把弹窗/灯箱请求
      postMessage 给外壳，由外壳在顶层文档渲染 → 遮罩真正全屏。渲染依赖：
-     yj-util(esc) + pedigree(openModal) + lightbox(照片放大，§149.3)。直开子页（无外壳）时各页自行本地兜底。 -->
-<script src="yj-util.js" defer></script>
+     yj-util(esc) + pedigree(openModal) + lightbox(照片放大，§149.3)。直开子页（无外壳）时各页自行本地兜底。
+     ★ yj-util 保持同步执行（§160）：body 末尾的内联脚本要在启动期调 YJ.util.editUnlocked() 判编辑模式，
+       defer 会排到内联脚本之后 → 外壳取不到 YJ.util。pedigree/lightbox 仍 defer（本就晚于它）。 -->
+<script src="yj-util.js"></script>
 <script src="pedigree.js" defer></script>
 <script src="lightbox.js" defer></script>
 <!-- 「友情档案」三站互跳（yunji / kzn / jbis；方案说明 = docs/友情跳转方案.md）：
@@ -46,7 +48,8 @@
            data-[open=true]:translate-x-0
            md:static md:z-auto md:w-[220px] md:translate-x-0 md:shadow-none md:transition-none">
     <div class="flex items-center gap-2.5 border-b border-border px-[18px] pb-3.5 pt-[18px]">
-      <div class="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">{{YJ_SITE_LOGO}}</div>
+      <!-- §160：logo 三连点（800ms 内）= 编辑模式解锁入口。不挂任何可见标识，公网访客不可能碰到。 -->
+      <div id="logoTap" class="flex h-[30px] w-[30px] cursor-pointer select-none items-center justify-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">{{YJ_SITE_LOGO}}</div>
       <div class="text-[15px] font-semibold tracking-[.5px]">{{YJ_SITE_NAME}}
         <small class="block text-[11px] font-normal tracking-[1px] text-secondary-foreground">{{YJ_SITE_SUBTITLE}}</small>
       </div>
@@ -76,10 +79,10 @@
         <span class="w-[18px] text-center text-[14px] opacity-90">✈️</span>航迹线
       </div>
 
-      <!-- 「编辑」分组：默认**完全不进 DOM**（template 不渲染），仅当外壳 URL 带 ?edit=1 时由下方脚本注入
-           —— 公网访客看不到入口（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案，D6 编辑动作只此一处）。
-           data-href 不含 query：iframe load 按 pathname 后缀匹配高亮，编辑页内部跳转也能保持高亮；
-           data-url 才是真正要加载的地址（带 ?sheet= 直达对应页签）。
+      <!-- 「编辑」分组：默认**完全不进 DOM**（template 不渲染），仅当编辑模式开启（本站 PAT 已验证，
+           §160）时由下方脚本注入 —— 公网访客看不到入口（OPTIMIZATION_PLAN §4.6 的 2026-09-21 改案，
+           D6 编辑动作只此一处）。data-href 不含 query：iframe load 按 pathname 后缀匹配高亮，
+           编辑页内部跳转也能保持高亮；data-url 才是真正要加载的地址（带 ?sheet= 直达对应页签）。
            2026-10-25 用户定稿：页内页签全部撤下，导航 5 条目全收侧栏；两条批量条目共用
            pages/edit-table.html（data-href 同、高亮靠 data-navid 区分 + ?sheet= 精确点亮）。 -->
       <template id="editNav">
@@ -128,6 +131,33 @@
     class="fixed inset-0 z-30 bg-black/35 opacity-0 invisible transition-opacity duration-200
            data-[show=true]:opacity-100 data-[show=true]:visible md:hidden"></div>
 
+  <!-- 编辑模式解锁对话框（§160，2026-11-01）：logo 三连点呼出。默认 hidden 零占位。
+       锁定态 = PAT 输入 + GitHub API 真实验证；已解锁态 = 显示状态 + 退出编辑模式。
+       PAT 即编辑台「连接 GitHub」同一把令牌（键 = YJ.util.storeKey("gh.token")），
+       验证通过即写入 → 编辑台无需再粘贴一次。 -->
+  <div id="editGate" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl">
+      <div class="mb-1 text-[15px] font-semibold">编辑模式</div>
+      <p class="mb-3 text-[12.5px] leading-relaxed text-muted-foreground">
+        <span id="egHintLock">粘贴本站仓库的 fine-grained PAT（仅 hinotoyk/yunji-web · Contents 读写），验证通过后进入编辑模式。令牌只保存在本机浏览器，不会发往 GitHub 以外的任何地方。</span>
+        <span id="egHintUnlock" class="hidden">编辑模式已开启（本站 PAT 已验证）。退出后编辑导航与各页编辑入口立即收起。</span>
+      </p>
+      <div id="egLockRow">
+        <input id="egToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"
+          class="mb-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-[13px] outline-none transition focus:border-ring">
+      </div>
+      <div id="egMsg" class="mb-3 hidden text-[12px] leading-relaxed"></div>
+      <div class="flex items-center justify-end gap-2">
+        <button id="egExit" type="button"
+          class="mr-auto hidden rounded-lg border border-destructive/40 px-3 py-1.5 text-[13px] font-medium text-destructive hover:bg-destructive/10">退出编辑模式</button>
+        <button id="egCancel" type="button"
+          class="rounded-lg px-3 py-1.5 text-[13px] text-muted-foreground transition hover:bg-muted/60 hover:text-foreground">关闭</button>
+        <button id="egGo" type="button"
+          class="rounded-lg bg-primary px-3.5 py-1.5 text-[13px] font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">验证并进入</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 内容区 -->
   <div class="flex min-w-0 flex-1 flex-col">
     <!-- 手机端顶栏：☰ 常驻左上，页面内容从其下方开始（固定不随滚动，不遮任何页面 UI）；
@@ -155,11 +185,18 @@
  *   GitHub Pages 与 CF Pages 均如此），于是内容页回壳时 location.pathname 已无 .html，
  *   算出 rel = "pages/races?f=…" —— 旧校验要求 /\.html$/ 会**拒绝**它并静默回落默认
  *   profile，表现为「下钻新开标签页却停在首页」。故这里先补回 .html 再校验，两种写法都收。 */
-/* 保持内联（不引 YJ.util.qs，F1.3）：外壳独立脚本树、不加载 yj-util；一行原生实现极早执行。 */
-var EDIT_MODE=new URLSearchParams(location.search).get("edit")==="1";
-/* 编辑模式（外壳 ?edit=1）透传进 iframe：内容页据此显示各自的编辑入口（不带则一律不可见，
-   2026-10-02 定稿）。子页已有 query 用 & 追加。 */
-function withEdit(href){ return EDIT_MODE ? href+(href.indexOf("?")>=0?"&":"?")+"edit=1" : href; }
+/* 保持内联（不引 YJ.util.qs，F1.3）：外壳独立脚本树、一行原生实现极早执行。 */
+/* 编辑模式开关（§160，2026-11-01）：?edit=1 URL 开关已彻底废除。
+   语义 = 本站仓库 PAT 已验证并存机（单一出处 YJ.util.editUnlocked()，键 gh.token 按站点前缀隔离）。
+   子页面各自调同一开关显隐编辑入口（同源 iframe 共享 localStorage），外壳不再向 iframe 透传任何参数。 */
+function EDIT_MODE(){ return YJ.util.editUnlocked(); }
+/* 顶层 ?page= 同步（§169）：导航后把顶层地址刷成当前子页 —— 统一写「相对形态 pages/xxx.html?query」
+ * （与 rehome 回壳/直开约定一致；旧版 yj:url 分支曾写 new URL 解析出的绝对路径 /dist/pages/...，
+ * encodeURIComponent 后变成 %2Fdist%2Fpages%2F... 难看、还把部署子路径烤进了分享链接）。
+ * 三个来源收敛到 syncTopUrl：① 侧栏点击 go()；② iframe 内链接跳转（load 事件回写）；
+ * ③ 子页 postMessage yj:url（races 筛选状态等不产生 load 的变化）。 */
+function topPageUrl(rel){ return /^pages\/[\w.-]+\.html(\?|$)/.test(rel) ? location.pathname+"?page="+encodeURIComponent(rel) : null; }
+function syncTopUrl(rel){ var u=topPageUrl(rel); if(u) history.replaceState(null,"",u); }
 var frameEl=document.getElementById("frame");
 var wantPage=new URLSearchParams(location.search).get("page");
 var wantSet=false;
@@ -174,17 +211,36 @@ if(wantPage){
     var pn=u.pathname;
     if(!/\.html$/.test(pn)) pn+=".html";
     if(u.origin===location.origin&&pn.indexOf("/pages/")>=0&&!suspicious&&/\.html$/.test(pn)){
-      frameEl.src=withEdit(pn+u.search); wantSet=true;
+      frameEl.src=pn+u.search; wantSet=true;
     }
   }catch(e){}
 }
-if(EDIT_MODE&&!wantSet) frameEl.src=withEdit(frameEl.getAttribute("src"));   /* 默认页（profile）也进编辑模式 */
+if(EDIT_MODE()&&!wantSet) frameEl.src=frameEl.getAttribute("src");   /* 默认页（profile）保持原样：编辑开关由子页自读 */
 var nav=document.querySelector("nav");
-/* 「编辑」分组：仅外壳 URL 带 ?edit=1 时把 template 注入导航（默认一行 DOM 都不产生 → 公网访客看不到入口）。
-   注入必须在收集 items 之前，两条编辑项才与既有五项同一套点击/高亮逻辑。 */
-var editTpl=document.getElementById("editNav");
-if(editTpl && EDIT_MODE) nav.appendChild(editTpl.content.cloneNode(true));
-var items=[].slice.call(document.querySelectorAll('.nav-item'));
+/* 「编辑」分组注入/撤除（§160）：编辑模式开启时把 template 注入导航（默认一行 DOM 都不产生 →
+   公网访客看不到入口）。注入/撤除都会改变 .nav-item 集合 → 统一走 collectItems() 重建并重挂点击；
+   editNodes 记录注入的节点，退出编辑模式时整组撤下。 */
+var nav_editNodes=[]; var items=[];
+function collectItems(){
+  items=[].slice.call(document.querySelectorAll('.nav-item'));
+  items.forEach(function(it){
+    it.addEventListener('click',function(){ go(it.dataset.url||it.dataset.href,it); });   /* data-url = 带 ?tab= 的真实地址；既有五项没有它 → 退回 data-href */
+  });
+}
+function injectEditNav(){
+  if(nav_editNodes.length) return;
+  var tpl=document.getElementById("editNav"); if(!tpl) return;
+  [].slice.call(tpl.content.cloneNode(true).childNodes).forEach(function(n){
+    if(n.nodeType===1){ nav.appendChild(n); nav_editNodes.push(n); }
+  });
+  collectItems();
+}
+function removeEditNav(){
+  nav_editNodes.forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
+  nav_editNodes=[]; active=null; collectItems();
+}
+if(EDIT_MODE()) injectEditNav();   /* 默认页（profile）也进编辑模式：子页自行读同一开关 */
+collectItems();
 var sidebar=document.getElementById('sidebar');
 var backdrop=document.getElementById('backdrop');
 var menuBtn=document.getElementById('menuBtn');
@@ -205,13 +261,11 @@ function light(it){
 }
 function go(href,it){
   frameEl.classList.add('loading');   /* 切页淡出（§5）：load 回调里摘掉 */
-  frameEl.src=withEdit(href);
+  frameEl.src=href;
+  syncTopUrl(href);                   /* §169：侧栏导航即刷顶层 ?page=（刷新/分享停在当前页） */
   light(it);
   closeDrawer();
 }
-items.forEach(function(it){
-  it.addEventListener('click',function(){ go(it.dataset.url||it.dataset.href,it); });   /* data-url = 带 ?tab= 的真实地址；既有五项没有它 → 退回 data-href */
-});
 /* 内容 iframe 内部跳转（如 比赛记录 → 基本信息）后，同步侧边栏高亮与当前页面一致。
    匹配只看 data-href（不含 query）→ 编辑页在 iframe 内切 tab 仍高亮；两条编辑项同为 edit.html 时
    优先保留用户刚点的那条，避免一次加载点亮两项。谁都不匹配 → 全部熄灭（与改造前一致）。 */
@@ -230,6 +284,16 @@ document.getElementById('frame').addEventListener('load',function(){
     hit=items.filter(function(it){ return path.slice(-it.dataset.href.length)===it.dataset.href; });
   }
   light(hit.length ? (hit.indexOf(active)>=0?active:hit[0]) : null);
+  /* §169：iframe 真实地址回写顶层 ?page=（顶层已有 query 才回写 → 首次进站保持干净地址）。
+     覆盖两类场景：页内链接跳转（如 比赛记录 → 基本信息）；旧版写进 URL 的绝对路径
+     形态（?page=%2Fdist%2F...）在下次导航时自愈成相对形态。 */
+  if(location.search){
+    try{
+      var wl=this.contentWindow.location;
+      var mp=String(wl.pathname).match(/(pages\/[\w.-]+\.html)$/);
+      if(mp) syncTopUrl(mp[1]+(wl.search||""));
+    }catch(e){}
+  }
 });
 /* 页内页签切换不产生 iframe load（批量表格 切 基本信息/比赛记录 页签）→ 内容页 postMessage 同步高亮。
    只认内容 iframe 自己发来的消息（e.source 比对），外域伪造无效。 */
@@ -246,13 +310,10 @@ window.addEventListener('message',function(e){
   }
   /* 子页筛选状态回写（RACES ?f= 持久化，2026-11-01）：内容页 replaceState 改的是 iframe 自身
    * URL（外显不可见、复制分享的是顶层地址）→ 子页发 yj:url 请外壳把顶层 ?page= 刷成当前
-   * 子页地址（含 ?f=）。只认内容 iframe 来源（e.source 比对），url 白名单校验同 ?page= 直达。 */
+   * 子页地址（含 ?f=）。只认内容 iframe 来源（e.source 比对），url 白名单校验同 ?page= 直达。
+   * §169：回写收敛到 syncTopUrl（统一相对形态，不再经 new URL 解析成 /dist/ 绝对路径）。 */
   if(d.type==='yj:url' && typeof d.url==='string' && /^pages\/[\w.-]+\.html(\?|$)/.test(d.url)){
-    try{
-      var u2=new URL(d.url,location.href);
-      var pn2=u2.pathname; if(!/\.html$/.test(pn2)) pn2+=".html";
-      history.replaceState(null,"",location.pathname+"?page="+encodeURIComponent(pn2+u2.search)+(EDIT_MODE?"&edit=1":""));
-    }catch(err){}
+    syncTopUrl(d.url);
     return;
   }
   /* 全屏浮层请求（§149.2）：血统完整弹窗 / 照片灯箱，都在外壳层渲染（遮罩全屏含侧栏）。
@@ -271,6 +332,73 @@ window.addEventListener('message',function(e){
     YJ.lightbox.open(urls,d.index);
     try{ frameEl.contentWindow.blur(); window.focus(); }catch(err2){}
   }
+});
+
+/* ── 编辑模式解锁对话框（§160）：logo 三连点（800ms 窗口）呼出 ──
+ * 校验方式 = GitHub API 真实验证（GET /repos/<repo>，fine-grained PAT 的 metadata:read 为必选
+ * 权限，token 有效且指向本站仓库才返回 200）：401 = token 错；403/404 = token 有效但非本站仓库
+ * （双站 kzn/yunji 防串）；网络失败不改动本地状态。
+ * 通过后把 token 写入 gh.token（与编辑台「连接 GitHub」同一把键）→ 编辑台无需再粘贴一次；
+ * 注入编辑导航 + 重载当前 iframe（子页读同一开关，编辑入口立即出现）。 */
+var eg=document.getElementById("editGate"),
+    egToken=document.getElementById("egToken"),
+    egMsg=document.getElementById("egMsg"),
+    egGoBtn=document.getElementById("egGo"),
+    egExit=document.getElementById("egExit"),
+    egLockRow=document.getElementById("egLockRow"),
+    egHintLock=document.getElementById("egHintLock"),
+    egHintUnlock=document.getElementById("egHintUnlock");
+/* repo 常量单一出处 = public/editor.js 的 GH_REPO（外壳不加载 editor.js，此处重复一份，改动需同步） */
+var EG_REPO="hinotoyk/yunji-web";
+function gateOpen(){
+  var unlocked=EDIT_MODE();
+  egLockRow.classList.toggle("hidden",unlocked);
+  egHintLock.classList.toggle("hidden",unlocked);
+  egHintUnlock.classList.toggle("hidden",!unlocked);
+  egGoBtn.classList.toggle("hidden",unlocked);
+  egExit.classList.toggle("hidden",!unlocked);
+  egMsg.classList.add("hidden"); egMsg.textContent="";
+  eg.classList.remove("hidden"); eg.classList.add("flex");
+  if(!unlocked){ egToken.value=""; setTimeout(function(){ egToken.focus(); },0); }
+}
+function gateClose(){ eg.classList.add("hidden"); eg.classList.remove("flex"); }
+function gateMsg(m){ egMsg.textContent=m; egMsg.classList.remove("hidden"); }
+var logoTap=document.getElementById("logoTap"), tapN=0, tapT=0;
+logoTap.addEventListener("click",function(){
+  var now=Date.now();
+  tapN=(now-tapT<800)?tapN+1:1; tapT=now;
+  if(tapN>=3){ tapN=0; gateOpen(); }
+});
+eg.addEventListener("click",function(e){ if(e.target===eg) gateClose(); });
+document.getElementById("egCancel").addEventListener("click",gateClose);
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!eg.classList.contains("hidden")) gateClose(); });
+egToken.addEventListener("keydown",function(e){ if(e.key==="Enter") egGoBtn.click(); });
+egGoBtn.addEventListener("click",function(){
+  var t=(egToken.value||"").trim();
+  if(!t){ gateMsg("请先粘贴 PAT。"); return; }
+  egGoBtn.disabled=true; gateMsg("正在向 GitHub 验证…");
+  fetch("https://api.github.com/repos/"+EG_REPO,{
+    headers:{ "Authorization":"Bearer "+t, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }
+  }).then(function(r){
+    if(r.status===200){
+      try{ localStorage.setItem(YJ.util.storeKey("gh.token"),t); }catch(e2){}
+      injectEditNav();
+      try{ frameEl.contentWindow.location.reload(); }catch(e3){ frameEl.src=frameEl.src; }
+      gateClose();
+      return;
+    }
+    if(r.status===401) gateMsg("PAT 不正确（401）：请检查是否复制完整。");
+    else if(r.status===403||r.status===404) gateMsg("该 PAT 无权访问本站仓库 "+EG_REPO+"：请确认粘贴的是本站仓库的 fine-grained PAT（另一站点的令牌也会被拒绝）。");
+    else gateMsg("GitHub 返回 HTTP "+r.status+"，请稍后再试。");
+  }).catch(function(){
+    gateMsg("网络错误：无法连接 GitHub API（检查网络/代理后重试）。");
+  }).then(function(){ egGoBtn.disabled=false; });
+});
+egExit.addEventListener("click",function(){
+  try{ localStorage.removeItem(YJ.util.storeKey("gh.token")); }catch(e){}
+  removeEditNav();
+  try{ frameEl.contentWindow.location.reload(); }catch(e2){ frameEl.src=frameEl.src; }
+  gateClose();
 });
 </script>
 </body>

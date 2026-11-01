@@ -39,6 +39,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../loading.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../site-config.js"></script>
 <script src="../race-rows.js"></script>
@@ -62,6 +63,15 @@
  * 性别：全部 / 牡馬（含骟，セ 归牡组）/ 牝馬（YJ.util.sexOf，同 stats 维度口径）。 */
 var DC = null, BASIC = null;
 var lb = { mode: "all", y: "", gen: "", sex: "all", nm: "orig" };
+/* 初始占位（§169 统一加载态）：datechart+basic 双产物取数期间 kpis/legend/chart 给全局 spinner
+ * （渲染入口均整体覆写；#chart 首次 ECharts init 前本就 el.innerHTML="" 清占位（§122 复用实例约定）
+ *  → 占位安全；loading.js 缺失时保持空白，与旧行为一致）。 */
+if (window.YJ && YJ.ui && YJ.ui.spin) {
+  ["kpis", "legend", "chart"].forEach(function (id) {
+    var n = document.getElementById(id);
+    if (n) n.innerHTML = YJ.ui.spin({ label: "正在加载赏金数据…", sm: id !== "chart" });
+  });
+}
 
 var esc = YJ.util.esc;
 var manYen = function (pr) { return YJ.util.manYen(pr, "0万"); };
