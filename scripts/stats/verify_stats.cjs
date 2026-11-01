@@ -534,7 +534,10 @@ setTimeout(function () {
   const modeHtml = String(els["ymodeSeg"]._html);
   ok(modeHtml.includes("生产年") && modeHtml.includes("自然年"), "切面模式：生产年/自然年");
   const yHtml = String(els["yseg"]._html);
-  ok(yHtml.includes("全部") && yHtml.includes("2023年世代") && yHtml.includes("2024年世代"), "默认生产年值：全部/2023年世代/2024年世代");
+  /* 世代全集从产物派生（kzn 2017~2025 九代，勿硬编码：数据推进新世代即过期） */
+  const GENS = Array.from(new Set((product.by_venue["中央"].scopes.all.curve || []).map(p => p.gen))).sort();
+  const gFirst = GENS[0] + "年世代", gLast = GENS[GENS.length - 1] + "年世代";
+  ok(yHtml.includes("全部") && yHtml.includes(gFirst) && yHtml.includes(gLast), "默认生产年值：全部/" + gFirst + "/" + gLast);
 
   console.log("[C2] 年龄成绩曲线（ECharts · 颜色=世代 + 线型=指标多选 + 明细表）");
   const rateHtml = String(els["rateSeg"]._html);
@@ -545,13 +548,12 @@ setTimeout(function () {
   ok(!html.includes('id="genSeg"') && !html.includes("curveLegend"),
     "§145 撤掉 genSeg 下拉与自绘图例（ECharts legend 承担世代开关，两套控件做同一件事已合并）");
 
-  /* 曲线不再产出 SVG → 结构断言一律走 setOption 载荷 */
-  const g23 = "2023年世代", g24 = "2024年世代";
+  /* 曲线不再产出 SVG → 结构断言一律走 setOption 载荷；世代数 = 产物 curve 派生（勿硬编码 yunji 的 2 代） */
   const opt1 = ecOpt();
-  ok(opt1.series && opt1.series.length === 2, "默认 2 条系列（2023+2024 × 胜率）");
-  ok(opt1.series.every(s => s.type === "line") && opt1.series.map(s => s.name).join(",") === g23 + "," + g24,
+  ok(opt1.series && opt1.series.length === GENS.length, "默认 " + GENS.length + " 条系列（" + GENS.join("+") + " × 胜率）");
+  ok(opt1.series.every(s => s.type === "line") && opt1.series.map(s => s.name).join(",") === GENS.map(g => g + "年世代").join(","),
     "系列名 = 世代（同名 → 一个图例项可整体开关该世代的所有指标）");
-  ok(JSON.stringify(opt1.legend.data) === JSON.stringify([g23, g24]), "图例 = 世代（legend.data 两项）");
+  ok(JSON.stringify(opt1.legend.data) === JSON.stringify(GENS.map(g => g + "年世代")), "图例 = 世代（legend.data " + GENS.length + " 项）");
   const bins = opt1.xAxis.data;
   ok(bins.length >= 4 && bins[0].includes("岁") && opt1.series.every(s => s.data.length === bins.length),
     "x 轴 = 月龄类别（" + bins.length + " 个），各系列等长对齐");
@@ -585,7 +587,7 @@ setTimeout(function () {
   const d0 = opt1.series[0].data[i0];
   const d0v = d0.real == null ? d0.value : d0.real;
   const tip = opt1.tooltip.formatter([{ axisValue: bins[i0], seriesIndex: 0, value: d0.value, data: d0, color: "#0aa7a0" }]);
-  ok(tip.includes(g23) && tip.includes("胜率") && tip.includes(d0v + "%") && tip.includes("出走" + d0.n),
+  ok(tip.includes(gFirst) && tip.includes("胜率") && tip.includes(d0v + "%") && tip.includes("出走" + d0.n),
     "tooltip = 世代 · 指标 · 比率 · 出走（" + bins[i0] + " " + d0v + "% 出走" + d0.n + "）");
   /* 贴顶点：tooltip 报真实值（不是被钳住的高度） */
   const o0 = overPts[0];
@@ -594,39 +596,39 @@ setTimeout(function () {
     "贴顶点 tooltip 报真实值 " + o0.real + "%（图上高度 " + o0.value + "% 只是贴顶位置）");
 
   ok(String(els["curveTable"]._html).includes("<table") && String(els["curveTable"]._html).includes("月龄") &&
-     String(els["curveTable"]._html).includes(g23) && String(els["curveTable"]._html).includes(g24),
+     String(els["curveTable"]._html).includes(gFirst) && String(els["curveTable"]._html).includes(gLast),
     "月龄明细表（行=月龄 · 世代子行，§135）");
 
   /* 图例点击 = 切世代可见性：图自己按 legend 过滤，只刷明细表与注解，不重画 */
   const optCnt = EC.opts.length;
-  EC.inst._h.legendselectchanged[0]({ selected: { [g23]: false, [g24]: true } });
+  EC.inst._h.legendselectchanged[0]({ selected: { [gFirst]: false, [gLast]: true } });
   ok(EC.opts.length === optCnt, "图例点击不触发重画（只刷明细表与峰值注解）");
   const tbHide = String(els["curveTable"]._html);
-  ok(tbHide.includes(g24) && !tbHide.includes(g23), "图例隐藏 2023 世代 → 明细表只剩 2024");
-  ok(!String(els["curveNote"].text).includes(g23 + "年世代 胜率峰值"), "峰值注解跟随图例");
-  EC.inst._h.legendselectchanged[0]({ selected: { [g23]: true, [g24]: true } });
-  ok(String(els["curveTable"]._html).includes(g23) && String(els["curveTable"]._html).includes(g24), "图例恢复 → 明细表回到两世代");
+  ok(tbHide.includes(gLast) && !tbHide.includes(gFirst), "图例隐藏 " + GENS[0] + " 世代 → 明细表无首世代");
+  ok(!String(els["curveNote"].text).includes(GENS[0] + "年世代 胜率峰值"), "峰值注解跟随图例");
+  EC.inst._h.legendselectchanged[0]({ selected: { [gFirst]: true, [gLast]: true } });
+  ok(String(els["curveTable"]._html).includes(gFirst) && String(els["curveTable"]._html).includes(gLast), "图例恢复 → 明细表回到全世代");
 
   click("rateSeg", "ren");
   const opt2 = ecOpt();
-  ok(opt2.series.length === 4, "组合 胜率+连对率 → 4 条系列（2 世代 × 2 指标）");
-  ok(opt2.series.filter(s => JSON.stringify(s.lineStyle.type) === "[6,3]").length === 2,
+  ok(opt2.series.length === GENS.length * 2, "组合 胜率+连对率 → " + GENS.length * 2 + " 条系列（" + GENS.length + " 世代 × 2 指标）");
+  ok(opt2.series.filter(s => JSON.stringify(s.lineStyle.type) === "[6,3]").length === GENS.length,
     "连对率 = 虚线 [6,3]（线型=指标；'6,3' 字符串 ECharts 不认，必须数组）");
   ok(opt2.series.filter(s => s.markLine).length === 2, "两条参考线（每个指标一条）");
   click("rateSeg", "fuku");
-  ok(ecOpt().series.length === 6 && String(els["curveNote"].text).includes("复胜率") && String(els["curveNote"].text).includes("分母=出走"),
-    "三指标全开 → 6 条系列 + 注解跟随（分母=出走）");
+  ok(ecOpt().series.length === GENS.length * 3 && String(els["curveNote"].text).includes("复胜率") && String(els["curveNote"].text).includes("分母=出走"),
+    "三指标全开 → " + GENS.length * 3 + " 条系列 + 注解跟随（分母=出走）");
   click("rateSeg", "win");
-  ok(ecOpt().series.length === 4 && String(els["rateSeg"]._html).includes('data-r="win" data-on="false"'),
-    "再点已选指标可取消 → 剩 连对+复胜 4 条");
+  ok(ecOpt().series.length === GENS.length * 2 && String(els["rateSeg"]._html).includes('data-r="win" data-on="false"'),
+    "再点已选指标可取消 → 剩 连对+复胜 " + GENS.length * 2 + " 条");
   click("rateSeg", "ren");
   click("rateSeg", "fuku");
-  ok(ecOpt().series.length === 2 && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="true"'),
+  ok(ecOpt().series.length === GENS.length && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="true"'),
     "唯一项不可关（关掉连对率后 复胜率 不可再关，仍 2 条）");
   click("rateSeg", "win");
   click("rateSeg", "fuku");
-  ok(ecOpt().series.length === 2 && String(els["rateSeg"]._html).includes('data-r="win" data-on="true"') && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="false"'),
-    "回默认：仅 胜率 2 条系列");
+  ok(ecOpt().series.length === GENS.length && String(els["rateSeg"]._html).includes('data-r="win" data-on="true"') && String(els["rateSeg"]._html).includes('data-r="fuku" data-on="false"'),
+    "回默认：仅 胜率 " + GENS.length + " 条系列");
 
   console.log("[C3] 倾向矩阵（15 页签 + 库内基准 + 下钻 URL）");
   ok((String(els["matTabs"]._html).match(/data-tab=/g) || []).length === 15, "矩阵 15 页签");

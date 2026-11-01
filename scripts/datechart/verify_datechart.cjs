@@ -500,12 +500,22 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const nrAll = src.filter(r => NR_SET.has(String(r.p)));
   ok(dnfAll.length > 0, "源数据含未完走/未出走 " + dnfAll.length + " 条（中止/失格 " + (dnfAll.length - nrAll.length) + " · 取消/除外 " + nrAll.length + "）");
   const dnf = dnfAll.find(r => +r.d.slice(0, 4) === ay) || dnfAll[0];
+  if (!VT.has(dnf.vt)) { VT.add(dnf.vt); vseg(dnf.vt); }   /* 目标场 地未激活则激活（勿硬编码 venue：kzn/yunji 数据分布不同） */
   calClick({ name: "data-m", v: String(+dnf.d.slice(5, 7)) });
   ok(els["winLabel"].textContent === dnf.d.slice(0, 4) + "年" + (+dnf.d.slice(5, 7)) + "月", "年卡下钻 → " + els["winLabel"].textContent);
   const sdm = sMonth(dnf.d.slice(0, 7));
   ok(+kpiRuns() === starts(sdm).length, "月 KPI 出走 " + starts(sdm).length + "（" + dnf.d.slice(0, 7) + "）");
   ok(String(els["dBody"]._html).includes("yj-mb dnf") || String(els["dBody"]._html).includes("text-muted-foreground"), "未完走降灰（mb 卡 dnf / PC 行 muted）（" + dnf.d + " " + dnf.p + "）");
-  ok(String(els["dBody"]._html).includes(">" + esc(dnf.p) + "<"), "未完走着顺灰字展示（" + dnf.p + "）");
+  /* 明细分页（§101）：目标行可能不在第 1 页 → 从第 1 页起逐页翻找
+   * （st.dp 跨 render 持久化，先显式回第 1 页；勿假设 dnf 落在首页：kzn/yunji 数据分布不同） */
+  const dpg = pg => els["dBody"].handlers.click[0].call(els["dBody"], { target: { closest: s => s === "[data-dp]" ? { getAttribute: k => (k === "data-dp" ? "pc" : String(pg)) } : null } });
+  dpg(1);
+  let dnfShown = String(els["dBody"]._html).includes(">" + esc(dnf.p) + "<");
+  for (let pg = 2; !dnfShown && pg <= 60; pg++) {
+    dpg(pg);
+    dnfShown = String(els["dBody"]._html).includes(">" + esc(dnf.p) + "<");
+  }
+  ok(dnfShown, "未完走着顺灰字展示（" + dnf.p + "）");
 
   console.log("[C8] 马名口径收口（§64）· 生产国尾缀不展示 + 无登録名兜底「母名の生年」");
   const SUF_RE = /[（(](JPN|USA|GB|IRE|NZ|AUS|AU|FR|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK|SGP|UAE|NZL)[）)]$/;
@@ -518,13 +528,35 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
     "无 馬名/欧字名 " + nlH.length + " 匹兜底 =「母名の生年」（" +
     nlH.slice(0, 2).map(h => h.id + "=" + YJ.util.fallbackName(h)).join("、") + " 等），不再降级成 #id");
   ok(YJ.util.fallbackName({ id: 999 }) === "#999", "母名也缺才退化 #id（兜底的兜底）");
-  /* 页面接线：明细马名列取自产物 runs[].h（= 后端直取的基本信息 馬名 原值，130 带尾缀） */
-  VT.add("海外"); vseg("海外");
-  dpTrigger(); dpClick({ name: "data-mi", v: "8" });
-  const gwHtml = String(els["dBody"]._html);
-  ok(gwHtml.includes(">Grand Warrior<") && !gwHtml.includes("Grand Warrior(JPN)"),
-    "日期统计明细 2026年8月（含海外）马名列 = Grand Warrior（尾缀已剥）");
-  VT.delete("海外"); vseg("海外");
+  /* 页面接线：明细马名列取自产物 runs[].h（= 后端直取的基本信息 馬名 原值，带尾缀）。
+   * 目标马从产物动态取（勿硬编码：kzn/yunji 数据不同，yunji=Grand Warrior(JPN)） */
+  const sR = src.find(r => SUF_RE.test(String(r.h || "")));
+  ok(!!sR, "产物存在带生产国尾缀的出走（" + (sR ? sR.h + " " + sR.d : "-") + "）");
+  if (sR) {
+    /* vseg = 开关切换：仅当目标场地未激活才点击（已激活再点会把它切掉） */
+    const sAdded = !VT.has(sR.vt);
+    if (sAdded) { VT.add(sR.vt); vseg(sR.vt); }
+    dpTrigger();
+    /* 逐月导航到目标月（month 模式面板无 data-y 年份直选；勿硬编码当前锚点 = 目标年） */
+    const mLbl = String(els["winLabel"].textContent).match(/(\d+)年(\d+)月/);
+    if (mLbl) {
+      let diff = (+sR.d.slice(0, 4) - +mLbl[1]) * 12 + (+sR.d.slice(5, 7) - +mLbl[2]);
+      const step = diff > 0 ? "nm" : "pm";
+      for (let i = 0; i < Math.abs(diff); i++) dpClick({ name: "data-nav", v: step });
+    }
+    dpClick({ name: "data-mi", v: String(+sR.d.slice(5, 7)) });
+    const gwHtml = String(els["dBody"]._html);
+    const sName = String(sR.h).replace(SUF_RE, "");
+    dpg(1);   /* 同上：清掉上一月份残留的分页态，从第 1 页起翻找 */
+    let sShown = String(els["dBody"]._html).includes(">" + sName + "<") && !String(els["dBody"]._html).includes(sR.h);
+    for (let pg = 2; !sShown && pg <= 60; pg++) {
+      dpg(pg);
+      sShown = String(els["dBody"]._html).includes(">" + sName + "<") && !String(els["dBody"]._html).includes(sR.h);
+    }
+    ok(sShown,
+      "日期统计明细 " + sR.d.slice(0, 7) + "（含" + sR.vt + "）马名列 = " + sName + "（尾缀已剥）");
+    if (sAdded) { VT.delete(sR.vt); vseg(sR.vt); }
+  }
 
   console.log((fails ? "FAILED: " + fails : "ALL PASS") + "（" + (passes + fails) + " assertions）");
   process.exit(fails ? 1 : 0);

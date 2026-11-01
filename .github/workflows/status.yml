@@ -2,7 +2,7 @@ name: status-task
 
 # 登録状态日频任务（scripts/status，业务独立于 run_update 管线，编排层单独编排）：
 # NAR 竞走馬一覧(翻页) + keibabook 抹消馬簿/馬検索/近況履歴/馬详情 → 抹消/去向/調教師/kb_id 直写 basic.json
-# → merge_basic 套人工表 → 有变化才 commit+push（push 自动触发 deploy.yml Pages 部署）。
+# → merge_basic 套人工表 → 有变化才 commit+push（push 后显式触发 deploy.yml Pages 部署，见末步）。
 # 触发模型（2026-10-16 由独立定时改为串联，消除与 update-data 并发抢同一批文件）：
 #   update-data 跑完（conclusion=success）后由 workflow_run 自动触发 → 严格排在 update-data 之后，
 #   且触发时 main 已含其刚 push 的数据 → 天然拿到最新数据；两流程不再同时提交，fetch_log/basic 不再撞车。
@@ -10,6 +10,8 @@ name: status-task
 # 前置要求：仓库 Settings → Actions → Workflow permissions → "Read and write permissions"
 # （update-data 同款，仓库已配置）；无任何 secrets（数据源全免登录）。
 # 抹消馬簿是 ~2 周滚动窗口 → 本任务必须日频不漏跑（若连续多日未跑，请手动 dispatch 补）。
+# ⚠ keibabook / studbook 对 GitHub Actions 出口 IP 403（2026-10 起）→ 本任务自动降级跳过
+#   keibabook 环节（抹消日/去向留空，仅 NAR 地方环节生效），由本机 scripts/studbook_sync.py 补跑。
 on:
   workflow_run:
     workflows: ["update-data"]   # 按 update-data.yml 的 name 匹配
@@ -45,6 +47,7 @@ jobs:
           python scripts/basic/merge_basic.py
 
       - name: 提交数据（有变化才提交）
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -53,6 +56,19 @@ jobs:
             git commit -m "data: status update $(date -u +%Y-%m-%dT%H:%MZ)"
             git pull --rebase --autostash
             git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           else
             echo "无数据变化，跳过提交"
           fi
+
+      # 本工作流用默认 GITHUB_TOKEN 推送，不会触发 deploy.yml 的 push 事件（GitHub 防递归机制）→
+      # 确实 push 了数据后显式 dispatch deploy.yml（与 update-data.yml 同款，Pages 部署唯一触发口）。
+      - name: 触发 Pages 部署
+        if: steps.commit.outputs.pushed == 'true'
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy.yml/dispatches" \
+            -d '{"ref":"main"}' \
+            && echo "::notice::已触发 deploy.yml 重新部署"

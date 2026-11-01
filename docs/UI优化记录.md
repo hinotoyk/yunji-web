@@ -1724,3 +1724,12 @@ window.YJ_ECHARTS = echarts;
 - node 门禁兼容：`srkLoading` 以 `typeof document.createElement !== "function"` 判 stub 环境跳过（verify_stats 的 document 桩无 createElement，且 Promise executor 内抛错只变 rejection —— 现有 211 断言不受影响）。
 
 **验证**：build ✓；verify_stats 211·0 ✓、verify_datechart 112 ALL PASS ✓、verify_result 全过 ✓；verify_drill 58·2 —— 与改动无关的既有漂移（git stash 基线复跑同样 58·2）。Edge 无头冒烟（playwright --channel msedge + 路由延迟 600/700ms + addInitScript 禁 caches 强制走网络）**18 项全过**：URL 四项（相对形态/无 %2Fdist%2F/点击即刷/深链自愈）+ 三页 spinner 出现与撤除 + SIRE RANK 六项（首载浮层/渲染内容/高度锁定/切板旧图保留/浮层出现/KPI 半透明→恢复）+ 无 pageerror。**未 commit。**
+
+## §170 · 冒烟与 CI 回灌（kzn §117 同批改进回归本仓，2026-11-02）
+
+- **动因**：§139–§169 同步到 kzn（kzn §117）时，数据耦合断言在 kzn 数据下假失败，逐个改成了派生式；其中三处在本仓本身就是陈旧失败（drill 58/60 常态红），一并修净后回灌。
+- **verify_drill.cjs（4 处）**：① 体重候选 n 改从源数据重算对账（弃「仍有空档」存在性断言）；② tag 删除断言改读 renderFilters 整体重建后的筛选条（§150 后删除胶囊不再走 refreshDimUI 局部注入——本仓 2 处常态失败之一）；③ embed 列数 15/16 → 17/18（§159 枠番/馬番解禁后实况——本仓另一处常态失败）；④ [E] 马名断言期望值从源数据派生（弃 Grand Warrior 硬编码，NAME_VIEW=1 回退剥尾缀日文名 §53.7 口径）。60/60 全绿。
+- **verify_stats.cjs（C2 段）**：世代全集/系列数/图例/明细表断言全部从 stats.json 的 curve 派生（GENS），弃 2023/2024 硬编码——本仓 2 世代、kzn 8 世代同一份代码各自成立。本仓实测 211 全绿（kzn 483，断言数随数据规模浮动）。
+- **verify_datechart.cjs（C7/C8 段）**：目标马按 SUF_RE 从产物自动选；vseg 开关语义（已激活不重复点击）；逐月导航（month 面板无年份直选）；明细分页翻找（st.dp 持久化先归 1）。本仓实测自动选中 Grand Warrior（2025-10 海外）113 全绿。
+- **workflows（status/update-data/update-day 三条，kzn 版回灌）**：数据 push 后显式 dispatch deploy.yml——GITHUB_TOKEN 推送不触发 push 事件（GitHub 防递归），此前定时数据更新落库后线上 Pages 不跟随，要等下一次手动 push；deploy.yml 已有 workflow_dispatch 触发器，dispatch 不受限制。另 status.yml 补 keibabook/studbook 对 Actions 出口 IP 403 的自动降级说明。
+- **验证**：四段冒烟本仓全绿（drill 60 / stats 211 / datechart 113 / result 三态闭合）；workflow 文件逐行核对只含上述增量，未动 deploy.yml。

@@ -47,6 +47,7 @@ jobs:
         run: python run_update.py ${{ steps.args.outputs.cmd }}
 
       - name: 提交数据（有变化才提交）
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -55,10 +56,23 @@ jobs:
             git commit -m "data: day update $(date -u +%Y-%m-%dT%H:%MZ)"
             git pull --rebase origin main || { git rebase --abort; echo "::error::远端冲突，本次数据提交放弃（下次调度自动重算）"; exit 1; }
             git push origin "HEAD:$GITHUB_REF_NAME"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
             echo "::notice::data/ 已按天更新并推送"
           else
             echo "::notice::data/ 无变化，跳过提交"
           fi
+
+      # 本工作流用默认 GITHUB_TOKEN 推送，不会触发 deploy.yml 的 push 事件（GitHub 防递归机制）→
+      # 确实 push 了数据后显式 dispatch deploy.yml（与 update-data.yml 同款，Pages 部署唯一触发口）。
+      - name: 触发 Pages 部署
+        if: steps.commit.outputs.pushed == 'true'
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy.yml/dispatches" \
+            -d '{"ref":"main"}' \
+            && echo "::notice::已触发 deploy.yml 重新部署"
 
       - name: 上传运行日志
         if: always()

@@ -246,13 +246,16 @@ setTimeout(function () {
   ok(f.includes('id="fDimSel_weight"') && f.includes('f-tag">470-480') && !!selOf("搜索体重添加…"),
     "体重 下拉挂载点 + URL 预置 470-480 tag + 实例（统计页体重维度下钻落点）");
   const wSel = selOf("搜索体重添加…");
-  const wIdx = v => ["<400"].concat(Array.from({ length: 15 }, (_, i) => (400 + i * 10) + "-" + (410 + i * 10))).concat([">550"]).indexOf(v);
-  /* §77：体重候选 = 档位全集（17 档）+ 按档位升序，空档必须补零保留（n=0），不因当前数据没有该档就裁掉。
-   * ⚠ 断言不绑定「哪一档为空」：数据会长胖（2026-10 起已有 554kg → >550 不再空），只要求全集/升序/仍有空档补零。 */
-  const wEmpty = wSel ? wSel.items.filter(it => it.n === 0).length : -1;
+  const WEIGHT_BINS = ["<400"].concat(Array.from({ length: 15 }, (_, i) => (400 + i * 10) + "-" + (410 + i * 10))).concat([">550"]);
+  const wIdx = v => WEIGHT_BINS.indexOf(v);
+  /* §77：体重候选 = 档位全集补零保留（n=0 不裁档）；期望 n 从源数据独立重算
+   * （勿断言「仍有空档」：kzn 数据 17 档全有出走，yunji 曾有 >550 空档——数据会长胖） */
+  const wExp = {};
+  WEIGHT_BINS.forEach(v => wExp[v] = 0);
+  allEntries.forEach(en => { const b = weightBinOf(en.r["馬体重"]); if (wExp[b] != null) wExp[b]++; });
   ok(!!wSel && wSel.items.length === 17 && wSel.items.every((it, i) => wIdx(it.v) === i)
-    && wSel.items.every(it => typeof it.n === "number") && wEmpty >= 1,
-    "体重候选 17 档全集升序（空档补零保留：" + wEmpty + " 档 n=0）：" + (wSel && wSel.items.map(it => it.v).join("→")));
+    && wSel.items.every(it => typeof it.n === "number" && it.n === (wExp[it.v] || 0)),
+    "体重候选 17 档全集升序，n 与源一致（" + (wSel && wSel.items.map(it => it.v + ":" + it.n).join(" ")) + "）");
   ok(f.includes('id="fDimSel_breeder"') && !!selOf("搜索生产牧场添加…"), "生产牧场 下拉挂载点（统计页生产牧场维度下钻落点）");
   ok(f.includes('id="fDimSel_owner"') && !!selOf("搜索马主添加…"), "马主 下拉挂载点（统计页马主维度下钻落点）");
   ok(f.includes("性别") && f.includes(">セン<"), "筛选行 性别（牡/牝/セン）");
@@ -280,8 +283,9 @@ setTimeout(function () {
   }
   ok(global.FLT.ninki.join(",") === "2", "点 tag × → 删除 1人気（FLT.ninki = 2）");
   {
-    const t = String(els["fDimSel_ninki"]._injected);
-    ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后 tag 区只剩 2人気（局部刷新不重建筛选条）");
+    /* §150 后删除胶囊 = renderFilters 整体重建筛选条（不再走 refreshDimUI 局部注入）→ 读重建后的筛选条 */
+    const t = String(els["filters"]._html);
+    ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后筛选条只剩 2人気（整体重建路径同步刷新）");
   }
 
   console.log("[C3] 性齢列（§78/§78.1）：lib 22 列 性齢 紧随出走马；embed（profile 下段/明细）也展示");
@@ -290,8 +294,8 @@ setTimeout(function () {
     ok(keys.length === 22 && keys[0] === "horse" && keys[1] === "sexage",
       "lib 列集 22 列，性齢 紧随出走马（列序随基准）");
     const eCols = global.YJ.raceRows.cols("embed");
-    ok(eCols.length === 15 && eCols[0].k === "sexage",
-      "embed 无馬名上下文 15 列、性齢 首列（datechart 传 horse → 16 列；§78.1 + §101 上り 解禁紧随着順）");
+    ok(eCols.length === 17 && eCols[0].k === "sexage",
+      "embed 无馬名上下文 17 列、性齢 首列（datechart 传 horse → 18 列；§159 枠番/馬番 解禁 + §78.1 性齢紧随着順）");
     const en0 = global.LIB.entries.find(en => String(en.r["性"] || "").trim() && String(en.r["年齢"] || "").trim());
     ok(!!en0 && global.YJ.raceRows.rowLibHTML(en0).includes(">" + en0.r["性"] + en0.r["年齢"] + "</td>"),
       "lib 行 性齢 单元格 = " + (en0 ? en0.r["性"] + en0.r["年齢"] : "(无样本)"));
@@ -328,13 +332,15 @@ setTimeout(function () {
   const SUF_RE = /[（(](JPN|USA|GB|IRE|NZ|AUS|AU|FR|CAN|GER|ITY|SA|ARG|BRZ|CHI|URU|HK|SGP|UAE|NZL)[）)]$/;
   const hSuf = basic.horses.find(h => SUF_RE.test(String(h["馬名"] || "")));
   const hNil = basic.horses.find(h => !h["馬名"] && !h["欧字馬名"]);
-  ok(!!hSuf && global.horseText({ h: hSuf }) === "Grand Warrior",
-    "出走马列 130 = Grand Warrior（源值 " + (hSuf && hSuf["馬名"]) + " 的生产国尾缀不展示，量尺同源）");
+  const sName = String(hSuf["馬名"]).replace(SUF_RE, "");   /* 期望值从源数据派生（勿硬编码 yunji 的 Grand Warrior） */
+  ok(!!hSuf && global.horseText({ h: hSuf }) === sName,
+    "出走马列 " + (hSuf && hSuf.id) + " = " + sName + "（源值 " + (hSuf && hSuf["馬名"]) + " 的生产国尾缀不展示，量尺同源）");
   ok(!!hNil && global.horseText({ h: hNil }) === hNil["母名"] + "の" + hNil["生年"],
     "无登録名马（id " + (hNil && hNil.id) + "）=「母名の生年」" + (hNil && global.horseText({ h: hNil })) + "，不再降级成 #" + (hNil && hNil.id));
-  global.NAME_VIEW = 1;                                    /* 中文名档：同规则（缺港译/自译也不出 #id） */
-  ok(global.horseText({ h: hSuf }) === hSuf["自译馬名"] && global.horseText({ h: hNil }) === hNil["母名"] + "の" + hNil["生年"],
-    "NAME_VIEW=1 同规则：130 → " + hSuf["自译馬名"] + "、无名马仍 母名の生年");
+  global.NAME_VIEW = 1;                                    /* 中文名档：同规则（缺港译/自译 → 回退剥尾缀日文名，§53.7） */
+  const sNameCn = hSuf["香港馬名"] || hSuf["自译馬名"] || sName;
+  ok(global.horseText({ h: hSuf }) === sNameCn && global.horseText({ h: hNil }) === hNil["母名"] + "の" + hNil["生年"],
+    "NAME_VIEW=1 同规则：" + (hSuf && hSuf.id) + " → " + sNameCn + "、无名马仍 母名の生年");
   global.NAME_VIEW = 0;
 }, 100);
 
