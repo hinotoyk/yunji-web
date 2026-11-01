@@ -25,6 +25,7 @@
 <script src="../yj-util.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../loading.js"></script>
+<script src="../lightbox.js"></script>
 <script>
 /* 编辑入口默认不进视野（2026-10-02 用户定稿）：本页「编辑 ↗」仅 URL 带 ?edit=1 时显示
    —— 与外壳 index.html「编辑」导航组同一开关（外壳加载子页时把 edit=1 透传进 iframe）。
@@ -66,7 +67,7 @@ function teamHTML(team){
 function photoHTML(ev){
   var src = ev.photo || "";
   return src
-    ? '<div class="tl-photo">'+YJ.ui.img({ src: src, alt: "", cls: "", w: 297, h: 210 })+'</div>'
+    ? '<div class="tl-photo">'+YJ.ui.img({ src: src, alt: "", cls: "", w: 297, h: 210, attrs: 'title="放大查看"' })+'</div>'
     : '';
 }
 /* 日期：年份加粗加深为时间锚点（§147），月日维持浅灰 tabular-nums；空值兜底 — */
@@ -242,6 +243,29 @@ function init(){
   });
 }
 init();
+/* 照片放大（§161）：卡片照片点击 → 灯箱全屏查看，交互与 profile 相册对齐（§149.3）。
+ * 通道一致：外壳内 postMessage(yj:lightbox) 顶层渲染（遮罩全屏含侧栏；外壳以 iframe 地址为
+ * base 归一 URL，sender 侧零约束）；直开本页（无外壳）→ 本地 YJ.lightbox 兜底。
+ * 图集 = 当前 DOM 顺序的全部卡片照片（跨事件连续翻页），index = 被点照片；
+ * 委托监听挂在 #body 元素上（render 只换 innerHTML，监听器常驻，重复渲染不叠加）。 */
+function openPhotoLightbox(img){
+  var imgs = document.querySelectorAll(".tl-photo img"), photos = [], cur = 0;
+  for (var i = 0; i < imgs.length; i++) {
+    var s = imgs[i].getAttribute("src");
+    if (!s) continue;
+    if (imgs[i] === img) cur = photos.length;
+    photos.push(s);
+  }
+  if (!photos.length) return;
+  if (window.parent && window.parent !== window) {
+    try { window.parent.postMessage({ type: "yj:lightbox", photos: photos, index: cur }, "*"); return; } catch (err) {}
+  }
+  if (window.YJ && YJ.lightbox) YJ.lightbox.open(photos, cur);
+}
+document.getElementById("body").addEventListener("click", function(e){
+  var im = e.target && e.target.closest ? e.target.closest(".tl-photo img") : null;
+  if (im) openPhotoLightbox(im);
+});
 /* 卡片宽度随视口变 → 重新量；Web 字体（Noto Sans SC）到位后文字宽度会变 → 也重量一次 */
 var fitTimer = null;
 window.addEventListener("resize", function(){ clearTimeout(fitTimer); fitTimer = setTimeout(fitRaceNames, 120); });

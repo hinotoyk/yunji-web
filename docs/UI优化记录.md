@@ -1640,3 +1640,48 @@ window.YJ_ECHARTS = echarts;
 **效果**：同一条 菊花赏G1 mb 390px 两页 innerText 逐字段全等（含 天气/着差/出赛数/赔率）。
 
 **验证**：产物重算 849 条 ✓；verify_datechart 112 ALL PASS、verify_stats 211 通过；Edge 无头（tests/.pw/mb-full-verify.js）两卡文本全等、无 JS 报错。**未 commit。**
+
+## §166 · timeline 照片卡接入灯箱（2026-11-01，全站终检发现）
+
+**背景**：全站终检发现交互不一致——lightbox.js 仅 profile.html 引用（§149.3），timeline 页照片卡（.tl-photo 297×210）不能点击放大。
+
+**改动**：
+1. `timeline.html`：引入 `../lightbox.js`（直开本页本地兜底）；`photoHTML` 的 `YJ.ui.img` 补 `title="放大查看"`；渲染后委托监听挂 `#body`（render 只换 innerHTML，监听器常驻不叠加）——点击照片 → 图集取当前 DOM 顺序全部卡片照片（跨事件连续翻页），index = 被点照片。
+2. 通道与 profile 相册完全一致（§149.3/§156）：外壳内 `postMessage(yj:lightbox)` 顶层渲染（外壳以 iframe 地址为 base 归一 URL，sender 零约束）；直开本页 → 本地 YJ.lightbox。
+3. `timeline-cards.css`：`.tl-photo img` 补 `cursor:zoom-in`（hover 1.04 微缩放本就有，光标补全可点暗示）。
+
+**效果**：timeline 照片点击全屏放大，‹›/←→/触摸翻页、Esc 关闭，与 profile 同一视觉语言；外壳内遮罩全屏含侧栏。
+
+**验证**：build ✓；dist 核对（timeline.html 含 lightbox.js/openPhotoLightbox、cards css 含 zoom-in、dist/lightbox.js 在位）✓；Edge 无头（tests/.pw/tl-lightbox-verify.js）：7 张照片卡 → 点第 1 张外壳顶层灯箱出现「1 / 7」、→ 翻页「2 / 7」、Esc 关闭 ✓、点第 2 张起始「2 / 7」✓、无 JS 报错；截图 tests/_tl-lightbox.png。**未 commit。**
+
+## §166 · timeline 照片卡接入灯箱（2026-11-01，全站终检发现）
+
+**背景**：全站终检发现交互不一致——lightbox.js 仅 profile.html 引用（§149.3），timeline 页照片卡（.tl-photo 297×210）不能点击放大。
+
+**改动**：
+1. `timeline.html`：引入 `../lightbox.js`（直开本页本地兜底）；`photoHTML` 的 `YJ.ui.img` 补 `title="放大查看"`；渲染后委托监听挂 `#body`（render 只换 innerHTML，监听器常驻不叠加）——点击照片 → 图集取当前 DOM 顺序全部卡片照片（跨事件连续翻页），index = 被点照片。
+2. 通道与 profile 相册完全一致（§149.3/§156）：外壳内 `postMessage(yj:lightbox)` 顶层渲染（外壳以 iframe 地址为 base 归一 URL，sender 零约束）；直开本页 → 本地 YJ.lightbox。
+3. `timeline-cards.css`：`.tl-photo img` 补 `cursor:zoom-in`（hover 1.04 微缩放本就有，光标补全可点暗示）。
+
+**效果**：timeline 照片点击全屏放大，‹›/←→/触摸翻页、Esc 关闭，与 profile 同一视觉语言；外壳内遮罩全屏含侧栏。
+
+**验证**：build ✓；dist 核对（timeline.html 含 lightbox.js/openPhotoLightbox、cards css 含 zoom-in、dist/lightbox.js 在位）✓；Edge 无头（tests/.pw/tl-lightbox-verify.js）：7 张照片卡 → 点第 1 张外壳顶层灯箱出现「1 / 7」、→ 翻页「2 / 7」、Esc 关闭 ✓、点第 2 张起始「2 / 7」✓、无 JS 报错；截图 tests/_tl-lightbox.png。**未 commit。**
+
+## §167 · mb 两处排版优化（2026-11-01，用户截图反馈）
+
+**① stats 产驹倾向页签：mb 横滑改回换行平铺**
+- 背景：§144 曾把 mb 页签改单行横滑 + 右缘渐隐（省竖向空间），但「还有哪些分类」被藏进不可见区——用户定稿：**分成多行**，分类数量本身就是信息。
+- 改动：`stats-page.css` 删 mb 媒体查询里的横滑三件套（nowrap/overflow-x/scrollbar 隐藏）与 `.st-tabs[data-edge=more]` 渐隐选择器；基础 `.st-tabs` 本就 wrap，两端同构。JS 全部安全 no-op 不动（syncEdges 恒判 end、scrollIntoView nearest 不滚动）。
+- 效果：15 页签 390px 下折 3 行（高 88px）、无横向溢出。
+
+**② 比赛记录/日期统计 mb 卡分组行：两端对齐撑满卡宽**
+- 背景：§164/§165 统一五行分组后，行内容偏短（390px 下右侧大片留白，用户截图圈红）。
+- 改动：`theme.css` `.yj-mb-line` 由 `display:block` 改 `flex + justify-content:space-between`（wrap + row-gap:2px 兜底极窄机型；baseline 对齐兼容人気徽章混排）；字段间距下限仍由 `.yj-mb-item` margin-right 承担。**单点改动全站生效**（races/datechart/profile 内嵌同一 mbCardHTML）。
+- 效果：每行首尾贴边（距卡缘恒 12px）、中间均匀分布，观感 = 紧凑表单。
+
+**验证**：build ✓（theme-DGiO8iK3.css / stats-DYHxM3kO.css）；Edge 无头 390px（tests/.pw/mb-layout-verify.js）：页签 15 枚 3 行无溢出 ✓，races/datechart 两页五行首尾贴边全过 ✓、无 JS 报错；截图 tests/_mb-line-spread-races.png、tests/_mb-line-spread-datechart.png 目检（明细卡呈均匀表单感）。**未 commit。**
+
+### §167.1 · mb 卡分组行改稿（同日，用户否决 space-between）
+- 用户反馈：机械的两端对齐铺满不满意，**原自然流式排布挺好**，只需把字段左右间隔分开一些。
+- 改动：`theme.css` `.yj-mb-line` 回退 `display:block`（撤 flex/space-between），`.yj-mb-item` margin-right 12→20px。
+- 验证：build ✓（theme-v5wP16K1.css）；Edge 无头 390px（tests/.pw/mb-line-gap-verify.js）：行内字段间隔实测 20px、无 JS 报错；截图 tests/_mb-line-gap-v2.png 目检（自然左对齐 + 宽松间隔）。

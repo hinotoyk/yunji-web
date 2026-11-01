@@ -37,15 +37,15 @@
 /* 比率带 */
 .st-rate b{font-size:16px;font-variant-numeric:tabular-nums}
 .st-rate .lbl{color:#8a8a8a}
-/* 矩阵 tab 栏（§144）：15 个页签平铺，窄屏会折成 5 行（≈170px 纯空白，且第二行起只剩零星几颗）。
- * PC 收紧内边距挤进一行；MB 改单行横滑 + 右缘渐隐（滑到末端渐隐自动撤掉，见 syncEdges）。
- * 页签**顺序**不动（用户定稿），只改排布方式。 */
+/* 矩阵 tab 栏（§144，§167 用户改稿）：15 个页签平铺，窄屏会折成 5 行（≈170px 纯空白，且第二行起只剩零星几颗）。
+ * PC 收紧内边距挤进一行。§144 曾把 MB 改成单行横滑 + 右缘渐隐（省竖向空间），
+ * 但横滑把「还有哪些分类」藏进了不可见区，用户定稿改回**换行平铺**——分类数量本身就是信息。
+ * 页签**顺序**不动，只改排布方式；两端现已同构（都平铺），横滑专属样式/边缘渐隐已删。 */
 .st-tabs{display:flex;flex-wrap:wrap;gap:4px}
 .st-tab{padding:4px 8px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;font-size:12px;color:#52525b;cursor:pointer;transition:all .15s;white-space:nowrap}
 .st-tab:hover{border-color:rgba(10,167,160,.5);color:#0b6b64}
 .st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
-/* 横向溢出提示：仅在「还有内容在右侧」时生效（data-edge=more），滑到末端自动撤掉 */
-.st-tabs[data-edge=more],
+/* 横向溢出提示（仅矩阵表 #matWrap 还在用：窄屏横滑时右缘渐隐，滑到末端自动撤掉） */
 #matWrap[data-edge=more]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent)}
 /* 矩阵表（§144 改造三点）：
  * ① border-collapse 改 separate —— sticky 单元格在 collapse 下边框会留在原地不跟着走（Chrome 已知问题）；
@@ -103,11 +103,8 @@
 .st-mat tr.grp td{border-top:2px solid #e4e4e7}
 @media (max-width:768px){
   .st-brk-lg{font-size:14px}
-  /* 页签栏单行横滑（§144）：原 15 个页签在 375px 下折成 5 行、占约 170px 纯空白。
-   * 顺序不变，只把换行改成横滑；右缘渐隐提示「后面还有」，选中页签点击后自动滑入视野。 */
-  .st-tabs{flex-wrap:nowrap;overflow-x:auto;gap:5px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-  .st-tabs::-webkit-scrollbar{display:none}
-  .st-tabs .st-tab{flex:0 0 auto}
+  /* 页签栏（§167 用户改稿）：改回换行平铺——分类数量本身就是信息，横滑不可见区已废除；
+   * 基础 .st-tabs 即 wrap，此处无需覆盖（§144 的横滑/渐隐/scrollbar 隐藏一并删除）。 */
   /* 矩阵表窄屏压缩（§144）：原 13px 字号 + 10px 内边距在 375px 下溢出约两列
    * （连对/复胜被裁且无任何滚动提示）。压到 12px / 5px 后 9 列可完整显示；
    * 更窄的机型（360px）仍溢出时走 #matWrap 横滑，首列 sticky + 投影兜底。 */
