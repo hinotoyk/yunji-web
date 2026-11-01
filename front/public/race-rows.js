@@ -109,7 +109,7 @@ YJ.raceRows = (function () {
    *   中央 → race.netkeiba.com/race/result.html?race_id=
    *   地方 → nar.netkeiba.com/race/result.html?race_id=（地方独立子域）
    *   海外等其余 → db.netkeiba.com/race/{id}/ 兜底（字母混合 id 如 2025FPa00d08 只有 db 路由）
-   * 观感与普通文本完全一致（.yj-rlink 继承色/无下划线/无 hover 变化），新标签页打开 ---- */
+   * 观感仍近文本：浅灰虚线下划线提示可点（§158 用户定稿，theme.css .yj-rlink），新标签页打开 ---- */
   function raceLink(r) {
     var n = esc(raceNameText(r));
     var id = String((r && r.race_id) || "").trim();
@@ -368,18 +368,22 @@ YJ.raceRows = (function () {
    *   内嵌表（profile 下段）与日期统计明细 = 基准的**子集**：只通过 `hide` 清单隐藏字段，
    *   列序恒随基准（各视图**不再各写一份列清单**）→ 加列 / 调序 / 改列只改基准，各视图自动跟随。
    *   lib   = 基准全量（22 列，§78 增 性齢、§101 上り 紧随着順）
-   *   embed = 隐藏 天候/枠番/馬番/頭数/着差/賠率 → 16 列（opts.horse 时含馬名，否则 15 列、
+   *   embed = 隐藏 天候/頭数/着差/賠率 → 18 列（§159 全站统一：profile 内嵌 / datechart 明细都展示
+   *     枠番/馬番——datechart.json 短键产物已同步补 wk/ub 字段；
+   *     opts.horse 时含馬名，否则 17 列、
    *     性齢 为首列；§78.1 用户要求 profile 下段/datechart 明细也展示 性齢，
    *     datechart 短键产物已同步补 sx/ya 字段 → 不再有空列问题；§101 上り 解禁 → profile 内嵌/明细展示）
-   * 视图差异只允许三处：① hide 隐藏清单 ② th/mbLabel 短标签覆盖 ③ mbLines mb 卡片分组
-   *   （mb 分组：lib = 基准 5 行；embed = 自己的 3 行紧凑分组，但**字段顺序同样随基准**） */
+   * 视图差异只允许两处：① hide 隐藏清单（**仅作用于 PC 表格**）② th/mbLabel 短标签覆盖。
+   *   §164：mb 卡片行分组全站同一（两视图共用 BASE_LINES）；
+   *   §165 用户定稿：mb 卡片**全字段**展示——明细 mb 卡与比赛记录零差别（「都没啥区别就别藏了」），
+   *   hide 不再作用于 mb 分组行（mbCardHTML.pick 恒可 COL 回落；datechart 产物 33 键同步补 天候/頭数/着差/単勝）。 */
   var BASE_TOP = ["date", "name", "sexage", "place"];   /* mb 顶部槽；"name" = 名称槽，见 mbCardHTML；
                                                          * sexage = 馬名槽后的元信息槽（§78；embed 视图也展示，§78.1） */
   var BASE_LINES = [
     ["race", "distMerged", "tenki", { k: "baba", label: "马场" }],
     ["time", "chakusa", "agari"],
     ["waku", "umaban", "tosu", "kinryo", "ninki"],
-    [{ k: "bw", label: "体重" }, "odds", "prize"],
+    [{ k: "bw", label: "体重" }, { k: "odds", label: "赔率" }, "prize"],
     ["jockey", "trainer"]
   ];
   /* 基准列序（22 列，§78 增 性齢 紧随馬名、§101 上り 紧随着順）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
@@ -390,14 +394,11 @@ YJ.raceRows = (function () {
   var VIEWS = {
     embed: {
       thCls: "px-1 py-2 text-center text-[11.5px] font-semibold whitespace-nowrap tracking-[.5px]",
-      hide: ["tenki", "waku", "umaban", "tosu", "chakusa", "odds"],   /* §101 上り 解禁（profile 内嵌/datechart 明细展示） */
+      hide: ["tenki", "tosu", "chakusa", "odds"],   /* §159 枠番/馬番 解禁（profile 内嵌/datechart 明细统一展示） */
       onlyIfHorse: ["horse"],              /* 无馬名上下文（profile 下段单马）时整列不出现 */
       th: {}, mbLabel: {},
-      mbLines: [
-        ["race", "distMerged", "baba", "time", "agari", "prize"],   /* 後3F 隨 時間 相邻（同 lib 分組 time→agari 慣例，§101.2） */
-        ["kinryo", "ninki", "bw"],
-        ["jockey", "trainer"]
-      ]
+      /* §164/§165：mb 卡片与 lib 同一基准分组且全字段展示（hide 仅作用于本视图 PC 表格） */
+      mbLines: BASE_LINES
     },
     lib: {
       thCls: "px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]",
@@ -407,7 +408,6 @@ YJ.raceRows = (function () {
       mbLines: BASE_LINES
     }
   };
-
   /* 解析视图 → 已就绪的列项数组：基准列序 − hide 清单（− 无馬名上下文时的馬名列）。
    * 表头/标签覆盖来自视图；列本身的行为/量宽来自 COL（字段口径单一出处）。 */
   function cols(viewName, o) {
@@ -478,6 +478,8 @@ YJ.raceRows = (function () {
     var byKey = {};
     cols(setName, o).forEach(function (e) { byKey[e.k] = e; });
     var pick = function (k) {
+      /* §164 共用分组 + §165 mb 全字段：分组行不再看视图 hide（hide 只作用于 PC 表）——
+       * 回落 COL 是唯一通道（distMerged 等并入键、以及 embed 隐藏的 天候/頭数/着差/単勝 都走这里） */
       if (byKey[k]) return byKey[k];
       var c = COL[k];
       if (!c) return null;

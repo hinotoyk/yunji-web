@@ -229,7 +229,11 @@ YJ.selector = (function () {
           (compact ? '' : '<button class="clear hidden w-[22px] h-[22px] flex-none cursor-pointer rounded-md border-none bg-muted text-[12px] leading-none text-muted-foreground hover:bg-muted/80 hover:text-foreground" type="button" aria-label="清空">✕</button>') +
         '</div>' +
         '<div class="drop yj-drop yj-drop-scroll ' + (persistent
-            ? 'mt-1.5 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card shadow-sm max-md:max-h-[45vh]'
+            /* mb 端必须 flex-none（2026-10-30 修 bug）：常驻列表用 flex-1 min-h-0 是为了在 PC 的
+             * h-full 容器里撑满剩余高度；但 mb 端 .yj-sel 是 h-auto，flex-basis:0 + min-h-0 会让
+             * 列表高度算成 0 → 搜索框下面直接是详情、马名列表整个消失。flex-none 改为按内容高，
+             * 再由 max-h-[45vh] + overflow-y-auto 兜住，列表恢复正常显示且不会把详情推太远。 */
+            ? 'mt-1.5 min-h-0 flex-1 overflow-y-auto rounded-xl border border-border bg-card shadow-sm max-md:flex-none max-md:max-h-[45vh]'
             : 'absolute left-0 right-0 top-[calc(100%+6px)] z-50 hidden ' + (compact ? 'max-h-[250px]' : 'max-h-[360px]') + ' overflow-y-auto rounded-xl border border-border bg-card shadow-[0_16px_40px_rgba(0,0,0,.12),0_4px_12px_rgba(0,0,0,.05)]')
           + '"></div>' +
       '</div>';

@@ -8,97 +8,13 @@
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
-<style>
-/* embed 模式：贴满 iframe 宽度并去掉页级留白，还原 profile 内嵌时的样式（宽度必须 100%，覆盖独立页 80% 布局） */
-#page.embed{max-width:none;padding:0;width:100%}
-
-/* ===== 等级 / 着顺 / 人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
- * 已收敛到 theme.css @layer components（单一出处，与日期统计明细共用同一份样式定义）===== */
-
-/* ===== 独立模式：全库跨马查询 维度条 ===== */
-.filter-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.filter-title{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.filter-title::before{content:"";display:inline-block;width:4px;height:14px;border-radius:2px;background:#0aa7a0;margin-right:8px;vertical-align:-2px}
-.f-reset{margin-left:auto;border:1px solid #e5e5e5;border-radius:8px;padding:4px 12px;font-size:12px;color:#737373;background:#fff;cursor:pointer;transition:all .15s}
-.f-reset:hover{border-color:rgba(239,68,68,.55);color:#ef4444;background:#fef2f2}
-.filter-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:14px 16px 10px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
-.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px}
-@media (max-width:768px){.filter-grid{grid-template-columns:1fr}}
-.filter-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
-.filter-row.wide{grid-column:1/-1}
-.filter-label{flex:none;width:76px;padding-top:6px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#8a8a8a;text-transform:uppercase}
-.filter-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
-.filter-chip{display:inline-flex;align-items:center;height:26px;padding:0 11px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;line-height:1;cursor:pointer;user-select:none;white-space:nowrap;transition:border-color .15s,color .15s,background .15s,box-shadow .15s}
-.filter-chip:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
-.filter-chip.on{border-color:#0aa7a0;background:#e6f6f5;color:#0b6b64;font-weight:600;box-shadow:inset 0 0 0 1px #0aa7a0}
-.filter-chip.on:hover{background:#d9f1ef}
-.filter-grp{flex:none;align-self:center;margin-right:2px;padding:2px 8px;border-radius:6px;background:#f2f4f5;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#7a7a7a;text-transform:uppercase}
-/* ===== 出走马筛选（tag 型多选）：已选马胶囊；搜索添加复用 public/selector.js 组件（compact+multi） ===== */
-.f-tag{display:inline-flex;align-items:center;gap:1px;height:26px;padding:0 3px 0 11px;border:1px solid #0aa7a0;border-radius:7px;background:#e6f6f5;color:#0b6b64;font-size:12px;font-weight:600;white-space:nowrap}
-.f-tag-x{width:19px;height:19px;border:0;border-radius:5px;background:transparent;color:#0b6b64;font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
-.f-tag-x:hover{background:rgba(10,167,160,.16);color:#ef4444}
-/* compact selector 挂载点（出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重共用）：圆角 7px / 边框 #e3e3e3 / 去下边距
- * —— 与 .filter-chip 完全统一；与 tag 胶囊同高，下拉绝对定位随组件自身
- * 宽度（§77 用户反馈圈选「下拉框太短」）：定宽 238px（198×1.2，+20%）。
- * ⚠ 必须用显式 width 而非 flex-basis —— Chromium 算 .filter-chips 固有宽时忽略嵌套 flex 项的
- * flex-basis（实测按 input 默认 ~20ch≈188px 收缩）；显式 width 的固有贡献才是 238px。
- * min-width:0 + 默认 shrink：窄 PC 窗口（~800px 半列 220px）回缩防溢出（旧 min-width:198 反而会顶破）。
- * mb 追加：chips 行占满 + 挂载点 flex 拉满整行（移动端搜索框惯例；375px 窄屏受行宽所限 ~229px 回缩） */
-.f-csel .box{border-radius:7px;border-color:#e3e3e3}
-.f-csel .box:hover{border-color:rgba(10,167,160,.55)}
-.f-csel .yj-sel{margin-bottom:0}
-.f-csel{width:238px;min-width:0;max-width:100%}
-@media (max-width:768px){.filter-chips{flex-grow:1}.f-csel{width:auto;flex:1 1 238px}}
-/* 自定义 tooltip（悬停显示聚合含义）——维度 chip 用；马名列头/明细标题的 .yj-name-toggle
- * 同款浮层已随该控件移入 theme.css（两页共用，单一出处） */
-.filter-chip[data-tip]{position:relative}
-.filter-chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
-.filter-chip[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
-/* 马名跳转（.hjump）与马名语言切换（.yj-name-toggle）已移至 theme.css（单一出处，两页共用） */
-/* ===== 分页条 ===== */
-.pager{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:14px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;font-size:12px}
-.pg-nav{height:28px;padding:0 12px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
-.pg-nav:hover:not(:disabled){border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
-.pg-nav:disabled{opacity:.4;cursor:not-allowed}
-.pg-btn{min-width:28px;height:28px;padding:0 6px;border:1px solid transparent;border-radius:7px;background:transparent;color:#444;font-size:12px;cursor:pointer;transition:all .15s}
-.pg-btn:hover{background:#f2f4f5}
-.pg-btn.on{border-color:#0aa7a0;background:#0aa7a0;color:#fff;font-weight:600}
-.pg-ell{color:#9aa0a6;padding:0 2px}
-.pg-info{margin:0 4px;color:#737373;white-space:nowrap}
-@media (max-width:768px){.pager{justify-content:center;gap:4px}.pg-btn{min-width:26px;height:26px}.pg-nav{padding:0 9px}}
-/* 独立 PC 跨马表：窄屏（≤1180px iframe，约等于 1280 显示器）字号再收紧一档，避免 2 字列/日期/徽章被省略 */
-@media (max-width:1180px){table.yj-lib{font-size:10.5px}}
-
-/* ===== 独立 PC 跨马表：宽屏密度分档（v7）=====
- * JS 按「表内留白 ≤40%」自动给 table.yj-lib 挂 fs125/fs135/fs145/fs155（表体 12.5~15.5px）。
- * 24 寸及以下（容器宽 < 约 1700px）留白本就 35% 上下 → 稳在默认 11.5px，老观感零变化；
- * 27 寸（容器 ≈2050px）落到 fs155：表体 15.5px、行高 +2px、徽章同步放大。
- * 注水分配（v7 新增）：上限随档位走（TIER_CAP）——档位越高赛事名/文本列越收、数字列越放，
- * 27 寸赛事名不再一列独大；15/24 寸 slack 被文本列吃光、撞不到上限 → 行为与 v6 完全一致。
- * 只作用在跨马表（.yj-lib），内嵌表 / mb 卡片 / 其它页面不受影响。 */
-table.yj-lib.fs125{font-size:12.5px}
-table.yj-lib.fs135{font-size:13.5px}
-table.yj-lib.fs145{font-size:14.5px}
-table.yj-lib.fs155{font-size:15.5px}
-table.yj-lib.fs125 th{font-size:11px}
-table.yj-lib.fs135 th{font-size:11.5px}
-table.yj-lib.fs145 th{font-size:12px}
-table.yj-lib.fs155 th{font-size:12.5px}
-table.yj-lib.fs125 td{padding-top:7px;padding-bottom:7px}
-table.yj-lib.fs135 td,table.yj-lib.fs145 td,table.yj-lib.fs155 td{padding-top:8px;padding-bottom:8px}
-table.yj-lib.fs125 .yj-no{width:28px;height:28px;font-size:14px}
-table.yj-lib.fs135 .yj-no{width:30px;height:30px;font-size:15px}
-table.yj-lib.fs145 .yj-no{width:31px;height:31px;font-size:15.5px}
-table.yj-lib.fs155 .yj-no{width:33px;height:33px;font-size:16.5px}
-table.yj-lib.fs125 .yj-grade{font-size:11.5px}
-table.yj-lib.fs135 .yj-grade{font-size:12.5px;padding:2px 8px}
-table.yj-lib.fs145 .yj-grade{font-size:13px;padding:2px 8px}
-table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
-</style>
+<link rel="stylesheet" href="races-page.css">
 </head>
 <body class="bg-background text-foreground antialiased">
-<div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
+<div class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
   <div class="page-title mb-7 max-md:mt-2.5">比赛记录 · RACES</div>
+  <!-- 独立模式标识条已于 2026-10-30 按用户要求移除：筛选条自带「筛选 · FILTER」标题，
+       模式本身不难辨认，多一行说明只是增加噪音。 -->
   <div id="selector" class="embed-hide"></div>
   <!-- 独立模式：全库跨马多维组合查询（维度条 + 结果区）；内嵌模式不使用 -->
   <div id="filters" class="mb-4"></div>
@@ -108,6 +24,7 @@ table.yj-lib.fs155 .yj-grade{font-size:13.5px;padding:2px 9px}
 <script src="../data-config.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../loading.js"></script>
 <script src="../race-bundle.js"></script>
 <script src="../i18n.js"></script>
 <script src="../site-config.js"></script>
@@ -204,6 +121,8 @@ function renderRaces(h, races){
   document.getElementById("body").innerHTML = mb
     ? RR.mbListHTML(races.length ? races.map(rowEmbedMbHTML).join("") : emptyMb)
     : embedTableHTML(races.length ? races.map(rowEmbedHTML).join("") : emptyPc);
+  /* 内嵌模式首次渲染已定 → 通知父页（profile）iframe 遮罩退场（§149；重复 post 无害，遮罩只在首次存在） */
+  if (EMBED) { try { parent.postMessage({ type:"yj:frameReady" }, "*"); } catch(e){} }
 }
 
 function renderHorse(id){
@@ -246,6 +165,10 @@ if (EMBED) {
   document.getElementById("filters").style.display="none";
   var pt=document.querySelector(".page-title");
   if (pt) pt.style.display="none";
+  /* 内嵌初始态（§149）：独立模式的「请选择一匹马」提示在内嵌里不成立——父页马上会广播选中马，
+   * 先给全局 spinner 占位（bundle 首次取数期间不再空白） */
+  document.getElementById("body").innerHTML =
+    (window.YJ && YJ.ui && YJ.ui.spin) ? YJ.ui.spin({ label: "正在加载比赛记录…" }) : document.getElementById("body").innerHTML;
   YJ.bus.onChange(function(id){ renderHorse(id); });
 } else {
   initLibrary();
@@ -259,6 +182,7 @@ YJ.device.onChange(function(){
     if (lastR) renderRaces(lastR.hh, lastR.races);
   } else if (LIB) {
     PG.size = pgSizeDef();   /* 按设备固定条数：翻转时重置为当前设备默认 */
+    renderFilters();         /* §162：mb/PC 行集不同（mb 折叠高级筛选）→ 翻转时重建筛选条 */
     renderResults();
   }
 });
@@ -268,12 +192,13 @@ var LIB = null;   /* {horses:[], entries:[{h,r}]} */
 /* 已选维度：每个维度是数组，同维度多选=OR，跨维度=AND；空数组=不限
  * year=比赛年份（按比赛日付），byear=出生年份（按马 h.生年），两套独立可叠加 */
 var FLT = { venue:[], track:[], surface:[], dist:[], cond:[], grade:[], result:[], year:[], byear:[], horse:[],
-            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[], weight:[], breeder:[], owner:[] };
+            turn:[], ninki:[], sex:[], trainer:[], jockey:[], mps:[], weight:[], breeder:[], owner:[], agari:[] };
 var DIM_KEYS = ["horse","venue","track","surface","dist","cond","grade","result","year","byear",
-                "turn","ninki","sex","trainer","jockey","mps","weight","breeder","owner"];
-/* ?f=key:value,key2:value2 下钻（倾向统计矩阵行 → 独立模式预置筛选）
+                "turn","ninki","sex","trainer","jockey","mps","weight","breeder","owner","agari"];
+/* ?f=key:value,key2:value2 下钻（倾向统计矩阵行 → 独立模式预置筛选）；
+ * 同时也是本页筛选状态的持久化格式（syncURL 双向回写，刷新/后退/分享均还原）
  * 同 key 重复=OR；值须与统计页口径完全一致（surface/dist/grade/ninki/sex/turn/trainer/jockey/track/venue/mps/
- * weight=当日馬体重档（与 build_stats.py weight_bin 同口径）/breeder=生産牧場现值/owner=馬主现值）；
+ * weight=当日馬体重档（与 build_stats.py weight_bin 同口径）/breeder=生産牧場现值/owner=馬主现值/agari=金|银|铜|<33|33-34|>34）；
  * 无效维度或值在应用时由 validFilterValue 静默丢弃。 */
 var URL_F = (function(){
   var m=location.search.match(/[?&]f=([^&]+)/);
@@ -292,6 +217,14 @@ var URL_F = (function(){
 /* 分页：每页条数按设备固定（PC 100 / mb 10，不允许用户选择），页码按钮式 */
 var PG = { page:1, size:pgSizeDef() };
 function pgSizeDef(){ return isMb() ? 10 : 100; }
+
+/* mb 高级筛选折叠（§162；用户追加定稿：mb 默认行只留 7 行）：
+ * PC=全行平铺；mb 默认露出 出走马/跑道/场地/距离/性别/着顺/级别，
+ * 马场、后3F、赛道方向、出生年份、比赛年份、竞马场×3、人气/母父/骑手/调教师/生产牧场/马主/体重
+ * 收进 .f-adv 折叠区。ADV_MANUAL=null=自动（隐藏维度有已选值即展开，如 ?f= 下钻）；用户点过按钮后固定。
+ * PC 不折叠（渲染时不产生 .f-adv 包裹，行集随设备切换在 renderFilters 重建） */
+var ADV_MANUAL=null, ADV_OPEN=false;
+var HIDE_DIMS=["cond","agari","turn","byear","year","track","ninki","mps","jockey","trainer","breeder","owner","weight"];
 /* 出走马列名语言：0=日文名（无则英文名），1=港译名（无则自译名）；点击列头「出走马」切换 */
 var NAME_VIEW = 0;
 
@@ -338,6 +271,24 @@ var TURN_OPTS = [
 ];
 var SEX_OPTS = [
   {v:"牡", l:"牡"}, {v:"牝", l:"牝"}, {v:"セン", l:"セン"}
+];
+
+/* 后3F（上り3F）筛选：金/银/铜 = 末脚徽章（该场全场 上がり3F 密集排名 1/2/3 名，与 SCHEMA §末脚 同口径）；
+ * 数值档 = 绝对用时，33-34 含 33 与 34（用户定稿）。缺失/非数不入任何桶（不能被筛中） */
+function agariBucket(v){
+  var n=parseFloat(v);
+  if(!isFinite(n)) return "";
+  if(n<33) return "<33";
+  if(n<=34) return "33-34";
+  return ">34";
+}
+var AGARI_OPTS = [
+  {v:"金",    l:"金末脚", tip:"该场全场后3F最快（末脚金）"},
+  {v:"银",    l:"银末脚", tip:"该场全场后3F第2（末脚银）"},
+  {v:"铜",    l:"铜末脚", tip:"该场全场后3F第3（末脚铜）"},
+  {v:"<33",   l:"<33",   tip:"后3F < 33.0秒"},
+  {v:"33-34", l:"33-34", tip:"后3F 33.0-34.0秒（含33与34）"},
+  {v:">34",   l:">34",   tip:"后3F > 34.0秒"}
 ];
 
 /* 级别：单级 G1/G2/G3/JG1/JG2/JG3/Jpn1/Jpn2/Jpn3/L/OP + 聚合重赏(G1-3+JG1-3+Jpn1-3) + 班赛(1/2/3胜) + 新马/未胜利 */
@@ -438,29 +389,29 @@ function entryVal(en,key){
   return "";
 }
 
-/* 某记录是否命中当前全部已选条件（同维度多选=任一命中，跨维度=全命中） */
-function matchEntry(en){
+/* 维度 k 上单值 v 是否命中该条目（matchEntry / facetCounts 共用判定，改口径只改这里） */
+function dimHit(en,k,v){
   var r=en.r;
+  if(k==="grade") return gradeMatches(r.格,v);
+  if(k==="result") return resultMatches(r.結果,v);
+  if(k==="horse") return String(en.h.id)===v;
+  if(k==="agari") return (v==="金"||v==="银"||v==="铜") ? r.末脚===v : agariBucket(r.上り)===v;
+  return entryVal(en,k)===v;
+}
+
+/* 某记录是否命中当前全部已选条件（同维度多选=任一命中，跨维度=全命中）
+ * matchEntryX(en,skip)=跳过维度 skip（facetCounts 算「除本维度外」的命中基数用） */
+function matchEntryX(en,skip){
   for(var i=0;i<DIM_KEYS.length;i++){
     var k=DIM_KEYS[i], arr=FLT[k];
-    if(!arr || !arr.length) continue;
+    if(!arr || !arr.length || k===skip) continue;
     var hit=false;
-    if(k==="grade"){
-      for(var j=0;j<arr.length;j++){ if(gradeMatches(r.格,arr[j])){ hit=true; break; } }
-    } else if(k==="result"){
-      for(var j=0;j<arr.length;j++){ if(resultMatches(r.結果,arr[j])){ hit=true; break; } }
-    } else if(k==="horse"){
-      /* 出走马维度：FLT.horse 存马 id 字符串，任一命中（同维多选=OR） */
-      var enId=String(en.h.id);
-      for(var j=0;j<arr.length;j++){ if(arr[j]===enId){ hit=true; break; } }
-    } else {
-      var v=entryVal(en,k);
-      if(arr.indexOf(v)>=0) hit=true;
-    }
+    for(var j=0;j<arr.length;j++){ if(dimHit(en,k,arr[j])){ hit=true; break; } }
     if(!hit) return false;
   }
   return true;
 }
+function matchEntry(en){ return matchEntryX(en,null); }
 
 /* ?f= 下钻值校验：枚举类查固定表，track/trainer/jockey 按实际数据校验（防止无效值污染筛选） */
 function validFilterValue(k,v){
@@ -475,15 +426,38 @@ function validFilterValue(k,v){
   else if(k==="ninki") list=NINKI_OPTS.map(function(o){return o.v;});
   else if(k==="sex") list=["牡","牝","セン"];
   else if(k==="weight") list=WEIGHT_BINS;
+  else if(k==="agari") list=AGARI_OPTS.map(function(o){return o.v;});
   else if(k==="year"||k==="byear") return /^\d{4}$/.test(v);
   else if(k==="horse") return LIB.horses.some(function(h){ return String(h.id)===v; });
   else return LIB.entries.some(function(en){ return entryVal(en,k)===v; });
   return list.indexOf(v)>=0;
 }
 
-function chip(key,v,label,tip){
+/* chip 命中场数（faceted 口径）：按「除本维度外的其它已选条件」过滤后的命中数——
+ * 筛 A 时看 B 各档还剩多少货，选前预判空结果；单维度一次扫描（千级条目，重建筛选条时开销可忽略） */
+function facetCounts(key,opts){
+  var m={};
+  LIB.entries.forEach(function(en){
+    if(!matchEntryX(en,key)) return;
+    for(var j=0;j<opts.length;j++){ if(dimHit(en,key,opts[j].v)) m[opts[j].v]=(m[opts[j].v]||0)+1; }
+  });
+  return m;
+}
+
+function chip(key,v,label,tip,n){
   var on=FLT[key].indexOf(v)>=0;
-  return '<button type="button" class="filter-chip'+(on?' on':'')+'" data-k="'+key+'" data-v="'+esc(v)+'"'+(tip?' data-tip="'+esc(tip)+'"':'')+'>'+esc(label)+'</button>';
+  var cls="filter-chip"+(on?" on":"");
+  var dot="";
+  /* 后3F 金银铜：与结果表 上り 徽章（yj-no1/2/3）同色系点缀。
+   * 色点必须用真实元素（span.chip-dot）而非 ::before —— tooltip 箭头已占用
+   * .filter-chip[data-tip]:hover::before，hover 时会顶掉色点伪元素（§162.2 用户实测 bug） */
+  if(key==="agari"&&(v==="金"||v==="银"||v==="铜")){
+    cls+=" ag-"+(v==="金"?"gold":v==="银"?"silver":"bronze");
+    dot='<span class="chip-dot"></span>';
+  }
+  if(n===0) cls+=" zero";   /* 0 命中置灰（仍可点，与「选中无记录场=空结果」口径一致） */
+  return '<button type="button" class="'+cls+'" data-k="'+key+'" data-v="'+esc(v)+'"'+(tip?' data-tip="'+esc(tip)+'"':'')+'>'+dot+esc(label)+
+    (typeof n==="number"?'<span class="chip-n">'+n+'</span>':"")+'</button>';
 }
 
 function renderFilters(){
@@ -491,11 +465,13 @@ function renderFilters(){
   if(!el || !LIB) return;
   var t=YJ.i18n.t;
   var row=function(key,label,opts){
-    var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip); }).join("");
+    var m=facetCounts(key,opts);
+    var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip,m[o.v]); }).join("");
     return '<div class="filter-row"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips">'+chips+'</div></div>';
   };
   var rowWide=function(key,label,opts){
-    var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip); }).join("");
+    var m=facetCounts(key,opts);
+    var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip,m[o.v]); }).join("");
     return '<div class="filter-row wide"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips">'+chips+'</div></div>';
   };
   /* 人气/母父/骑手/调教师：与出走马同款搜索下拉（selector.js items 模式，compact+multi）：
@@ -524,10 +500,27 @@ function renderFilters(){
 
   var active=DIM_KEYS.some(function(k){ return FLT[k] && FLT[k].length; });
 
-  /* 出走马筛选（tag 型多选）：已选马胶囊 + selector 组件挂载点（第一行、跨两列）
-   * 搜索/下拉由 public/selector.js 的 compact+multi 实例负责（复用 PROFILE 同款交互与性能） */
   var byId={};
   LIB.horses.forEach(function(h){ byId[h.id]=h; });
+
+  /* 已选条件摘要条：全维度已选值汇总（含 chip 维度与搜索下拉维度），× 直接删；
+   * 删除统一走 renderFilters 重建（摘要/底行 chip/下拉同步刷新） */
+  var sumTags=[];
+  DIM_KEYS.forEach(function(k){
+    (FLT[k]||[]).forEach(function(v){
+      if(k==="horse"){
+        var hh=byId[v];
+        sumTags.push('<span class="f-tag">出走马·'+esc(hh?horseText({h:hh}):("#"+v))+
+          '<button type="button" class="f-tag-x" data-hid="'+esc(v)+'" title="移除该马">×</button></span>');
+      }else{
+        sumTags.push('<span class="f-tag">'+esc(DIM_LABEL[k]||k)+'·'+esc(dimValLabel(k,v))+
+          '<button type="button" class="f-tag-x" data-fk="'+k+'" data-fv="'+esc(v)+'" title="移除">×</button></span>');
+      }
+    });
+  });
+
+  /* 出走马筛选（tag 型多选）：已选马胶囊 + selector 组件挂载点（第一行、跨两列）
+   * 搜索/下拉由 public/selector.js 的 compact+multi 实例负责（复用 PROFILE 同款交互与性能） */
   var selTags=FLT.horse.map(function(id){
     var h=byId[id];
     var nm=h?horseText({h:h}):("#"+id);
@@ -538,25 +531,28 @@ function renderFilters(){
       '<div class="f-csel" id="fHorseSel"></div>'+
     '</div></div>';
 
-  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行，2026-09 增 生产牧场/马主/体重 三个搜索下拉）：「A-B」= 一行两列；无 - = 独占一行（wide）
+  /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行，2026-09 增 生产牧场/马主/体重 三个搜索下拉，
+   * 2026-10 增 后3F（紧随着顺，wide 独行）；§162 mb 端 常用 7 行之外收进高级筛选折叠区，PC 全行平铺）：
+   * 「A-B」= 一行两列；无 - = 独占一行（wide）
    * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
-   * 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 / 生产牧场-马主 / 体重 */
-  el.innerHTML=
-    '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
-    (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
-    '</div>'+
-    '<div class="filter-card"><div class="filter-grid">'+
+   * 后3F / 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 / 生产牧场-马主 / 体重 */
+  var _mb=isMb();
+  var condRow=row("cond","马场",condOpts), agariRow=rowWide("agari","后3F",AGARI_OPTS);
+  var primaryRows=
       horseRow+
       row("surface","跑道",SURFACE_OPTS)+
       row("venue","场地",VENUE_OPTS)+
-      row("cond","马场",condOpts)+
+      (_mb?"":condRow)+
       row("dist","距离",DIST_OPTS)+
-      row("turn","赛道方向",TURN_OPTS)+
-      (byears.length?'<div class="filter-row"><span class="filter-label">出生年份</span><div class="filter-chips">'+byears.map(function(b){ return chip("byear",b,b); }).join("")+'</div></div>':"")+
-      (years.length?'<div class="filter-row"><span class="filter-label">比赛年份</span><div class="filter-chips">'+years.map(function(y){ return chip("year",y,y); }).join("")+'</div></div>':"")+
       row("sex","性别",SEX_OPTS)+
       row("result","着顺",RESULT_OPTS)+
-      rowWide("grade","级别",GRADE_OPTS)+
+      (_mb?"":agariRow)+
+      rowWide("grade","级别",GRADE_OPTS);
+  var advRows=
+      (_mb?condRow+agariRow:"")+   /* mb：马场/后3F 也进折叠区，保持卡片内相对顺序 */
+      row("turn","赛道方向",TURN_OPTS)+
+      (byears.length?row("byear","出生年份",byears.map(function(b){ return {v:b,l:b}; })):"")+
+      (years.length?row("year","比赛年份",years.map(function(y){ return {v:y,l:y}; })):"")+
       (showCentral?rowWide("track","竞马场·中央",TRACK_CENTRAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showLocal?rowWide("track","竞马场·地方",TRACK_LOCAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showOversea?rowWide("track","竞马场·海外",[{v:"海外",l:"海外"}]):"")+
@@ -566,7 +562,27 @@ function renderFilters(){
       selRow("trainer",false)+
       selRow("breeder",false)+
       selRow("owner",false)+
-      selRow("weight",false)+
+      selRow("weight",false);
+  /* mb：高级行包进折叠区（默认收起，隐藏维度有已选值自动展开）；切换按钮放在
+   * 常用行末尾（筛选卡底部，§162 用户指正：放头部不显眼）。PC 平铺不折叠 */
+  var advWrap=advRows;
+  var advBtn="";
+  var advN=0;
+  if(isMb()){
+    HIDE_DIMS.forEach(function(k){ advN+=(FLT[k]||[]).length; });
+    ADV_OPEN = ADV_MANUAL!=null ? ADV_MANUAL : advN>0;
+    advBtn='<button type="button" id="fAdv" class="f-adv-btn">高级筛选'+(advN?' · '+advN:'')+(ADV_OPEN?' ▴':' ▾')+'</button>';
+    advWrap='<div class="f-adv'+(ADV_OPEN?' open':'')+'">'+advRows+'</div>';
+  }else{
+    ADV_OPEN=false;
+  }
+  el.innerHTML=
+    '<div class="filter-head"><span class="filter-title">筛选 · FILTER</span>'+
+    (active?'<button type="button" id="fClear" class="f-reset">清空条件</button>':'')+
+    '</div>'+
+    (sumTags.length?'<div class="filter-sum"><span class="fs-lab">已选 '+sumTags.length+' 项</span>'+sumTags.join("")+'</div>':"")+
+    '<div class="filter-card"><div class="filter-grid">'+
+      primaryRows+advBtn+advWrap+
     '</div></div>';
   /* 筛选条重建后重新挂载搜索下拉：出走马 + 人气/母父/骑手/调教师/生产牧场/马主/体重（均 selector.js compact+multi） */
   initHorseSel();
@@ -682,9 +698,31 @@ function pagerHTML(page,pages,total){
   '</div>';
 }
 
+/* 筛选状态 → URL：FLT 全量回写 ?f=k:v,k:v（与统计页下钻同格式），刷新/后退/复制链接均还原；
+ * replaceState 不产生历史条目；无已选条件时删掉该参数；历史 API 不可用场景静默跳过。
+ * 被回壳进 index.html 后子页 URL 不外显 → 改发 yj:url 消息请外壳把顶层 ?page= 刷成
+ * 当前子页地址（含 ?f=），外壳负责 replaceState；独立打开（含 embed=1 直链）直接改本窗。 */
+function syncURL(){
+  try{
+    var parts=[];
+    DIM_KEYS.forEach(function(k){
+      (FLT[k]||[]).forEach(function(v){ parts.push(k+":"+v); });
+    });
+    if(window.top===window.self){
+      var u=new URL(location.href);
+      if(parts.length) u.searchParams.set("f",parts.join(","));
+      else u.searchParams.delete("f");
+      history.replaceState(null,"",u);
+    }else{
+      parent.postMessage({type:"yj:url", url:"pages/races.html"+(parts.length?"?f="+encodeURIComponent(parts.join(",")):"")}, "*");
+    }
+  }catch(e){}
+}
+
 function renderResults(){
   var body=document.getElementById("body");
   if(!LIB){ return; }
+  syncURL();
   var all=LIB.entries.filter(function(en){ return matchEntry(en); });
   all.sort(function(a,b){ return raceCmp(a.r, b.r); });   /* 日期降序 + 同日発走降序（无発走视为最大排最前），PC/mb 共用 */
   var horseSet={};
@@ -864,6 +902,19 @@ function dimCfg(key){
   for(var i=0;i<DIM_SEL.length;i++){ if(DIM_SEL[i].k===key) return DIM_SEL[i]; }
   return {k:key,l:key};
 }
+/* 维度中文名（已选条件摘要条用；chip 行 label 与这里保持一致） */
+var DIM_LABEL={horse:"出走马",venue:"场地",track:"竞马场",surface:"跑道",dist:"距离",cond:"马场",grade:"级别",
+               result:"着顺",year:"比赛年份",byear:"出生年份",turn:"赛道方向",ninki:"人气",sex:"性别",
+               trainer:"调教师",jockey:"骑手",mps:"母父",weight:"体重",breeder:"生产牧场",owner:"马主",agari:"后3F"};
+/* 摘要条里的值显示名：FLT 存的是 chip 的 v（与显示 l 不同源的维度在此换算；其余原样展示） */
+function dimValLabel(k,v){
+  function opt(list){ for(var i=0;i<list.length;i++){ if(list[i].v===v) return list[i].l||list[i].v; } return null; }
+  if(k==="surface") return opt(SURFACE_OPTS)||v;
+  if(k==="dist")    return opt(DIST_OPTS)||v;
+  if(k==="agari")   return opt(AGARI_OPTS)||v;
+  if(k==="ninki")   return v+"人気";
+  return v;
+}
 /* 维度候选聚合：值 → 出赛场数（selector items 的 n），按场数降序 */
 function dimCounts(key){
   var cnt={};
@@ -925,23 +976,20 @@ function bindFilters(){
     var x=e.target.closest?e.target.closest(".f-tag-x"):null;
     if(x){
       var fk=x.dataset.fk;
+      /* 已选胶囊删除（摘要条 + 搜索下拉维度 + 出走马统一路径）：改 FLT 后整体重建筛选条，
+       * 摘要条/底行 chip/下拉排除三项同步刷新；删除是离散动作，无需保焦点 */
       if(fk){
-        /* 人气/母父/骑手/调教师标签：只刷该维度 tag 区 + 下拉排除，不重建筛选条 */
         var a2=FLT[fk] || (FLT[fk]=[]);
         var i2=a2.indexOf(x.dataset.fv);
         if(i2>=0) a2.splice(i2,1);
-        PG.page=1;
-        refreshDimUI(fk);
-        renderResults();
       }else{
-        /* 出走马标签（保留原路径：只刷标签区，selector 组件不重建） */
         var arr=FLT.horse || (FLT.horse=[]);
         var i=arr.indexOf(x.dataset.hid);
         if(i>=0) arr.splice(i,1);
-        PG.page=1;
-        refreshHorseUI();
-        renderResults();
       }
+      PG.page=1;
+      renderFilters();
+      renderResults();
       return;
     }
     var c=e.target.closest?e.target.closest(".filter-chip"):null;
@@ -953,6 +1001,11 @@ function bindFilters(){
       PG.page=1;                                    /* 筛选变化回到第 1 页 */
       renderFilters();
       renderResults();
+      return;
+    }
+    if(e.target.closest&&e.target.closest("#fAdv")){
+      ADV_MANUAL=!ADV_OPEN;               /* 用户显式 toggle 后固定（不再被「有已选值自动展开」覆盖） */
+      renderFilters();
       return;
     }
     if(e.target.closest&&e.target.closest("#fClear")){
@@ -981,7 +1034,9 @@ function bindPager(){
 function initLibrary(){
   var body=document.getElementById("body");
   document.getElementById("selector").style.display="none";
-  body.innerHTML='<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">正在加载全库比赛数据…</div>';
+  body.innerHTML=(window.YJ && YJ.ui && YJ.ui.spin)
+    ? YJ.ui.spin({ label: "正在加载全库比赛数据…" })
+    : '<div class="px-5 py-[60px] text-center text-[13px] text-muted-foreground">正在加载全库比赛数据…</div>';
   function finish(horses, entries){
     LIB={horses:horses, entries:entries};
     /* ?horse=id 跳转（基本信息内嵌 RACES → 独立模式查看详情）：预置出走马筛选 */

@@ -38,7 +38,10 @@ YJ.pedigree = (function () {
     var fs = g <= 1 ? 14 : g === 2 ? 13 : 12;
     var meta = [n.year, n.color].filter(Boolean).join(" · ");
     var inline = g >= 2 ? " inline" : "";
-    return '<div class="pcell ' + cls + inline + '" style="grid-row:' + rs + '/' + re + ';font-size:' + fs + 'px" title="' +
+    /* §158：JBIS 马页直达（节点自带 jbis 口径 id）→ data-pid 供委托点击（仅完整弹窗内生效，
+     * 简约 2 代网格整卡点击 = 弹完整 5 代，不抢）；hover 提亮样式见下方注入 CSS */
+    var pid = n.id ? ' data-pid="' + esc(n.id) + '"' : "";
+    return '<div class="pcell ' + cls + inline + '" style="grid-row:' + rs + '/' + re + ';font-size:' + fs + 'px"' + pid + ' title="' +
       esc([n.name, n.year ? n.year + "年生" : "", n.color].filter(Boolean).join(" · ")) + '">' +
       '<span class="name">' + esc(n.name) + '</span>' +
       (meta ? '<span class="meta">' + esc(meta) + '</span>' : '') +
@@ -91,33 +94,102 @@ YJ.pedigree = (function () {
           '<span class="pg-modal-title text-[15px] font-semibold">' + esc(title || "血统图") + '</span>' +
           '<button class="pg-close h-[30px] w-[30px] cursor-pointer rounded-lg border-none bg-muted/50 text-[18px] leading-none text-foreground hover:bg-muted" type="button">×</button>' +
         '</div>' +
-        '<div class="pg-modal-body min-w-0 max-w-[96vw] overflow-auto p-3.5 max-md:p-2.5">' + fullHTML(ped) + '</div>' +
+        /* mb 横滚适配（2026-10-31）：body 包一层 relative 承载左右渐隐提示——
+         * 网格超出视口时右缘先亮（示意「还有内容」），滚到最右渐隐、左缘渐亮；
+         * 可横滚时（宽>视口）mb 才显示「左右滑动」提示条，PC 网格不超宽全部不出现 */
+        '<div class="pg-modal-wrap relative flex min-h-0 flex-1 flex-col">' +
+          '<div class="pg-modal-body min-h-0 min-w-0 max-w-[96vw] flex-1 overflow-auto p-3.5 max-md:p-2.5">' + fullHTML(ped) + '</div>' +
+          '<div class="pg-fade pg-fade-l pointer-events-none absolute inset-y-0 left-0 w-7 bg-gradient-to-r from-black/10 to-transparent opacity-0 transition-opacity duration-200"></div>' +
+          '<div class="pg-fade pg-fade-r pointer-events-none absolute inset-y-0 right-0 w-7 bg-gradient-to-l from-black/10 to-transparent opacity-0 transition-opacity duration-200"></div>' +
+        '</div>' +
+        '<div class="pg-hint hidden max-md:flex items-center justify-center gap-1 pb-2 pt-0.5 text-[11px] text-muted-foreground">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>' +
+          '左右滑动查看全部世代' +
+        '</div>' +
       '</div>';
-    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); document.body.style.overflow = prevOverflow; window.removeEventListener("keydown", onKey); }
+    function close() {
+      window.removeEventListener("resize", updScrollHint);   /* function 声明提升，先于定义引用安全 */
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    }
     var prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e) { if (e.key === "Escape") close(); }
+    /* 渐隐/提示状态机：scrollLeft>阈值 → 左缘亮；未到最右 → 右缘亮；
+     * 横向不可滚（PC 或内容不超宽）→ 全部隐藏，提示条一并收起 */
+    var bodyEl = ov.querySelector(".pg-modal-body");
+    var fadeL = ov.querySelector(".pg-fade-l"), fadeR = ov.querySelector(".pg-fade-r");
+    var hint = ov.querySelector(".pg-hint");
+    function updScrollHint() {
+      var max = bodyEl.scrollWidth - bodyEl.clientWidth;
+      var scrollable = max > 8;
+      if (fadeL) fadeL.style.opacity = (scrollable && bodyEl.scrollLeft > 4) ? 1 : 0;
+      if (fadeR) fadeR.style.opacity = (scrollable && bodyEl.scrollLeft < max - 4) ? 1 : 0;
+      if (hint) hint.style.display = scrollable ? "" : "none";
+    }
+    bodyEl.addEventListener("scroll", updScrollHint, { passive: true });
+    window.addEventListener("resize", updScrollHint);
     ov.querySelector(".pg-close").addEventListener("click", close);
     ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(); });
     window.addEventListener("keydown", onKey);
     document.body.appendChild(ov);
+    updScrollHint();   /* 首帧即算（1120px 网格在 mb 上右缘应立即亮起） */
+    /* §158：弹窗内单元格 = JBIS 直达入口 → 补悬停提示（简约 2 代网格点击仍是弹窗语义，不加） */
+    Array.prototype.forEach.call(ov.querySelectorAll(".pcell[data-pid]"), function (c) {
+      c.title = (c.title ? c.title + " · " : "") + "点击打开 JBIS 资料 ↗";
+    });
   }
 
   function bindSimple(el, ped, title) {
     el.addEventListener("click", function () { openModal(ped, title); });
   }
 
-  /* 注入网格样式（Tailwind utility 已覆盖配色/字号/间距；
-   * 仅 grid 布局机制与紧凑版行高需要少量结构性 CSS，定义在这里） */
+/* §158 血统单元格交互（模块加载即绑一次，简约/弹窗两处共享）：
+ * hover 提亮 + 内描边（CSS 注入见下）；完整 5 代弹窗内点击单元格 → 新标签打开 JBIS 马页
+ * （id = 台账 jbis 口径，与 basic.json 的 jbis_id 同源）。简约 2 代网格点击 = 弹完整版（既有语义），
+ * 显式排除。空位格（.x）无 data-pid 天然不参与。 */
+document.addEventListener("click", function (e) {
+  var c = e.target && e.target.closest ? e.target.closest(".pcell[data-pid]") : null;
+  if (!c || !c.closest(".pg-modal")) return;
+  window.open("https://www.jbis.or.jp/horse/" + c.getAttribute("data-pid") + "/", "_blank", "noopener");
+});
+
+/* 注入网格样式（Tailwind utility 已覆盖配色/字号/间距；
+ * 仅 grid 布局机制与紧凑版行高需要少量结构性 CSS，定义在这里） */
   var css = `
-/* 血统网格（5 列，行列照抄旧版；配色用 Tailwind 类） */
+/* 血统网格（5 列，行列照抄旧版；配色用 Tailwind 类）
+ * min-width:760px 是「5 代名字不被挤成省略号」的底线，PC 与窄屏同用：
+ * 窄屏（≤768px）不再缩档压字（2026-10-30 曾改为一屏缩档版，名字大面积省略，
+ * 2026-10-31 用户拍板改回横滚版）——弹窗 body 的 overflow-auto 承担横向滚动，
+ * 简约 2 代版（.pside-simple，内嵌卡片）仍由自身规则锁 min-width:0 不参与横滚。 */
 .pside{display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:26px;gap:1px;background:#e5e5e5;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;min-width:760px}
 .pcell{min-width:0;padding:2px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;cursor:pointer;background:#fff}
-.pcell.m{background:#e9f1f7}
-.pcell.f{background:#f8eeee}
+/* 窄屏横滚缩档（2026-10-31 二轮：用户反馈 PC 原样搬 1120px 太臃肿）：横滚与提示保留，
+ * 行高 26→19px、名字字号 14/13/12→11/10.5/10px（!important 压过 cell() 的 inline 字号）、
+ * meta 9→8px、内距收窄，宽度 1120→880px（字小了同宽度能容纳更多字符，实测仍零省略）；
+ * 简约 2 代版不受影响 */
+@media (max-width:768px){
+  .pside{min-width:880px;grid-auto-rows:19px}
+  .pg-modal .pcell{padding:1px 6px}
+  .pg-modal .pcell{font-size:10px !important}
+  .pg-modal .pcell .name{font-size:11px !important}
+  .pg-modal .pcell.inline .name{font-size:10px !important}
+  .pg-modal .pcell .meta{font-size:8px !important}
+}
+/* 父系/母系配色 = 基本信息性别徽章全站基准（profile sexBadge / theme.css §性别三等分列同源）：
+ * 牡蓝 #C9EFFE/#0B5A8C · 牝粉 #FFDBD5/#B03A30（2026-10-31 用户要求统一，替换旧 #e9f1f7/#f8eeee） */
+.pcell.m{background:#C9EFFE}
+.pcell.f{background:#FFDBD5}
+.pcell.m .name{color:#0B5A8C}
+.pcell.f .name{color:#B03A30}
 .pcell.x{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,.02) 6px,rgba(0,0,0,.02) 12px);cursor:default}
 .pcell .name{font-weight:600;color:#0a0a0a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcell .meta{color:#737373;white-space:nowrap}
+/* §158 hover 提亮 + 内描边（简约/弹窗共用；空位格 .x 排除） */
+.pcell{transition:filter .15s ease,box-shadow .15s ease}
+.pcell:not(.x):hover{filter:brightness(.955);box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.10)}
+@media (prefers-reduced-motion:reduce){.pcell{transition:none}}
 .pcell:not(.inline) .name{display:block}
 .pcell:not(.inline) .meta{display:block;font-size:9px;margin-top:1px;overflow:hidden;text-overflow:ellipsis}
 .pcell.inline{flex-direction:row;align-items:center;gap:6px}
@@ -128,6 +200,9 @@ YJ.pedigree = (function () {
 .pside-simple .pcell{padding:1px 8px}
 .pside-simple .pcell .name{font-size:11.5px}
 .pside-simple .pcell .meta{font-size:8px}
+
+/* 弹窗横滚体：iOS 惯性滚动（触屏横滑更顺） */
+.pg-modal-body{-webkit-overflow-scrolling:touch}
 `;
   var st = document.createElement("style");
   st.textContent = css;

@@ -11,27 +11,25 @@
 <body class="bg-muted/50 text-foreground antialiased">
 
 <!-- 2026-10 v3「工作台」改版（docs/UI优化记录.md §90）+ §104 批量表格：编辑导航第 2 项。
-     键盘电子表格流：整页密表 + 单元格就地编辑 + Enter↓/Tab→/方向键 + Ctrl+Z·Y 撤销重做。
+     交互（2026-10-30 用户定稿）：整页密表 + 点击单元格就地编辑，**不做键盘电子表格流**
+     （无 Enter↓/Tab→/方向键/Delete 清格/Ctrl+Z·Y 绑定；撤销/重做只走工具条按钮）。
      编辑链路复用 editor.js（草稿箱 / GitHub 连接 / 一次性原子提交 / 报告语言零改动）：
      基本信息 → manual_overrides.json（d.ov）；比赛记录 → races_edits.json（d.rc，SCHEMA §9）。
-     §82.13：mb 端不开放编辑——应用容器 max-md 隐藏，只留电脑端提示。 -->
-<div class="hidden max-md:block mx-auto w-full max-w-[880px] px-4 pt-16 pb-[60px] text-center">
-  <div class="text-[42px] leading-none">🖥️</div>
-  <div class="mt-3 text-[15px] font-bold">编辑台请在电脑端使用</div>
-  <div class="mt-1.5 text-[12.5px] leading-[1.7] text-muted-foreground">手机端只浏览：页面上的编辑入口在窄屏下一律隐藏。</div>
-</div>
-
-<div class="mx-auto w-full max-w-[1280px] px-4 pt-6 pb-[108px] max-md:px-3 max-md:pt-3 max-md:pb-[132px] max-md:hidden">
+     §155：mb 端开放编辑（§82.13 作废）——工具条 flex-wrap 自然换行，表格 sticky 列 + overflow 触屏横滚。 -->
+<div class="mx-auto w-full max-w-[1280px] px-4 pt-6 pb-[108px] max-md:px-3 max-md:pt-3 max-md:pb-[132px]">
 
   <header class="rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
     <!-- 页内页签已撤下（2026-10-25 用户定稿）：编辑台导航统一收进外壳侧栏「编辑」组（front/index.html #editNav） -->
     <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
       <span class="text-[13.5px] font-bold text-secondary-foreground">批量表格</span>
-      <span class="text-[11.5px] text-muted-foreground">点单元格就地改 · Enter 下移 / Tab 右移 / 方向键移动 · Ctrl+Z 撤销 / Ctrl+Y 重做 · Delete 清格</span>
+      <!-- 快捷键说明已删除（2026-10-30 用户定稿）：不做键盘电子表格流兼容。
+           历史：2026-10-30 上午曾改 <kbd> 键帽胶囊，用户复看认为多余 → 回退为纯文本；
+           当日下午用户进一步要求「去掉文案、不做快捷按键兼容」→ 整条移除，
+           对应的 Enter↓/Tab→/方向键/Delete/Ctrl+Z·Y 键盘处理同步删除（见 editor-table.js bind()）。 -->
     </div>
     <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-chart3"></i>待保存（本页改动）</span>
-      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-accent"></i>已保存（人工钉住值）</span>
+      <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-accent"></i>已保存（人工维护 · 不被自动更新覆盖）</span>
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-primary"></i>新增行</span>
       <span class="flex items-center gap-1"><i class="yj-ed-chipdot bg-destructive"></i>删除行（提交前可撤销）</span>
     </div>
@@ -41,8 +39,8 @@
   <section id="fsTarget" class="mt-3 rounded-[14px] border border-border bg-card shadow-sm">
     <div class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
       <div id="sheets" class="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-        <button type="button" data-sheet="basic" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">基本信息</button>
-        <button type="button" data-sheet="races" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">比赛记录</button>
+        <button type="button" data-sheet="basic" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">基本信息<span id="cntBasic" class="ml-1.5 hidden rounded-full bg-chart3/15 px-1.5 text-[10px] font-semibold text-chart3">0</span></button>
+        <button type="button" data-sheet="races" class="rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors">比赛记录<span id="cntRaces" class="ml-1.5 hidden rounded-full bg-chart3/15 px-1.5 text-[10px] font-semibold text-chart3">0</span></button>
       </div>
       <span class="mx-1 h-5 w-px bg-border"></span>
       <button id="addBtn" class="yj-ed-op h-7 px-2.5 text-[11.5px]" type="button">＋ 追加行</button>
@@ -51,8 +49,9 @@
       <button id="undoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↶ 撤销</button>
       <button id="redoBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button" disabled>↷ 重做</button>
       <button id="pasteBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">📋 粘贴导入</button>
+      <button id="dirtyBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">只看待保存</button>
       <span class="relative ml-auto flex items-center gap-2">
-        <input id="search" type="text" placeholder="筛选行…"
+        <input id="search" type="text" placeholder="筛选行…（支持 列名:值）"
                class="h-7 w-[180px] rounded-md border border-input bg-background px-2.5 text-[12px] text-foreground placeholder:text-muted-foreground/70">
         <button id="fsBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">⛶ 全屏</button>
         <button id="colBtn" class="yj-ed-op yj-ed-op--ghost h-7 px-2.5 text-[11.5px]" type="button">列 ▾</button>
@@ -75,8 +74,8 @@
 <datalist id="et-name-list"></datalist>
 <div id="toast" class="pointer-events-none fixed left-1/2 top-4 z-[60] hidden -translate-x-1/2 rounded-full border border-border bg-card px-4 py-1.5 text-[12px] font-medium text-foreground shadow-lg"></div>
 
-<!-- 固定底部保存条：#box 抽屉（草稿箱 / 已保存 / GitHub 连接）锚在这里，向上弹出（mb 不开放编辑） -->
-<div id="savebar" class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur max-md:hidden">
+<!-- 固定底部保存条：#box 抽屉（草稿箱 / 已保存 / GitHub 连接）锚在这里，向上弹出（§155 mb 同样开放） -->
+<div id="savebar" class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur">
   <div class="relative mx-auto flex max-w-[1280px] flex-wrap items-center gap-2.5 px-4 py-2.5">
     <div id="box"></div>
     <span class="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground">
@@ -113,7 +112,8 @@ YJ.editor.init({
     addBtn: "addBtn", delBtn: "delBtn", undoBtn: "undoBtn", redoBtn: "redoBtn",
     pasteBtn: "pasteBtn", colBtn: "colBtn", colMenu: "colMenu",
     resetBtn: "reset", summary: "summary", sheets: "sheets", toast: "toast",
-    nameList: "et-name-list", fsBtn: "fsBtn", fsTarget: "fsTarget"
+    nameList: "et-name-list", fsBtn: "fsBtn", fsTarget: "fsTarget",
+    dirtyBtn: "dirtyBtn", cntBasic: "cntBasic", cntRaces: "cntRaces"
   });
 });
 </script>

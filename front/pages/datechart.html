@@ -8,117 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="stylesheet" href="theme.css">
-<style>
-/* ===== 等级/着顺/人气徽章、mb 软分行卡片、马名跳转（.yj-grade/.yj-no/.yj-nk/.yj-nkm/.yj-mb/.hjump）
- * 已收敛到 theme.css @layer components，并与 front/public/race-rows.js 配套：
- * 明细与比赛页（内嵌）共用同一份样式与同一份行渲染代码，改一次两处同步 ===== */
-
-/* 单位切换（天/周/月/年 分段控件）：样式单一出处 = theme.css @layer components（.seg，与 stats 场地切换同款；2026-xx 收口） */
-
-/* ===== 窗口切换 ‹ › ===== */
-.dc-nav{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:15px;line-height:1;cursor:pointer;transition:all .15s}
-.dc-nav:hover:not(:disabled){border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
-.dc-nav:disabled{opacity:.35;cursor:not-allowed}
-
-/* ===== 快速定位日期选择器（Element date-picker 风格：统一挂在窗口标签上，随口径出 日/周/月/年 面板） ===== */
-.dc-dp-label{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:0;border-radius:7px;background:transparent;color:#171717;font-size:14px;font-weight:600;line-height:1.4;cursor:pointer;transition:all .15s;white-space:nowrap}
-.dc-dp-label:hover{background:#f0faf9;color:#0b6b64}
-.dc-dp-caret{font-size:9px;color:#8a8a8a;transition:transform .15s}
-.dc-dp[data-on=true] .dc-dp-label{color:#0b6b64;background:#f0faf9}
-.dc-dp[data-on=true] .dc-dp-caret{transform:rotate(180deg);color:#0aa7a0}
-.dc-dp-panel{position:absolute;left:0;top:calc(100% + 8px);z-index:30;width:312px;padding:10px;border:1px solid #e5e5e5;border-radius:10px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.12)}
-.dc-dp-hd{display:flex;align-items:center;gap:2px;margin-bottom:8px}
-.dc-dp-nav{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:#52525b;font-size:12px;line-height:1;cursor:pointer}
-.dc-dp-nav:hover:not(:disabled){background:#f0f0f0;color:#0b6b64}
-.dc-dp-nav:disabled{opacity:.3;cursor:not-allowed}
-.dc-dp-lab{flex:1;text-align:center;font-size:13px;font-weight:600;color:#171717;white-space:nowrap}
-.dc-dp-grid{display:grid;gap:2px}
-.dc-dp-cell{display:inline-flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:6px;background:transparent;font-size:12px;color:#3a3a3e;cursor:pointer;font-variant-numeric:tabular-nums;transition:background .12s}
-.dc-dp-cell:hover{background:#f0f0f0}
-.dc-dp-cell.out{color:#c0c0c4}                       /* 邻月补位 */
-.dc-dp-cell.dis{color:#d4d4d8;cursor:default;pointer-events:none}  /* 范围外禁用 */
-.dc-dp-cell.today{box-shadow:inset 0 0 0 1px #0aa7a0}
-.dc-dp-cell.cur,.dc-dp-cell.cur:hover{background:#0aa7a0;color:#fff;font-weight:600}
-.dc-dp-wrow{display:grid;grid-template-columns:38px repeat(7,1fr);gap:2px;border-radius:7px}
-.dc-dp-wrow .dc-dp-cell{width:100%}
-.dc-dp-wnum{display:inline-flex;align-items:center;justify-content:center;height:30px;border-radius:6px;background:transparent;border:0;font-size:10.5px;color:#8a8a8a;cursor:pointer;font-variant-numeric:tabular-nums}
-.dc-dp-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:1px}
-.dc-dp-wrow.hl .dc-dp-wnum{color:#0b6b64;font-weight:700}
-.dc-dp-ft{display:flex;justify-content:flex-end;margin-top:8px;padding-top:8px;border-top:1px solid #ececec}
-.dc-dp-ft button{border:0;background:transparent;color:#0b6b64;font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:6px}
-.dc-dp-ft button:hover{background:rgba(10,167,160,.1)}
-
-/* ===== KPI 带：出走 / 通算战绩 / 总赏金 / 重赏胜利 ===== */
-.dc-kpis{display:flex;flex-wrap:wrap}
-.dc-kpi{padding:2px 18px;border-left:1px solid #ececec}
-.dc-kpi:first-child{padding-left:2px;border-left:0}
-.dc-kpi .k{font-size:11px;font-weight:600;letter-spacing:.5px;color:#8a8a8a;white-space:nowrap}
-.dc-kpi .v{margin-top:2px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:#171717;white-space:nowrap}
-.dc-kpi .v.hi{color:#0aa7a0}
-.dc-kpi .v.dim{color:#a1a1aa}
-.dc-kpi .trophy{font-size:16px;margin-right:2px}
-
-/* ===== 通算战绩 [1-1-1-1]（**格式保留连字符**；1/2/3 浅色做底 + 深色数字，着外浅灰底）
- * 四段底色连成「一整条」：数字格各用该段底色，连字符格用「上一色→下一色」线性渐变接缝，
- * 底色连续、过渡柔和无硬边；圆角只留在整条两端（KPI 大括号 5px / 日历小格 3px） ===== */
-.dc-brk{font-variant-numeric:tabular-nums;color:#a1a1aa;white-space:nowrap;display:inline-flex;align-items:center;vertical-align:middle}
-.dc-brk b{color:#171717;font-weight:600}
-.dc-brk i{font-style:normal;color:#171717;font-weight:600;padding:0 1px}
-.dc-brk b:first-of-type{margin-left:2px;border-radius:3px 0 0 3px}
-.dc-brk b:last-of-type{margin-right:2px;border-radius:0 3px 3px 0}
-.dc-brk-lg{font-size:19px}
-.dc-brk-lg b{padding:1px 6px}
-.dc-brk-lg i{padding:1px 5px}
-.dc-brk-lg b:first-of-type{margin-left:3px;border-radius:5px 0 0 5px}
-.dc-brk-lg b:last-of-type{margin-right:3px;border-radius:0 5px 5px 0}
-
-/* ===== 日历（月网格：周一行 + 日格，行首尾补真实邻月日 .dc-outm） ===== */
-.dc-cal{display:flex;flex-direction:column;gap:3px}
-.dc-dowrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.dc-dow{text-align:center;font-size:10.5px;font-weight:600;color:#8a8a8a;padding:2px 0}
-.dc-wrow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;border-radius:10px}
-.dc-wrow.hl{outline:2px solid rgba(10,167,160,.5);outline-offset:2px}
-.dc-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:66px;padding:5px 7px;border:0;border-radius:8px;background:transparent;cursor:pointer;text-align:left;transition:background .15s}
-.dc-cell:hover{background:#f0f0f0}
-.dc-cell.run{background:#f5f5f5}
-.dc-cell.run:hover{background:#ededed}
-.dc-cell.dc-sel{box-shadow:inset 0 0 0 2px #0aa7a0}
-/* 邻月补位格：真实日期 + 数据照出，但日期/赏金降灰、格底不套 win/run 色 → 一眼分得出不是本月
- * （降灰语义同日期面板 .dc-dp-cell.out） */
-.dc-cell.dc-outm .dc-d{color:#b4b4b8}
-.dc-cell.dc-outm .dc-prz{color:#b8b8bc}
-.dc-cell.dc-outm:hover{background:#f7f7f7}
-.dc-cell-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
-.dc-d{font-size:12.5px;font-weight:600;color:#52525b;font-variant-numeric:tabular-nums}
-.dc-cell.win .dc-d{color:#0aa7a0}
-.dc-gw{font-size:10px;line-height:1.3;white-space:nowrap}
-.dc-prz{font-size:10.5px;color:#8a8a8a;font-variant-numeric:tabular-nums}
-
-/* ===== 年视图：12 个月卡 ===== */
-.dc-ym{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 12px;border:1px solid #ececec;border-radius:10px;background:#fff;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
-.dc-ym:hover{border-color:rgba(10,167,160,.55);background:#f7fdfd}
-.dc-ym-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2px}
-.dc-ym b{font-size:13px;font-weight:700;color:#171717}
-.dc-ym.zero b{color:#a1a1aa}
-.dc-ym.zero .dc-brk,.dc-ym.zero .dc-prz{color:#c6c6ca}
-.dc-ym-prz{font-size:12px;color:#52525b;font-variant-numeric:tabular-nums}
-.dc-ym-n{font-size:10.5px;color:#8a8a8a}
-
-/* ===== 明细：行/卡片渲染与样式统一走 race-rows.js + theme.css（与比赛页内嵌表同一份代码） ===== */
-
-/* ===== 手机（≤768px）：日历格只留 日期+🏆，通算战绩/赏金收进 KPI 带与明细 ===== */
-@media (max-width:768px){
-  .dc-cell{min-height:38px;padding:3px 5px;gap:1px}
-  .dc-d{font-size:11px}
-  .dc-cell .dc-brk,.dc-cell .dc-prz{display:none}
-  .dc-gw{font-size:9px}
-  .dc-kpi{padding:2px 12px}
-  .dc-kpi .v{font-size:16px}
-  .dc-brk-lg{font-size:14px}
-  .dc-kpi .trophy{font-size:13px}
-  .yj-mb-item{margin-right:10px}
-}
-</style>
+<link rel="stylesheet" href="datechart-page.css">
 </head>
 <body class="bg-background text-foreground antialiased">
 <div class="mx-auto w-full px-6 pt-[22px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]" id="page">
@@ -155,7 +45,7 @@
         <button id="navNext" class="dc-nav" type="button" aria-label="下一窗口">›</button>
       </div>
     </div>
-    <div id="kpis" class="dc-kpis mb-3"></div>
+    <div id="kpis" class="yj-kpis mb-3"></div>
     <div id="cal"></div>
   </div>
 
@@ -223,6 +113,13 @@ function bracketHTML(vals, cls){
 /* 赏金显示：万円起，≥1亿 转「x亿x万」（万段为 0 只留亿）；格式化逻辑单一出处 = YJ.util.manYen
  * （2026-xx 收口；本页空值 → ""，调用处均已 s.pr ? … 守卫兜底） */
 var manYen = YJ.util.manYen;
+/* 重赏奖杯图标（§160）：金色渐变内联 SVG（Material emoji_events 路径）替代 🏆 emoji——
+ * §146-5 先以单色 currentColor SVG 上线（Windows 彩色 emoji 与扁平风格不搭）；
+ * §160 升级为内嵌 linearGradient 金色渐变（亮金 #fde68a → #fbbf24 → 基线金 #e8a013 → 深金 #d97706），
+ * 配 theme.css 的 .yj-trophy 辉光呼吸动画做「金光闪闪」。本页 KPI/明细胜格/月卡三处共用本常量；
+ * stats.html KPI 持有一份逐字节相同的副本（仅 2 页，§48 门槛内不抽离，改图案两处同步）。
+ * 渐变 id 固定 #yj-tg：多实例内嵌重复 id 由浏览器取首个解析，defs 逐字节相同，视觉无差。 */
+var TROPHY = '<svg class="yj-trophy" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><defs><linearGradient id="yj-tg" x1="0" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".4" stop-color="#fbbf24"/><stop offset=".7" stop-color="#e8a013"/><stop offset="1" stop-color="#d97706"/></linearGradient></defs><path fill="url(#yj-tg)" d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>';
 
 /* ---- ISO 周工具 ---- */
 function isoWeekInfo(dstr){
@@ -290,7 +187,7 @@ function keyLabel(mode, key){
   if (mode === "year")  return key + "年";
   var y = +key.slice(0,4), wk = +key.slice(6);
   var mon = mondayOfISOWeek(y, wk), end = new Date(mon); end.setUTCDate(end.getUTCDate() + 6);
-  return y + "年 第" + wk + "週（" + fmtMD(mon) + "–" + fmtMD(end) + "）";
+  return y + "年 第" + wk + "周（" + fmtMD(mon) + "–" + fmtMD(end) + "）";
 }
 /* 场地范围内过滤（st.vts 任一命中；vt 来自产物 venue_type） */
 function inVenue(r){ return st.vts.indexOf(r.vt) !== -1; }
@@ -342,6 +239,16 @@ function render(){
   renderKpis(mode, key);
   renderCal(mode, key);
   renderDetail(mode, key);
+  fadeIn();   /* 整块重绘后挂一次淡入（§20）：让「口径/单位已切换」有可感知的反馈 */
+}
+
+/* 重启动画的标准写法：先摘类 → 强制 reflow → 再挂类，否则连续切换时动画不会重播 */
+function fadeIn(){
+  var el = document.getElementById("page");
+  if (!el) return;
+  el.classList.remove("dc-fade");
+  void el.offsetWidth;
+  el.classList.add("dc-fade");
 }
 
 function renderNav(mode){
@@ -363,14 +270,14 @@ function renderNav(mode){
 function renderKpis(mode, key){
   var s = statsOf(scopeRuns(mode, key));
   var kpi = function(label, value, cls){
-    return '<div class="dc-kpi"><div class="k">' + label + '</div><div class="v' + (cls ? " " + cls : "") + '">' + value + '</div></div>';
+    return '<div class="yj-kpi"><div class="k">' + label + '</div><div class="v' + (cls ? " " + cls : "") + '">' + value + '</div></div>';
   };
   var prize = s.pr ? manYen(s.pr) : (s.n ? "0万" : "—");
   document.getElementById("kpis").innerHTML =
     kpi("出走", s.n, s.n ? "" : "dim") +
     kpi("通算战绩", bracketHTML(careerVals(s), "dc-brk-lg")) +
     kpi("总赏金", prize, s.pr ? "" : "dim") +
-    kpi("重赏胜利", '<span class="trophy">🏆</span>' + s.gr, s.gr ? "hi" : "dim");
+    kpi("重赏胜利", '<span class="trophy">' + TROPHY + '</span>' + s.gr, s.gr ? "hi" : "dim");
 }
 
 /* 月网格（天/周/月共用，差异只是高亮）：整格铺**真实日期**，行首/行尾补邻月日（灰显 M/D）。
@@ -415,12 +322,15 @@ function dayCellHTML(y, m, d, mode, key, dim){
   } else if (s.n){
     cls += s.w ? " win" : " run";
     if (s.w) style = ' style="background:rgba(10,167,160,' + (s.w >= 3 ? ".22" : s.w === 2 ? ".16" : ".10") + ')"';
+  } else {
+    cls += " dc-idle";                       /* §146-1：无出走空格日给极浅底色，网格不再像没加载完 */
   }
   if (mode === "day" && ds === key) cls += " dc-sel";
   var tip = dayTitle(ds) + " · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
   var inner = '<span class="dc-cell-top"><b class="dc-d">' + (dim ? m + "/" + d : d) + '</b>' +
-    (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>';
+    (s.gr ? '<span class="dc-gw">' + TROPHY + s.gr + '</span>' : '') + '</span>';
   if (s.n) inner += bracketHTML(careerVals(s)) + '<span class="dc-prz">' + (s.pr ? manYen(s.pr) : "") + '</span>';
+  if (s.w) inner += '<i class="dc-wdot" aria-hidden="true"></i>';   /* §146-3：胜日小圆点（mb 端显示，双通道编码） */
   return '<button type="button" class="' + cls.trim() + '" data-d="' + ds + '"' + style + ' title="' + esc(tip) + '">' + inner + '</button>';
 }
 
@@ -432,18 +342,19 @@ function yearCardsHTML(y){
     var zero = s.n ? "" : " zero";
     var tip = y + "年" + m + "月 · [" + careerVals(s).join("-") + "] · " + (s.pr ? manYen(s.pr) : "无赏金");
     out += '<button type="button" class="dc-ym' + zero + '" data-m="' + m + '" title="' + esc(tip) + '">' +
-      '<span class="dc-ym-top"><b>' + m + '月</b>' + (s.gr ? '<span class="dc-gw">🏆' + s.gr + '</span>' : '') + '</span>' +
+      '<span class="dc-ym-top"><b>' + m + '月</b>' + (s.gr ? '<span class="dc-gw">' + TROPHY + s.gr + '</span>' : '') + '</span>' +
       bracketHTML(careerVals(s)) +
       '<span class="dc-ym-prz">' + (s.pr ? manYen(s.pr) : "—") + '</span>' +
-      '<span class="dc-ym-n">' + (s.n ? "勝 " + s.w : "无出走") + '</span>' +
+      '<span class="dc-ym-n">' + (s.n ? "胜 " + s.w : "无出走") + '</span>' +
     '</button>';
   }
   return '<div class="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-2.5">' + out + '</div>';
 }
 
 function renderCal(mode, key){
-  var dow = ["月","火","水","木","金","土","日"].map(function(x){
-    return '<div class="dc-dow">' + x + '</div>';
+  /* §146-2/7：星期头改中文数字（与日期选择器面板同款，去日文曜日），周末列头着色（土=蓝 / 日=红） */
+  var dow = ["一","二","三","四","五","六","日"].map(function(x, i){
+    return '<div class="dc-dow' + (i === 5 ? " sat" : i === 6 ? " sun" : "") + '">' + x + '</div>';
   }).join("");
   var html;
   if (mode === "year"){
@@ -463,8 +374,9 @@ function toRow(r){
     性: r.sx, 年齢: r.ya,   /* 性齢 列（§78.1）：产物 22→24 字段随 build_datechart 同步 */
     race_id: r.rid,         /* 赛事名 → netkeiba SP 比赛页链接（§80；'' = 台账等无 id → 纯文本） */
     venue_type: r.vt,       /* raceLink 按 中央/地方/海外 分流 SP 子域（§80.2） */
-    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 斤量: r.ki,
-    人気: r.nk, 結果: r.p, タイム: r.tm,
+    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 天候: r.tn,   /* 天候（§165 mb 全字段） */
+    枠番: r.wk, 馬番: r.ub, 頭数: r.ts, 斤量: r.ki,     /* 頭数（§165）；枠番/馬番 §159：产物 29→33 字段随 build_datechart 同步 */
+    人気: r.nk, 結果: r.p, タイム: r.tm, 着差: r.cs, 単勝: r.od,   /* 着差/単勝（§165 mb 全字段） */
     上り: r.ag, 末脚: r.ms, /* 後3F 列（§101）：值徽章化走共享模块 agariBadge（末脚只作配色判断） */
     賞金: r.pr,
     馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr
@@ -535,7 +447,8 @@ function renderDetail(mode, key){
     document.getElementById("dBody").innerHTML = '<div class="hint-empty">该口径暂无出走记录</div>';
     return;
   }
-  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义；
+  /* 行/卡片/表壳全部来自共享模块（race-rows.js）：与比赛页内嵌表同一份代码与列定义
+   * （§159 全站统一 18 列 embed 视图：datechart.json 已补 wk/ub 枠番/馬番字段）；
    * PC 表头传 nameToggle → 「马名」列头变成切换按钮（仅 PC 列头不带 cls，mb 卡片顶部中槽显示马名）。
    * 分页（§101）：PC 100 条/页、mb 卡 10 条/页，各自切片 + 各自页码行（CSS 断点各自显示）。 */
   var RR = YJ.raceRows;
@@ -706,8 +619,8 @@ function renderDpPanel(){
       var pwDis = wMs - 604800000 < RANGE.msLo || wMs - 604800000 > RANGE.msHi;
       var nwDis = wMs + 604800000 < RANGE.msLo || wMs + 604800000 > RANGE.msHi;
       navL = '<button type="button" class="dc-dp-nav" data-nav="pm" title="上一月"' + (mi <= MIN_M ? " disabled" : "") + '>«</button>' +
-             '<button type="button" class="dc-dp-nav" data-nav="pw" title="上一週"' + (pwDis ? " disabled" : "") + '>‹</button>';
-      navR = '<button type="button" class="dc-dp-nav" data-nav="nw" title="下一週"' + (nwDis ? " disabled" : "") + '>›</button>' +
+             '<button type="button" class="dc-dp-nav" data-nav="pw" title="上一周"' + (pwDis ? " disabled" : "") + '>‹</button>';
+      navR = '<button type="button" class="dc-dp-nav" data-nav="nw" title="下一周"' + (nwDis ? " disabled" : "") + '>›</button>' +
              '<button type="button" class="dc-dp-nav" data-nav="nm" title="下一月"' + (mi >= MAX_M ? " disabled" : "") + '>»</button>';
     } else {
       navL = '<button type="button" class="dc-dp-nav" data-nav="py" title="上一年">«</button>' +

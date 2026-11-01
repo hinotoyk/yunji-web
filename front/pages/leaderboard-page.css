@@ -1,0 +1,45 @@
+/* ============================================================
+ * 产驹赏金（leaderboard.html）· 本页专属样式
+ *
+ * 为什么独立成文件（2026-10-30 UI 审查 §6.2-1）：
+ *   原先是 leaderboard.html 的页内 <style> 块（27 行 / 2.51 kB），与页面结构、业务 JS 混排。
+ *   按 timeline-cards.css 的先例拆出。审查报告 §6.2 只点了 races/stats/datechart 三页，
+ *   本页与 timeline.html 同属「同样混排但被漏掉」的，一并处理。
+ *
+ * ★ 不要把这些规则搬进 theme.css：全部是只有本页用的选择器（.lb-* + #modeSeg 等），
+ *   进全站 CSS 会让其余 10 个页面白下载。
+ *
+ * ★★ 加载顺序不保证（实测）：Vite 会把「单页独有」的 CSS chunk 排在共享 chunk（theme.css）
+ *   **之前**，源码里写的 theme → 本文件的顺序在 dist 里会变成 本文件 → theme。
+ *   因此本文件**禁止**用同名选择器覆盖 theme.css 的类（如 .card / .seg / .yj-kpi）——
+ *   会静默失效。确需覆盖时用双类名/父级作用域提高特异性（如 `.lb-wrap .card`）。
+ *   当前本文件不含任何对 theme.css 同名类的覆盖，故顺序无关。
+ * ============================================================ */
+
+/* 页面局部样式（lb-*）：组件类（.seg/.card/.page-title/.yj-kpis）单一出处 = theme.css。
+ * v4（§115）：图表由 ECharts 定制包 canvas 渲染（空心=总赏金/实心=重赏赏金语义不变）。
+ * 2026-10-30 UI 审查 §29：原 .lb-kpis/.lb-kpi 六行定义与 stats/datechart 逐字节相同 → 收口到 .yj-kpi。 */
+/* 图例：浅色/主色小样，与条形渲染同源同色
+ * 2026-10-30 复看：曾给实心段加 #066a66 内框做色弱区分，用户判定「加了之后很丑」→ 已回退为纯色。 */
+.lb-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font-size:12px;color:#52525b}
+.lb-legend i{display:inline-block;width:16px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.lb-legend .i-total{background:#c9e8e6}
+.lb-legend .i-solid{background:#0aa7a0}
+/* mb 端分段控件紧凑化（2026-10-30 修横向溢出）：.seg 是 inline-flex 不换行，按钮 padding 15px
+ * 时「总榜+自然年+世代」与「全部+牡马（含骗）」两组合计约 374px > 390 视口可用宽 362px，
+ * 撑出横向滚动条，图表 canvas 跟着变宽 → 右侧看起来是空白。压缩 padding 后两组共约 304px 可放下。
+ * 只作用于本页（stats / datechart 的 seg 组合更短，不受影响）。 */
+@media (max-width:768px){
+  #modeSeg button, #sliceSeg button, #sexSeg button, #nameSeg button{padding:0 9px;font-size:12.5px}
+}
+/* §129 分页条：单页隐藏；MB 加大触点 */
+.lb-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:12.5px;color:#52525b}
+.lb-pager button{border:1px solid #e4e4e7;background:#fff;border-radius:8px;padding:5px 14px;font-size:12.5px;line-height:1.5;color:#3f3f46;cursor:pointer}
+.lb-pager button:hover:not(:disabled){border-color:#0aa7a0;color:#0aa7a0}
+.lb-pager button:disabled{opacity:.35;cursor:default}
+.lb-pager .lb-pg-info{min-width:150px;text-align:center}
+@media (max-width:768px){ .lb-pager{gap:8px} .lb-pager button{padding:8px 14px;white-space:nowrap} .lb-pg-total{display:none} }
+/* 图表本体由 ECharts 定制包 canvas 渲染（§115），本页 CSS 只剩图例与空态。
+ * 空态（2026-10-30 UI 审查 §30）：原本地 .hint-empty 覆盖（26px 紧凑版）与 theme.css 的 60px 版
+ * 并存 → 改用 theme.css 的紧凑变体 .hint-empty--sm，本页不再定义 .hint-empty。
+ * KPI 条 padding/字号已由 .yj-kpi 的媒体查询统一（§29），本地媒体查询整块删除。 */

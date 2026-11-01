@@ -72,11 +72,11 @@ YJ.editor = (function () {
     { key: "性別", kind: "select" },
     { key: "香港馬名", kind: "text" },
     { key: "自译馬名", kind: "text" },
-    { key: "通算成績", kind: "text" },
-    { key: "セリ取引価格", kind: "text" },
-    { key: "獲得賞金 (中央)", kind: "text" },
-    { key: "獲得賞金 (地方)", kind: "text" },
-    { key: "総賞金", kind: "text" }
+    { key: "通算成績", kind: "text", full: 1 },
+    { key: "セリ取引価格", kind: "text", num: 1 },
+    { key: "総賞金", kind: "text", num: 1 },
+    { key: "獲得賞金 (中央)", kind: "text", num: 1 },
+    { key: "獲得賞金 (地方)", kind: "text", num: 1 }
   ];
   /* 抹消组键清单：登録状態=抹消 或 为空 时才进表单（formHTML），改动时联动刷新预览行（softRefreshRow） */
   var MASYO_SUB = ["抹消日", "抹消_去向種別", "抹消_去向場所"];
@@ -94,7 +94,7 @@ YJ.editor = (function () {
   var INPUT = "yj-ed-in";
   /* 紧凑下拉 = 与 selector compact 框同规格（h-26px / 10px 圆角 / 12px 字，§82.12）：
    * utility 层在 components（.yj-ed-in）之后 → h/rounded/text 覆盖生效（同旧 h-8 覆盖机制） */
-  var SEL_CMP = "yj-ed-in h-[26px] rounded-[10px] px-2 py-0 text-[12px] font-normal";
+  var SEL_CMP = "yj-ed-sel text-[13px]";   /* §151：下拉统一走 yj-ed-sel（appearance-none + 自绘箭头） */
   var BADGE_PIN = "yj-ed-state yj-ed-state--pin";
   var BADGE_DIRTY = "yj-ed-state yj-ed-state--dry";
   var BADGE_WARN = "yj-ed-state yj-ed-state--dry";
@@ -113,6 +113,8 @@ YJ.editor = (function () {
     /* page：页面形态 —— horse = edit.html（本马五字段+图片）；timeline = edit-timeline.html（航迹线人工节点） */
     page: "horse",
     boxOpen: false, ghPanel: false,
+    /* §150 保存条「变更摘要」折叠态：无改动只出灰色短 chip，有改动出橙色 chip，点击展开明细 */
+    sumOpen: false,
     /* 抽屉「已保存」段（§82.20）：savedOpen = 段展开（默认折叠）/ savedQ = 马名检索词 /
      * savedExp = 条目展开表（id → 1；检索态整体接管展开，不用它） */
     savedOpen: false, savedQ: "", savedExp: {},
@@ -127,6 +129,7 @@ YJ.editor = (function () {
      * bundle = races-bundle 解码缓存（引用比赛选赛用），bundleFor = 已解码的马 id（切马重解码，全量解码一次后全马可用） */
     tl: { table: {}, events: [], loaded: false, dirty: false, busy: false, edit: null,
       err: "", report: null, del: -1, log: [], tlPhotos: {},
+      base: null,   /* §151：远端盘上原值快照（净效果判定用——加了又删 = 不算改动） */
       refHorse: "", refRace: "", bundle: null, bundleFor: "",
       /* 比赛人工配图（§82.9）：raceManual = 盘上 races_manual.json；racePanel/raceHorse/raceSel = 面板选择态；
        * raceLog = 压缩日志；racePhUrl = 草稿图 objectURL 缓存（race_id → url）；改动本体在草稿箱 d.racePh */
@@ -801,6 +804,13 @@ YJ.editor = (function () {
         return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
           state.table = r[0] || {};
           render();
+          /* 2026-10-30 修（§143）：提交成功 → 通知批量表格页**全量重水合**。
+           * 此前只有 reCommitted 分支派发 yj-rc-dropped；基本信息（ov）草稿虽然在上面的
+           * draftDropHorse() 里已清空 localStorage，但表格页内存中的 S.pendOv / S.sh.basic.rows
+           * 仍是提交前的值 → 用户看到「提交成功了，表格还显示改过的值，像没生效」；
+           * 更糟的是再改一格时 syncOv() 会用旧 S.startOv 把已提交的值重新写回草稿箱。
+           * 放在 loadTable() 之后派发：此时 state.table 已换成最新远端表，表格页重算 savedOf 才准。 */
+          document.dispatchEvent(new CustomEvent("yj-draft-committed"));
         });
       }).catch(function (e) {
         if (e && e.refConflict && remaining > 0) {
@@ -902,6 +912,34 @@ YJ.editor = (function () {
     return valOf(state.horse, key);
   }
   function isDirty(f) { return Object.prototype.hasOwnProperty.call(state.draft, f.key); }
+  /* 草稿写入的唯一入口（2026-10-30 修 bug）：输入框改回「原值」时必须删掉 draft 键。
+   * 原实现是 `state.draft[key] = value` 无条件写入，而 isDirty 只判断「键在不在」，
+   * 于是「输入 1 → 删空」后键仍在（值 ""）→ 行永远停在草稿态（浅橙底 + 草稿 chip），
+   * 草稿箱里也留着一条与线上无差异的改动。基线取值链与 currentValue 同源：
+   * 已存人工值 ?? 官方生效值（pinned 优先，否则 basic.json 合并值）。
+   * ⚠ 命名不能叫 setDraft：本文件照片模块已有 `setDraft(list)`（第 ~1476 行，同一闭包），
+   *   函数声明提升下后定义者胜出，字段输入会调进照片逻辑，把字段名当图片路径写进 ph 草稿
+   *   （实测症状：localStorage 里 ph={mode:"set",list:["香港馬名"]}、ov 空、输入框值被清空）。 */
+  function draftBaseline(key) {
+    var p = pinned(state.horse.id, key);
+    return p !== undefined ? String(p) : valOf(state.horse, key);
+  }
+  function putFieldDraft(key, val) {
+    var v = (val === null || val === undefined) ? "" : String(val);
+    /* §154：等值判定统一走 YJ.util.effEqual（canon 序列化），与照片/时间线/批量表格同口径 */
+    if (!YJ.util.effEqual(v, draftBaseline(key))) { state.draft[key] = v; return; }
+    /* 改回基线值 = 该字段彻底没有改动：内存键 + 落箱键都要删。
+     * 只删内存不够 —— hydrateHorse() 每次渲染都从 ovGet() 重灌 state.draft，
+     * 箱里那条旧值会立刻复活，表现为「清空后状态看着对了，但草稿箱仍计 1 处、
+     * 刷新后浅橙底和「草稿」chip 又回来了」。 */
+    delete state.draft[key];
+    var id = String(state.horse.id);
+    var e = ovGet(id);
+    if (e && Object.prototype.hasOwnProperty.call(e, key)) {
+      delete e[key];
+      ovPut(id, e);   /* keys 空且无 _note 时 ovPut 整条删除；有备注则只留 _note */
+    }
+  }
   function hasDraft() { return Object.keys(state.draft).length > 0; }
   function hasChanges() { return hasDraft() || photoDirty(); }
   /* 不含草稿的「已生效值」：人工保存值优先，否则官方抓取值（变更摘要与状态条的唯一口径） */
@@ -939,20 +977,105 @@ YJ.editor = (function () {
        * 现值不在固定枚举（存量 地方競馬，下拉 2026-10 收窄）→ 追加为选项，防保存误写空值。 */
       var opts = f.static ? [""].concat(f.static) : distinct(f.key, false);
       if (f.static && v && opts.indexOf(v) < 0) opts = opts.concat(v);
-      return '<select data-f="' + esc(f.key) + '" class="' + INPUT + ' font-normal">' +
+      return '<select data-f="' + esc(f.key) + '" class="yj-ed-sel w-full">' +
         opts.map(function (x) {
           return '<option value="' + esc(x) + '"' + (x === v ? " selected" : "") + ">" + esc(optLabel(f, x)) + "</option>";
         }).join("") + "</select>";
     }
-    var opts = distinct(f.key, true);
-    var html = '<input data-f="' + esc(f.key) + '" list="dl-' + esc(f.key) + '" value="' + esc(v) +
-      '" class="' + INPUT + '" autocomplete="off" placeholder="留空 = 官方值/无">';
-    if (f.list) {
-      html += '<datalist id="dl-' + esc(f.key) + '">' + opts.map(function (x) {
-        return '<option value="' + esc(x) + '"></option>';
-      }).join("") + "</datalist>";
+    /* §151：f.list 不再渲染原生 datalist（弹层跟随系统主题、无法定制）→ 受控建议浮层
+     * （sugSync / sugPick，bind 里挂 focusin/input 委托），数据源同样是 distinct()。 */
+    var inpCls = INPUT + (f.num ? " pr-8 text-right tabular-nums" : "");
+    var html = '<input data-f="' + esc(f.key) + '" value="' + esc(v) +
+      '" class="' + inpCls + '" autocomplete="off" placeholder="留空 = 官方值/无">';
+    if (f.num) {
+      html = '<span class="relative block min-w-0">' + html +
+        '<span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-normal text-muted-foreground">円</span></span>';
     }
     return html;
+  }
+
+  /* ---------------- §151 受控建议浮层（f.list 字段的 datalist 替身） ----------------
+   * 原生 datalist 弹层跟随系统主题（深色系统下一块黑，与本页卡片风格断裂）且无法定制 →
+   * 收敛为挂 body 的受控浮层：fixed 定位（台账 overflow-hidden 会裁内嵌面板）、
+   * 宽=触发输入框、下方空间不足自动翻转到上方。数据源与原 datalist 同为 distinct()。 */
+  var sugIdx = -1, sugJustPicked = false, sugItems = [];
+  function sugPanel() {
+    var p = document.getElementById("yjSugPanel");
+    if (!p) {
+      p = document.createElement("div");
+      p.id = "yjSugPanel";
+      p.className = "yj-ed-sugpanel";
+      p.addEventListener("mousedown", function (ev) {
+        var b = ev.target.closest ? ev.target.closest("button[data-sugv]") : null;
+        if (!b) return;
+        ev.preventDefault();                  /* 不让输入框失焦 */
+        sugPick(b.dataset.sugv);
+      });
+      document.body.appendChild(p);
+    }
+    return p;
+  }
+  function sugClose() {
+    var p = document.getElementById("yjSugPanel");
+    if (p) p.remove();
+    sugIdx = -1; sugItems = [];
+  }
+  function sugInput() {
+    var t = document.activeElement;
+    var f = (t && t.tagName === "INPUT" && t.dataset && t.dataset.f !== undefined) ? fieldOf(t.dataset.f) : null;
+    return (f && f.list) ? t : null;
+  }
+  /* mode="all"（focusin 开面板）= 全量清单（对齐 datalist：聚焦显全部）；mode="filter"（input）= 按已输入文字过滤。
+   * §152 修：输入框自带现值，若聚焦即按现值过滤 → 只剩它自己，等于没有候选。 */
+  function sugSync(mode) {
+    if (sugJustPicked) return;
+    var t = sugInput();
+    if (!t) { sugClose(); return; }
+    var f = fieldOf(t.dataset.f);
+    var q = mode === "filter" ? String(t.value || "").trim().toLowerCase() : "";
+    sugIdx = -1;
+    sugItems = distinct(f.key, true).filter(function (x) { return !q || x.toLowerCase().indexOf(q) >= 0; }).slice(0, 12);
+    sugRender();
+  }
+  function sugRender() {
+    var t = sugInput();
+    if (!t) { sugClose(); return; }
+    var p = sugPanel();
+    p.innerHTML = sugItems.length ? sugItems.map(function (x, i) {
+      return '<button type="button" data-sugv="' + esc(x) + '"' + (i === sugIdx ? ' data-sugon="1"' : "") + ">" + esc(x) + "</button>";
+    }).join("") : '<div class="yj-ed-sugempty">无匹配项（可直接保留手填值）</div>';
+    var r = t.getBoundingClientRect();
+    p.style.left = r.left + "px";
+    p.style.width = Math.max(r.width, 180) + "px";
+    p.style.top = ""; p.style.bottom = "";
+    if (window.innerHeight - r.bottom > 270 || window.innerHeight - r.bottom > r.top) p.style.top = (r.bottom + 3) + "px";
+    else p.style.bottom = (window.innerHeight - r.top + 3) + "px";
+  }
+  function sugPick(v) {
+    var t = sugInput();
+    if (!t) { sugClose(); return; }
+    var key = t.dataset.f;
+    t.value = v;
+    putFieldDraft(key, v);
+    state.err = "";
+    sugJustPicked = true;                     /* softRefreshRow 重建 input 并 refocus → focusin 勿立刻重开 */
+    softRefreshRow(key);
+    sugClose();
+    setTimeout(function () { sugJustPicked = false; }, 0);
+  }
+  function sugKey(ev) {
+    if (!document.getElementById("yjSugPanel")) return false;
+    if (ev.key === "Escape") { sugClose(); return true; }
+    if (!sugInput()) return false;
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      if (sugItems.length) {
+        sugIdx = ev.key === "ArrowDown" ? Math.min(sugIdx + 1, sugItems.length - 1) : Math.max(sugIdx - 1, -1);
+        sugRender();                            /* 只重画高亮，不重算清单（重算会把过滤态打回全量） */
+      }
+      return true;
+    }
+    if (ev.key === "Enter" && sugIdx >= 0 && sugItems[sugIdx] !== undefined) { sugPick(sugItems[sugIdx]); return true; }
+    return false;
   }
 
   /* 值位徽章（台账只读形态）：色值单一出处 = pages/profile.html 的 stBadge / sexBadge
@@ -988,9 +1111,8 @@ YJ.editor = (function () {
   }
   /* 备注行：常显（只改图片也要能写备注）；故 #noteInput 全表唯一 */
   function noteRowHTML() {
-    return '<div class="yj-ed-row" data-row="_note">' +
-      '<span class="yj-ed-row-k">备注</span>' +
-      '<span class="min-w-0 flex-1">' + noteInputHTML() + "</span></div>";
+    return '<div class="yj-ed-cell yj-ed-cell--full" data-row="_note">' +
+      '<span class="yj-ed-cell-k">备注</span>' + noteInputHTML() + "</div>";
   }
 
   /* 官方值对照的 <b>：已存人工值 → _orig 快照（划线，表示「已被人工值替代」）；
@@ -1003,8 +1125,9 @@ YJ.editor = (function () {
     return '<b class="' + (undo ? "" : "yj-ed-struck") + '">' + (orig === "" ? "（空）" : esc(orig)) + "</b>";
   }
 
-  /* B 稿（常开工作表）的一行：label 左灰 + 控件常开可改 + 行尾状态 chip。没有展开/收起态——
-   * oninput 直接写 state.draft（数据侧与卡堆/台账时期同一套）；改动控件右上角「改」圆徽 + 青绿描边在 chip 表达 */
+  /* B 稿（常开工作表）的一个字段 cell（§150 分组网格版）：标签行（中文名 + 状态胶囊 + 「恢复官方值」小钮）
+   * 在上、控件常开可改在下；状态着色 = cell 类（.yj-ed-cell--pin/--dry 下沉到控件描边）。
+   * oninput 直接写 state.draft（数据侧不变）；softRefreshRow 仍按 [data-row] 等值替换本 cell。 */
   function rowHTML(f) {
     var id = state.horse.id, key = f.key;
     var pin = pinned(id, key);
@@ -1014,44 +1137,51 @@ YJ.editor = (function () {
     var pill = st === "saved" ? '<span class="' + BADGE_PIN + '">已保存</span>'
       : st === "pending" ? '<span class="' + BADGE_DIRTY + '">' + (undo ? "待恢复官方值" : stateWord(st)) + "</span>"
         : "";
-    /* 行标签 §94：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写） */
-    var head = '<span class="yj-ed-row-k">' + esc(YJ.i18n.t(key)) + "</span>";
-    /* 「改」角标已删（§82.5 用户定稿：不清爽）——待保存状态由行尾 chip + 控件青绿描边承担 */
-    var ctl = '<span class="relative block min-w-0 flex-1">' + controlHTML(f) + "</span>";
-    var unpin = pin !== undefined
-      ? '<button data-unpin="' + esc(key) + '" class="' + BTN + ' yj-ed-op--danger flex-none" type="button"' +
-        (undo ? " hidden" : "") + ">恢复官方值</button>" : "";
-    return '<div class="yj-ed-row' + (st === "saved" ? " yj-ed-row--pin" : st === "pending" ? " yj-ed-row--dry" : "") +
-      '" data-row="' + esc(key) + '">' + head + ctl + pill + unpin + "</div>";
+    var unpin = pin !== undefined && !undo
+      ? '<button data-unpin="' + esc(key) + '" class="ml-auto flex-none text-[10.5px] font-medium text-destructive/70 transition-colors hover:text-destructive" type="button" title="清除人工值，恢复官方抓取值">恢复官方值</button>' : "";
+    var head = '<span class="yj-ed-cell-k"><span class="min-w-0 truncate">' + esc(YJ.i18n.t(key)) + "</span>" + pill + unpin + "</span>";
+    return '<div class="yj-ed-cell' + (f.full ? " yj-ed-cell--full" : "") +
+      (st === "saved" ? " yj-ed-cell--pin" : st === "pending" ? " yj-ed-cell--dry" : "") +
+      '" data-row="' + esc(key) + '">' + head + controlHTML(f) + "</div>";
   }
 
   function formHTML() {
     if (!state.horse) return '<div class="hint-empty">先选匹马再编辑。</div>';
     var id = String(state.horse.id), e = entryOf(id);
     var others = e ? Object.keys(e).filter(function (k) { return k[0] !== "_" && k !== "photo" && !fieldOf(k); }) : [];
-    var othersHTML = others.length ? '<div class="yj-ed-row-orig mt-2 rounded-lg border border-border bg-card px-3 py-2">' +
+    var othersHTML = others.length ? '<div class="yj-ed-row-orig mt-3 rounded-lg border border-border bg-card px-3 py-2">' +
       "本马另有非本表单字段 " + others.map(function (k) { return "<b>" + esc(k) + "</b>=" + esc(String(e[k])); }).join("、") +
       "（保存会原样保留）</div>" : "";
-    /* 抹消组（2026-10 去向调查 · 用户定稿）：登録状態=抹消 或 为空（未登録/空值）时展开抹消组子字段，
+    /* §150 分组网格：FIELDS 键序不变，按语义拆四组 + 条件抹消组 + 备注组。
+     * 抹消组（2026-10 去向调查 · 用户定稿）：登録状態=抹消 或 为空（未登録/空值）时展开，
      * 预览行紧跟组尾（视觉稿位）；select 改动走 change 全量 render（bind），条件展开随之自动出现/收起 */
     var st = currentValue(fieldOf("登録状態"));
     var showMasyo = st === "抹消" || st === "";
-    var rows = [];
-    FIELDS.forEach(function (f) {
-      if (!showMasyo && MASYO_SUB.indexOf(f.key) >= 0) return;   /* 非抹消且非空：整组隐藏 */
-      rows.push(rowHTML(f));
-      if (showMasyo && f.key === "抹消_去向場所") rows.push(previewRowHTML());   /* 预览行 = 组尾插入（插入点曾误绑已废弃的 確認 字段导致预览行永不渲染，2026-10 修正） */
-    });
-    return '<div class="yj-ed-ledger">' + rows.join("") + noteRowHTML() + "</div>" + othersHTML;
+    function cellOf(key) {
+      for (var i = 0; i < FIELDS.length; i++) if (FIELDS[i].key === key) return rowHTML(FIELDS[i]);
+      return "";
+    }
+    function groupHTML(title, keys, extra) {
+      return '<div class="yj-ed-group"><div class="yj-ed-ghead">' + esc(title) + '</div>' +
+        '<div class="yj-ed-grid2">' + keys.map(cellOf).join("") + (extra || "") + "</div></div>";
+    }
+    return '<div class="yj-ed-groups">' +
+      groupHTML("名字", ["香港馬名", "自译馬名"]) +
+      groupHTML("状态", ["登録状態", "性別"]) +
+      (showMasyo ? groupHTML("抹消去向", ["抹消日", "抹消_去向種別", "抹消_去向場所"], previewRowHTML()) : "") +
+      groupHTML("阵营", ["馬主", "調教師"]) +
+      groupHTML("成绩与赏金", ["通算成績", "セリ取引価格", "総賞金", "獲得賞金 (中央)", "獲得賞金 (地方)"]) +
+      groupHTML("备注", [], noteRowHTML()) +
+      "</div>" + othersHTML;
   }
 
   /* 抹消组实时预览（2026-10）：草稿 ?? 已存人工值 ?? 生效值 合成 → statusChain（与档案页同一渲染出处 §48） */
   function previewRowHTML() {
     var h = Object.assign({}, state.horse);
     FIELDS.forEach(function (f) { h[f.key] = currentValue(f); });
-    return '<div class="yj-ed-row" data-row="_preview">' +
-      '<span class="yj-ed-row-k">预览</span>' +
-      '<span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">' + YJ.util.statusChain(h) + "</span></div>";
+    return '<div class="yj-ed-cell yj-ed-cell--full" data-row="_preview">' +
+      '<span class="yj-ed-cell-k">预览</span>' +
+      '<span class="flex min-w-0 flex-wrap items-center gap-1.5">' + YJ.util.statusChain(h) + "</span></div>";
   }
 
   /* 报头内容（B 稿）：卡片壳在页面静态层（edit.html 壳内含 #mast + #selector 挂载点）。
@@ -1103,7 +1233,10 @@ YJ.editor = (function () {
 
   /* 变更摘要（右栏 / MB 吸底条）：本匹待保存项 + 图片 + 备注，全部只读派生 */
   function summaryHTML() {
-    if (!state.horse) return '<div class="yj-ed-lbl">变更摘要 · 本匹</div><div class="mt-1 text-[11.5px] text-muted-foreground">未选马。</div>';
+    /* §150 保存条折叠化：恒显一行 chip（无改动灰 / 有改动橙），点击展开明细；
+     * 展开态 state.sumOpen 不随渲染重置。批量表格页（mode table）的 #summary 由 editor-table.js
+     * updateSummary 自管，这里不碰（此前 editor.render 会用「未选马」覆写它，顺带修掉）。 */
+    if (!state.horse) return "";
     var rows = [];
     FIELDS.forEach(function (f) {
       if (!isDirty(f)) return;
@@ -1126,10 +1259,12 @@ YJ.editor = (function () {
       rows.push('<div class="yj-ed-diff"><b class="flex-none text-chart3">备注</b><span class="min-w-0 truncate font-semibold text-secondary-foreground">' +
         (esc(state.note) || "（空）") + "</span></div>");
     }
-    return '<div class="yj-ed-lbl">变更摘要 · 本匹<span class="ml-1.5 font-normal normal-case tracking-normal">' +
-      (rows.length ? rows.length + " 处待保存" : "无改动") + "</span></div>" +
-      (rows.length ? '<div class="mt-1.5 space-y-1">' + rows.join("") + "</div>"
-        : '<div class="mt-1 text-[11.5px] leading-[1.5] text-muted-foreground">各字段与图片都跟官方值一致，改一行台账或照片位才会进这里。</div>');
+    var n = rows.length;
+    return '<button id="sumToggle" type="button" class="flex items-center gap-1 text-[11.5px] font-medium ' +
+        (n ? "text-chart3" : "text-muted-foreground") + '">' +
+      "变更摘要 · " + (n ? n + " 处待保存" : "无改动") +
+      (n ? '<span class="text-[9px] leading-none">' + (state.sumOpen ? "▾" : "▸") + "</span>" : "") + "</button>" +
+      (n && state.sumOpen ? '<div class="mt-1.5 space-y-1">' + rows.join("") + "</div>" : "");
   }
 
   function pinIds() {
@@ -1165,9 +1300,13 @@ YJ.editor = (function () {
         return esc(YJ.i18n.t(k)) + "→" + esc(pinValueText(k, e._orig[k]));
       }).join("、") : "";
       var cur = String(state.horse && state.horse.id) === String(id);
+      /* 中文名（2026-10-30 用户要求）：已保存人工表值里只显示日文主名，翻查时对不上中文名。
+       * 取值优先级 = 香港馬名（港译）→ 自译馬名，两者都空则不占位。 */
+      var cnName = h ? String(h["香港馬名"] || h["自译馬名"] || "").trim() : "";
       var head = '<div class="flex items-baseline gap-2 min-w-0">' +
           '<button data-goto="' + esc(id) + '" class="min-w-0 truncate text-left text-[12.5px] font-bold text-accent-foreground" type="button">' +
             esc(h ? YJ.util.mainName(h) : "#" + id) + "</button>" +
+          (cnName ? '<span class="max-w-[46%] flex-none truncate text-[11px] text-muted-foreground">' + esc(cnName) + "</span>" : "") +
           '<span class="flex-none text-[9.5px] font-bold tracking-[.5px] text-muted-foreground">#' + esc(String(id).padStart(3, "0")) + "</span>" +
           '<span class="ml-auto flex-none text-[10px] font-semibold tabular-nums text-muted-foreground">' + keys.length + " 项</span>" +
           (q ? "" : '<button data-savetoggle="' + esc(id) + '" class="flex-none w-5 text-[11px] leading-[1.5] text-muted-foreground transition hover:text-foreground" type="button" title="' + (open ? "收起" : "展开") + " " + esc(h ? YJ.util.mainName(h) : "#" + id) + '">' + (open ? "▾" : "▸") + "</button>") +
@@ -1455,7 +1594,16 @@ YJ.editor = (function () {
     if (state.photos.mode !== "set") { state.photos.draft = photoBase().slice(); state.photos.mode = "set"; }
     return state.photos.draft;
   }
-  function setDraft(list) { state.photos.draft = list.slice(); state.photos.mode = "set"; if (state.horse) persistPhotosOf(state.horse.id); }
+  /* 草稿列表 ↔ 盘上值是否等值（比较用 key 串：对象=draft blob 引用，字符串=路径）。
+   * §151：净效果等于盘上生效值 → 不算改动（选了又删 / 排序后复原），mode 归零免确认。 */
+  function photoKeys(list) {
+    return (list || []).map(function (p) { return (p && typeof p === "object") ? "draft:" + p.ref : String(p); }).join("|");
+  }
+  function setDraft(list) {
+    state.photos.draft = list.slice();
+    state.photos.mode = YJ.util.effEqual(photoKeys(state.photos.draft), photoKeys(photoBase())) ? "" : "set";
+    if (state.horse) persistPhotosOf(state.horse.id);   /* mode 归零时 persistPhotosOf 会把草稿箱记录清掉 */
+  }
   function addPhoto(path) {
     var d = ensureDraft();
     if (d.indexOf(path) < 0) d.push(path);
@@ -1468,7 +1616,11 @@ YJ.editor = (function () {
     var ref = draftRefOf(it);                 /* 草稿新图顺手清掉 IndexedDB 里的 blob */
     if (ref) blobDel(ref);
   }
-  function markNoPhoto() { state.photos.draft = []; state.photos.mode = "set"; if (state.horse) persistPhotosOf(state.horse.id); }
+  function markNoPhoto() {
+    /* 清空前逐个删掉 IndexedDB 里的草稿 blob（delPhoto 单删已有，这里补整清的账） */
+    state.photos.draft.forEach(function (p) { var r = draftRefOf(p); if (r) blobDel(r); });
+    setDraft([]);
+  }
   function unpinPhoto() { state.photos.mode = "remove"; state.photos.draft = []; if (state.horse) persistPhotosOf(state.horse.id); }
   function movePhoto(from, to) {
     var list = workingPhotos();
@@ -1572,55 +1724,60 @@ YJ.editor = (function () {
     return photoPinned(state.horse.id) !== undefined ? '<span class="' + BADGE_PIN + '">已保存</span>'
       : '<span class="' + TIP + '">与官方一致</span>';
   }
-  function thumbHTML(p, i) {
+  function thumbHTML(p, i, n) {
     var key = (p && typeof p === "object") ? "draft:" + p.ref : String(p);
     var m = state.photos.meta[key] || {};
+    /* §150 网格瓦片：首图「封面」徽标，其余序号角标；✕ PC 悬停浮现 / mb 常显（触屏无 hover，§155）。
+     * §155 触屏调序：HTML5 DnD 不触发于触屏 → 左下 ‹ › 小钮（mb only，md:hidden）补齐调序能力。 */
+    var mv = '<span class="absolute bottom-1 left-1 flex gap-1 md:hidden">' +
+      (i > 0 ? '<button data-pmv="' + (i - 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="前移一位">‹</button>' : "") +
+      (n === undefined || i < n - 1 ? '<button data-pmv="' + (i + 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="后移一位">›</button>' : "") +
+      "</span>";
     return '<li draggable="true" data-pi="' + i + '" class="yj-ed-thumb group">' +
-      '<img src="' + esc(photoSrc(p)) + '" alt="" draggable="false" loading="lazy" decoding="async" class="h-[80px] w-full object-contain">' +
-      '<span class="absolute left-1 top-1 rounded bg-black/55 px-1.5 text-[10px] font-semibold tabular-nums text-white">' + (i + 1) + "</span>" +
-      '<button data-pdel="' + i + '" type="button" class="' + BTN_DANGER + ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex" title="移出列表（盘上文件保留）">✕</button>' +
+      '<img src="' + esc(photoSrc(p)) + '" alt="" draggable="false" loading="lazy" decoding="async" class="h-[92px] w-full object-contain">' +
+      (i === 0 ? '<span class="yj-ed-cover">封面</span>' : '<span class="yj-ed-index">' + (i + 1) + "</span>") +
+      mv +
+      '<button data-pdel="' + i + '" type="button" class="' + BTN_DANGER + ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex max-md:inline-flex" title="移出列表（盘上文件保留）">✕</button>' +
       '<span class="block truncate border-t border-border bg-card px-1.5 py-1 text-[10px] text-muted-foreground" title="' + esc(photoName(p)) + '">' +
         esc(photoName(p)) + (m.bytes ? " · " + kb(m.bytes) : "") + "</span>" +
       "</li>";
   }
-  /* 台账左列 = 照片位（有图显示首图 / 无图占位 🐎）+ 其下缩略图行；点图位展开入库面板（上传或粘外链）。
-   * 压缩 · 上传 · 拖拽 · 草稿 mode 全部沿用原实现，这里只换排布。 */
+  /* §150 照片区（docs/UI优化记录.md §150）：瓦片网格 + 末尾「＋」加号格（点击上传 / 外部文件拖入 /
+   * Ctrl+V 粘贴）；外链导入收进工具行小钮（state.photos.open 面板复用）。
+   * 草稿链路（uploadQueue / persistPhotosOf / IndexedDB）零改动，纯展示层重排。 */
   function photosHTML() {
     if (!state.horse) return '<div class="hint-empty">先选匹马再管理图片。</div>';
     var id = state.horse.id;
     var list = workingPhotos();
-    var off = photoOfficial();
     var dis = (state.photos.busy || state.saving) ? " disabled" : "";
-    var slot = '<button type="button" data-pslot="1" class="yj-ed-slot" title="' +
-        esc("点图位：上传本地文件 或 粘贴外链 → 浏览器内压缩后入库") + '">' +
-      (list.length
-        ? '<img src="' + esc(photoSrc(list[0])) + '" alt="" draggable="false" loading="lazy" decoding="async" class="yj-ed-slotimg">'
-        : '<span class="text-[54px] text-muted-foreground opacity-50">🐎</span>') +
-      '<span class="yj-ed-lbl absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded bg-background/85 px-1.5 py-px">' +
-        (list.length ? "1/" + list.length + " · 改图" : "无图 · 改图") + "</span></button>";
-    var badgeRow = '<div class="mt-2 flex flex-wrap items-center gap-1.5">' + photoBadgeHTML() +
+    var head = '<div class="flex flex-wrap items-center gap-1.5">' +
+      '<span class="text-[13px] font-bold text-secondary-foreground">照片</span>' +
+      '<span class="' + TIP + '">' + list.length + " 张 · 首图为档案封面</span>" +
+      photoBadgeHTML() +
       (state.photos.busy ? '<span class="' + BADGE_WARN + '">压缩/上传中…</span>' : "") +
-      (state.photos.open ? "" : '<button data-pslot="1" class="' + BTN + ' ml-auto" type="button">上传/外链</button>') + "</div>";
+      (state.photos.open ? "" : '<button data-pslot="1" class="' + BTN + ' ml-auto" type="button"' + dis + ">外链导入</button>") +
+      "</div>";
     var panel = state.photos.open
-      ? '<div class="mt-2 rounded-lg border border-border bg-card p-2.5">' +
-          '<label class="' + BTN + ' cursor-pointer select-none' + (dis ? " opacity-40" : "") + '">上传本地文件' +
-            '<input id="photoFile" type="file" accept="image/*" multiple class="hidden"' + dis + "></label>" +
-          '<div class="mt-2 flex flex-wrap items-center gap-2">' +
-            '<input id="photoURL" value="' + esc(state.photos.url || "") + '" class="' + INPUT + ' h-8 min-w-0 flex-1 font-normal"' +
-              ' placeholder="粘贴图片直链（Wikipedia 词条页地址也认）" autocomplete="off">' +
-            '<button id="photoURLBtn" class="' + BTN_DIS + '" type="button"' + dis + ">本地化</button></div>" +
-          '<div class="mt-2 flex items-center gap-2"><button data-pclose="1" class="' + BTN + '" type="button">收起</button></div>' +
-          "</div>"
+      ? '<div class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5">' +
+          '<input id="photoURL" value="' + esc(state.photos.url || "") + '" class="' + INPUT + ' h-8 min-w-0 flex-1 font-normal"' +
+            ' placeholder="粘贴图片直链（Wikipedia 词条页地址也认）" autocomplete="off">' +
+          '<button id="photoURLBtn" class="' + BTN_DIS + '" type="button"' + dis + ">本地化</button>" +
+          '<button data-pclose="1" class="' + BTN + '" type="button">收起</button></div>'
       : "";
-    var strip = list.length
-      ? '<ul class="mt-2 flex list-none flex-wrap gap-2 p-0">' + list.map(function (p, i) { return thumbHTML(p, i); }).join("") + "</ul>"
-      : '<div class="mt-2 rounded-md border border-dashed border-input px-3 py-4 text-center text-[12px] text-muted-foreground">' +
-        (photoDirty() ? "已清空 · 待保存" : "暂无图片") + "</div>";
+    var tiles = list.map(function (p, i) { return thumbHTML(p, i, list.length); }).join("");
+    var addTile = '<li class="yj-ed-thumb yj-ed-thumb--add' + (list.length ? "" : " yj-ed-thumb--empty") + '">' +
+      '<label class="yj-ed-thumb-add' + (dis ? " opacity-40" : "") + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5"><path d="M12 5v14M5 12h14"/></svg>' +
+        '<span class="text-[11px]">点击上传</span>' +
+        '<span class="text-[10.5px] text-muted-foreground/70">或把图片拖进本区</span>' +
+        '<input id="photoFile" type="file" accept="image/*" multiple class="hidden"' + dis + "></label></li>";
+    var hint = '<div class="mt-1.5 ' + TIP + '">支持 Ctrl+V 粘贴截图 · 拖动缩略图调顺序 · 悬停缩略图出 ✕ 移出（盘上文件保留）</div>' +
+      (!list.length && photoDirty() ? '<div class="' + TIP + '">已清空 · 待保存（提交后档案无图）</div>' : "");
     var acts = '<div class="mt-2 flex flex-wrap items-center gap-1.5">' +
       (list.length ? '<button data-pnone="' + id + '" class="' + BTN_DIS + '" type="button"' + dis + ">清空为确无图片</button>" : "") +
       (photoPinned(id) !== undefined && !photoDirty() ? '<button data-punpin="' + id + '" class="' + BTN + ' yj-ed-op--danger" type="button"' + dis + ">恢复官方值</button>" : "") +
       "</div>";
-    return slot + badgeRow + panel + strip + acts +
+    return head + panel + '<ul class="yj-ed-thumbs">' + tiles + addTile + "</ul>" + hint + acts +
       (state.photos.log.length ? '<div id="photoStatus" class="mt-2 space-y-0.5">' + state.photos.log.map(function (l) {
         return '<div class="text-[11.5px] ' + (l.k === "err" ? "text-destructive" : l.k === "busy" ? "text-muted-foreground" : "text-primary") + '">' + esc(l.t) + "</div>";
       }).join("") + "</div>" : '<div id="photoStatus"></div>') +
@@ -1628,8 +1785,18 @@ YJ.editor = (function () {
   }
   function renderPhotos() { if (els.photos) els.photos.innerHTML = photosHTML(); }
 
-  /* ---------------- 拖拽排序（原生 HTML5 DnD，不引库） ---------------- */
+  /* ---------------- 拖拽排序（原生 HTML5 DnD，不引库）+ 外部文件拖入（§150） ----------------
+   * 同一容器两套 drop 语义按 dataTransfer.types 分流：types 含 "Files" = 资源管理器拖图 →
+   * 走 uploadQueue 压缩入库；否则 = 缩略图重排序。 */
   function dragItem(ev) { return ev.target && ev.target.closest ? ev.target.closest("[data-pi]") : null; }
+  function isFileDrop(ev) {
+    try {
+      var ts = ev.dataTransfer && ev.dataTransfer.types;
+      if (ts) for (var i = 0; i < ts.length; i++) if (ts[i] === "Files") return true;
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  function extRing(on) { if (els.photos) els.photos.classList.toggle("yj-ed-extdrop", !!on); }
   function onDragStart(ev) {
     var it = dragItem(ev);
     if (!it) { return; }
@@ -1638,6 +1805,12 @@ YJ.editor = (function () {
     if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = "move"; try { ev.dataTransfer.setData("text/plain", it.dataset.pi); } catch (e) { /* IE 无妨 */ } }
   }
   function onDragOver(ev) {
+    if (isFileDrop(ev)) {                    /* 外部文件拖入：整区高亮 + copy 光标 */
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
+      extRing(true);
+      return;
+    }
     if (state.photos.drag < 0) return;
     var it = dragItem(ev);
     if (!it) return;
@@ -1651,6 +1824,13 @@ YJ.editor = (function () {
     [].forEach.call(els.photos.querySelectorAll("[data-pi]"), function (n) { n.style.outline = ""; n.style.outlineOffset = ""; });
   }
   function onDrop(ev) {
+    if (isFileDrop(ev)) {                    /* 外部文件 → 与「点击上传」同一条压缩/入库链路 */
+      ev.preventDefault();
+      extRing(false);
+      var fs = ev.dataTransfer && ev.dataTransfer.files;
+      if (fs && fs.length) uploadQueue([].slice.call(fs), state.horse && state.horse.id);
+      return;
+    }
     if (state.photos.drag < 0) return;
     var it = dragItem(ev);
     ev.preventDefault();
@@ -1661,7 +1841,7 @@ YJ.editor = (function () {
     movePhoto(from, Number(it.dataset.pi));
     render();
   }
-  function onDragEnd() { state.photos.drag = -1; clearDragRing(); }
+  function onDragEnd() { state.photos.drag = -1; clearDragRing(); extRing(false); }
 
   /* ================= M2c · 时间线人工节点（data/timeline_manual.json，保存不自动重算 §4.5） ================= */
 
@@ -1720,8 +1900,11 @@ YJ.editor = (function () {
   function loadTimeline() {
     return getJSON(tlUrl() + "?ts=" + Date.now()).then(function (o) {
       o = (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
+      state.tl.base = o;                /* §151：盘上原值快照（persistTlDraft 净效果判定基线） */
       /* draft 形态：草稿箱里有整表快照就叠加显示（dirty = 与远端有差异） */
       var draft = state.mode === "draft" ? tlGet() : null;
+      /* §151：历史遗留的净零快照（加了又删后关页）= 无改动 → 丢弃，不再要求确认/放弃 */
+      if (draft && YJ.util.effEqual(draft, o)) { tlDrop(); draft = null; }
       state.tl.table = draft || o;
       if (!state.tl.dirty) state.tl.events = (Array.isArray(state.tl.table.events) ? state.tl.table.events : []).map(cloneEvent);
       state.tl.loaded = true;
@@ -1731,7 +1914,14 @@ YJ.editor = (function () {
   }
   function persistTlDraft() {       /* draft 形态：时间线每次改动整表快照进草稿箱（表很小，整存整取） */
     if (state.mode !== "draft") return;
-    tlPut(tlPayload());
+    /* §151 净效果判定：与远端盘上值等值（加了又删 / 改回原样 / 调序后复原）→ 不算改动，清快照免确认 */
+    var snap = tlPayload();
+    if (state.tl.base && YJ.util.effEqual(snap, state.tl.base)) {
+      tlDrop();
+      state.tl.dirty = false;
+      return;
+    }
+    tlPut(snap);
     state.tl.dirty = true;
   }
   function hydrateTlPhotos() {      /* draft:tl:<ref> 标记 → objectURL 内存缓存 */
@@ -1754,6 +1944,7 @@ YJ.editor = (function () {
   function openTLEdit(idx, kind) {
     state.tl.edit = { idx: idx, kind: idx < 0 ? (kind || "free") : "", ev: cloneEvent(idx < 0 ? {} : state.tl.events[idx]) };
     if (idx < 0 && state.tl.edit.kind === "race") { state.tl.refHorse = ""; state.tl.refRace = ""; }
+    state.tl.tagEdit = -1;                  /* §150：换节点 = 收起标签编辑态 */
     state.tl.err = "";
     renderTL();
     var f = els.tl.querySelector('[data-tf="date"]');
@@ -1807,6 +1998,12 @@ YJ.editor = (function () {
     ].filter(Boolean).join(" · ");
     ev.hero = String(h.馬名 || "");
     ev.hero_cn = String(h.香港馬名 || h.自译馬名 || "");
+    /* §151：图片回退与 build_timeline 同源（人工配图 > race.photo > 马照片；前两级在比赛配图面板维护，
+     * 这里补第三级马首图）——否则同一场比赛：自动节点有图、人工节点落表无图，预览也对不上。 */
+    if (!String(ev.photo || "").trim()) {
+      var hp = normList(h.photo);
+      if (hp.length) ev.photo = String(hp[0]);
+    }
     state.tl.refRace = String(key);
     state.tl.err = "";
     renderTL();
@@ -1962,7 +2159,24 @@ YJ.editor = (function () {
       }).join("") + "</div>" : "") +
       "</div>";
   }
-  function tlAddTag() { var e = editEV(); e.tags.push({ label: "", cat: "manual", tip: "" }); renderTL(); }
+  function tlAddTag() {
+    var e = editEV();
+    e.tags.push({ label: "", cat: "manual", tip: "" });
+    state.tl.tagEdit = e.tags.length - 1;   /* §150：新标签自动进入编辑态 */
+    renderTL();
+  }
+  /* §150 节点快速调序（触控板友好）：相邻交换；落表时仍按 date 稳定排序（同日期节点间有效） */
+  function tlMove(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= state.tl.events.length) return;
+    var tmp = state.tl.events[i];
+    state.tl.events[i] = state.tl.events[j];
+    state.tl.events[j] = tmp;
+    if (state.tl.edit && state.tl.edit.idx === i) state.tl.edit.idx = j;
+    else if (state.tl.edit && state.tl.edit.idx === j) state.tl.edit.idx = i;
+    persistTlDraft();
+    render();   /* §133：落箱后同步保存条 */
+  }
   function editEV() {
     if (!state.tl.edit) state.tl.edit = { idx: -1, ev: cloneEvent({}) };
     return state.tl.edit.ev;
@@ -2026,6 +2240,10 @@ YJ.editor = (function () {
           (store.cn ? '<span class="ml-1 text-[11.5px] font-normal text-muted-foreground">〈' + esc(store.cn) + "〉</span>" : "") + "</span>" +
         '<span class="flex-none">' + tagChipsHTML(store.tags, "l" + i) + "</span>" +
         '<span class="ml-auto flex flex-none gap-1">' +
+          '<button data-tlmove="-1" data-tlidx="' + i + '" class="' + BTN + '" type="button" aria-label="上移"' +
+            (i === 0 ? " disabled" : "") + ' title="上移（同日期节点间有效：落表按日期稳定排序）">↑</button>' +
+          '<button data-tlmove="1" data-tlidx="' + i + '" class="' + BTN + '" type="button" aria-label="下移"' +
+            (i === state.tl.events.length - 1 ? " disabled" : "") + ' title="下移（同日期节点间有效：落表按日期稳定排序）">↓</button>' +
           '<button data-tledit="' + i + '" class="' + BTN + '" type="button">编辑</button>' +
           '<button data-tldel="' + i + '" class="' + (state.tl.del === i ? BTN_DANGER + " bg-destructive/10" : BTN_DANGER) + '" type="button">' +
             (state.tl.del === i ? "确认删除？" : "删除") + "</button>" +
@@ -2088,12 +2306,12 @@ YJ.editor = (function () {
         (store.note ? '<div class="text-[12px] text-muted-foreground">' + esc(store.note) + "</div>" : "");
     }
     return '<div class="tl-item">' +
-        '<div class="tl-date">' + esc(store.date || "YYYY-MM-DD") + "</div>" +
+        '<div class="tl-date">' + (store.date ? "<b>" + esc(store.date.slice(0, 4)) + "</b>" + esc(store.date.slice(4)) : "<b>YYYY</b>-MM-DD") + "</div>" +
         '<div class="tl-node"></div>' +
         '<div class="tl-cardwrap"><div class="tl-card card">' +
           (ph
             ? '<div class="tl-photo"><img src="' + esc(photoSrc(ph)) + '" alt="" loading="lazy" decoding="async" width="297" height="210"></div>'
-            : '<div class="tl-photo empty"><span>🐎</span></div>') +
+            : "") +
           '<div class="tl-body">' + body +
             (tags.length ? '<div class="flex flex-wrap gap-1.5">' + tags.map(function (t) {
               return '<span class="tl-tag ' + esc(t.cat) + '"' + (t.tip ? ' title="' + esc(t.tip) + '"' : "") + ">" + esc(t.label) + "</span>";
@@ -2114,10 +2332,9 @@ YJ.editor = (function () {
     var ev = ed.ev;
     var dis = state.tl.busy ? " disabled" : "";
     function row(lab, key, ph, type) {
-      return '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">' + lab + '</div>' +
-        '<div class="min-w-0"><input data-tf="' + key + '" type="' + (type || "text") + '" value="' + esc(ev[key] || "") +
-          '" class="' + INPUT + '" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></div></div>";
+      return '<label class="block min-w-0"><span class="block text-[11px] font-medium text-muted-foreground">' + lab + '</span>' +
+        '<input data-tf="' + key + '" type="' + (type || "text") + '" value="' + esc(ev[key] || "") +
+        '" class="' + INPUT + ' mt-1" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></label>";
     }
     var isNew = ed.idx < 0, isRace = isNew && ed.kind === "race";
     var rows = isRace ? refRaceRows() : null;
@@ -2155,6 +2372,42 @@ YJ.editor = (function () {
       return '<label class="block min-w-0"><span class="block text-[10.5px] font-medium text-muted-foreground">' + lab + '</span>' +
         '<input data-tf="' + k + '" type="text" value="' + esc(ev[k] || "") + '" class="' + INPUT + ' mt-1" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></label>";
     }
+    /* §150 图片小格：84×60 缩略图 + ✕ 移除 + 「＋上传图片」钮；手填路径降为紧凑小输入框（兼容保留） */
+    var phCur = String(ev.photo || "").trim();
+    var phTile = phCur
+      ? '<span class="yj-ed-tlph"><img src="' + esc(photoSrc(phCur)) + '" alt="" loading="lazy" decoding="async">' +
+        '<button data-tlphdel="1" type="button" class="yj-ed-tlph-x" title="移除图片">✕</button></span>'
+      : '<span class="yj-ed-tlph yj-ed-tlph--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-6 w-6 text-muted-foreground/50"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 18l4.5-5 3 3.4L15.5 13 19 18"/></svg></span>';
+    var photoBlock = '<div class="flex min-w-0 flex-wrap items-start gap-2.5">' + phTile +
+      '<div class="flex min-w-0 flex-col gap-1.5">' +
+        '<div class="flex flex-wrap items-center gap-2">' +
+          '<label class="' + BTN + ' cursor-pointer select-none' + (dis ? " opacity-40" : "") + '">＋ 上传图片' +
+            '<input id="tlPhotoFile" type="file" accept="image/*" class="hidden"' + dis + "></label>" +
+          '<span class="' + TIP + '">浏览器内压到 ≤100KB，文件名自动生成（timeline-N.webp）</span></div>' +
+        '<input data-tf="photo" type="text" value="' + esc(ev.photo || "") + '" class="' + INPUT + ' h-7 max-w-[320px] text-[11.5px] font-normal" ' +
+          'autocomplete="off" placeholder="或手填：站内 ../data/photos/xxx.webp / http(s)"' + dis + ">" +
+        '<span class="' + TIP + '">引用比赛自动带马首图（与自动节点同规则）；清空 = 落表无图</span>' +
+      "</div></div>";
+    /* §150 标签胶囊流：胶囊一览（点胶囊展开该枚编辑，一次一个）+「＋加标签」；
+     * 展开的编辑行沿用原三输入（label / cat / tip），改动即写 ev.tags（input 委托链路不变）。 */
+    var tagEdit = (typeof state.tl.tagEdit === "number" && state.tl.tagEdit >= 0 && state.tl.tagEdit < ev.tags.length)
+      ? state.tl.tagEdit : -1;
+    var tagPills = ev.tags.length ? ev.tags.map(function (t, i) {
+      return '<span class="yj-ed-tagpill' + (i === tagEdit ? " border-primary" : "") + '" data-tltag="' + i + '" title="点击编辑该标签">' +
+        '<i class="yj-ed-tagdot" style="' + catDotStyle(t.cat) + '"></i>' +
+        '<span class="max-w-[150px] truncate">' + esc(t.label || "（空标签）") + "</span>" +
+        '<button data-tl-dtag="' + i + '" type="button" class="yj-ed-tagx" title="删除标签">✕</button></span>';
+    }).join("") : '<span class="' + TIP + '">暂无标签</span>';
+    var tagEditor = "";
+    if (tagEdit >= 0) {
+      var t = ev.tags[tagEdit];
+      tagEditor = '<div class="mt-1.5 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 p-2">' +
+        '<input data-tl-label="' + tagEdit + '" value="' + esc(t.label) + '" class="' + INPUT + ' h-8 min-w-[140px] max-w-[200px] flex-1" placeholder="徽章文字 label"' + dis + ">" +
+        '<select data-tl-cat="' + tagEdit + '" class="yj-ed-sel h-8 w-[170px] max-w-full flex-none"' + dis + ">" + catOptions(t.cat) + "</select>" +
+        '<input data-tl-tip="' + tagEdit + '" value="' + esc(t.tip || "") + '" class="' + INPUT + ' h-8 min-w-[110px] max-w-[170px] flex-1" placeholder="悬停 tip（可空）"' + dis + ">" +
+        tagChip(t, "e" + tagEdit) +
+        "</div>";
+    }
     /* v3：编辑中的节点表单 = 青绿描边卡（本页唯一「进行中」区域，与列表的工具条在视觉上分离） */
     return '<div class="mt-3 rounded-xl border border-primary/35 bg-accent/25 px-4 py-3">' +
       '<div class="flex flex-wrap items-baseline gap-2 text-[13px] font-bold">' + (isNew
@@ -2162,10 +2415,12 @@ YJ.editor = (function () {
         : "编辑节点") +
         '<span class="' + TIP + ' font-normal">date / title 必填 · 其余可选（cn / note / link / photo / tags）</span></div>' +
       refBlock +
-      row("日期 date *", "date", "YYYY-MM-DD", "date") +
-      row("标题 title *", "title", "节点标题（必填）") +
-      row("副题 cn", "cn", "可选中文副题") +
-      row("说明 note", "note", "可选一行补充") +
+      '<div class="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1.5 max-md:grid-cols-1">' +
+        row("日期 date *", "date", "YYYY-MM-DD", "date") +
+        row("标题 title *", "title", "节点标题（必填）") +
+        row("副题 cn", "cn", "可选中文副题") +
+        row("说明 note", "note", "可选一行补充") +
+      "</div>" +
       row("链接 link", "link", "可选：http(s) 或站内相对路径") +
       /* §92 比赛样式字段（全部可选）：引用比赛自动预填；仅引用比赛或编辑已含此类字段的节点时出现 */
       (showRace ? refRow("成績", '<div class="grid grid-cols-[76px_minmax(0,1fr)_76px_76px] gap-x-3 max-md:grid-cols-2">' +
@@ -2175,32 +2430,21 @@ YJ.editor = (function () {
           refRow("馬名", '<div class="grid grid-cols-2 gap-x-3">' + cell("hero", "馬名", "马名（日/英原名）") + cell("hero_cn", "副名", "中文译名") + "</div>") +
           '<div class="mt-1 ' + TIP + '">以上按比赛样式渲染（与自动比赛卡同款，可留空走素格式）。</div>'
         : "") +
-      row("图片 photo", "photo", "站内 ../data/photos/xxx.webp 或 http(s)；留空 = 无图") +
-      '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">图片上传</div>' +
-        '<div class="min-w-0 flex flex-wrap items-center gap-2">' +
-          '<label class="' + BTN + ' cursor-pointer select-none' + (dis ? " opacity-40" : "") + '">压缩并上传' +
-            '<input id="tlPhotoFile" type="file" accept="image/*" class="hidden"' + dis + "></label>" +
-          '<span class="' + TIP + '">浏览器内压到 ≤100KB 后入库，文件名自动生成（timeline-N.webp）</span></div></div>' +
-      '<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
-        '<div class="pt-[7px] text-[12.5px] font-medium text-secondary-foreground">标签 tags</div>' +
+      '<div class="mt-1.5 grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1.5 max-md:grid-cols-[84px_minmax(0,1fr)]">' +
+        '<div class="pt-[2px] text-[12.5px] font-medium text-secondary-foreground">图片</div>' +
+        '<div class="min-w-0">' + photoBlock + "</div>" +
+        '<div class="pt-[2px] text-[12.5px] font-medium text-secondary-foreground">标签 tags</div>' +
         '<div class="min-w-0">' +
-          (ev.tags.length ? ev.tags.map(function (t, i) {
-            return '<div class="mb-1.5 flex flex-wrap items-center gap-2">' +
-              '<input data-tl-label="' + i + '" value="' + esc(t.label) + '" class="' + INPUT + ' min-w-[150px] max-w-[220px] flex-1" placeholder="徽章文字 label"' + dis + ">" +
-              '<select data-tl-cat="' + i + '" class="w-[190px] max-w-full flex-none"' + dis + ">" + catOptions(t.cat) + "</select>" +
-              '<input data-tl-tip="' + i + '" value="' + esc(t.tip || "") + '" class="' + INPUT + ' min-w-[120px] max-w-[180px] flex-1" placeholder="悬停 tip（可空）"' + dis + ">" +
-              tagChip(t, "e" + i) +
-              '<button data-tl-dtag="' + i + '" class="' + BTN_DANGER + '" type="button">✕</button></div>';
-          }).join("") : '<div class="' + TIP + '">暂无标签</div>') +
-          '<button data-tl-atag="1" class="' + BTN_DIS + ' mt-1" type="button"' + dis + ">＋ 加一个标签</button>" +
-          '<div class="mt-1 text-[11px] leading-[1.7] text-muted-foreground">类别六色取自时间线页现有 tag 配色（D9）。</div>' +
+          '<div class="flex flex-wrap items-center gap-1.5">' + tagPills +
+            '<button data-tl-atag="1" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 加标签</button></div>" +
+          tagEditor +
+          '<div class="mt-1 text-[11px] leading-[1.7] text-muted-foreground">点胶囊就地编辑（文字 / 类别六色 / tip）· 类别六色取自时间线页现有 tag 配色（D9）。</div>' +
         "</div></div>" +
       /* §91 实时预览：表单下方全宽（卡片按真实页 min(480px,100%) 渲染，桌面比例不失真） */
       '<div class="mt-3 rounded-lg border border-border/60 bg-card/60 p-3">' +
         '<div class="yj-ed-lbl">实时预览 · 航迹线页同款</div>' +
         '<div data-tlpreview class="yj-pv mt-2">' + tlCardHTML(ev) + "</div>" +
-        '<div class="mt-1.5 text-[10.5px] leading-[1.6] text-muted-foreground">按「加入节点表」的落表形状渲染 · 图位 297:210 · 圆点恒人工节点灰（与航迹线页一致）</div>' +
+        '<div class="mt-1.5 text-[10.5px] leading-[1.6] text-muted-foreground">按「加入节点表」的落表形状渲染 · 图位 297:210 · 无图 = 纯文本卡 · 圆点恒人工节点灰（与航迹线页一致）</div>' +
       "</div>" +
       '<div class="mt-2 flex flex-wrap items-center gap-2">' +
         '<button data-tlapply="1" class="' + BTN_PRIMARY + '" type="button"' + dis + ">" +
@@ -2385,14 +2629,14 @@ YJ.editor = (function () {
     var savedSec = savedN ? (
       '<div class="border-t border-border bg-muted/20 px-3 py-2">' +
         '<button data-savedsec="1" class="flex w-full items-baseline gap-2 text-left" type="button" title="' + (state.savedOpen ? "收起" : "展开") + "已保存列表\">" +
-          '<span class="yj-ed-lbl">已保存（人工表现值）</span>' +
+          '<span class="yj-ed-lbl">已保存（人工维护值）</span>' +
           '<span class="text-[10px] font-semibold tabular-nums text-muted-foreground">' + savedN + " 匹</span>" +
           '<span class="ml-auto text-[11px] text-muted-foreground">' + (state.savedOpen ? "▾" : "▸") + "</span>" +
         "</button>" +
       "</div>" +
       (state.savedOpen
         ? '<div class="space-y-1.5 p-2">' +
-            '<input id="savedQ" type="text" value="' + esc(state.savedQ) + '" placeholder="按马名检索改了什么…" autocomplete="off" class="' + INPUT + ' h-8 w-full font-normal">' +
+            '<input id="savedQ" type="text" value="' + esc(state.savedQ) + '" placeholder="按 马名 / 译名 / #编号 过滤（例：ヴァル、#003）" autocomplete="off" class="' + INPUT + ' h-8 w-full font-normal">' +
             pinsHTML() +
           "</div>"
         : "")
@@ -2445,7 +2689,11 @@ YJ.editor = (function () {
   function draftsHTML() {
     var entries = draftEntriesHTML();
     var pinN = pinIds().length;
-    return '<div class="rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+    /* 卡片级状态色条（2026-10-30 UI 审查 §28）：两块原本同为白底灰边，只能靠标题文字区分
+     * 「还没提交」与「已线上生效」。加 3px 左色条后与行级色系语言对齐：
+     *   未提交 = chart3 橙（同 .yj-ed-state--dry / .yj-ed-row--dry）
+     *   已保存 = primary 青绿（同 .yj-ed-state--pin / .yj-ed-row--pin） */
+    return '<div class="rounded-[14px] border border-border border-l-[3px] border-l-chart3 bg-card p-5 shadow-sm max-md:p-4">' +
         '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
           '<span class="text-[13px] font-bold">未提交草稿</span>' +
           '<span class="' + TIP + '">各编辑页的改动都在这里攒着 · 「提交到 GitHub」一次性原子生效</span>' +
@@ -2456,13 +2704,13 @@ YJ.editor = (function () {
             : '<div class="py-2 text-[12px] leading-[1.7] text-muted-foreground">草稿箱是空的。在基本信息 / 航迹线页里改字段 / 图片 / 时间线都会自动进这里，攒够一次性提交。</div>') +
         "</div>" +
       "</div>" +
-      '<div class="mt-3 rounded-[14px] border border-border bg-card p-5 shadow-sm max-md:p-4">' +
+      '<div class="mt-3 rounded-[14px] border border-border border-l-[3px] border-l-primary bg-card p-5 shadow-sm max-md:p-4">' +
         '<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">' +
-          '<span class="text-[13px] font-bold">已保存人工表值</span>' +
-          '<span class="' + TIP + '">线上生效中的人工值（已叠加本浏览器未提交草稿）</span>' +
+          '<span class="text-[13px] font-bold">已保存人工维护值</span>' +
+          '<span class="' + TIP + '">线上生效中（不被自动更新覆盖；已叠加本浏览器未提交草稿）</span>' +
           '<span class="ml-auto text-[11px] font-semibold tabular-nums text-muted-foreground">' + pinN + " 匹</span>" +
         "</div>" +
-        '<input data-draftq type="text" value="' + esc(state.savedQ) + '" placeholder="按马名 / NK-ID 检索改了什么…" autocomplete="off" class="' + INPUT + ' mt-3 w-full font-normal">' +
+        '<input data-draftq type="text" value="' + esc(state.savedQ) + '" placeholder="按 马名 / 译名 / #编号 过滤，支持部分匹配（例：ヴァル、#003）" autocomplete="off" class="' + INPUT + ' mt-3 w-full font-normal">' +
         '<div class="mt-2">' + (pinsHTML() || '<div class="py-2 text-[12px] text-muted-foreground">还没有已保存的人工值。</div>') + "</div>" +
       "</div>";
   }
@@ -2501,7 +2749,13 @@ YJ.editor = (function () {
   function renderMast() { if (els.mast) els.mast.innerHTML = mastHTML(); }
   function renderSummary() {
     if (!els.summary) return;
+    if (state.page === "table") return;   /* §150：批量表格页 #summary 归 editor-table.js::updateSummary 自管 */
     els.summary.innerHTML = summaryHTML();
+  }
+  /* §150 保存条 #summary 显隐：horse 页 = 恒显（折叠 chip 常驻），其余页维持「开抽屉才显」旧语义 */
+  function syncSummaryVis() {
+    if (!els.summary) return;
+    els.summary.classList.toggle("hidden", state.page === "horse" ? false : !state.boxOpen);
   }
 
   function render() {
@@ -2514,7 +2768,7 @@ YJ.editor = (function () {
     if (els.report) els.report.innerHTML = reportHTML();
     renderSummary();
     renderBox();
-    if (els.summary) els.summary.classList.toggle("hidden", !state.boxOpen);
+    syncSummaryVis();
     var draftN = draftCount();
     if (els.count) els.count.textContent = draftN ? draftN + " 处草稿" : "草稿箱空";
     if (els.boxBtn) els.boxBtn.textContent = draftN ? "草稿箱 · " + draftN : "草稿箱";
@@ -2600,17 +2854,38 @@ YJ.editor = (function () {
         return;
       }
       if (t.tagName !== "INPUT" || !t.dataset.f) return;
-      state.draft[t.dataset.f] = t.value;
+      putFieldDraft(t.dataset.f, t.value);   /* 改回原值 = 自动删键（见 putFieldDraft） */
       state.err = "";
       softRefreshRow(t.dataset.f);
     });
     if (els.form) els.form.addEventListener("change", function (ev) {
       var t = ev.target;
       if (t.tagName !== "SELECT" || !t.dataset.f) return;
-      state.draft[t.dataset.f] = t.value;
+      putFieldDraft(t.dataset.f, t.value);
       state.err = "";
       render();
     });
+    /* §151 建议浮层挂接：focusin 开全量清单、input 随键过滤、↑↓ 选择、Enter 拾取、Esc 关；
+     * 点外面 / 滚动 / 改窗口尺寸即关（滚动用捕获，容器内滚也关，简单可预期） */
+    if (els.form) {
+      els.form.addEventListener("focusin", function () { setTimeout(function () { sugSync("all"); }, 0); });
+      els.form.addEventListener("input", function (ev) {
+        var t = ev.target;
+        if (t.tagName === "INPUT" && t.dataset && t.dataset.f !== undefined) { setTimeout(function () { sugSync("filter"); }, 0); }
+      });
+      els.form.addEventListener("keydown", function (ev) { if (sugKey(ev)) ev.preventDefault(); });
+      document.addEventListener("pointerdown", function (ev) {
+        var p = document.getElementById("yjSugPanel");
+        if (p && !p.contains(ev.target) && ev.target !== document.activeElement) sugClose();
+      });
+      window.addEventListener("resize", sugClose);
+      /* §152：滚动即关，但排除浮层自身滚动（捕获模式会连面板内滚一起抓 → 一滚就消失没法翻页） */
+      window.addEventListener("scroll", function (ev) {
+        var p = document.getElementById("yjSugPanel");
+        if (p && ev.target && (p === ev.target || p.contains(ev.target))) return;
+        sugClose();
+      }, true);
+    }
     if (els.form) els.form.addEventListener("click", function (ev) {
       var b = ev.target.closest ? ev.target.closest("button[data-unpin]") : null;
       if (!b) return;
@@ -2642,7 +2917,7 @@ YJ.editor = (function () {
       if (b.dataset.rmgoto !== undefined) {                  /* 比赛配图草稿 → 跳回面板选中该场（§82.21） */
         if (state.page !== "timeline") { location.href = "edit-timeline.html"; return; }
         state.boxOpen = false; renderBox();
-        if (els.summary) els.summary.classList.toggle("hidden", true);
+        syncSummaryVis();
         var rmeta = rmMeta(b.dataset.rmgoto);
         state.tl.racePanel = true;
         if (rmeta) { state.tl.raceHorse = rmeta.hid; state.tl.raceSel = String(b.dataset.rmgoto); loadRaceBundle(rmeta.hid); }
@@ -2656,7 +2931,7 @@ YJ.editor = (function () {
         if (state.savedExp[sid]) delete state.savedExp[sid]; else state.savedExp[sid] = 1;
         renderBox(); return;
       }
-      if (b.id === "boxClose") { state.boxOpen = false; renderBox(); if (els.summary) els.summary.classList.toggle("hidden", !state.boxOpen); return; }
+      if (b.id === "boxClose") { state.boxOpen = false; renderBox(); syncSummaryVis(); return; }
       if (b.id === "ghPanelBtn") { state.ghPanel = !state.ghPanel; state.gh = null; renderBox(); return; }
       if (b.id === "ghTokenSave") {
         var v = ((document.getElementById("ghTokenInput") || {}).value || "").trim();
@@ -2717,6 +2992,13 @@ YJ.editor = (function () {
           state.draft = {}; state.note = ""; state.editing = "";
           state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {};
         }
+        /* 2026-10-30 修：批量表格页（edit-table.html）把 ov 草稿水合成表格行，
+         * 此前放弃一条**字段草稿**只删了 localStorage，表格页内存里 S.pendOv / rows 仍是旧值
+         * → 用户看到「点了放弃，表格没变化」。与 __rc 分支的 yj-rc-dropped 对称，
+         * 这里派发 yj-ov-dropped 让表格页重新水合基本信息表。
+         * ⚠ 双仓共用文件（与 kzn 逐字节对齐）：此改动**待用户本人手动同步**到 kzn。
+         * 2026-10-30 定稿：本仓不发起任何 kzn 侧写入，kzn 何时同步由用户决定。 */
+        document.dispatchEvent(new CustomEvent("yj-ov-dropped", { detail: { id: did } }));
         render();
       }
     }
@@ -2746,7 +3028,11 @@ YJ.editor = (function () {
     if (els.boxBtn) els.boxBtn.addEventListener("click", function () {
       state.boxOpen = !state.boxOpen;
       renderBox();
-      if (els.summary) els.summary.classList.toggle("hidden", !state.boxOpen);
+      syncSummaryVis();
+    });
+    /* §150 变更摘要 chip：点击展开/收起明细 */
+    if (els.summary) els.summary.addEventListener("click", function (ev) {
+      if (ev.target.closest && ev.target.closest("#sumToggle")) { state.sumOpen = !state.sumOpen; renderSummary(); }
     });
     if (els.save) els.save.addEventListener("click", function () {
       if (state.mode === "draft") { submitDrafts(); return; }
@@ -2782,11 +3068,12 @@ YJ.editor = (function () {
     });
     if (els.photos) els.photos.addEventListener("click", function (ev) {
       var b = ev.target.closest ? ev.target.closest(
-        "button[data-pdel],button[data-pnone],button[data-punpin],button[data-pslot],button[data-pclose],#photoURLBtn") : null;
+        "button[data-pdel],button[data-pnone],button[data-punpin],button[data-pslot],button[data-pclose],button[data-pmv],#photoURLBtn") : null;
       if (!b) return;
       /* 纯 UI：照片位 / 「上传/外链」钮展开入库面板，「收起」关掉 —— 不要求服务端在线 */
       if (b.dataset.pslot !== undefined) { state.photos.open = !state.photos.open; renderPhotos(); return; }
       if (b.dataset.pclose !== undefined) { state.photos.open = false; renderPhotos(); return; }
+      if (b.dataset.pmv !== undefined) { movePhoto(Number(b.closest("[data-pi]").dataset.pi), Number(b.dataset.pmv)); render(); return; }   /* §155 触屏调序 */
       if (b.id === "photoURLBtn") {
         var u = (state.photos.url || "").trim();
         if (u) uploadURL(u); else photoLog("先粘贴一个图片 URL", "err");
@@ -2802,10 +3089,28 @@ YJ.editor = (function () {
     if (els.photos) {
       els.photos.addEventListener("dragstart", onDragStart);
       els.photos.addEventListener("dragover", onDragOver);
-      els.photos.addEventListener("dragleave", function () { clearDragRing(); });
+      els.photos.addEventListener("dragleave", function (ev) {
+        clearDragRing();
+        if (!ev.relatedTarget || !els.photos.contains(ev.relatedTarget)) extRing(false);
+      });
       els.photos.addEventListener("drop", onDrop);
       els.photos.addEventListener("dragend", onDragEnd);
     }
+    /* §150 Ctrl+V 粘贴图片（仅 horse 页装剪贴板监听）：剪贴板里是 image 文件 → 与点上传同一链路；
+     * 文本粘贴（外链 URL 等）不拦截。 */
+    if (els.photos) document.addEventListener("paste", function (ev) {
+      if (!state.horse || state.saving) return;
+      var items = ev.clipboardData && ev.clipboardData.items;
+      if (!items) return;
+      var files = [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === "file" && String(items[i].type).indexOf("image/") === 0) {
+          var f = items[i].getAsFile();
+          if (f) files.push(f);
+        }
+      }
+      if (files.length) { ev.preventDefault(); uploadQueue(files, state.horse.id); }
+    });
 
     /* ---------------- M2c 时间线区（仅 timeline 页 / 或 horse 页保留段时有 #tl） ---------------- */
     if (els.tl) els.tl.addEventListener("input", function (ev) {
@@ -2842,10 +3147,19 @@ YJ.editor = (function () {
       }
     });
     if (els.tl) els.tl.addEventListener("click", function (ev) {
+      /* §150 标签胶囊：点胶囊本体展开编辑（✕ 按钮走下方 button 分支删除） */
+      var pill = ev.target.closest ? ev.target.closest("[data-tltag]") : null;
+      if (pill && !ev.target.closest("button")) {
+        state.tl.tagEdit = Number(pill.dataset.tltag);
+        renderTL();
+        return;
+      }
       var b = ev.target.closest ? ev.target.closest("button") : null;
       if (!b) return;
       var d = b.dataset;
       if (d.tlnew !== undefined) openTLEdit(-1, d.tlnew || "free");   /* race=引用比赛 / free=自填荣誉 */
+      else if (d.tlphdel !== undefined) { editEV().photo = ""; renderTL(); }   /* §150 图片小格移除 */
+      else if (d.tlmove !== undefined) tlMove(Number(d.tlidx), Number(d.tlmove));
       else if (d.rmtoggle !== undefined) { state.tl.racePanel = !state.tl.racePanel; renderTL(); }
       else if (d.rmclose !== undefined) { state.tl.racePanel = false; renderTL(); }
       else if (d.rmdel !== undefined) {

@@ -37,6 +37,11 @@
 
 /* ---------- 通用组件（Tailwind 组合类，@apply 封装复用） ---------- */
 @layer components {
+  /* ★ 暗色模式待办（2026-10-30 UI 审查 §2）：tailwind.config.js 已挂 darkMode:'class'，
+   * 但深色 token 尚未定义。将来接入时，本文件里所有**写死 hex 的组件**都要补 dark 变体，
+   * 清单：.card / .seg / .yj-ov-*（渐变描边+径向雾，需整体重做）/ .yj-no1-3 / .yj-nkm1-3 /
+   * .yj-tm--*（200 浅底 + 900 深字要反向）/ .yj-g1-g3 / .yj-ed-* / .nav-item::before。
+   * 走 @apply token 的类（如 .yj-ed-in、.yj-stb）只需换 token 值，不必逐类改。 */
   .card { @apply rounded-[10px] border border-border bg-card text-card-foreground; }
   table { @apply w-full border-collapse text-[13.5px]; }
   thead th { @apply whitespace-nowrap border-b border-border bg-muted/40 px-[13px] py-[9px] text-left text-[12.5px] font-semibold tracking-[.5px]; }
@@ -55,6 +60,42 @@
   .page-title::before { content:""; @apply h-4 w-1 flex-none rounded bg-primary; }
   select, input { @apply h-9 rounded-md border border-input bg-background px-2.5 text-[13px] text-foreground; }
   .hint-empty { @apply py-[60px] px-5 text-center text-[13.5px] text-muted-foreground; }
+  /* 空态紧凑变体（stats / leaderboard 卡内空态）：原两页各自重定义 .hint-empty 为 26px，
+   * 与 theme.css 的 60px 版并存导致同站两种空态间距（2026-10-30 UI 审查 §30 收口）。 */
+  .hint-empty--sm { @apply py-[26px] px-2.5 text-center text-[13px] text-muted-foreground; }
+
+  /* ---------- KPI 条（stats / datechart / leaderboard 三页共用）----------
+   * 2026-10-30 UI 审查 §29 收口：三页原各自定义 .st-kpi/.dc-kpi/.lb-kpi，实测 padding/
+   * 分隔线/字号/颜色逐项相同（padding:2px 18px、border-left:#ececec、k 11px、v 20px、hi #0aa7a0）
+   * —— 属 §48 第 5 条「≥3 处使用」的收口门槛内，合并为本组件。
+   * 用法：<div class="yj-kpis"><div class="yj-kpi"><span class="k">…</span><span class="v">…</span></div>…</div>
+   * 图标（奖杯等）由调用处自带 <i class="…">，不进组件。 */
+  .yj-kpis { display: flex; flex-wrap: wrap; }
+  .yj-kpi { padding: 2px 18px; border-left: 1px solid #ececec; }
+  .yj-kpi:first-child { padding-left: 2px; border-left: 0; }
+  .yj-kpi .k { font-size: 11px; font-weight: 600; letter-spacing: .5px; color: #8a8a8a; white-space: nowrap; }
+  .yj-kpi .v { margin-top: 2px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: #171717; white-space: nowrap; }
+  .yj-kpi .v.hi { color: #0aa7a0; }
+  .yj-kpi .v.dim { color: #a1a1aa; }
+  @media (max-width: 768px) {
+    .yj-kpi { padding: 2px 12px; }
+    .yj-kpi .v { font-size: 16px; }
+  }
+
+  /* ---------- 外壳侧栏导航项：当前页指示器 ----------
+   * 2026-10-30 UI 审查 §4：原选中态是「整条实心 primary 底 + 白字」，在 220px 侧栏里
+   * 面积过大、与未选中项（灰字）之间缺少层次过渡。改为「浅青底 + 左侧 3px 竖条 + 深青字」，
+   * 底色/字色由 index.html 的 data-[on=true]:bg-accent / text-accent-foreground 承担，
+   * 本组件只负责那条竖条（伪元素，不占布局）。 */
+  .nav-item { position: relative; }
+  .nav-item::before {
+    content: ""; position: absolute; left: 0; top: 50%;
+    width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+    transform: translateY(-50%) scaleY(0);
+    background: #0aa7a0; transition: transform .16s ease;
+  }
+  .nav-item[data-on="true"]::before { transform: translateY(-50%) scaleY(1); }
+  @media (prefers-reduced-motion: reduce) { .nav-item::before { transition: none; } }
 
   /* 分段控件（stats 场地/口径切换 + datechart 单位切换；原两页各持一份本地 CSS，2026-xx 收口统一）：
    * 规范值取 32px 高（= Tailwind h-8 标准控件高，与页内相邻按钮对齐）；原 stats 30px 版归齐于此。 */
@@ -70,11 +111,11 @@
   .yj-ov-outer { border-radius:17px; padding:1px; background:linear-gradient(100deg,#0aa7a0 0%,#6fcac4 35%,#d9efed 70%,#eef7f6 100%); }
   .yj-ov-band { border-radius:16px; background:radial-gradient(420px 200px at 6% 0%,#e7f6f4 0%,rgba(231,246,244,0) 62%),radial-gradient(520px 260px at 100% 100%,#d8f0ed 0%,rgba(216,240,237,0) 55%),#fff; display:flex; align-items:center; flex-wrap:wrap; padding:21px 0 21px 28px; color:#173330; }
   .yj-ov-lab, .yj-ov-k { font-size:9.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#5f8a86; white-space:nowrap; }
-  .yj-ov-rec { padding-right:28px; border-right:1px solid rgba(10,167,160,.22); }
+  .yj-ov-rec { padding-right:24px; border-right:1px solid rgba(10,167,160,.22); }
   .yj-ov-lab { display:block; margin-bottom:9px; }
   .yj-ov-big { display:block; font-size:38px; font-weight:700; letter-spacing:-.5px; line-height:1; color:#0b5f5b; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .yj-ov-br { display:block; margin-top:8px; font-size:12px; font-weight:500; letter-spacing:1px; color:rgba(11,95,91,.55); font-variant-numeric:tabular-nums; }
-  .yj-ov-rate { padding:0 22px; border-right:1px solid rgba(10,167,160,.22); text-align:center; }
+  .yj-ov-rate { padding:0 18px; border-right:1px solid rgba(10,167,160,.22); text-align:center; }
   .yj-ov-rate .yj-ov-k { display:block; margin-bottom:9px; }
   .yj-ov-rate b { display:block; min-width:2.7em; font-size:24px; font-weight:700; letter-spacing:-.5px; line-height:1; font-variant-numeric:tabular-nums; color:#173330; }
   .yj-ov-hi b { color:#0aa7a0; }
@@ -86,7 +127,16 @@
   .yj-ov-m b em { font-style:normal; font-size:11.5px; font-weight:500; color:rgba(11,95,91,.55); margin-left:3px; }
   .yj-ov-dim { color:rgba(11,95,91,.26) !important; }
   .yj-ov-sub { margin-top:3px; font-size:10.5px; color:rgba(11,95,91,.5); white-space:nowrap; }
-  /* 主胜鞍：概览色带第二行（全宽脚注行）——在「通算成绩 / 三率 / 三赏金」之后另起一行，细分隔线隔开。
+  /* 四格均分变体（2026-10-31 方案B定稿）：赏金组加「总赏金」后 4 格并列。
+   * 容器 flex-wrap：右栏宽（≥~1250px 视口）1×4，中等宽度自动折 2×2，窄屏不重叠
+   * （profile 右栏 = 视口-450 左右；候选对比见 tests/prize-band-variants.html）。
+   * 数值 24px = 与三率 .yj-ov-rate b 同级（二轮 20px 被用户否掉：比 42.9% 还小、主次颠倒） */
+  .yj-ov-prizes--4 { flex-wrap:wrap; row-gap:6px; }
+  .yj-ov-prizes--4 .yj-ov-m { flex:1 1 120px; }
+  .yj-ov-prizes--4 .yj-ov-m b { font-size:24px; }
+  .yj-ov-prizes--4 .yj-ov-m .yj-ov-k { letter-spacing:.8px; }
+  .yj-ov-prizes--4 { padding-right:16px; }
+  .yj-ov-prizes--4 .yj-ov-m { padding-left:12px; }  /* 主胜鞍：概览色带第二行（全宽脚注行）——在「通算成绩 / 三率 / 三赏金」之后另起一行，细分隔线隔开。
    * 空数组时整行不渲染（由 profile.html 决定是否输出），所以这里只负责有内容时的排布；
    * 条目 = 年份 + 赛名 + 等级徽章（徽章复用 race-rows.js 的 .yj-grade）。 */
   .yj-ov-wins { flex:0 0 100%; display:flex; flex-wrap:wrap; align-items:baseline; gap:7px 20px;
@@ -96,6 +146,12 @@
   .yj-ov-win-y { margin-right:6px; font-size:11px; font-weight:600; letter-spacing:.5px; color:rgba(11,95,91,.5); font-variant-numeric:tabular-nums; }
   .yj-ov-win-n { font-size:13px; font-weight:600; color:#173330; }
   .yj-ov-wins .yj-grade { margin-left:6px; padding:1px 6px; font-size:10.5px; }
+  /* §158 着顺构成条：1着/2着/3着/着外 分段横条（宽度 ∝ 匹数，flex-grow 铺排；
+   * 段色 = 全站数据语义色 bg-primary/bg-chart2/bg-chart3/bg-neutral-300，类名在 profile.html）。
+   * 段内 title 即悬停说明；入场 scaleX 生长动画（keyframes 在 @layer 外） */
+  .yj-ov-bar { display:flex; overflow:hidden; border-radius:99px; margin-top:10px; width:150px; height:6px; background:#f5f5f5; }
+  .yj-ov-bar i { display:block; height:100%; transform-origin:left center; animation:yjBarIn .5s cubic-bezier(.22,.61,.36,1) backwards; transition:filter .15s ease; }
+  .yj-ov-bar:hover i { filter:brightness(1.06); }
   @media (max-width:767px){
     .yj-ov-band { padding:16px 18px; gap:14px 0; }
     .yj-ov-rec { width:100%; border-right:none; padding-right:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:10px; }
@@ -105,13 +161,22 @@
     .yj-ov-rate { flex:1; padding:0 10px; text-align:left; border-right:none; }
     .yj-ov-rate b { font-size:18px; min-width:0; }
     .yj-ov-prizes { flex:0 0 100%; width:100%; flex-direction:column; padding:4px 0 0; border-top:1px solid rgba(10,167,160,.22); }
-    .yj-ov-m { display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-left:none; text-align:left; }
+    .yj-ov-m { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; padding:9px 0; border-left:none; text-align:left; }
     .yj-ov-m + .yj-ov-m { border-top:1px solid rgba(10,167,160,.14); }
     .yj-ov-m .yj-ov-k { margin-bottom:0; }
+    /* sub 细注（収得副行 / 总赏金明细）独占第二行：mb 端 .yj-ov-m 横排 + sub flex:0 0 100% 换行，
+       不然会挤成 k|b|sub 三段散布（2026-10-31 总赏金上格时顺手修正） */
+    .yj-ov-m .yj-ov-sub { flex:0 0 100%; order:3; margin-top:1px; }
+    /* 四格变体在 mb 纵排里 flex-basis 要还原 auto：120px 的行向 basis 会变成每行最小高（撑出大空行） */
+    .yj-ov-prizes--4 .yj-ov-m { flex-basis:auto; }
     .yj-ov-m b { font-size:20px; }
+    /* --4 的 24px（PC 与三率同级）特异性更高会盖过上一行；mb 端回到 20px 紧凑行 */
+    .yj-ov-prizes--4 .yj-ov-m b { font-size:20px; }
     .yj-ov-wins { margin-top:12px; padding:11px 0 0; gap:6px 14px; }
     .yj-ov-wins .yj-ov-k { flex:0 0 100%; }
     .yj-ov-win-n { font-size:12.5px; }
+    /* §158 构成条 mb：从大字下方定宽条改为通栏细条 */
+    .yj-ov-bar { width:100%; }
   }
 
   /* ---------- 比赛记录徽章与 mb 卡片（races.html / datechart.html 明细共用；单一出处） ----------
@@ -144,9 +209,11 @@
   /* 性齢槽（§78）：馬名槽后的元信息，观感与日期槽同档（小号灰）；flex:none 不跟名称槽抢宽、长马名省略号挤不到它 */
   .yj-mb-sexage{flex:none;font-size:11.5px;color:#8a9096;font-weight:600;white-space:nowrap}
   .yj-mb-place{flex:none}
+  /* 分组行（§167.1 用户改稿）：维持原自然流式排布（space-between 机械撑满已否决），
+   * 仅把字段左右间隔加大（12→20px），弱化拥挤感即可 */
   .yj-mb-line{display:block;padding:1px 12px;font-size:12px;color:#3a4149;line-height:1.8}
   .yj-mb-line:last-child{padding-bottom:11px}
-  .yj-mb-item{white-space:nowrap;margin-right:12px}
+  .yj-mb-item{white-space:nowrap;margin-right:20px}
   .yj-mb-item:last-child{margin-right:0}
   .yj-mb-item i{font-style:normal;font-size:10.5px;color:#9aa0a6}
   .yj-mb-item b{font-weight:500}
@@ -159,7 +226,10 @@
   .hjump:hover{color:#0aa7a0;border-bottom-color:#0aa7a0}
   /* 赛事名跳转（比赛记录表 → netkeiba 结果页，§80）：用户点名「不需要任何提醒的样式」→
    * 继承色/无下划线/无 hover 变化，观感与普通文本一致（仅光标可感知可点） */
-  .yj-rlink{color:inherit;text-decoration:none}
+  /* 赛事名可点击提醒（§158 用户定稿）：浅灰虚线下划线暗示「有链接」，hover 加深；
+   * 观感仍近文本、不抢行，新标签页打开（race-rows.js raceLink 输出） */
+  .yj-rlink{color:inherit;text-decoration:underline;text-decoration-style:dashed;text-decoration-color:#d4d4d4;text-decoration-thickness:1px;text-underline-offset:3px}
+  .yj-rlink:hover{text-decoration-color:#a3a3a3}
   /* 马名语言切换（日文名/英文名 ⇄ 港译名/自译名）：比赛记录页（跨马主表列头 / mb 汇总行）与
    * 日期统计明细（列出马名列头 / 明细标题行）共用同一控件 —— 样式单一出处 = 此处；
    * 带 data-tip 时自绘悬停浮层（与 races.html 的 .filter-chip[data-tip] 同款观感） */
@@ -195,9 +265,29 @@
   /* 已存人工值行「官方值对照」的划线（officialHTML：表示「已被人工值替代」） */
   .yj-ed-struck { @apply text-muted-foreground line-through decoration-muted-foreground/60 decoration-1; }
 
-  /* 控件：文本 / 下拉 / 备注（v3：38px semibold → 36px medium，减重） */
-  .yj-ed-in { @apply h-9 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-[13.5px] font-medium text-foreground; }
+  /* 控件：文本 / 下拉 / 备注（§150 统一 34px；v3 曾 38px semibold → 36px medium → 34px） */
+  .yj-ed-in { @apply h-[34px] w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-[13.5px] font-medium text-foreground; }
   .yj-ed-in:focus { @apply border-primary outline-none ring-2 ring-primary/15; }
+
+  /* §151 下拉统一：select 一律 appearance-none + 自绘箭头（与文本输入同框同高；弹层仍是原生的，
+   * 但开合前的外观三页一致）。箭头色 = muted-foreground 同档灰。 */
+  .yj-ed-sel {
+    @apply h-[34px] min-w-0 appearance-none rounded-lg border border-input bg-card px-2.5 pr-8 text-[13.5px] font-normal text-foreground;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 13px;
+  }
+  .yj-ed-sel:focus { @apply border-primary outline-none ring-2 ring-primary/15; }
+  .yj-ed-sel:disabled { @apply cursor-not-allowed opacity-50; }
+
+  /* §151 datalist 替身：f.list 字段（馬主/調教師/抹消_去向場所）的自定义建议浮层。
+   * 原生 datalist 弹层跟随系统主题（深色系统下突兀）且无法定制 → 收敛为这张受控卡。
+   * fixed 定位挂 body（台账 overflow-hidden 会裁内嵌面板），宽 = 触发输入框。 */
+  .yj-ed-sugpanel { @apply fixed z-[70] max-h-[248px] overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-lg; }
+  .yj-ed-sugpanel button { @apply block w-full cursor-pointer truncate rounded-md px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-accent; }
+  .yj-ed-sugpanel button[data-sugon] { @apply bg-accent; }
+  .yj-ed-sugpanel .yj-ed-sugempty { @apply px-2 py-1.5 text-[12px] text-muted-foreground; }
 
   /* 小按钮（保存条 / 图片区 / 时间线区同一套） */
   .yj-ed-op { @apply inline-flex h-7 flex-none items-center rounded-md border border-input bg-card px-2.5 text-[11.5px] font-medium text-secondary-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40; }
@@ -215,15 +305,20 @@
   .yj-ed-sechead { @apply w-full cursor-pointer select-none text-left; }
   .yj-ed-sec[data-open="false"] > .yj-ed-secbody { @apply hidden; }
 
-  /* 台账本体：一行一字段 + 发丝分隔（gap-px over bg-border）。
-   * 行标签 §94 定稿：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写）。 */
-  .yj-ed-ledger { @apply grid grid-cols-1 gap-px overflow-hidden rounded-[10px] border border-border bg-border; }
-  .yj-ed-row { @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 bg-card px-4 py-2 max-md:px-3; }
-  .yj-ed-row-k { @apply w-[92px] flex-none text-[13px] font-medium leading-tight text-secondary-foreground max-md:w-[78px]; }
-  .yj-ed-row-orig { @apply min-w-0 flex-none text-[11px] leading-[1.4] text-muted-foreground; }
-  /* 已保存 = 浅青底 · 待保存 = 橙底（沉默 = 官方：idle 行无底色、无徽章） */
-  .yj-ed-row--pin { @apply bg-accent/45; }
-  .yj-ed-row--dry { @apply bg-chart3/[.07]; }
+  /* §150 表单改版（docs/UI优化记录.md §150）：分组 + 两列网格。
+   * 字段 = 竖排 cell（标签行内联状态胶囊 + 「恢复官方值」小钮），组头青绿小标；
+   * 状态着色下沉到控件描边（已保存浅青 · 待保存橙），沉默 = 官方一致无装饰。
+   * 行标签 §94 定稿维持：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写）。 */
+  .yj-ed-groups { @apply flex flex-col gap-4; }
+  .yj-ed-ghead { @apply mb-1.5 flex items-center gap-1.5 text-[10.5px] font-bold tracking-[1px] text-primary; }
+  .yj-ed-ghead::before { content:""; @apply h-[11px] w-[3px] flex-none rounded-full bg-primary; }
+  .yj-ed-grid2 { @apply grid grid-cols-2 gap-x-3 gap-y-2.5 max-md:grid-cols-1; }
+  .yj-ed-cell { @apply min-w-0; }
+  .yj-ed-cell--full { grid-column: 1 / -1; }
+  .yj-ed-cell-k { @apply mb-1 flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground; }
+  .yj-ed-cell--dry .yj-ed-in { @apply border-chart3/60; }
+  .yj-ed-cell--pin .yj-ed-in { @apply border-primary/40 bg-accent/20; }
+  .yj-ed-row-orig { @apply min-w-0 text-[11px] leading-[1.4] text-muted-foreground; }
 
   /* 值位徽章（現役/牡/牝… 枚举只读形态，配色由调用处补既有 token） */
   .yj-ed-vbadge { @apply inline-flex flex-none items-center rounded-full px-2 py-[2px] text-[11.5px] font-semibold leading-[1.5]; }
@@ -254,7 +349,9 @@
    * 配色 = 200 级低饱和浅底 + 同 hue 800/900 级深字 —— 中央/地方现役=青绿/蓝同族（现役两档）、
    * 繁殖=橙、乘马=黄绿、JRA抹消=中性灰（去向不明=灰）、种马=紫、未登录=蓝灰（尚无记录）、海外=primary/20、
    * 死亡=最浅灰（终点/退场=无彩色，比其他类「褪色」一档）；性别三列例外，用基本信息徽章指定色（见下方性别段注释）。 */
-  .yj-tm { @apply absolute flex flex-col items-center justify-center overflow-hidden rounded-[6px] leading-tight transition-[filter] duration-150 hover:brightness-95; }
+  /* hover/按压（§157 交互升级）：上浮 + 阴影 + 微降亮度；active 按压回弹（触屏点按也有反馈）。
+   * transition 含 transform/box-shadow —— 块为绝对定位，transform 不与 left/top 冲突 */
+  .yj-tm { @apply absolute flex flex-col items-center justify-center overflow-hidden rounded-[6px] leading-tight transition-[filter,transform,box-shadow] duration-200 will-change-transform hover:-translate-y-0.5 hover:shadow-md hover:brightness-95 active:translate-y-0 active:shadow-sm active:brightness-90; }
   .yj-tm-h { @apply flex-row items-center gap-x-1.5; }   /* 宽扁块横排标签：类名+数字一行（块渲染按面积选） */
   .yj-tm-n { @apply text-[11.5px] font-semibold tracking-[.3px]; }
   .yj-tm-v { @apply mt-0.5 text-[20px] font-bold tabular-nums; }
@@ -273,7 +370,7 @@
   /* 性别三等分列（male/female/gelding）配色 = 基本信息性别徽章同款指定色（profile sexBadge 全站基准，
    * leaderboard 名字色 / 搜索列表色条同源：牡蓝 #C9EFFE/#0B5A8C · 牝粉 #FFDBD5/#B03A30 · 骟灰 #EFEFEF/#5A5A5A）；
    * 概览总数不占面积 → 组标题右侧 chip（text-primary），不占用色类 */
-  .yj-tile { @apply flex flex-col rounded-[10px]; }
+  .yj-tile { @apply flex flex-col rounded-[10px] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0; }
   /* 概览年份占比块 y1..y12：按年份降序位次取色（新年份插队拿 y1、其余顺移，未知年份排最后照常参与）。
    * v1 仅 5 色且全在蓝青族（sky/indigo/cyan/blue/teal）→ 年份一多取模重色，整片蓝紫两族难分辨
    * （kzn 9 厩年每色两现，用户定调「有几个年份就有几个颜色」）；v2 扩 12 色全 hue 铺开、冷暖交替，
@@ -294,10 +391,36 @@
   .yj-tm--female { @apply bg-[#FFDBD5] text-[#B03A30]; }
   .yj-tm--gelding { @apply bg-[#EFEFEF] text-[#5A5A5A]; }
 
-  /* 照片位（左列：有图显示图、无图占位 🐎）+ 其下缩略图行 */
-  .yj-ed-slot { @apply relative flex min-h-[190px] w-full cursor-pointer select-none items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted/20 transition-colors hover:border-primary max-md:min-h-[150px]; }
-  .yj-ed-slotimg { @apply absolute inset-0 h-full w-full object-contain; }
-  .yj-ed-thumb { @apply relative m-0 flex w-[104px] max-w-full flex-none flex-col overflow-hidden rounded-lg border border-border bg-muted/20; }
+  /* §158 详情页交互（profile.html 专用，类名字面量在该页 JS → content 扫得到）：
+   * 字段行点击复制（.yj-cp 行 / .yj-cp-v 值槽 / .yj-cp-ok 复制成功浮标） */
+  .yj-cp { @apply cursor-pointer transition-colors duration-150 hover:bg-muted/70; }
+  .yj-cp-v { @apply relative; }
+  .yj-cp-ok { @apply relative -top-px ml-1.5 inline-block rounded bg-accent px-1.5 py-px align-middle text-[10px] font-semibold leading-normal text-accent-foreground; animation:yjCpOk 1.2s ease both; }
+  /* 「详细数据→」箭头 hover 位移（raceSection 链接） */
+  .yj-more-arr { @apply ml-px inline-block transition-transform duration-200; }
+  .yj-more:hover .yj-more-arr { @apply translate-x-0.5; }
+
+  /* §150 照片网格（docs/UI优化记录.md §150）：120px 缩略图格（首图「封面」徽标 + 序号 + 悬停 ✕）
+   * + 末尾虚线「＋」加号格（点击上传 / 外部文件拖入 / Ctrl+V 粘贴）；容器拖入高亮 = .yj-ed-extdrop。 */
+  .yj-ed-thumbs { @apply mt-2 flex list-none flex-wrap gap-2.5 p-0; }
+  .yj-ed-thumb { @apply relative m-0 flex w-[120px] flex-none flex-col overflow-hidden rounded-[10px] border border-border bg-muted/20; }
+  .yj-ed-cover { @apply absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-px text-[10px] font-semibold text-primary-foreground; }
+  .yj-ed-index { @apply absolute left-1.5 top-1.5 rounded bg-black/55 px-1.5 py-px text-[10px] font-semibold tabular-nums text-white; }
+  .yj-ed-thumb--add { border-style: dashed; }
+  .yj-ed-thumb-add { @apply flex h-full w-full cursor-pointer select-none flex-col items-center justify-center gap-1 py-5 text-muted-foreground; }
+  .yj-ed-thumb--empty { @apply w-full; }
+  .yj-ed-thumb--empty .yj-ed-thumb-add { @apply py-9; }
+  .yj-ed-extdrop { @apply rounded-xl outline-2 outline-dashed outline-offset-4 outline-primary/50; }
+  .yj-ed-extdrop .yj-ed-thumb--add { @apply border-primary bg-accent/25; }
+
+  /* §150 航迹线表单：标签胶囊流（点胶囊就地展开编辑）+ 图片小格（84×60，替换手填路径文本框）。 */
+  .yj-ed-tagpill { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full border border-border bg-card py-[3px] pl-2.5 pr-1.5 text-[12px] text-foreground transition-colors hover:border-primary; }
+  .yj-ed-tagdot { @apply inline-block h-2 w-2 flex-none rounded-full; }
+  .yj-ed-tagx { @apply flex h-4 w-4 flex-none items-center justify-center rounded-full text-[10px] leading-none text-muted-foreground hover:bg-muted hover:text-destructive; }
+  .yj-ed-tlph { @apply relative block h-[60px] w-[84px] flex-none overflow-hidden rounded-lg border border-border bg-muted/20; }
+  .yj-ed-tlph img { @apply h-full w-full object-contain; }
+  .yj-ed-tlph-x { @apply absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded bg-black/55 text-[10px] leading-none text-white hover:bg-destructive; }
+  .yj-ed-tlph--empty { @apply flex items-center justify-center; }
 
   /* 航迹线空态入口卡（v3 signature）：「引用比赛 / 自填荣誉」两张邀请卡，图标 + 标题 + 一句说明 */
   .yj-ed-card { @apply flex min-w-0 flex-1 cursor-pointer flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-50; }
@@ -343,3 +466,38 @@
   .yj-drop{animation:none}
 }
 
+
+/* ---------- profile 目录总览三组色块：入场动画（§157 · @layer 外防候选裁剪） ----------
+ * 交错淡入上浮：animation-delay 由 profile.html 按块序内联（i*45ms）；
+ * fill 模式 backwards —— 仅 delay 期间应用 from 态，动画结束回到普通样式，
+ * .yj-tm/.yj-tile 的 hover transform 过渡不被 animation fill 覆盖 */
+.yj-tm-anim{animation:yjTmIn .45s cubic-bezier(.22,.61,.36,1) backwards}
+@keyframes yjTmIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){
+  .yj-tm-anim{animation:none}
+  .yj-tm,.yj-tile{transition:none}
+}
+
+/* ---------- §158 详情页动画（profile.html 专用 · @layer 外防候选裁剪） ----------
+ * 切马淡入（render() 重绘 #body 时挂 .yj-view-in）/
+ * 已复制浮标（1.2s 出现→停留→消失）/ 着顺构成条逐段生长 */
+.yj-view-in{animation:yjViewIn .26s ease}
+@keyframes yjViewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes yjCpOk{0%{opacity:0;transform:translateY(2px)}15%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
+@keyframes yjBarIn{from{transform:scaleX(0)}}
+@media (prefers-reduced-motion:reduce){
+  .yj-view-in,.yj-cp-ok,.yj-ov-bar i{animation:none}
+}
+
+/* ---------- §160 奖杯「金光闪闪」（stats / datechart 重赏 KPI、日历胜格、月卡共用 · @layer 外防候选裁剪） ----------
+ * 图案本体 = 页面 JS 注入的内联 SVG（class yj-trophy，内嵌 linearGradient #yj-tg：
+ * 亮金 #fde68a → #fbbf24 → 基线金 #e8a013 → 深金 #d97706），此处只管「闪闪」：
+ * 金色 drop-shadow 辉光 2.6s 呼吸脉冲，高光段轻微提亮；prefers-reduced-motion 时静止。 */
+.yj-trophy{animation:yjTrophyShine 2.6s ease-in-out infinite}
+@keyframes yjTrophyShine{
+  0%,100%{filter:drop-shadow(0 0 1px rgba(232,160,19,.4))}
+  50%{filter:drop-shadow(0 0 3px rgba(251,191,36,.95)) drop-shadow(0 0 8px rgba(253,230,138,.55)) brightness(1.12)}
+}
+@media (prefers-reduced-motion:reduce){
+  .yj-trophy{animation:none}
+}
