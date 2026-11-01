@@ -79,11 +79,15 @@ def build_runs(horses):
                 "pr": artifacts.norm_prize(r.get("賞金")),
                 "vt": str(r.get("venue_type") or ""),
                 "bk": str(r.get("馬場") or ""),
+                "tn": str(r.get("天候") or ""),      # 天候（曇/晴/…；mb 卡片赛事行，§165 mb 全字段）
                 "wk": _raw(r.get("枠番")),           # 枠番（int/str 原样，'' 缺失；明细列 §159 全站统一 18 列）
                 "ub": _raw(r.get("馬番")),           # 馬番（同上）
                 "ki": _raw(r.get("斤量")),
                 "nk": _raw(r.get("人気")),
                 "tm": str(r.get("タイム") or ""),
+                "ts": _raw(r.get("頭数")),           # 頭数（int/''；mb 番号行 出赛数，§165）
+                "cs": str(r.get("着差") or ""),      # 着差（"0.0"/クビ 等/''；mb 时间行，§165）
+                "od": _raw(r.get("単勝")),           # 単勝オッズ（num/str/''；mb 体重行 赔率，§165）
                 "ag": str(r.get("上り") or ""),      # 後3F（明细列 §101；''=未完走等）
                 "ms": str(r.get("末脚") or ""),      # 末脚 金/银/铜（后3F 徽章配色判断用，§100/§101）
                 "bw": _raw(r.get("馬体重")),

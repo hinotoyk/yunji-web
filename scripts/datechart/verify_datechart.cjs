@@ -24,7 +24,7 @@ const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g,
 /* ═══════════ [A] 产物断言 ═══════════ */
 const product = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "datechart.json"), "utf8"));
 const RUNS = product.runs || [];
-const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "wk", "ub", "ki", "nk", "tm", "ag", "ms", "bw", "dz", "jk", "tr"];
+const EXPECTED_KEYS = ["d", "id", "h", "hc", "sx", "ya", "rid", "r", "g", "v", "R", "hs", "dist", "s", "p", "pr", "vt", "bk", "tn", "wk", "ub", "ki", "nk", "tm", "ts", "cs", "od", "ag", "ms", "bw", "dz", "jk", "tr"];
 const DNF_SET = new Set(["中止", "取消", "除外", "失格"]);
 const SURF_SET = new Set(["芝", "ダ", "障", "障害", "AW"]);   /* 存放口径 = 障（racelib 归一），障害 兼容旧值 */
 const VT_SET = new Set(["中央", "地方", "海外"]);
@@ -63,6 +63,7 @@ for (let i = 0; i < RUNS.length; i++) {
   if (!(typeof r.bk === "string" && typeof r.tm === "string" && typeof r.dz === "string" && typeof r.hs === "string")) badField++;
   if (!(typeof r.jk === "string" && typeof r.tr === "string")) badField++;
   if (!(rawOk(r.ki) && rawOk(r.nk) && rawOk(r.bw) && rawOk(r.wk) && rawOk(r.ub))) badField++;
+  if (!(typeof r.tn === "string" && typeof r.cs === "string" && rawOk(r.ts) && rawOk(r.od))) badField++;   /* tn/cs 字符串、ts/od 原样透传（§165 mb 全字段） */
   if (!(typeof r.hc === "string")) badField++;      /* hc = 中文名（切换马名用；无=空串） */
   if (!(typeof r.sx === "string") || !rawOk(r.ya)) badField++;   /* sx/ya = 性齢（明细列；ya int/str 原样） */
   if (!rawOk(r.rid)) badField++;                    /* rid = netkeiba 赛事 id（''=台账等无 id） */
@@ -110,11 +111,15 @@ for (const h of basic.horses) {
       pr,
       vt: String(r["venue_type"] || ""),
       bk: String(r["馬場"] || ""),
+      tn: String(r["天候"] || ""),
       wk: raw(r["枠番"]),
       ub: raw(r["馬番"]),
       ki: raw(r["斤量"]),
       nk: raw(r["人気"]),
       tm: String(r["タイム"] || ""),
+      ts: raw(r["頭数"]),
+      cs: String(r["着差"] || ""),
+      od: raw(r["単勝"]),
       ag: String(r["上り"] || ""),
       ms: String(r["末脚"] || ""),   /* 末脚 金/银/铜（後3F 徽章配色判断，§100/§101） */
       bw: raw(r["馬体重"]),

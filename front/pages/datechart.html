@@ -374,8 +374,9 @@ function toRow(r){
     性: r.sx, 年齢: r.ya,   /* 性齢 列（§78.1）：产物 22→24 字段随 build_datechart 同步 */
     race_id: r.rid,         /* 赛事名 → netkeiba SP 比赛页链接（§80；'' = 台账等无 id → 纯文本） */
     venue_type: r.vt,       /* raceLink 按 中央/地方/海外 分流 SP 子域（§80.2） */
-    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 枠番: r.wk, 馬番: r.ub, 斤量: r.ki,   /* 枠番/馬番 §159：产物 29 字段随 build_datechart 同步 */
-    人気: r.nk, 結果: r.p, タイム: r.tm,
+    距離: r.dist, 芝ダ: r.s, 馬場: r.bk, 天候: r.tn,   /* 天候（§165 mb 全字段） */
+    枠番: r.wk, 馬番: r.ub, 頭数: r.ts, 斤量: r.ki,     /* 頭数（§165）；枠番/馬番 §159：产物 29→33 字段随 build_datechart 同步 */
+    人気: r.nk, 結果: r.p, タイム: r.tm, 着差: r.cs, 単勝: r.od,   /* 着差/単勝（§165 mb 全字段） */
     上り: r.ag, 末脚: r.ms, /* 後3F 列（§101）：值徽章化走共享模块 agariBadge（末脚只作配色判断） */
     賞金: r.pr,
     馬体重: r.bw, 増減: r.dz, 騎手: r.jk, 調教師: r.tr

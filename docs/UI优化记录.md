@@ -1612,3 +1612,31 @@ window.YJ_ECHARTS = echarts;
 **修复**：色点改真实元素 `span.chip-dot`（chip() 内金银铜注入，CSS `.filter-chip.ag-* .chip-dot` 上色），`::before` 让还给 tooltip 箭头。规则照旧：**同一元素上自定义伪元素与既有 tooltip/浮层伪元素互斥，装饰一律用真实节点**。
 
 **验证**：build ✓；Edge 无头（tests/.pw/dot-verify.js）hover 前后色点 boundingBox 逐字节一致 ✓、chip 尺寸不变 ✓、tooltip 气泡+箭头正常 ✓；截图 tests/_dot-hover.png 目检。
+
+## §164 · mb 比赛卡片全站统一分组（2026-11-01，用户提问驱动）
+
+**背景**：用户对比 mb 端 比赛记录卡（lib 5 行分组）与 日期统计明细卡（embed 3 行紧凑分组）——列序同源但行编排各异，观感差异大。用户定稿：**两边样式一样，明细只是隐藏一些字段**。
+
+**改动（race-rows.js 单点）**：
+- `VIEWS.embed.mbLines` 从自写 3 行紧凑分组改回基准 `BASE_LINES`（两视图共用同一分组引用，lib 的 5 行编排全站唯一）。
+- `mbCardHTML.pick()` 补尊重视图 `hide`/`onlyIfHorse` 清单——分组清单共用后，隐藏字段（天气/出走数/着差/赔率）不再经 COL 回落被画出来（旧紧凑分组正是为规避回落而生，现由 pick 处统一保证）。
+- 视图差异从「①hide ②标签 ③mb 分组」三处收窄为两处；行内标签覆盖（马场/体重）随 BASE_LINES 的 spec 自然一致（明细卡「马场状态」旧标签随之统一为「马场」）。
+
+**效果**（菊花赏 G1 同一条，mb 390px）：races = 赛事行(含天气) | 时间行(含着差) | 番号行(含出赛数) | 体重行(含赔率) | 人马行；datechart = 同 5 行，缺 天气/着差/出赛数/赔率，标签/行序逐字段一致。profile 内嵌（同 embed 视图）自动跟随。
+
+**验证**：build ✓；verify_datechart 112 ALL PASS、verify_stats 211 通过；Edge 无头（tests/.pw/mb-unify-verify.js）两页卡片均为 5 行、datechart 无隐藏字段、无 JS 报错；截图 tests/_mb-unified.png。
+
+## §165 · mb 日期统计明细全字段展示（2026-11-01，用户追加定稿）
+
+**背景**：§164 统一分组后，明细卡与比赛记录卡只差 4 个隐藏字段。用户定稿：mb 端干脆**全字段展示**（「都没啥区别」）——明细 mb 卡与比赛记录卡零差别。
+
+**改动链（产物 → 契约 → 前端）**：
+1. `build_datechart.py`：产物 29→33 键，补 `tn`(天候)/`ts`(頭数)/`cs`(着差)/`od`(単勝)。
+2. `docs/SCHEMA.md` §6 契约同步 4 键。
+3. `datechart.html toRow`：短键→原始键映射补 天候/頭数/着差/単勝。
+4. `race-rows.js`：`pick()` 恒可 COL 回落（§164 的 hide 缺位检查废除）——**hide 清单从此仅作用于 PC 表格**（embed PC 表仍 18 列 §159 不变）；行内「赔率」标签并进 BASE_LINES spec（原 lib 视图级覆盖，embed 落默认「独赢赔率」→ 两卡标签差异清零）。
+5. `verify_datechart.cjs`：EXPECTED_KEYS 29→33、字段校验 + [B] 对账映射同步。
+
+**效果**：同一条 菊花赏G1 mb 390px 两页 innerText 逐字段全等（含 天气/着差/出赛数/赔率）。
+
+**验证**：产物重算 849 条 ✓；verify_datechart 112 ALL PASS、verify_stats 211 通过；Edge 无头（tests/.pw/mb-full-verify.js）两卡文本全等、无 JS 报错。**未 commit。**
