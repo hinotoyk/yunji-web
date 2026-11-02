@@ -269,19 +269,24 @@ function go(href,it){
 /* 内容 iframe 内部跳转（如 比赛记录 → 基本信息）后，同步侧边栏高亮与当前页面一致。
    匹配只看 data-href（不含 query）→ 编辑页在 iframe 内切 tab 仍高亮；两条编辑项同为 edit.html 时
    优先保留用户刚点的那条，避免一次加载点亮两项。谁都不匹配 → 全部熄灭（与改造前一致）。 */
+/* 路径归一（§173）：CF Pages 会把 /pages/x.html 307 成 /pages/x（§88 已在外壳入口与 rehome 两处补过
+   .html），于是 iframe 内 location.pathname 不带扩展名 —— 拿它和 data-href="pages/x.html" 做后缀比对
+   必然全部落空，线上（www.yunji.xyz）表现为「侧栏一项都不亮」（GitHub Pages 不剥扩展名 → 一直正常）。
+   比对前统一剥掉尾部 .html，两个托管平台结果一致；回写 ?page= 时再补回。 */
+function pageKey(p){ return String(p||'').replace(/\.html$/,''); }
 document.getElementById('frame').addEventListener('load',function(){
   this.classList.remove('loading');   /* 新文档已可绘制 → 恢复不透明度（§5 淡入） */
   var path='';
-  try{ path=this.contentWindow.location.pathname||''; }catch(e){}
+  try{ path=pageKey(this.contentWindow.location.pathname); }catch(e){}
   if(!path) return;
-  var hit;
-  if(path.slice(-'pages/edit-table.html'.length)==='pages/edit-table.html'){
+  var hit, etb=pageKey('pages/edit-table.html');
+  if(path.slice(-etb.length)===etb){
     /* 两条批量条目共用一个 pathname → 按 ?sheet= 精确点亮（直载 ?sheet=races 时高亮不落错） */
     var srch=''; try{ srch=this.contentWindow.location.search||''; }catch(e){}
     var navid=/(?:^|[?&])sheet=races/.test(srch)?'etb-races':'etb-basic';
     hit=items.filter(function(it){ return it.dataset.navid===navid; });
   } else {
-    hit=items.filter(function(it){ return path.slice(-it.dataset.href.length)===it.dataset.href; });
+    hit=items.filter(function(it){ var h=pageKey(it.dataset.href); return h && path.slice(-h.length)===h; });
   }
   light(hit.length ? (hit.indexOf(active)>=0?active:hit[0]) : null);
   /* §169：iframe 真实地址回写顶层 ?page=（顶层已有 query 才回写 → 首次进站保持干净地址）。
@@ -290,8 +295,8 @@ document.getElementById('frame').addEventListener('load',function(){
   if(location.search){
     try{
       var wl=this.contentWindow.location;
-      var mp=String(wl.pathname).match(/(pages\/[\w.-]+\.html)$/);
-      if(mp) syncTopUrl(mp[1]+(wl.search||""));
+      var mp=String(wl.pathname).match(/(pages\/[\w.-]+)$/);
+      if(mp) syncTopUrl(pageKey(mp[1])+'.html'+(wl.search||""));
     }catch(e){}
   }
 });

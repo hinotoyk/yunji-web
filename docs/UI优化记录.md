@@ -1809,3 +1809,17 @@ window.YJ_ECHARTS = echarts;
 **验证**：五段冒烟全绿——yunji 11/113/211/60/三态闭合，kzn 11/113/483/60/三态闭合。
 
 **维护约定**：`sire.wins` 只在**没有产物**时生效；改了 `config/sire.json` 的 wins 或换了种马，必须 `python scripts/timeline/sync_sire_wins.py` + `python scripts/timeline/build_timeline.py`，否则 `verify_sire_wins` 会报漂移。
+
+## §173 · 线上（CF Pages）侧栏选中态全灭：iframe 路径被剥 .html（2026-11-02，用户两站对比截图反馈）
+
+**现象**：同样是「基本信息」选中，kzn（GitHub Pages）浅青底 + 左侧 3px 竖条正常，yunji（www.yunji.xyz，CF Pages）**一项都不亮**；点侧栏后能亮，页内一跳（如点马名）又灭。
+
+**根因**：CF Pages 把 `/pages/x.html` **307** 成 `/pages/x`（`curl -I` 实测），iframe 里 `location.pathname` 因此是 `/pages/profile`，而 `index.html` 的 load 回调是拿它和 `data-href="pages/profile.html"` 做**后缀全等**比对 → 全部落空 → `light(null)` 全灭。同一份代码在 GitHub Pages 不剥扩展名，所以 kzn 与 `hinotoyk.github.io/yunji-web` 一直正常。§88 只在外壳入口（`?page=` 补 `.html`）和 `rehome.js` 两处补过扩展名，**iframe load 高亮这条路漏了**。
+
+**改法（`front/index.html` 一处）**：新增 `pageKey(p)`（剥尾部 `.html`）——load 回调里 `path` 与 `data-href`、`pages/edit-table.html` 特例分支统一走它比对；顶层 `?page=` 回写改 `/(pages\/[\w.-]+)$/` 抓路径后 `pageKey()+'.html'` 补回（原来要求 pathname 带 `.html`，CF 上页内跳转回写同样失效）。**零视觉改动**，纯路径归一。
+
+**验证**：
+- 本地无头 Edge 复现两套托管语义：`tests/_tmp_cfstrip/serve_cf.py`（模拟 CF 307 剥扩展名）vs 直接静态服务。改前 CF 语义 `data-on="true"` **0 个**（与线上 dump 一致：11 项全 false），改后 1 个；六页 `?page=` 逐页跑 races/stats/leaderboard/datechart/timeline 全部命中对应条目；GH 语义（不剥扩展名）仍 1 个，无回归。
+- `front && COPY_DATA=skip npm run build` ✓ 7.58s；`dist/assets/theme-ClQOko3b.css` 未变（本次不涉样式）。
+
+**同步提示**：kzn 若也从 GitHub Pages 迁到 CF Pages（或任何会剥 `.html` 的托管），同一处 `pageKey` 归一必须一起带过去，否则高亮同样全灭。
