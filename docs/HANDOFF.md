@@ -86,7 +86,7 @@ yunji-web/
 - **离线脚本零第三方依赖**（硬规）：`core/*` 与 `common.py` 模块顶层**禁止 import 第三方包**（requests/bs4 只在真正发请求处惰性导入，PEP 562 `__getattr__` 重导出）——GitHub runner 不再预装 requests，顶层导入会炸掉 Pages deploy 的 merge 步。
 - **人工值**：`data/manual_overrides.json`（马字段钉住）、`data/timeline_manual.json`（时间线人工节点）、`data/races_manual.json`（比赛人工配图）——两条管线的合并收尾都套 `manual.apply_overrides`，直接改 basic.json 会被次日 CI 抹掉。
 - **判变 = 变化 ∪ 缺失**：成绩抓取目标 = 通算成績变化 ∪ 无 races 文件 ∪ 数据缺失（文件出赛 < 通算战数），自动补拉，杜绝盲区。
-- **门禁**：`scripts/check_data.py` + 4 个断言脚本（`node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` / `node scripts/datechart/verify_datechart.cjs`）。改数据或改生成脚本后都要跑绿，并断言 `data/` diff 为空。
+- **门禁**：`scripts/check_data.py` + 5 个断言脚本（`node scripts/races/verify_result.cjs` / `verify_drill.cjs` / `node scripts/stats/verify_stats.cjs` / `node scripts/datechart/verify_datechart.cjs` / `node scripts/timeline/verify_sire_wins.cjs`）。改数据或改生成脚本后都要跑绿，并断言 `data/` diff 为空。
 - 详细机制见 `docs/pipeline.md`（总览 / basic 管线 / races 管线 / 校验编排 / 离线红线）。
 
 ## 6. 数据契约

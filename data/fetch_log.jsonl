@@ -22138,3 +22138,5 @@
 {"ts": "2026-11-02 01:52:50", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0967659/kanzen", "status": "200", "dur_s": 0.72, "retries": 1, "note": ""}
 {"ts": "2026-11-02 01:52:53", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0964690/kanzen", "status": "200", "dur_s": 0.76, "retries": 1, "note": ""}
 {"ts": "2026-11-02 01:52:55", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.48, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
+{"ts": "2026-11-02 13:51:08", "script": "sync_sire_wins.py", "host": "db.netkeiba.com", "path": "/horse/result/2017101835/", "status": "200", "dur_s": 0.29, "retries": 1, "note": ""}
+{"ts": "2026-11-02 13:51:09", "script": "sync_sire_wins.py", "host": "race.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.36, "retries": 1, "note": ""}

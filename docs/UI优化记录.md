@@ -1784,3 +1784,28 @@ window.YJ_ECHARTS = echarts;
 - 性别三卡（#C9EFFE / #FFDBD5 / #EFEFEF）本就是低饱和指定色，未动。
 
 **验证**：`npm run build` ✓；15 世代模拟站实测——PC `比赛年份/出生年份` 各 13 枚、折 2 行（h=58px）、`docOverflow=0`；MB 展开高级筛选后 13 枚全在（h=144px，末位 2014）；概览 15 卡配色实测为 100 级浅底。冒烟 `verify_drill 60·0` / `verify_stats 211·0`。
+
+## §172 · 父子制覇数据源改派生：sire.wins 从手工表 → 种马成绩页（2026-11-02，kzn 误报驱动）
+
+**起因**：kzn 出现 1 次「父子制覇」——2025-02-09 サトノシャイニング 赢きさらぎ賞，tip「高情厚意同胜：如月赏」。核实发现 `config/sire.json` 的 `sire.wins` 是**手工表**，把キズナ 从未出走的きさらぎ賞写成了胜鞍；`build_timeline.py` 只按赛名精确匹配，没有任何校验源 → 凭空徽章。
+
+**为什么只加校验不够**：赛名唯一 / 日期区间 / 产物与数据一致这三项，这次的错**全都能通过**（错的是「这匹马到底赢没赢过这场」这个事实，管线里没有权威源）。
+
+**方案（用户拍板「方案二 · 派生」）**：
+1. **新增 `scripts/timeline/sync_sire_wins.py`**（手动跑、产物入库，不挂每日管线——netkeiba 对 CI 出口 IP 不稳）：
+   读 `sire.netkeiba_id` → 抓 `db.netkeiba.com/horse/result/{id}/`（EUC-JP）→ 复用 `races/fetch_races.py::parse_races`
+   （与产驹逐场成绩同源同解析）→ 取 `着順==1` → 格先按赛名解析、解析不出再抓该场 SP 页看 `Icon_GradeType`
+   → 只留**重赏**（GI/GII/GIII/JpnI-III/JGI-JGIII；L/OP/条件战不入表）→ 写 `data/sire_wins.json`
+   （`{meta, sire, wins[{date,name,grade,cn,race_id}]}`；`cn` 从旧手工表按规范化赛名继承，译文不丢）。
+2. **`build_timeline.py` 改读产物**：`_load_sire_wins()` 优先 `data/sire_wins.json`，缺失/损坏/空 → 回退 `config.sire.json`
+   （兼容未跑过派生的老仓）。手工表降级为兜底。
+3. **新增 `scripts/timeline/verify_sire_wins.cjs`（11 断言，全离线）**：产物结构自洽 / 赛名唯一 / 格=重赏 / 日期合法且不晚于今天 /
+   产物 ↔ config 无漂移（改了配置必须重跑派生）/ `timeline.sire_wins` == 源数据重算命中数 / 每条 sire 标签 tip 能反查产物。
+
+**结果**：
+- yunji：コントレイル 11 场出走 → **7 项重赏**，与手工表逐项一致（東京スポーツ杯2歳S/ホープフルS/皐月賞/東京優駿/神戸新聞杯/菊花賞/ジャパンC）；`timeline` 内容无变化（跳过写入）。
+- kzn：キズナ 14 场出走 → **5 项重赏**（毎日杯/京都新聞杯/東京優駿/ニエル賞/産経大阪杯）；父子制覇 3 次（京都新聞杯×3）不变。
+
+**验证**：五段冒烟全绿——yunji 11/113/211/60/三态闭合，kzn 11/113/483/60/三态闭合。
+
+**维护约定**：`sire.wins` 只在**没有产物**时生效；改了 `config/sire.json` 的 wins 或换了种马，必须 `python scripts/timeline/sync_sire_wins.py` + `python scripts/timeline/build_timeline.py`，否则 `verify_sire_wins` 会报漂移。

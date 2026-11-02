@@ -34,9 +34,27 @@ NODE_PRIO = {"sire": 0, "gen": 1, "first": 2, "graded": 3, "award": 4}  # 节点
 # 同 front/public/editor.js::TL_CATS 下拉（原 edit_server.py 已删，§82.4）。
 MANUAL_CATS = frozenset(NODE_PRIO) | {"manual"}
 
-# ---- 父子制覇：种马生涯重赏一着（单一出处 = config/sire.json 的 sire.wins，可空数组 = 关闭该徽章） ----
-# 历史来源：https://db.netkeiba.com/horse/result/2017101835/（成绩页，EUC-JP）；tests/_trash/fetch_contrail_wins.py
-SIRE_WINS = sire_config.sire_wins()
+# ---- 父子制覇：种马生涯重赏一着 ----
+# 数据源优先级（2026-11-02 §117.3 定稿）：**data/sire_wins.json（派生产物）** > config/sire.json 的
+# sire.wins（手工兜底）。派生由 scripts/timeline/sync_sire_wins.py 从种马本人 netkeiba 成绩页抓取生成 ——
+# 手工表曾把キズナ 从未出走的「きさらぎ賞」写成胜鞍，导致凭空冒出父子制覇徽章；改派生后事实源 = 成绩页本身。
+SIRE_WINS_FILE = DATA / "sire_wins.json"
+
+
+def _load_sire_wins():
+    """读派生产物；缺失/损坏/空数组 → 回退 config 手工表（兼容未跑过派生的老仓）。"""
+    if SIRE_WINS_FILE.exists():
+        try:
+            doc = json.loads(SIRE_WINS_FILE.read_text(encoding="utf-8"))
+            wins = doc.get("wins")
+            if isinstance(wins, list) and wins:
+                return wins
+        except Exception as e:                                  # noqa: BLE001
+            print(f"  ⚠ sire_wins.json 读取失败，回退 config.sire.json：{e}")
+    return sire_config.sire_wins()
+
+
+SIRE_WINS = _load_sire_wins()
 
 
 def norm_race(s):
