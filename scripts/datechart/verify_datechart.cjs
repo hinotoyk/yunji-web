@@ -273,7 +273,11 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const runDays = new Set(starts(sm).map(r => r.d)).size;
   ok((String(els["cal"]._html).match(/class="dc-cell win/g) || []).length === winDays, "日历有胜格 " + winDays);
   ok((String(els["cal"]._html).match(/class="dc-cell run/g) || []).length === runDays - winDays, "日历有出走无胜格 " + (runDays - winDays));
-  ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled, "锚点月=数据末月：‹ 可用 › 禁用");
+  /* 派生式（勿写死「锚点月=末月」）：锚点 = 最近一着所在月，末月可能只有地方/海外出走（JRA 口径无胜场）
+   * → 锚点月 < 数据末月，此时 › 应当可用。断言口径 = 「窗口 = 数据末月 ⇔ › 禁用」。 */
+  const winYm = els["winLabel"].textContent.replace("年", "-").replace("月", "");
+  ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled === (winYm === LAST_MONTH),
+    "步进边界：窗口 " + els["winLabel"].textContent + (winYm === LAST_MONTH ? "（数据末月）› 禁用" : "（非末月）› 可用"));
   ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
 
   console.log("[C2] 内嵌比赛表同款明细（PC 18 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
@@ -439,7 +443,17 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["winLabel"].textContent === LAST_MONTH_CN, "「回最新」→ " + els["winLabel"].textContent + "（数据末月）");
 
   console.log("[C5] 点格下钻 + ‹ › 步进（含空日归零）");
-  const dayInCur = [...new Set(sMonth(LAST_MONTH).map(r => r.d))].sort()[0];
+  /* 末月可能整月只有地方/海外出走（JRA 口径下 sMonth 为空，如 kzn 2026-11 仅 2 场地方）→
+   * 依次退化：本口径有数据的日 → 该月任意有数据的日 → 月初。断言全部按同口径 sDay 对账，空日也成立。 */
+  /* C5 在「最近有胜场的月」内下钻：末月可能整月只有地方/海外（JRA 口径为空）或就是数据末日（› 被禁用） */
+  const C5_YM = lastWin.d.slice(0, 7);
+  if (C5_YM !== LAST_MONTH) {
+    dpTrigger(); dpClick({ name: "data-y", v: C5_YM.slice(0, 4) });
+    dpTrigger(); dpClick({ name: "data-mi", v: String(+C5_YM.slice(5, 7)) });
+  }
+  const dayInCur = [...new Set(sMonth(C5_YM).map(r => r.d))].sort()[0]
+    || [...new Set(src.filter(r => r.d.slice(0, 7) === C5_YM).map(r => r.d))].sort()[0]
+    || C5_YM + "-01";
   calClick({ name: "data-d", v: dayInCur });
   ok(els["winLabel"].textContent === dayInCur.replace(/-/g, "/") + "（" + weekdayCn(dayInCur) + "）", "点格 → " + els["winLabel"].textContent);
   els["navPrev"].handlers.click[0]();
