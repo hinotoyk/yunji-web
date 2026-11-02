@@ -38,12 +38,16 @@
 .f-adv-btn{grid-column:1/-1;height:34px;margin-top:4px;border:1px dashed #e0e0e0;border-radius:8px;background:#fff;color:#737373;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .f-adv-btn:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
 .filter-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:14px 16px 10px;box-shadow:0 1px 3px rgba(16,24,40,.04)}
-.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 28px}
-@media (max-width:768px){.filter-grid{grid-template-columns:1fr}}
-.filter-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
+/* §171 网格轨道改 minmax(0,1fr)：nowrap 的 chips 行 min-content 很大，1fr 默认 min-width:auto
+ * 会让列跟着内容撑宽 → 整行顶破卡片、且 overflow-x 永不触发（实测 chips 右缘 1323 > 卡片 1135） */
+.filter-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 28px}
+@media (max-width:768px){.filter-grid{grid-template-columns:minmax(0,1fr)}}
+.filter-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0;min-width:0}
 .filter-row.wide{grid-column:1/-1}
 .filter-label{flex:none;width:76px;padding-top:6px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#8a8a8a;text-transform:uppercase}
 .filter-chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+/* §171.1（用户否决横滚）：长枚举行不再藏内容 —— 年份/出生年份改独占整行（.wide）+ 正常换行，
+ * 窄屏折行但一个都不少。原 .filter-chips--scroll 单行横滚规则已删除（会把后半段年份藏进滚动区）。 */
 .filter-chip{display:inline-flex;align-items:center;height:26px;padding:0 11px;border:1px solid #e3e3e3;border-radius:7px;background:#fff;color:#444;font-size:12px;line-height:1;cursor:pointer;user-select:none;white-space:nowrap;transition:border-color .15s,color .15s,background .15s,box-shadow .15s}
 .filter-chip:hover{border-color:rgba(10,167,160,.55);color:#0b6b64;background:#f7fdfd}
 .filter-chip.on{border-color:#0aa7a0;background:#e6f6f5;color:#0b6b64;font-weight:600;box-shadow:inset 0 0 0 1px #0aa7a0}
@@ -81,7 +85,12 @@
 .f-csel .box:hover{border-color:rgba(10,167,160,.55)}
 .f-csel .yj-sel{margin-bottom:0}
 .f-csel{width:238px;min-width:0;max-width:100%}
-@media (max-width:768px){.filter-chips{flex-grow:1}.f-csel{width:auto;flex:1 1 238px}}
+@media (max-width:768px){.filter-chips{flex-grow:1}.f-csel{width:auto;flex:1 1 238px}
+  /* §171.1 年份行窄屏紧凑化：13 个年份（比赛年份 + 出生年份）在 375px 下按原尺寸要折 7 行、
+   * 单行高 218px 太冗长；chip 缩到 24px 高 / 11px 字后约 4~5 行，仍一个不少 */
+  .filter-chips--years .filter-chip{height:24px;padding:0 8px;font-size:11px}
+  .filter-chips--years .filter-chip .chip-n{margin-left:4px;padding-left:5px;font-size:9.5px}
+}
 /* 自定义 tooltip（悬停显示聚合含义）——维度 chip 用；马名列头/明细标题的 .yj-name-toggle
  * 同款浮层已随该控件移入 theme.css（两页共用，单一出处） */
 .filter-chip[data-tip]{position:relative}

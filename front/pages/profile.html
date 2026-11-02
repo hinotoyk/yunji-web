@@ -450,12 +450,24 @@ function renderOverview(hs){
   var ovWrap='<div id="'+ovId+'" class="relative min-h-[150px] w-full flex-1 max-md:min-h-[140px]"></div>';
   function ovPaint(anim){
     var el=document.getElementById(ovId); if(!el) return;
-    var W=el.clientWidth, H=el.clientHeight;
-    if(W<40||H<40) return;
-    var items=ovItems.filter(function(v){ return v.n>0; });
-    items.sort(function(a,b){ return b.n-a.n; });
+    var items=ovItems.slice();
     var sum=items.reduce(function(s,v){ return s+v.n; },0);
-    el.innerHTML=tmHTML(tmSquarify(items,W,H),byYear,sum,anim);
+    if(!items.length){ el.innerHTML=''; return; }
+    /* §171 15 世代压测：面积图（tmSquarify）在世代多、数值接近时必然出极端长宽比 ——
+     * PC 上看着像被拉扯，MB 上文字直接互相重叠（用户截图）。改等高网格：一年一卡、等宽等高、
+     * 按年份降序（最新在前），匹数 + 占比恒可读；面积不再编码数量（数量本来就得靠数字读）。
+     * 状态图分类稳定（≤9 类）仍走面积图，不受影响。 */
+    el.innerHTML='<div class="grid grid-cols-5 gap-2 max-md:grid-cols-3 max-md:gap-1.5">'+
+      items.map(function(it,i){
+        var c=catMap[String(it.k)]||{n:'',c:'',tip:''};
+        var n=it.n||0, pct=sum?(100*n/sum).toFixed(1):'0.0';
+        return '<div class="yj-tile yj-tm-anim '+c.c+' min-w-0 items-center justify-center px-1.5 py-2 text-center"'+
+          ' style="animation-delay:'+(i*30)+'ms"'+
+          ' data-name="'+esc(c.n)+'" data-tip="'+esc(c.tip)+'" title="'+esc(c.tip+' · '+n+' 匹 · '+pct+'%')+'">'+
+          '<span class="yj-tm-n max-w-full truncate">'+esc(c.n)+'</span>'+
+          '<b class="yj-tm-v" data-cnt="'+n+'">'+n+'</b>'+
+          '<span class="yj-tm-p">'+pct+'%</span></div>';
+      }).join('')+'</div>';
   }
   /* 悬停读数条（§157）：块 overflow:hidden 装不下浮层、原生 title 又慢 → 每组图下方
    * 常驻一条读数行（色点 + 类别 + 含义说明），mouseover/mouseout 委托在 #ovStats 上；

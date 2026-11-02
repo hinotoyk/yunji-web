@@ -1733,3 +1733,54 @@ window.YJ_ECHARTS = echarts;
 - **verify_datechart.cjs（C7/C8 段）**：目标马按 SUF_RE 从产物自动选；vseg 开关语义（已激活不重复点击）；逐月导航（month 面板无年份直选）；明细分页翻找（st.dp 持久化先归 1）。本仓实测自动选中 Grand Warrior（2025-10 海外）113 全绿。
 - **workflows（status/update-data/update-day 三条，kzn 版回灌）**：数据 push 后显式 dispatch deploy.yml——GITHUB_TOKEN 推送不触发 push 事件（GitHub 防递归），此前定时数据更新落库后线上 Pages 不跟随，要等下一次手动 push；deploy.yml 已有 workflow_dispatch 触发器，dispatch 不受限制。另 status.yml 补 keibabook/studbook 对 Actions 出口 IP 403 的自动降级说明。
 - **验证**：四段冒烟本仓全绿（drill 60 / stats 211 / datechart 113 / result 三态闭合）；workflow 文件逐行核对只含上述增量，未动 deploy.yml。
+
+## §171 · 15 世代压测：枚举膨胀与全量渲染的六处收口（2026-11-02，用户 10 张截图反馈）
+
+**动因**：用 15 世代模拟数据（1165 匹 / 11519 条出走，`data/_tmp/gen15-sim`）跑全站，PC+MB 共 10 处排版/性能问题。诊断结论：8 处是同一病根——**组件的视觉空间按「枚举值数量」线性分配**（chips 平铺、每世代一条线、treemap 每值一块），数据从 2~3 世代涨到 15 世代即越界；2 处是编辑台全量 DOM 渲染。用户拍板**方向 C（混合）**：有序枚举横滚、图表缩放、空间图改等高网格、大表格虚拟滚动。
+
+1. **批量表格虚拟滚动**（`editor-table.js`，PC5/MB5 打开十几秒 + 一滑就卡）
+   - 根因：`renderBody()` 把 11519 行 × 约 19 列（≈45 万单元格）一次性拼进 tbody，首屏同步阻塞、滚动整表重排。
+   - 改造：只渲染可视区 ± 12 行，前后各一条占位 `<tr>`（高度 = 行数 × 行高）撑住滚动条总高度；滚动走 rAF 合帧，窗口未变直接跳过。
+   - 列宽：auto 布局下列宽由「当前可见行」决定，滚动会跳 → 首次渲染用探针行（跨全表抽样 ≤400 行）量出列宽，锁进 `<colgroup>` + `table-layout:fixed`；超长内容 `text-ellipsis` + `title` 悬停看全名。列显隐/切页签时 `invalidateCols()` 重新量。
+   - 追加行：`revealRow(r)` 先把目标行滚进可视区再渲染，替代原「查 td」写法（未渲染的行没有 td）。
+   - 搜索：全表 rowText 拼接有成本，输入去抖 120ms。
+2. **年龄成绩曲线加区间缩放**（`stats.html` ④，PC3/MB3）
+   - 根因：无 dataZoom，月龄拉到 60+ 桶、13 条世代线全叠加 → 毛线团。
+   - 改造：PC 底部 slider + inside；MB 只留 inside（双指缩放/单指拖动，省高度）。图例 >8 项改 `type:"scroll"` 单行可滚（MB 不再换行压住绘图区），MB 图例左对齐 + grid.top 42。**默认只勾最近 5 个世代**（>8 世代时才生效，2 世代的数据零影响），其余图例一键开。
+3. **筛选 chips 横滚带**（`races.html` + `races-page.css`，PC2）
+   - 根因：`.filter-chips` 平铺换行，比赛年份 13 个 → 3 行，左侧标签垂直居中错位、筛选卡高度翻倍。
+   - 改造：`row()/rowWide()` 按选项数自动挂 `filter-chips--scroll`（>10 项），单行 `overflow-x:auto` + 右缘渐隐 + 隐藏滚动条，chip 不收缩。
+4. **世代/年份切面横滚带**（`leaderboard.html` + `leaderboard-page.css`、`stats.html` + `stats-page.css`，PC4/MB4/MB2）
+   - 根因：`.seg` 内按钮可折行，15 枚「2026年世代」被挤成两行断字，且容器 `overflow:hidden` 直接裁掉后半段。
+   - 改造：`#sliceSeg` / `#yseg` 放开 `overflow-x:auto` + 按钮 `white-space:nowrap;flex:none`，右缘渐隐；`.seg button` 全站补 `white-space:nowrap`（短标签页无感知）。
+5. **概览年份占比：面积图改等高网格**（`profile.html`，PC1/MB1）
+   - 根因：`tmSquarify` 在 15 个数值接近的块上必然产出极端长宽比 —— PC 像被拉扯，MB 直接文字重叠。
+   - 改造：年份块改 `grid-cols-5 / max-md:grid-cols-3` 等高卡片（年份 + 匹数 + 占比），保留 `data-name/data-tip` 读数条与 `data-cnt` 数字滚动；**状态图分类稳定（≤9 类）仍走面积图**。
+6. **倾向矩阵**（MB2 表列被裁）：§144 已压缩到 12px/3px，本次只补 chips 横滚（第 4 条）；表格本身溢出走 `#matWrap` 横滑 + 首列投影，不重复处理。
+
+7. **ECharts 定制包补 DataZoom**（`front/public/echarts.line.min.js`）
+   - 坑：§145 的定制包只打包了 Line + Grid/Tooltip/Legend/MarkLine，**没有 DataZoomComponent** —— 传了 `dataZoom` 配置会被静默忽略（图上什么都不会发生，控制台零报错）。
+   - 重建配方（§145 原配方 + DataZoomComponent）：`npm i --no-save echarts@5.6.0` → entry 增加 `DataZoomComponent` 并 `echarts.use([...])` → `./node_modules/.bin/esbuild entry.js --bundle --minify --format=iife --target=es2018 --outfile=public/echarts.line.min.js`。体积 519KB → **538.6KB**（+19KB，仅 stats 页加载）。
+
+**验证**（15 世代模拟站 `data/_tmp/gen15-sim`，1165 匹 / 11519 条；PC 1440 / MB 390）：
+- 批量表格：**首屏 1183ms**（含 basic+bundle 拉取解析；改前十余秒）→ DOM 里只有 30 行（基本信息）/ 29 行（比赛）；滚到 120000px 后 41 行、`firstRi=3416`、`scrollHeight=403202`（= 11519 × 35px 行高）→ 虚拟滚动与占位高度自洽；`colgroup` 已锁宽。
+- 年龄曲线：`getOption().dataZoom = ["inside","slider"]`（PC）/ 仅 inside（MB），`legend.type = "scroll"`，13 世代下默认只勾 2020–2024 五代。
+- 比赛筛选：`.filter-chips--scroll` 四行（级别/出生年份/比赛年份/竞马场·地方）均 `scrollWidth > clientWidth` 且 `docOverflow = 0`（不再顶破卡片）；顺带修了 `.filter-grid` 轨道 `1fr → minmax(0,1fr)`（nowrap 内容的 min-content 会把列撑宽，`overflow-x` 永不触发）。
+- 世代切面：`#sliceSeg` 15 枚按钮单行（`1494/1014`）、高 34px 不折字；`#yseg` `1351/1048`。
+- 概览：15 张等高卡（PC 5 列 / MB 3 列），零重叠。
+- 冒烟：`verify_stats 211·0` / `verify_drill 60·0` / `verify_datechart 113 ALL PASS`（真实 2 世代数据下曲线默认全选，不受「近 5 世代」影响）。
+
+### §171.1 · 用户否决「横滚藏内容」+ 配色降饱和（2026-11-02 当日返工）
+
+**① 年份不能藏**（用户原话「不能因噎废食」）：§171 把长枚举行改成单行横滚，等于把后半段年份藏进滚动区——PC 上只看到 2026~2020，MB 更糟。
+- 回退：删掉 `.filter-chips--scroll` 全套规则（横滚 + 遮罩 + 隐藏滚动条），恢复 `flex-wrap: wrap`。
+- 新做法：**逐年递增的维度独占整行**（`rowWide`）——`比赛年份` / `出生年份` 从半列移到 wide 行，PC 13 个 chip 折 2 行、窄屏折 4~5 行，**一个都不少**；左侧标签 `align-items:flex-start` 贴首行对齐，不再垂直居中错位。
+- MB 紧凑化：年份行挂 `.filter-chips--years`，窄屏 chip 24px 高 / 11px 字 / 计数 9.5px → 单行高度 **218px → 144px**（实测 13 枚全在，`docOverflow=0`）。
+- 保留 §171 的 `.filter-grid{grid-template-columns:minmax(0,1fr)}`（防止长内容撑破列，与横滚无关，仍是正确约束）。
+
+**② 配色降饱和**（用户「尽量不要用饱和度太高的颜色」）：
+- `.yj-tm--y1..y12`（概览年份卡）：`bg-*-200 / text-*-900` → **`bg-*-100 / text-*-700`**，12 色仍全异色可分辨（实测 sky-100 `rgb(224,242,254)` + sky-700 `rgb(3,105,161)`）。
+- 状态 treemap 同步压一档：live/local/breed/ride/sire 200→100 底、900→800 字；unknown 300→100、unreg 200→100、overseas `primary/20`→`primary/10`；dead 保持 neutral-200 底但字降到 500（与 unknown 靠底色深浅区分）。
+- 性别三卡（#C9EFFE / #FFDBD5 / #EFEFEF）本就是低饱和指定色，未动。
+
+**验证**：`npm run build` ✓；15 世代模拟站实测——PC `比赛年份/出生年份` 各 13 枚、折 2 行（h=58px）、`docOverflow=0`；MB 展开高级筛选后 13 枚全在（h=144px，末位 2014）；概览 15 卡配色实测为 100 级浅底。冒烟 `verify_drill 60·0` / `verify_stats 211·0`。

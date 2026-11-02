@@ -313,7 +313,7 @@ YJ.editorTable = (function () {
     S.filterClear = 1;
     sh0.filter = ""; if (els.search) els.search.value = "";
     rebuild();
-    var td = $('td[data-gk="' + r._gk + '"][data-c="出走馬名"]', els.grid);
+    var td = revealRow(r);
     if (td) { td.scrollIntoView({ block: "nearest" }); startEdit(td); }
     YJ.editor.render();
   }
@@ -466,55 +466,140 @@ YJ.editorTable = (function () {
       renderBody(); syncToolbar();
     });
   }
-  function renderBody() {
-    var s = sh(), isB = S.sheet === "basic", h = [];
-    s.view.forEach(function (v, vi) {
-      var r = v.r, ri = v.i;
-      var rowCls = "";
-      if (r._st === "new") rowCls = "bg-accent/25";
-      else if (r._st === "del") rowCls = "bg-destructive/5 opacity-60";
-      h.push('<tr class="' + rowCls + '">');
-      if (!isB) h.push('<td class="sticky left-0 z-10 w-[34px] bg-card text-center align-middle"><input type="checkbox" class="yjx-ck h-3.5 w-3.5 align-middle" data-ri="' + ri + '"' + (s.sel[ri] ? " checked" : "") + "></td>");
-      var mark = r._st === "new" ? '<i class="not-italic text-primary">＋</i>'
-        : r._st === "del" ? '<i class="not-italic text-destructive">✕</i>'
-        : Object.keys(r._pend || {}).length ? '<i class="not-italic text-chart3">•</i>'
-        : isB && hasOvPend(r) ? '<i class="not-italic text-chart3">•</i>'
-        : '<i class="not-italic text-border">·</i>';
-      h.push('<td class="' + (isB ? "sticky left-0 " : "sticky left-[34px] ") + 'z-10 w-[42px] bg-card text-center align-middle text-[10.5px] text-muted-foreground">' + (vi + 1) + " " + mark + "</td>");
-      layout().forEach(function (c) {
-        if (s.hidden[c.k]) return;
-        var cls = "border-l border-border/60 px-2 py-[5px] align-middle whitespace-nowrap ";
-        if (c.num) cls += "text-right tabular-nums ";
-        if (c.ro || (c.k === "出走馬名" && r._st !== "new")) cls += "text-muted-foreground/80 ";
-        if (c.stick) cls += "sticky z-10 bg-card ";
-        if (isB && pendCellOv(r, c.k)) cls += "bg-chart3/10 ";
-        else if (isB && savedCellOv(r, c.k)) cls += "bg-accent/40 ";
-        if (!isB && r._pend && r._pend[c.k]) cls += "bg-chart3/10 ";
-        var t = cellInner(c, r);
-        if (r._st === "del") t = '<s class="decoration-destructive/60">' + t + "</s>";
-        /* §150 原值对照悬停（橙格 = 待保存）：基本信息给 官方值/已保存 双基线，比赛给 _base 原值 */
-        var tip = "";
-        if (isB && pendCellOv(r, c.k)) {
-          var b0 = String(baseOf(String(r.id), c.k)), s0 = savedOf(String(r.id), c.k);
-          tip = ' title="官方值：' + esc(b0) + (s0 != null ? " · 已保存：" + esc(String(s0)) : "") + '"';
-        } else if (!isB && r._pend && r._pend[c.k]) {
-          tip = ' title="原值：' + esc(String(r._base[c.k] == null ? "" : r._base[c.k])) + '"';
-        }
-        /* §150 基本信息页签：马名格附「↗ 去编辑」锚点（新标签开 edit.html?id=，rehome 自动回壳） */
-        if (isB && c.k === "馬名" && r._st !== "del") {
-          t += ' <a data-hedit href="edit.html?id=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener"' +
-            ' class="ml-1 text-[10.5px] text-primary hover:underline" title="在基本信息编辑页打开（新标签）">↗</a>';
-        }
-        h.push('<td class="' + cls + '"' + tip + ' style="' + (c.stick ? "left:" + (isB ? 42 : 76) + "px;" : "") +
-          '" data-ri="' + ri + '" data-gk="' + esc(r._gk || String(r.id)) + '" data-c="' + esc(c.k) + '">' + t + "</td>");
-      });
-      h.push("</tr>");
+  /* ---------------- 虚拟滚动（2026-11-02 §171 · 15 世代压测） ----------------
+   * 11k+ 行全量渲染（≈45 万单元格）→ 首屏秒级阻塞、滚动整表重排。改为只渲染可视区 ± 缓冲：
+   *   <tr 占位高度=start*rowH> + 真实行 [start,end) + <tr 占位高度=(total-end)*rowH>
+   * 行高恒定（py-[5px] + 12px/1.5 + nowrap，实测约 29px），占位行撑住滚动条总高度，手感不变。
+   * 列宽：auto 布局下宽度由「当前可见行」决定 → 滚动时列宽会跳。首次渲染用探针行（跨全表抽样
+   *   ≤400 行）量出各列宽，锁进 <colgroup> + table-layout:fixed，此后列宽恒定；超长内容走
+   *   ellipsis + title（悬停看全名）。列显隐/切页签时 invalidateCols() 重新量。 */
+  var VP = { rowH: 0, start: -1, end: -1, buf: 12, cols: 0 };
+
+  function invalidateCols() {
+    VP.cols = 0;
+    if (!els.grid) return;
+    var cg = els.grid.querySelector("colgroup");
+    if (cg && cg.parentNode) cg.parentNode.removeChild(cg);
+    els.grid.style.tableLayout = "";
+    els.grid.style.width = "";
+  }
+  /* 单行 HTML（renderBody 与探针共用，保证两处列宽测量同源） */
+  function rowHtml(v, vi, isB) {
+    var s = sh(), r = v.r, ri = v.i, h = [];
+    var rowCls = "";
+    if (r._st === "new") rowCls = "bg-accent/25";
+    else if (r._st === "del") rowCls = "bg-destructive/5 opacity-60";
+    h.push('<tr data-row="1" class="' + rowCls + '">');
+    if (!isB) h.push('<td class="sticky left-0 z-10 w-[34px] bg-card text-center align-middle"><input type="checkbox" class="yjx-ck h-3.5 w-3.5 align-middle" data-ri="' + ri + '"' + (s.sel[ri] ? " checked" : "") + "></td>");
+    var mark = r._st === "new" ? '<i class="not-italic text-primary">＋</i>'
+      : r._st === "del" ? '<i class="not-italic text-destructive">✕</i>'
+      : Object.keys(r._pend || {}).length ? '<i class="not-italic text-chart3">•</i>'
+      : isB && hasOvPend(r) ? '<i class="not-italic text-chart3">•</i>'
+      : '<i class="not-italic text-border">·</i>';
+    h.push('<td class="' + (isB ? "sticky left-0 " : "sticky left-[34px] ") + 'z-10 w-[42px] bg-card text-center align-middle text-[10.5px] text-muted-foreground">' + (vi + 1) + " " + mark + "</td>");
+    layout().forEach(function (c) {
+      if (s.hidden[c.k]) return;
+      var cls = "border-l border-border/60 px-2 py-[5px] align-middle whitespace-nowrap overflow-hidden text-ellipsis ";
+      if (c.num) cls += "text-right tabular-nums ";
+      if (c.ro || (c.k === "出走馬名" && r._st !== "new")) cls += "text-muted-foreground/80 ";
+      if (c.stick) cls += "sticky z-10 bg-card ";
+      if (isB && pendCellOv(r, c.k)) cls += "bg-chart3/10 ";
+      else if (isB && savedCellOv(r, c.k)) cls += "bg-accent/40 ";
+      if (!isB && r._pend && r._pend[c.k]) cls += "bg-chart3/10 ";
+      var t = cellInner(c, r);
+      if (r._st === "del") t = '<s class="decoration-destructive/60">' + t + "</s>";
+      /* §150 原值对照悬停（橙格 = 待保存）：基本信息给 官方值/已保存 双基线，比赛给 _base 原值 */
+      var tip = "";
+      if (isB && pendCellOv(r, c.k)) {
+        var b0 = String(baseOf(String(r.id), c.k)), s0 = savedOf(String(r.id), c.k);
+        tip = ' title="官方值：' + esc(b0) + (s0 != null ? " · 已保存：" + esc(String(s0)) : "") + '"';
+      } else if (!isB && r._pend && r._pend[c.k]) {
+        tip = ' title="原值：' + esc(String(r._base[c.k] == null ? "" : r._base[c.k])) + '"';
+      } else if (String(r[c.k] == null ? "" : r[c.k]).length > 12) {
+        tip = ' title="' + esc(String(r[c.k])) + '"';   /* §171 列宽锁定后超长内容 ellipsis → 悬停看全名 */
+      }
+      /* §150 基本信息页签：马名格附「↗ 去编辑」锚点（新标签开 edit.html?id=，rehome 自动回壳） */
+      if (isB && c.k === "馬名" && r._st !== "del") {
+        t += ' <a data-hedit href="edit.html?id=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener"' +
+          ' class="ml-1 text-[10.5px] text-primary hover:underline" title="在基本信息编辑页打开（新标签）">↗</a>';
+      }
+      h.push('<td class="' + cls + '"' + tip + ' style="' + (c.stick ? "left:" + (isB ? 42 : 76) + "px;" : "") +
+        '" data-ri="' + ri + '" data-gk="' + esc(r._gk || String(r.id)) + '" data-c="' + esc(c.k) + '">' + t + "</td>");
     });
-    if (!s.view.length) {
-      var cs = layout().filter(function (c) { return !s.hidden[c.k]; }).length;
-      h.push('<tr><td colspan="' + (cs + 2) + '" class="hint-empty">无匹配行</td></tr>');
-    }
+    h.push("</tr>");
+    return h.join("");
+  }
+  /* 列宽探针：抽样渲染 → 量 thead 各列宽 → 锁 <colgroup> + table-layout:fixed */
+  function lockCols() {
+    var s = sh(), view = s.view, isB = S.sheet === "basic";
+    if (!view.length || !els.tbody) return;
+    var step = Math.max(1, Math.ceil(view.length / 400));
+    var h = [];
+    for (var i = 0; i < view.length; i += step) h.push(rowHtml(view[i], i, isB));
     els.tbody.innerHTML = h.join("");
+    var ths = $all("thead th", els.grid);
+    if (!ths.length) return;
+    var widths = [], total = 0;
+    ths.forEach(function (th) {
+      var w = Math.round(th.getBoundingClientRect().width);
+      widths.push(w); total += w;
+    });
+    if (!total) return;
+    var cg = document.createElement("colgroup");
+    widths.forEach(function (w) {
+      var col = document.createElement("col");
+      col.style.width = w + "px";
+      cg.appendChild(col);
+    });
+    els.grid.insertBefore(cg, els.grid.firstChild);
+    els.grid.style.tableLayout = "fixed";
+    els.grid.style.width = total + "px";
+    VP.cols = 1;
+    var tr = els.tbody.querySelector("tr[data-row]");
+    if (tr) VP.rowH = Math.max(24, Math.round(tr.getBoundingClientRect().height));
+  }
+  function renderBody(force) {
+    if (force === undefined) force = true;
+    var s = sh(), isB = S.sheet === "basic", view = s.view, total = view.length;
+    var cs = layout().filter(function (c) { return !s.hidden[c.k]; }).length;
+    var colspan = cs + 2;
+    if (!total) {
+      els.tbody.innerHTML = '<tr><td colspan="' + colspan + '" class="hint-empty">无匹配行</td></tr>';
+      VP.start = VP.end = 0;
+      return;
+    }
+    if (!VP.cols) lockCols();
+    var rh = VP.rowH || 29;
+    var wrap = els.gridWrap;
+    var vh = (wrap && wrap.clientHeight) || 520;
+    var top = (wrap && wrap.scrollTop) || 0;
+    var start = Math.max(0, Math.floor(top / rh) - VP.buf);
+    var end = Math.min(total, Math.ceil((top + vh) / rh) + VP.buf);
+    if (!force && start === VP.start && end === VP.end) return;
+    VP.start = start; VP.end = end;
+    var h = [];
+    if (start > 0) h.push('<tr aria-hidden="true" style="height:' + (start * rh) + 'px"><td colspan="' + colspan + '" style="padding:0;border:0"></td></tr>');
+    for (var vi = start; vi < end; vi++) h.push(rowHtml(view[vi], vi, isB));
+    if (end < total) h.push('<tr aria-hidden="true" style="height:' + ((total - end) * rh) + 'px"><td colspan="' + colspan + '" style="padding:0;border:0"></td></tr>');
+    els.tbody.innerHTML = h.join("");
+    if (!VP.rowH) {
+      var tr0 = els.tbody.querySelector("tr[data-row]");
+      if (tr0) VP.rowH = Math.max(24, Math.round(tr0.getBoundingClientRect().height));
+    }
+  }
+  /* 把某行滚进可视区并渲染，返回其「出走馬名」格（addRaceRow 追加行后定位用） */
+  function revealRow(r) {
+    var s = sh(), idx = -1;
+    for (var i = 0; i < s.view.length; i++) { if (s.view[i].r === r) { idx = i; break; } }
+    if (idx < 0) return null;
+    var wrap = els.gridWrap, rh = VP.rowH || 29;
+    if (wrap) {
+      var top = idx * rh, bottom = top + rh;
+      if (top < wrap.scrollTop) wrap.scrollTop = Math.max(0, top - rh * 2);
+      else if (bottom > wrap.scrollTop + wrap.clientHeight) wrap.scrollTop = Math.max(0, bottom - wrap.clientHeight + rh * 2);
+    }
+    renderBody(true);
+    return $('td[data-gk="' + r._gk + '"][data-c="出走馬名"]', els.grid);
   }
   function hasOvPend(r) {
     var st = S.pendOv[String(r.id)];
@@ -808,6 +893,7 @@ YJ.editorTable = (function () {
       ck.addEventListener("change", function () {
         if (!ck.checked) sh().hidden[ck.getAttribute("data-k")] = 1;
         else delete sh().hidden[ck.getAttribute("data-k")];
+        invalidateCols();          /* §171 列集合变了 → 列宽重新量 */
         rebuild(); buildColMenu();
       });
     });
@@ -856,6 +942,7 @@ YJ.editorTable = (function () {
         : "text-muted-foreground hover:text-foreground");
     });
     S.cur = null; S.editing = null;
+    invalidateCols();          /* §171 两张表列定义不同 → 列宽重新量 */
     buildColMenu(); rebuild(); syncToolbar();
     /* 外壳侧栏跟随：页内切页签不产生 iframe load → postMessage 让外壳把高亮挪到对应编辑条目 */
     try {
@@ -951,9 +1038,15 @@ YJ.editorTable = (function () {
       var b = e.target.closest("button[data-sheet]");
       if (b) switchSheetUI(b.getAttribute("data-sheet"));
     });
-    if (els.search) els.search.addEventListener("input", function () {
-      sh().filter = this.value; S.cur = null; rebuild();
-    });
+    if (els.search) {
+      var sTimer = null;
+      els.search.addEventListener("input", function () {
+        var v = this.value;
+        clearTimeout(sTimer);
+        /* §171 11k 行全表 rowText 拼接有成本 → 输入去抖 120ms（每次按键只算一次） */
+        sTimer = setTimeout(function () { sh().filter = v; S.cur = null; rebuild(); }, 120);
+      });
+    }
     if (els.addBtn) els.addBtn.addEventListener("click", addRaceRow);
     if (els.delBtn) els.delBtn.addEventListener("click", delSelected);
     if (els.undoBtn) els.undoBtn.addEventListener("click", undo);
@@ -972,6 +1065,16 @@ YJ.editorTable = (function () {
     if (els.colBtn) els.colBtn.addEventListener("click", function (e) {
       e.stopPropagation(); buildColMenu(); els.colMenu.classList.toggle("hidden");
     });
+    /* §171 虚拟滚动：滚动只重算可视窗口（rAF 合帧，窗口未变则跳过）；视口尺寸变化整窗重排 */
+    if (els.gridWrap) {
+      var vTick = false;
+      els.gridWrap.addEventListener("scroll", function () {
+        if (vTick) return;
+        vTick = true;
+        requestAnimationFrame(function () { vTick = false; renderBody(false); });
+      }, { passive: true });
+      window.addEventListener("resize", function () { renderBody(true); });
+    }
     document.addEventListener("click", function (e) {
       if (els.colMenu && !e.target.closest("#" + els.colMenu.id) && !e.target.closest("#" + els.colBtn.id)) els.colMenu.classList.add("hidden");
     });

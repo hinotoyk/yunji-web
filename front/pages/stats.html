@@ -509,13 +509,22 @@ function renderCurve() {
     CURVE.ec.resize();                                  /* 视口/断点变化后高度已改，先同步画布 */
   }
 
+  /* §171 世代多了（15 世代压测）：默认只勾最近 5 个世代，其余在图例里一键打开；
+   * 首次进入不再把 13 条线全叠成毛线团（用户可自由勾选，不改任何口径） */
+  if (!st.genSel && gens.length > 8) {
+    st.genSel = {};
+    gens.forEach(function (g, i) { st.genSel[g + "年世代"] = i >= gens.length - 5; });
+  }
   CURVE.ec.setOption({
     textStyle: { fontFamily: chartFont() },
     animationDuration: 600, animationEasing: "cubicOut",
-    grid: { left: 4, right: 14, top: 32, bottom: 4, containLabel: true },
+    grid: { left: 4, right: 14, top: isMb() ? 42 : 32, bottom: isMb() ? 4 : 34, containLabel: true },
     legend: {
-      top: 0, right: 0, itemGap: 18, itemWidth: 14, itemHeight: 3, icon: "roundRect",
-      textStyle: { color: "#52525b", fontSize: 12, fontFamily: chartFont() },
+      /* §171 图例超 8 项改 scroll（单行可滚动），MB 上不再换行压住绘图区 */
+      type: gens.length > 8 ? "scroll" : "plain",
+      top: 0, right: 0, left: isMb() ? 0 : "auto",
+      itemGap: isMb() ? 10 : 18, itemWidth: 14, itemHeight: 3, icon: "roundRect",
+      textStyle: { color: "#52525b", fontSize: isMb() ? 11 : 12, fontFamily: chartFont() },
       inactiveColor: "#c9c9ce",
       data: gens.map(function (g) { return g + "年世代"; }),
       selected: st.genSel || {}
@@ -554,6 +563,20 @@ function renderCurve() {
       splitLine: { lineStyle: { color: "#f2f2f2" } },
       axisLabel: { color: "#a1a1aa", fontSize: 10.5, fontFamily: chartFont(), formatter: "{value}%" }
     },
+    /* §171 区间缩放：跑得久了月龄拉到 100+ 桶、世代又多，全量一屏必然看不出意义 →
+     * PC 给底部滑块（拖两端选月龄区间），MB 给 inside（双指缩放/单指拖动，无滑块省高度） */
+    dataZoom: [
+      { type: "inside", xAxisIndex: 0, start: 0, end: 100, zoomOnMouseWheel: false, moveOnMouseWheel: false, moveOnMouseMove: true },
+      isMb() ? null : {
+        type: "slider", xAxisIndex: 0, start: 0, end: 100, height: 16, bottom: 0, left: 4, right: 14,
+        borderColor: "transparent", backgroundColor: "#eeeef1", fillerColor: "rgba(10,167,160,.22)",
+        handleSize: "90%", showDetail: false, brushSelect: false,
+        handleStyle: { color: "#0aa7a0", borderColor: "#0aa7a0" },
+        moveHandleStyle: { color: "#0aa7a0", opacity: 0.7 },
+        dataBackground: { lineStyle: { color: "#c9c9ce" }, areaStyle: { color: "#e4e4e7" } },
+        selectedDataBackground: { lineStyle: { color: "#0aa7a0" }, areaStyle: { color: "rgba(10,167,160,.18)" } }
+      }
+    ].filter(Boolean),
     series: series
   }, { notMerge: true });
 

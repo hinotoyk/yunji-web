@@ -464,15 +464,18 @@ function renderFilters(){
   var el=document.getElementById("filters");
   if(!el || !LIB) return;
   var t=YJ.i18n.t;
+  /* §171.1（用户否决横滚）：枚举多了不能靠「横滚把后面的藏起来」——年份要**完整可见**。
+   * 做法：把逐年递增的维度（比赛年份/出生年份）改成独占整行（wide）+ 允许换行：
+   * PC 13 个 chip 一行放得下，窄屏自动折成 2~3 行但一个都不少；左侧标签贴首行对齐（.filter-row flex-start）。 */
   var row=function(key,label,opts){
     var m=facetCounts(key,opts);
     var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip,m[o.v]); }).join("");
     return '<div class="filter-row"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips">'+chips+'</div></div>';
   };
-  var rowWide=function(key,label,opts){
+  var rowWide=function(key,label,opts,extra){
     var m=facetCounts(key,opts);
     var chips=opts.map(function(o){ return chip(key,o.v,o.l||o.v,o.tip,m[o.v]); }).join("");
-    return '<div class="filter-row wide"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips">'+chips+'</div></div>';
+    return '<div class="filter-row wide"><span class="filter-label">'+esc(label)+'</span><div class="filter-chips'+(extra?' '+extra:'')+'">'+chips+'</div></div>';
   };
   /* 人气/母父/骑手/调教师：与出走马同款搜索下拉（selector.js items 模式，compact+multi）：
    * 已选 = f-tag 胶囊（× 删除），候选排除已选；排序与文案见 DIM_SEL；wide=false 并排半列 */
@@ -551,8 +554,8 @@ function renderFilters(){
   var advRows=
       (_mb?condRow+agariRow:"")+   /* mb：马场/后3F 也进折叠区，保持卡片内相对顺序 */
       row("turn","赛道方向",TURN_OPTS)+
-      (byears.length?row("byear","出生年份",byears.map(function(b){ return {v:b,l:b}; })):"")+
-      (years.length?row("year","比赛年份",years.map(function(y){ return {v:y,l:y}; })):"")+
+      (byears.length?rowWide("byear","出生年份",byears.map(function(b){ return {v:b,l:b}; }),"filter-chips--years"):"")+
+      (years.length?rowWide("year","比赛年份",years.map(function(y){ return {v:y,l:y}; }),"filter-chips--years"):"")+
       (showCentral?rowWide("track","竞马场·中央",TRACK_CENTRAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showLocal?rowWide("track","竞马场·地方",TRACK_LOCAL.map(function(v){ return {v:v,l:v}; })):"")+
       (showOversea?rowWide("track","竞马场·海外",[{v:"海外",l:"海外"}]):"")+

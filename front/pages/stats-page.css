@@ -47,6 +47,13 @@
 .st-tab[data-on=true]{background:#0aa7a0;border-color:#0aa7a0;color:#fff;font-weight:600}
 /* 横向溢出提示（仅矩阵表 #matWrap 还在用：窄屏横滑时右缘渐隐，滑到末端自动撤掉） */
 #matWrap[data-edge=more]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 20px),transparent)}
+/* §171 世代/年份切面一多（15 世代压测）：#yseg 的「全部 + N 个年世代」按钮会撑破卡片右缘被裁 →
+ * 单行横滚带（按钮 nowrap 不折字，容器横滑，右缘渐隐提示还有内容）。与 leaderboard #sliceSeg 同款。 */
+#yseg{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent)}
+#yseg::-webkit-scrollbar{display:none}
+#yseg button{white-space:nowrap;flex:none}
 /* 矩阵表（§144 改造三点）：
  * ① border-collapse 改 separate —— sticky 单元格在 collapse 下边框会留在原地不跟着走（Chrome 已知问题）；
  *    全表只用横向边框，separate + border-spacing:0 与 collapse 视觉完全一致。

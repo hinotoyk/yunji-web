@@ -25,6 +25,14 @@
 .lb-legend i{display:inline-block;width:16px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
 .lb-legend .i-total{background:#c9e8e6}
 .lb-legend .i-solid{background:#0aa7a0}
+/* §171 世代/年份切面一多（15 世代压测）：15 枚按钮换行 + 文字断成两行（「2026年世」「代」）→
+ * 单行横滚带：按钮 nowrap 不折字，容器超宽横向滚动（PC 滚轮 / MB 横滑），右缘渐隐提示可滚。
+ * .seg 的 overflow:hidden（圆角裁切）在此页对 sliceSeg 放开成 overflow-x:auto。 */
+#sliceSeg{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent);
+  mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent)}
+#sliceSeg::-webkit-scrollbar{display:none}
+#sliceSeg button{white-space:nowrap;flex:none}
 /* mb 端分段控件紧凑化（2026-10-30 修横向溢出）：.seg 是 inline-flex 不换行，按钮 padding 15px
  * 时「总榜+自然年+世代」与「全部+牡马（含骗）」两组合计约 374px > 390 视口可用宽 362px，
  * 撑出横向滚动条，图表 canvas 跟着变宽 → 右侧看起来是空白。压缩 padding 后两组共约 304px 可放下。
