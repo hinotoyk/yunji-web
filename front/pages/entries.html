@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<script src="../rehome.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出走马表 · {{YJ_SITE_NAME}}</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=1">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body class="bg-background text-foreground antialiased">
+<!-- §174 出走马表（2026-11-02 立项，同日按用户三点反馈改稿：弃 iframe 全页照搬，
+     对齐「种马榜走势 · SIRE RANK」的兄弟站统一引用模式）：
+     racing-calendar 发布纯渲染组件 embed/entries-table.js（window.RC_ENTRIES_EMBED，
+     数据编排 + 字典包解包 + 渲染自包含，不写任何存储键；视觉走宿主 CSS 变量自动跟随换肤），
+     本页 = 一个挂载点 + 种马名 → 简洁结果视图（JBIS 出馬表式按日期分组表格：
+     「11月4日（水）」+ 绿色短线 + 開催/レース名/芝ダ/距離/出走頭数/発走/枠番/馬番/
+     出走馬/性齢/斤量/騎手 十二列，赛事名在显示层清洗掉「サラ系」等冗余前缀，
+     已开赛收进「最近一周」折叠区）。
+     引用单源：RC 官网地址 = data-config.js remote.rc；种马名 = YJ_SITE.sireName
+     （config/sire.json 构建期注入）——kzn 等模板站改 config 即自动引用自家种马。
+     本地（localhost/127.0.0.1）自动指向本地 RC（:9090，npm run serve），线上走 remote.rc；
+     覆盖：`?rcdev=1` 强制本地、`?rcdev=0` 强制线上。 -->
+<div id="page" class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]">
+
+  <!-- 页头 -->
+  <div class="page-title mb-7 max-md:mt-2.5">出走马表 · ENTRIES</div>
+
+  <!-- 结果卡：与 stats.html SIRE RANK 同构的卡片容器，内容全部由组件渲染 -->
+  <section>
+    <div class="card p-4 pt-3.5 max-md:p-3">
+      <div id="entries-mount" class="min-h-[240px]"></div>
+    </div>
+  </section>
+</div>
+
+<script src="../data-config.js"></script>
+<script src="../site-config.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* ---- 引用参数（§174）：base = YJ_DATA.remote.rc；sire = YJ_SITE.sireName ----
+   * 本地调试自动探测：localhost / 127.0.0.1 默认指向本地 RC（npm run serve · :9090），
+   * 线上部署走 remote.rc —— 本地打开无需带任何参数（旧版要 ?rcdev=1，漏带即 404 组件加载失败）。
+   * 覆盖：`?rcdev=1` 强制本地、`?rcdev=0` 强制线上。 */
+  var RC_REMOTE = String((window.YJ_DATA && YJ_DATA.remote && YJ_DATA.remote.rc) || "");
+  var RC_LOCAL = "http://127.0.0.1:9090/";
+  var isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var RC_BASE = isLocalHost ? RC_LOCAL : RC_REMOTE;
+  if (/[?&]rcdev=1\b/.test(location.search)) RC_BASE = RC_LOCAL;
+  if (/[?&]rcdev=0\b/.test(location.search)) RC_BASE = RC_REMOTE;
+  var SIRE = (window.YJ_SITE && YJ_SITE.sireName) || "";
+
+  var mountEl = document.getElementById("entries-mount");
+  var embedP = null;   /* 组件脚本动态加载一次（Promise 缓存，同 stats.html SIRE RANK 做法） */
+  function loadEmbed() {
+    if (!embedP) {
+      embedP = new Promise(function (res, rej) {
+        var s = document.createElement("script");
+        s.src = RC_BASE + "embed/entries-table.js";
+        s.onload = function () { res(); };
+        s.onerror = function () { embedP = null; rej(new Error("组件加载失败")); };
+        document.head.appendChild(s);
+      });
+    }
+    return embedP;
+  }
+
+  function mount() {
+    return loadEmbed().then(function () {
+      /* 组件自带加载/失败/重试状态渲染；数据失败时组件 mount 会 reject，此处兜底不打断页面 */
+      return window.RC_ENTRIES_EMBED.mount(mountEl, { base: RC_BASE, sire: SIRE });
+    }).catch(function (e) {
+      /* 组件脚本本身拉不到（与组件内数据失败态不同层）：本页兜底渲染 */
+      if (!mountEl.querySelector(".rc-emb-state")) {
+        mountEl.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;padding:34px 16px;' +
+          'font-size:12.5px;color:var(--muted-foreground);text-align:center">' +
+          '<div>出走表组件暂时加载失败（' + String((e && e.message) || e).replace(/[<>&"]/g, "") + '）' +
+          '<span style="display:block;margin-top:4px;font-size:11.5px">Racing Calendar 可能正在部署或网络不可达</span></div></div>';
+      }
+    });
+  }
+
+  mount();
+})();
+</script>
+</body>
+</html>

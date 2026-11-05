@@ -1823,3 +1823,133 @@ window.YJ_ECHARTS = echarts;
 - `front && COPY_DATA=skip npm run build` ✓ 7.58s；`dist/assets/theme-ClQOko3b.css` 未变（本次不涉样式）。
 
 **同步提示**：kzn 若也从 GitHub Pages 迁到 CF Pages（或任何会剥 `.html` 的托管），同一处 `pageKey` 归一必须一起带过去，否则高亮同样全灭。
+
+## §174 · 出走马表页：跨站引用 racing-calendar（embed 协议 + 侧栏导航，2026-11-02 立项）
+
+**需求**：侧栏「统计」组缺一个出走马表入口；出走表数据在独立仓 racing-calendar（RC，JBIS/Racing Post 出馬表采集站，同款青绿方案 F 视觉）。未来 kzn（キズナ）等种马站也要引用同一个出走马表页面 → **引用必须是协议化的一层，不是复制页面**。
+
+**方案定稿（跨站 iframe 深链引用，不复制不落盘）**：
+
+1. **RC 侧加 `embed` 协议**（`site/app.js` + `site/style.css`，协议文档落 `docs/DESIGN.md` §8「嵌入引用」）：
+   - `index.html?embed=1` → 挂 `html[data-embed]` 标记；
+   - CSS 按 `[data-embed]` 收编装饰层：隐藏 `.page-title` / `footer` / `.powered` / `[data-friend-links]`，
+     `#page` 宽度 100% / 内距收紧（宿主页自己有 page-title 与留白，嵌进来双标题会重复）；
+   - **embed 锁亮色**：宿主站（yunji/kzn）无暗色主题，暗色 iframe 嵌进亮色壳会突兀 →
+     `prefers-color-scheme: dark` 覆盖只对非 embed 生效；分享卡 canvas 本就固定亮色，双口径一致；
+   - **筛选状态走既有 URL 协议**：RC 已有 `?sire=<canonical>&d=<日期>&scope=&k=&group=` 深链（syncUrl 双向），
+     宿主只负责拼 URL——这就是「引用协议」，RC 升级功能宿主零改动自动跟随；
+   - 泛用参数 `?embed=1&sire=…` 对任何站开放（kzn 传 `キズナ`），不绑定云迹品牌。
+2. **宿主侧新页 `pages/entries.html`**（本仓）：
+   - 结构 = 同款 `.page-title`（出走马表 · ENTRIES）+ **来源说明条**（数据 · 出走表来自 Racing Calendar，新标签打开 ↗）+ 全高无边框 iframe；
+   - iframe src 按 `YJ_SITE` 拼接：`https://hinotoyk.github.io/racing-calendar/?embed=1&sire=<种马日文名>`；
+   - **种马名单一出处 `config/sire.json`**：`gen-site-config.mjs` 新增 `sireName`（种马日文名）注入 `YJ_SITE`——
+     kzn 模板站改配置即自动引用キズナ，不需要改任何代码（同步指南的模板机制天然继承）；
+   - RC 官网地址不写死在页面：**常量进 `data-config.js`**（`YJ_DATA.rc()`，站点数据映射单一出处惯例），
+     `?rcdev=1` 调试参数切本地 `http://127.0.0.1:9090/`；
+   - 加载体验对齐 §149：iframe 加载遮罩（YJ.ui.frameSpin 不适用——那是同源子页 postMessage 信号，跨站拿不到），
+     改用**本页自带遮罩**：`iframe load 事件` 摘除，超时 15s 显示失败态（「上游站点无响应」+ 重试按钮 + 新标签打开兜底）；
+   - 无 rehome 回壳（页面本身就在壳里跑；直开 URL 由外壳 `?page=` 机制兜住，无需改造）。
+3. **侧栏**（`front/index.html` 统计组）：「🏁 出走马表」置于「日期统计」与「航迹线」之间——
+   出走表是赛前前瞻（未来 1-2 天），与既有页全是赛后记录互补，放统计组末位、航迹线前。
+
+**废案（不展开）**：复制 RC 页面代码进本仓（双仓维护、升级即漂移，违「业务流程自己设计但这里是引用」）；RC 产 JSON 落盘本仓 data/（出走表是瞬时数据，落盘即过期，且 RC 每日两次自动采集已是线上活数据）；window.open 新标签（用户要的是站内页面）。
+
+**验证口径**：RC `npm run build` 后 `_site/` 直开 `?embed=1` 核对装饰层收起 + 锁亮色 + `?sire=` 深链生效；本仓 build 后核对 `dist/pages/entries.html` 存在、`dist/site-config.js` 含 `sireName`；本地双服务（:8090 宿主 + :9090 RC）实测 iframe 内嵌视觉与深链。
+
+**实施结果（同日完成）**：
+- RC 侧：`index.html` head 内联脚本挂 `<html data-embed>`（首帧生效无闪烁）；`style.css` 暗色 token 覆盖收窄为 `:root:not([data-embed])`（embed 锁亮）+ `[data-embed]` 隐藏 page-title/footer/powered/站群导航、`#page` 占满；`app.js` `syncUrl()` 保留 `embed=1`（模式标志不随筛选重写丢失）。协议文档 = RC `docs/DESIGN.md` §10 + README「嵌入引用」节。
+- 顺手修复 RC 两个深链 bug（外部引用暴露出来的）：① `main()` 无条件 `defaultDates()/defaultScope()` 覆盖 URL 恢复的 `?d=/?scope=` → 改为「URL 未指定才套默认」；② `?sire=` 深链按展示名原文存 state，而行内比较用 canonical（JBIS id）→ 永不匹配，改 URL 恢复时过 `canonOf()` 归一。这两个修复同时让 RC 自身分享链接的日期/血统恢复变正确。
+- 宿主侧：`pages/entries.html`（page-title + 来源条「数据来自 Racing Calendar ↗」+ `父：コントレイル` chip + 全高 iframe + load 摘遮罩 + 15s 超时失败态[重试/新标签]）；query 白名单透传（`RC_QS_KEYS = d/w/scope/v/k/sire/ss/bms/q/group`，`sire` 缺省取 `YJ_SITE.sireName`；`rcdev=1` 切本地调试不透传）；`vite.config.js` PAGES 注册；外壳侧栏「🏁 出走马表」置于日期统计与航迹线之间；`data-config.js` `remote.rc` 官网地址单源；`gen-site-config.mjs` 增 `sireName`（sire.sire.name_ja，kzn 改 config 即自动引用キズナ）。
+- 冒烟：双服务实测截图核对——embed 装饰层收起、锁亮色、`?d=2026-10-24&sire=コントレイル` 端到端出「共 11 頭 · 9 R」真实数据行、父列全コントレイル、宿主页与 iframe 视觉无缝。线上生效前置：RC 仓库 push 部署后宿主页才收到新版（本地 `?rcdev=1` 已验证）。
+
+### §174.1 · 改稿：iframe 全页照搬 → embed 组件（兄弟站统一模式，2026-11-02 用户三点反馈）
+
+**用户反馈**：① 参考种马榜走势 · SIRE RANK 的内嵌方式（jbis-sire-rank-history），要结果页，不要把整站网页照搬进来——「给一个名字就能有一个独立内嵌页面的结果」；② 独立内嵌页要简洁、优雅；③ 都是兄弟网站，引入方式要有拓展性、要统一。
+
+**统一模式定稿**（与 SIRE RANK 同构，此后兄弟站引用一律此形）：兄弟站发布 **`embed/` 纯渲染组件 + derived 数据产物**；宿主 = `data-config.js remote` 一处配置 + 动态加载组件脚本（Promise 缓存）+ 挂载点传参 → 内嵌结果。数据/渲染逻辑零复制，宿主不 iframe 整站。
+
+- **RC 侧新组件 `site/embed/entries-table.js`**（构建进 `_site/embed/`，零依赖单文件 IIFE，`window.RC_ENTRIES_EMBED`）：`load`（fetch `derived/index.json` + `derived/{date}.json`，内联 `unpackRows` 解字典包[单源 = src/lib/rows-codec.mjs，两处同步]，**不写存储键**，内存缓存）/ `render`（纯渲染）/ `mount`（load+render+内建加载/失败/重试，宿主一行）。API 与视觉素材（级别徽章映射 LEVEL_CLS、JRA 枠色、北京时间换算）均对齐 RC 主站同源口径。RC 本地 `serve` 补 `Access-Control-Allow-Origin: *`（对齐线上 GH Pages，宿主 `?rcdev=1` 本地联调必需）。
+- **视图（简洁优雅）**：头部 = 标题「<sire> 产驹 · 近期出走」+ 共 N 頭 · M R + Racing Calendar ↗；比赛块按北京时间升序——块头 = 日期周 · 场R · 比赛名 + 级别徽章 + 距离 + 北京时间（primary 粗），馬行 = 枠色芯片 + 番 + 馬名 + 性齢 + 斤量 + 騎手；今天之前自动收进底部 `<details>`「已开赛」折叠区（前瞻为主、历史兜底）；空/载/败三态内建；窄屏 media 逐级收列。颜色走宿主 CSS 变量（`--foreground/--primary/--accent…` 缺省回退同站 token）——friend-links.js 归一化变量同一做法，宿主换肤组件跟随。
+- **宿主 `entries.html` 改稿**：删 iframe/遮罩/超时/参数透传整层，剩 = page-title + `.card` 挂载点 + `RC_ENTRIES_EMBED.mount(el, { base: YJ_DATA.remote.rc, sire: YJ_SITE.sireName })`（约 40 行内联脚本，含组件脚本加载失败兜底态）；`rcdev=1` 调试保留。**`sireName` 单源不变**（kzn 改 config 即引用キズナ），remote.rc 单源不变。
+- **组件视图不带多维筛选**——简洁结果页的定位就是「按种马看近期出走」；要全功能（多维筛选/勾选分享卡）点头部外链去 RC 主站。RC 主站 `?embed=1` iframe 协议降级为附录保留（DESIGN.md §10 附录），日常引用一律组件。
+- **验证**：dump-dom 断言（直开子页 `&embed=1` 防 rehome 回壳）——组件头/汇总「共 48 頭 · 38 R」/比赛块/级别徽章（G3/L/G1）/北京时间/枠色芯片/「已开赛 46 頭」折叠全就位、无失败态。途中修一个组件 bug：`loadDay` 误把内存缓存键（`base|date`）拼进 fetch URL（`|` 非法 URL 字符），改回清理后的 base 拼路径。
+
+### §174.2 · 改稿二：视图改为 JBIS 出馬表式「按日期分组表格」（组件 v1.1.0，2026-11-02 用户两点反馈）
+
+**用户反馈**：① 参考 JBIS 出馬表截图样式（按日期分组的表格，不要现在的卡片式比赛块）；② 本地打开报「出走表暂时加载失败（Failed to fetch）」。
+
+**① 视图重做**（`site/embed/entries-table.js` 的 `render()` 整段重写，VERSION 1.0.0 → 1.1.0）：
+
+| 层 | 做法 |
+| --- | --- |
+| 分组头 | 「11月4日（水） 出走分」+ **30×2px 青绿短线**（`--primary`）+ 右侧「1 頭 / 1 R」；一日一组，组间 16px |
+| 表格 | 真 `<table>`：開催 / レース名 / 芝ダ / 距離 / 出走頭数 / 枠番 / 馬番 / 出走馬；灰底表头（`--muted`）、圆角外框（9px + `--border`）、横向行分隔线 |
+| 场次合并 | **同一场次多匹产驹共用 `rowspan` 场次单元格**（開催/レース名/芝ダ/距離/出走頭数）——JBIS 出馬表原生读法 |
+| 交替底色 | 按**场次块**交替（`.alt td`，非按行）——rowspan 合并块整体同色，读起来是一场一段；hover 高亮 |
+| 单元格内容 | 開催 = 场名 + 体系小字（地方/JRA/英国/法国/美国，`scope` 映射）；レース名 = `3R` 浅青标签 + 名称 + 级别徽章，副行「北京 11/04 11:40」；芝ダ = 芝绿/ダ褐文字；枠番 = JRA 枠色方块；出走馬 = 马名 + 「牡3 · 56kg · 高橋悠里」副行 |
+| 列宽 | `table-layout:fixed` + 百分比列宽（8/23/6/6.5/9.5/6/6/35），余量给「出走馬」；`min-width:600px` 兜底 |
+| 窄屏 <620px | 收起 芝ダ/距離/出走頭数 三列 + `table-layout:auto` + 马名允许折行——**保「出走馬」不被挤出视口**（实测 338px 容器 5 列恰好放下，table 336px 无溢出） |
+
+**踩坑（重要，组件级）**：`render()` 一直没输出 `.rc-emb` 外层容器，而 `--re-*` 变量全定义在 `.rc-emb` 上 → `background:var(--re-primary)` 全部失效，**绿线/灰表头/圆角边框/`3R` 标签凭空消失**（文字仍正常，因为 `color` 失效会继承，不易察觉）。修法：统一走 `setHTML(el, inner)` 套 `<div class="rc-emb">`，mount 的加载/失败态同样套。教训：**CSS 变量作用域和 HTML 根节点必须同源**，纯渲染组件尤其要断言「变量宿主节点存在」。
+
+**② 本地访问失败**：旧版要手工带 `?rcdev=1` 才走本地 RC（:9090），漏带即走线上 `remote.rc`——而线上还没有 `embed/entries-table.js`（未部署）→ 组件脚本 404 → `Failed to fetch`。改为**本地自动探测**：`location.hostname` 是 localhost/127.0.0.1/[::1] 时 `base` 默认取本地 RC，线上取 `remote.rc`；`?rcdev=1` / `?rcdev=0` 仍可强制覆盖。本地打开零参数即可。
+
+**验证**：无头 Edge 直开 `dist/pages/entries.html?embed=1`（防 rehome）dump-dom + 截图（1180 / 2x 放大 / 338px 窄容器 / 已开赛展开）——日期分组、绿线、灰表头、圆角框、枠色块、`3R` 标签、级别徽章（G3）、JRA/地方标注、场次交替底色、多日堆叠全部就位，窄屏无溢出。
+
+### §174.3 · 改稿三：赛事名清洗 + 去冗余转述 + PC 铺开成列（组件 v1.2.0，2026-11-02 用户五点反馈）
+
+**用户反馈**：①「サラ系」重复了，和欧美赞助商名一样都过滤掉；②去掉「地方/JRA」这类转述；③「出走分」是什么鬼，去掉；④已开赛看不出是多久，改成「最近一周」；⑤PC 端页面大，北京时刻、性齢/斤量/騎手 都能当独立列（MB 端问题不大）。
+
+**① 赛事名清洗（显示层，数据原文不动）** `cleanRaceName()` 四步：
+
+| 步骤 | 规则 | 例 |
+| --- | --- | --- |
+| 去重 | JBIS 源重复拼接取前半 | `C２二組 C２二組` → `C２二組` |
+| 去品種前缀 | 删 `サラ系`（JRA/NAR 条件名固有前缀，逐行重复零信息量） | `サラ系２歳 未勝利` → `２歳 未勝利` |
+| 去场次号 | 删 `Race N - `（UAE/USA 源格式，场次号已有 `3R` 标签） | `Race 3 - Arabian Stride Mile Handicap` → `Arabian Stride Mile Handicap` |
+| 去欧美冠名 | 仅当名字 **> 40 字符**时，从尾部连续吸收「类型词 ∪ 修饰词」直到遇冠名词，条件括号/赛种后缀作为尾巴接回 | `Magnet, Better. By Design Handicap Chase (GBB Race)` → `Handicap Chase (GBB Race)`；`GA Wilson Plastering Open NH Flat Race` → `Open NH Flat Race` |
+
+- 阈值 40 字符 + 词表法（`TYPE_WORDS` 22 词 / `MOD_WORDS` 28 词）是**保守**设计：`Mercury Stakes (Group 3)`、`Panoramic Hurdle (Listed)` 这类短正式名一律不动；日文名无空格分词、长度短，天然免疫。
+- 全量实测（1003 个赛事名）：436 个被清洗；欧美 566 个中 365 个被裁剪，抽样核对无把正式赛事名切残的情况（`Open NH Flat Race`、`Conditional Jockeys' Handicap Hurdle` 等复合类型短语完整保留）。
+- 已知不完美：法文序数残片（`Francois I Er Handicap` → `Handicap`）、纯通知式赛事名（`For Hospitality Bookings Call 011…Handicap` → `Handicap`）——已用「兜底再补一个词」缓解，宁可短不可残。
+
+**② 去掉转述**：開催 单元格只留场名（删掉 `地方/JRA/英国/法国/美国` 副行与 `SCOPE_FG` 映射）——场名本身已表明体系，转述是噪音。
+
+**③ 去掉「出走分」**：分组头收为「**11月4日（水）**」+ 青绿短线 + 右侧「N 頭 / M R」。
+
+**④「已开赛」→「最近一周」**：`load()` 的 past 窗口从「今天之前全部日期」改为**今天往前 7 个自然日**（`minusDays(today, 6)`），不再把整月历史都拉下来（顺带少发一半请求）；折叠区文案「最近一周 17 頭（10月27日 ~ 11月1日）」。
+
+**⑤ PC 铺开成 12 列**（原副行信息独立成列，行高从两行降到单行）：
+
+`開催 / レース名 / 芝ダ / 距離 / 出走頭数 / 発走 / 枠番 / 馬番 / 出走馬 / 性齢 / 斤量 / 騎手`
+
+- 列宽百分比 `7 / 20 / 4.5 / 5.5 / 8 / 7 / 5 / 4.5 / 19.5 / 5 / 5 / 9`，`table-layout:fixed` + `min-width:720px`；前 6 列为场次属性（同一场次多匹产驹共用 `rowspan`），后 6 列为每匹一行。
+- 时刻列头用「発走」（与其余日文列头一致），头部注明「· 北京時刻」。
+- 窄屏两档收起：`≤1080px` 收 芝ダ/距離/出走頭数/性齢/斤量（剩 7 列，`table-layout:auto`）；`≤620px` 再收 発走/騎手（剩 5 列：開催/レース名/枠番/馬番/出走馬）。马名永不被挤出视口。
+
+**验证**：全量赛事名清洗抽样、1440/1200 宽 12 列截图、338px 容器 5 列无溢出、展开「最近一周」多日堆叠（10/27、10/28、10/31、11/01 共 17 頭）逐列核对——`サラ系` 已绝迹、開催 只剩场名、発走/性齢/斤量/騎手 各就各位。
+
+### §174.4 · 改稿四：表头顺序 + 字号放大 + 断点改按组件宽度（组件 v1.2.1，2026-11-02 用户两点反馈）
+
+**用户反馈**：① 表头顺序调成 `開催 / レース名 / 発走 / 芝ダ / 距離 / 枠番 / 馬番 / 出走馬 / 性齢 / 斤量 / 騎手`（発走 提到比赛名之后，`出走頭数` 去掉）；② 字体大一些，方便看。
+
+**① 列重排（12 → 11 列）**：`発走` 由第 6 位移到第 3 位（时刻紧挨场次，符合读表顺序，且它本就是场次属性 → 仍属 rowspan 组）；`出走頭数` 删除（对「看这匹马跑哪场」无信息量，且挤占字号空间）。rowspan 场次组变为 `開催/レース名/発走/芝ダ/距離` 五列，马列 `枠番/馬番/出走馬/性齢/斤量/騎手` 六列。列宽重算 `7 / 19 / 7.5 / 5.5 / 6.5 / 5.5 / 5.5 / 20 / 5.5 / 7 / 11`。
+
+**② 字号整体上调一档**（不是等比放大，按信息层级分别调）：
+
+| 位置 | 原 | 现 |
+| --- | --- | --- |
+| 表体基准 / 表头 | 12 / 10.5 | **13 / 11.5** |
+| 马名 | 12.5 | **14** |
+| 開催 / レース名 / 発走 / 斤量 | 12 / 12 / 11.5 / 11.5 | **13 / 13 / 13 / 13** |
+| 馬番 | 12 | **13.5** |
+| 性齢 / 騎手 | 11.5 | **12.5** |
+| 枠番芯片 | 17×17 | **19×19** |
+| 行内距 / 日期头 | 6px / 14px | **8px / 15px** |
+
+行高由约 30px 增至约 36px，表格从「紧凑」转为「舒展」，可读性明显提升。
+
+**③ 断点方案推倒重来（踩坑）**：原用 `@media (max-width:1080px)` 收列，但组件挂在宿主 iframe 里，**视口宽 ≠ 卡片内容宽**（还要减侧栏 200px、`#page` 的 90%、卡片内距 32px）。实测 1024px 窗口时按视口判断为「放得下」，实际容器只有 653px < 表格 `min-width:700px` → 表格溢出被裁，骑手列只剩一个字、马名 ellipsis。
+改为 **`ResizeObserver` 量组件自身宽度 → 打 `data-fit`**（0 = 全列 / 1 = 收 4 列 / 2 = 再收 2 列，阈值 700 / 560），CSS 用属性选择器收列。彻底与宿主布局解耦，iframe 宽度变化也实时跟随；宿主换侧栏宽度不用改组件。
+
+**验证**：1440 / 1200 → 11 列全显示无滚动；1024 → 7 列（開催/レース名/発走/枠番/馬番/出走馬/騎手）骑手完整；字号放大后各列无截断（`芝ダ` 表头 37px vs 列宽 39.6px、`56kg` 48px vs 50.4px 均留有余量）。

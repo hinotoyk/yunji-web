@@ -8,7 +8,8 @@ const { defineConfig } = require('vite');
 // edit-timeline = 航迹线人工节点编辑页（2026-09 从 edit.html 拆出，同为独立入口）
 // edit-drafts = 草稿箱查询页（§93：未提交草稿 + 已保存人工值一页通览，与抽屉共用渲染/检索）
 // leaderboard = 产驹赏金（§112：总榜/自然年/世代 × 牡牝三态，前端聚合 datechart+basic；§128 更名）
-const PAGES = ['profile', 'races', 'pedigree', 'stats', 'leaderboard', 'datechart', 'timeline',
+// entries = 出走马表（§174：跨站 iframe 引用 racing-calendar ?embed=1&sire=<YJ_SITE.sireName>）
+const PAGES = ['profile', 'races', 'pedigree', 'stats', 'leaderboard', 'datechart', 'timeline', 'entries',
   'edit', 'edit-table', 'edit-timeline', 'edit-drafts'];
 
 const input = { main: resolve(__dirname, 'index.html') };
