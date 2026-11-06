@@ -2072,3 +2072,70 @@ window.YJ_ECHARTS = echarts;
 编辑台 `.yj-pv` 不含 `.tl-cardwrap`，不受影响（当前为空态，正常）。
 
 …结论：§178 的 V2（横排 + 模糊铺底）未采用，实现要点仍留在上文备查。
+
+## §180 · 赏金排行：点「马名」跳基本信息（条形只开赏金明细）（2026-11-06）
+
+**需求**：用户「赏金排行 · RANKING 能不能从名字跳到基本信息里」，并明确 **「点击日文名或者中文名跳转才行，点击条形图只展示赏金信息」**。
+
+**现状**：`leaderboard.html` 是 ECharts 横向条形图，之前只有 `EC.on("click")`（系于 series）→ **只有条形可点**，
+名字（y 轴类目标签）点了毫无反应。
+
+**关键结论（2026-11-06 二次修正 · §181）**：**定制裁剪包没有任何缺失，`triggerEvent` 要写在「轴」上，不是「axisLabel」上**。
+包里 `AxisBuilder` 的实现是 `var triggerEvent = axisModel.get("triggerEvent")`（axis 选项，默认 false），
+只有它为真才给每个标签挂 `eventData`；写 `yAxis.axisLabel.triggerEvent` 会被**静默忽略**（配置项本身存在，
+`getOption()` 里能看到，所以很容易误判成「裁剪掉了」）。开启后标签 `eventData` 内容实测为：
+`{ componentType:"yAxis", targetType:"axisLabel", value:"{r1|1}{jpM|ゴーイントゥスカイ}\n{cn|通天飞}", tickIndex:0, dataIndex:0 }`
+—— 类目轴连行号 `dataIndex` 都直接给了。另外标签本来就不 `silent`
+（`isLabelSilent = axis.silent || !(axis.triggerEvent || tooltip.show)`，本页 tooltip 是开的），缺的一直只是 `eventData`。
+
+**做法**：
+- `yAxis` 基座加 `triggerEvent:true`（mb / PC 共用），`EC.on("click")` 里按 `p.targetType` 分流：
+  `"axisLabel"` → 开 `profile.html?horse=<CUR_ROWS[p.dataIndex].id>`（§80 新标签页）；
+  `"series"` → `dispatchAction({type:"showTip",...})`，**条形只弹明细、不跳**。
+- **标签列整条兜底**：画布标签是「字形参与命中」，两行富文本之间的行距、名次与名字的左右间隙都是死区，
+  按视觉点「这一行的名字」容易漏 → 再挂一个容器 click：`x < plot左缘` 时按行高反推行号。
+  两条路径用 400ms 时间戳去重，绝不会一次点击开两个标签页。
+- `mousemove` 只在名字列给 `cursor:pointer`（条形区强制 `""`，盖掉 ECharts 给 series 的 pointer）。
+
+**验证**（`tests/_lb-click.mjs`：CDP 派发真实鼠标点击 + hook `window.open` 读回 URL）：
+
+| 落点 | cursor | 打开 | tooltip |
+|---|---|---|---|
+| 点名字（首行标签列，1280） | pointer | `profile.html?horse=40` ✓ | — |
+| 点中文名那一行（行高 78% 处） | pointer | `profile.html?horse=40` ✓ | — |
+| 点条形 | 默认 | **无** ✓ | shown ✓ |
+| 点轴下方空白 | 默认 | 无 ✓ | — |
+
+390px（mb，20 行/页、标签纯名字）同表通过：点名字 → `profile.html?horse=40`，点条形 → 不跳。
+视觉零变化（`tests/_shot/_lb-names-top.png`：名次+日文名+中文名两行、条形与金额照旧）。
+
+## §181 · 赏金排行点名字：改用组件原生标签事件（修正 §180 的误判）（2026-11-06）
+
+**用户反馈**：「定制裁剪包能不能加上这个功能呢，现在点名字没反应、点条状图就跳过去了」。
+
+**结论：包不用改**。§180 那句「该包没给 axisLabel 写 eventData」是**误判**——真正原因是 `triggerEvent` 的**位置**：
+包里读的是 `axisModel.get("triggerEvent")`（轴级），写在 `axisLabel` 下会被静默忽略。改成轴级后，标签原生事件立刻带
+`targetType:"axisLabel" + dataIndex`（详见 §180 的「关键结论」）。
+
+**代码（`leaderboard.html`）**：
+- `yAxis` 基座 `{ type:"category", inverse:true, … }` 增 `triggerEvent: true`；
+- `EC.on("click")`：`targetType==="axisLabel"` → 开档案；其余（series）→ `showTip`；
+- 保留容器级「标签列整条」兜底点击（字形命中会漏缝），400ms 时间戳与原生路径去重；
+- `mousemove` 只给名字列 `cursor:pointer`。替代 §180 原来纯坐标换算的实现（保留其兜底角色）。
+
+**为什么用户那边「点条形会跳」**：条形跳转是 §180 **之前**的行为（`EC.on("click")` 直接 `window.open`），
+该改动当时只在本地 `dist` 里、未提交未部署；用户看到的是旧构建（缓存/未部署）。**清缓存强刷（Ctrl+F5）即可**。
+这也解释了「点名字没反应」——旧构建里名字根本没有事件。
+
+**验证**（`tests/_lb-click2.mjs` / `tests/_lb-hover.mjs`，CDP 真实点击 + hook `window.open`）：
+
+| 落点（1280 / 390） | cursor | 打开 | 备注 |
+|---|---|---|---|
+| 日文名 | pointer | `profile.html?horse=40` ✓ | 原生 axisLabel 事件 |
+| 中文名那一行 | pointer | 同上 ✓ | 原生 |
+| 名次数字 | pointer | 同上 ✓ | 同在富文本标签内 |
+| 两行之间的缝 / 行末缝 | pointer | 同上 ✓ | 容器兜底生效 |
+| 条形 | 默认 | 无 ✓ | 只 `showTip`（tooltip=shown） |
+| 条形右端空白 / 轴下空白 | 默认 | 无 ✓ | — |
+
+每次点击**只开一个**标签页（去重生效）；`npm run build` 通过，控制台/网络零报错（`#chart canvas` 1 个，CUR_ROWS=100）。

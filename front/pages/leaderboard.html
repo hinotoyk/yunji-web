@@ -297,9 +297,44 @@ function renderChart(view) {
   if (!EC) {
     el.innerHTML = "";   /* 仅首次初始化时清掉占位/失败提示 */
     EC = lib.init(el, null, { renderer: "canvas" });
+    /* §180（2026-11-06 用户「赏金排行能不能从名字跳到基本信息」，并明确「点条形只展示赏金信息」）：
+     * **只有马名（日文名/中文名）跳档案，条形只弹赏金明细**。两路由 targetType 区分：
+     *   名字 → yAxis 开了 triggerEvent（见下方 yAxis 配置），标签元素自带 eventData
+     *          { targetType:"axisLabel", value, tickIndex, dataIndex }（类目轴把行号直接给了 dataIndex）；
+     *   条形 → targetType:"series" + dataIndex → 补一次 showTip（触屏没有 hover，否则点了什么也看不到）。 */
+    var lastLabelNav = 0;
     EC.on("click", function (p) {
-      var r = CUR_ROWS[p.dataIndex];
-      if (r) window.open("profile.html?horse=" + r.id, "_blank", "noopener");   /* §80：新标签页 */
+      if (!p) return;
+      if (p.targetType === "axisLabel") {
+        lastLabelNav = Date.now();   /* 让下方「标签列兜底」跳过同一次点击，避免开两个标签页 */
+        var r = typeof p.dataIndex === "number" ? CUR_ROWS[p.dataIndex] : null;
+        if (r) window.open("profile.html?horse=" + r.id, "_blank", "noopener");   /* §80：新标签页 */
+        return;
+      }
+      if (typeof p.dataIndex === "number") EC.dispatchAction({ type: "showTip", seriesIndex: 0, dataIndex: p.dataIndex });
+    });
+    /* 兜底：画布上的标签是字形本身参与命中，两行富文本之间的行距、名次与名字的左右间隙都是「死区」，
+     * 用户按视觉「这一行的名字」去点很容易漏 → plot 左侧整条按行高再兜一次（类目轴行高一致，行号 = floor(y/行高)）。
+     * 条形区（x ≥ plot 左缘）一律不跳，仍交给上面的 showTip。 */
+    function labelRowAt(ev) {
+      if (!CUR_ROWS.length) return -1;
+      var b = el.getBoundingClientRect();
+      var x = ev.clientX - b.left, y = ev.clientY - b.top;
+      var rect = EC.getModel().getComponent("grid", 0).coordinateSystem.getRect();
+      if (x >= rect.x || y < rect.y || y > rect.y + rect.height) return -1;   /* 条形区 / 轴外 */
+      var i = Math.floor((y - rect.y) / (rect.height / CUR_ROWS.length));
+      return i >= 0 && i < CUR_ROWS.length ? i : -1;
+    }
+    el.addEventListener("click", function (ev) {
+      if (Date.now() - lastLabelNav < 400) return;   /* 原生标签事件已处理 */
+      var i = labelRowAt(ev);
+      if (i < 0) return;
+      var r = CUR_ROWS[i];
+      if (r) { lastLabelNav = Date.now(); window.open("profile.html?horse=" + r.id, "_blank", "noopener"); }
+    });
+    /* 名字可点 → 手型（条形区不跳，不给可点暗示；条形的 pointer 是 ECharts 内部设的，这里覆盖掉） */
+    el.addEventListener("mousemove", function (ev) {
+      el.style.cursor = labelRowAt(ev) >= 0 ? "pointer" : "";
     });
   } else {
     EC.resize();   /* 行数变化 → 高度已改，同步画布 */
@@ -342,7 +377,15 @@ function renderChart(view) {
        * → §124 行首性别色块（用户复看：符号多余、色块与名次对不齐，回滚）→ §125 定稿 **主名按性别着色**：
        *   牝粉 #B03A30 / 牡蓝 #0B5A8C / 骟灰 #5A5A5A（= 基本信息徽章字色，无符号无色块、零对齐负担）。
        * MB 仍极简黑字不加（MB 定稿 v8）。 */
-      var base = { type: "category", inverse: true, axisLine: { show: false }, axisTick: { show: false } };
+      /* §181（2026-11-06）：**triggerEvent 必须写在轴级，不是 axisLabel 级**。
+       * 定制包（echarts.bar.min.js = echarts 5.6 裁剪）里 AxisBuilder 读的是
+       *   var triggerEvent = axisModel.get("triggerEvent")   // axis 选项，默认 false
+       * 只有它为真时才会给每个标签挂 eventData（targetType:"axisLabel" / value / tickIndex，
+       * 类目轴另给 dataIndex）。写成 axisLabel.triggerEvent 会被静默忽略——这就是之前
+       * 「点名字没反应」的真正原因，与裁剪无关（axisLabel 的事件代码完整在包里，见 offset≈433.7k）。
+       * 注意标签本身不 silent：isLabelSilent = axis.silent || !(axis.triggerEvent || tooltip.show)，
+       * 本页 tooltip 是开的，所以标签一直可命中，缺的只是 eventData。 */
+      var base = { type: "category", inverse: true, axisLine: { show: false }, axisTick: { show: false }, triggerEvent: true };
       if (mb) {
         base.data = rows.map(function (r) { return labelName(r.m); });
         /* §127：去定宽/截断（containLabel 按实际宽度留位，名字短时贴左不空）；当前数据最长 9 字足够放下 */
