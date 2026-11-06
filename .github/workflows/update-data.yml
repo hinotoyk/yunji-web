@@ -48,6 +48,14 @@ on:
         type: boolean
         default: false
 
+# 显式声明权限（原来靠仓库默认 "Read and write permissions" 隐式拿到 actions:write）：
+#   contents: write —— commit/push data/ 与 upload-artifact 之外的数据提交
+#   actions: write  —— upload-artifact@v4 上传日志 + 末步 dispatch deploy.yml
+# 显式写死可避免仓库默认权限被改动后本流程静默 403。
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
