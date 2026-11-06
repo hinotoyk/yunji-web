@@ -2283,11 +2283,11 @@ YJ.editor = (function () {
           '<span class="tl-racename">' + rttl + "</span></div>" +
         (store.cn ? '<div class="text-[12px] text-muted-foreground">〈' + esc(store.cn) + "〉</div>" : "") +
         (store.meta ? '<div class="text-[12px] text-muted-foreground">' + esc(store.meta) + "</div>" : "") +
-        (store.hero ? '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">' +
+        (store.hero ? '<div class="tl-horse">' +
             (store.rank ? '<span class="yj-no ' + rankNoCls(store.rank) + '">' + esc(store.rank) + "</span>" : "") +
-            '<span class="text-[15px] font-semibold">' + esc(store.hero) + "</span>" +
-            (store.hero_cn ? '<span class="text-[12.5px] text-muted-foreground">〈' + esc(store.hero_cn) + "〉</span>" : "") +
-          "</div>" : "") +
+            '<span class="tl-horse-txt"><span class="tl-hname">' + esc(store.hero) + "</span>" +
+              (store.hero_cn ? '<span class="tl-hcn">〈' + esc(store.hero_cn) + "〉</span>" : "") +
+            "</span></div>" : "") +
         ((store.time || store.agari || store.pop) ? '<div class="tl-kpis">' +
             '<div class="tl-kpi"><div class="k">タイム</div><div class="v hi">' + esc(store.time || "—") + "</div></div>" +
             '<div class="tl-kpi"><div class="k">上り</div><div class="v">' + esc(store.agari || "—") + "</div></div>" +

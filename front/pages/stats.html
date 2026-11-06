@@ -838,19 +838,31 @@ function srkEmbed() {   /* 图表组件脚本只加载一次；加载失败可�
 }
 function srkKpis(data) {
   var his = data.history || [];
-  var last = his[his.length - 1] || {}, prev = his.length > 1 ? his[his.length - 2] : null;
-  /* 赏金格式复用 YJ.util.manYen（§48 单一出处；入参円，derived 口径万円 ×1e4） */
-  var dp = prev && last.prizeOverall != null && prev.prizeOverall != null ? last.prizeOverall - prev.prizeOverall : null;
-  var dpHtml = dp == null ? "—" : dp === 0 ? "±0" :
-    '<span class="' + (dp > 0 ? "yj-up" : "yj-down") + '">' + (dp > 0 ? "+" : "−") + manYen(Math.abs(dp) * 10000) + "</span>";
+  var last = his[his.length - 1] || {};
+  /* 2026-11-05 用户定稿：撤「较前快照」（±增量）与「最新快照」（日期）两格 ——
+   * 增量已由图上单日增量柱/末点表达，日期与名次变化不缺信息，KPI 只留「当下多少、第几」两格，
+   * mb 端两格一行排开、pc 端不再有第三第四格抢视线（两端文案统一）。 */
   var rank = last.rank;
   document.getElementById("srkKpis").innerHTML =
     kpiHTML("当前赏金", last.prizeOverall != null ? manYen(last.prizeOverall * 10000) : "—", "hi") +
-    kpiHTML("排名", rank == null ? "—" : "第" + rank + "位", rank != null && rank <= 3 ? "hi" : "") +
-    kpiHTML("较前快照", dpHtml) +
-    kpiHTML("最新快照", last.date ? last.date.slice(5).replace("-", "/") : "—", "dim");
+    kpiHTML("排名", rank == null ? "—" : "第" + rank + "位", rank != null && rank <= 3 ? "hi" : "");
 }
 var srkSeq = 0;
+/* 标注档位（见 renderSireRank 内说明）：PC 恒全量；MB 需组件 ≥1.4.0 才用 "rank"，
+ * 旧版退化为 false（宁可无标注，也不让 +金额 与相邻点压成一团）。 */
+function srkVerAtLeast(min) {
+  var v = String((window.JBIS_RANK_EMBED && window.JBIS_RANK_EMBED.version) || "0").split(".");
+  var m = String(min).split(".");
+  for (var i = 0; i < 3; i++) {
+    var a = parseInt(v[i] || "0", 10) || 0, b = parseInt(m[i] || "0", 10) || 0;
+    if (a !== b) return a > b;
+  }
+  return true;
+}
+function srkAnnotate() {
+  if (!isMb()) return true;
+  return srkVerAtLeast("1.4.0") ? "rank" : false;
+}
 /* §169 浮层 loading（常驻引用；node 门禁 stub 无 createElement → 跳过，chart 内容断言不依赖它）：
  * 盖在 srkWrap 上而不是 srkChart 里 —— JBIS render 整体重写 #srkChart，浮层作兄弟节点才安全。 */
 var srkOv = null, srkLoaded = false;
@@ -895,7 +907,13 @@ function renderSireRank() {
     if (seq !== srkSeq) return;
     window.JBIS_RANK_EMBED.render(el, r[0], {
       style: "combo",      /* 2026-10-27 用户定稿：单面板（平滑累计+渐变面积）+ 增量柱共用 y 轴；名次副图 v1.3.0 去除 */
-      annotate: true,      /* 跳增日标注「+金额（名次）」 */
+      /* 标注（组件 v1.4.1 · 2026-11-05 用户反馈「赏金增量与排名文案压叠」）：
+       *   PC = true（跳增日「+金额（N位）」，幅面宽放得下）
+       *   MB = "rank"（只报名次变化「N位」）—— 390px 下 +金额 文案宽约 90px，与相邻点必然互压；
+       *        名次变化才是走势的结构变化，金额由增量柱承担。
+       * 兼容：组件由兄弟站发布，线上还是旧版（<1.4.0 不认识 "rank"、会按 truthy 走全量档继续压叠）
+       *   → MB 在旧版上直接不标（干净图 > 压字），新版到位后自动切 "rank"。 */
+      annotate: srkAnnotate(),
       colors: SRK_COLORS,
       labels: { prize: "赏金", rank: "名次", delta: "单日增量", empty: "暂无快照数据" }
     });
@@ -1003,10 +1021,17 @@ document.getElementById("matTable").addEventListener("click", function (e) {
   var tr = e.target.closest ? e.target.closest("tr[data-href]") : null;
   if (tr) window.open(tr.getAttribute("data-href"), "_blank", "noopener");   /* §80：跳转新标签页，不离开当前统计视图 */
 });
-var resizeTimer = null;
+var resizeTimer = null, srkMbLast = isMb();   /* 初始断点：首帧就记下，首个 resize 才可判翻转 */
 window.addEventListener("resize", function () {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(function () { renderCurve(); applyMatScroll(); syncEdges(); }, 150);
+  resizeTimer = setTimeout(function () {
+    renderCurve(); applyMatScroll(); syncEdges();
+    /* 跨 768px：种马榜标注形态不同（PC 全量 / MB 只报名次）→ 整体重绘；
+     * 同断点内的宽度变化由组件自身 ResizeObserver 处理，这里不碰（免得每次拖窗都重取缓存）。 */
+    var mb = isMb();
+    if (srkMbLast !== null && mb !== srkMbLast) renderSireRank();
+    srkMbLast = mb;
+  }, 150);
 });
 
 /* ---- 初始化 ---- */

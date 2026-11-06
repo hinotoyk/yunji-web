@@ -69,7 +69,7 @@ function teamHTML(team){
  * 无图 = 不出图位、卡片退化为「纯文本窄卡」（2026-10-31 §147 定稿）——旧 🐎 浅灰占位板观感塌陷，
  * 文本卡反而信息密度更好；卡片视觉（.tl-card flex + .tl-body flex:1）天然支持无图态，无需变体类。
  * 有图时统一走 YJ.ui.img（§5.3.2）：loading=lazy + decoding=async + 写死占位尺寸
- * 297×210 —— 与 .tl-photo 的 aspect-ratio:297/210 同源，解码前比例即已确定，不会顶动卡片位置。 */
+ * 297×210 —— 仅作**解码前的比例占位**（§176 起图按自身比例完整展开，见 timeline-cards.css）。 */
 function photoHTML(ev){
   var src = ev.photo || "";
   return src
@@ -97,11 +97,13 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
                 '<span class="tl-racename">'+rttl+'</span></div>'+
               (ev.cn ? '<div class="text-[12px] text-muted-foreground">〈'+esc(ev.cn)+'〉</div>' : '')+
               (ev.meta ? '<div class="text-[12px] text-muted-foreground">'+esc(ev.meta)+'</div>' : '')+
-              (ev.hero ? '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">'+
+              (ev.hero ? '<div class="tl-horse">'+
                   (ev.rank ? '<span class="yj-no '+
                     (ev.rank==="1"?"yj-no1":ev.rank==="2"?"yj-no2":ev.rank==="3"?"yj-no3":"")+'">'+esc(ev.rank)+'</span>' : '')+
-                  '<span class="text-[15px] font-semibold">'+esc(ev.hero)+'</span>'+
-                  (ev.hero_cn ? '<span class="text-[12.5px] text-muted-foreground">〈'+esc(ev.hero_cn)+'〉</span>' : '')+
+                  '<span class="tl-horse-txt">'+
+                    '<span class="tl-hname">'+esc(ev.hero)+'</span>'+
+                    (ev.hero_cn ? '<span class="tl-hcn">〈'+esc(ev.hero_cn)+'〉</span>' : '')+
+                  '</span>'+
                 '</div>' : '')+
               ((ev.time||ev.agari||ev.pop) ? '<div class="tl-kpis">'+
                   kpi("タイム", ev.time||"—", true) + kpi("上り", ev.agari||"—") + kpi("人気", ev.pop||"—")+
@@ -121,15 +123,18 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
     }
     card += (ev.tags && ev.tags.length ? '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>' : '');
   } else {
-  var hero = '<a class="hjump text-[16px] font-semibold" href="profile.html?horse='+encodeURIComponent(ev.horse.id)+'">'+esc(ev.horse.name)+'</a>'+
-             (ev.horse.cn ? '<span class="text-[12.5px] text-muted-foreground">〈'+esc(ev.horse.cn)+'〉</span>' : "");
+  /* 名次行（§175）：徽章 + 主名 + 〈中文名〉同基线一行，中文名放不下时整体换到第二行、左缘与主名对齐 */
+  var hero = '<span class="tl-horse-txt">'+
+               '<a class="hjump tl-hname" href="profile.html?horse='+encodeURIComponent(ev.horse.id)+'">'+esc(ev.horse.name)+'</a>'+
+               (ev.horse.cn ? '<span class="tl-hcn">〈'+esc(ev.horse.cn)+'〉</span>' : '')+
+             '</span>';
   if (ev.type === "award"){
     var a = ev.award || {};
     card += '<div class="flex flex-wrap items-baseline gap-x-2">'+
               '<span class="text-[15px] font-semibold">✦ '+esc(a.賞名||"")+'</span>'+
               (a.cn ? '<span class="text-[12px] text-muted-foreground">〈'+esc(a.cn)+'〉</span>' : '')+
             '</div>'+
-            '<div class="flex flex-wrap items-center gap-x-2">'+hero+'</div>'+
+            '<div class="tl-horse">'+hero+'</div>'+
             (a.備考 ? '<div class="text-[12px] text-muted-foreground">'+esc(a.備考)+'</div>' : '')+
             '<div class="flex flex-wrap gap-1.5">'+ev.tags.map(tagHTML).join("")+'</div>';
   } else {
@@ -140,7 +145,7 @@ function eventHTML(ev, side){   /* side: "right"=卡片在轴右侧（日期在�
         '<span class="tl-racename">'+esc(r.name||"")+'</span>'+
       '</div>'+
       (r.meta ? '<div class="text-[12px] text-muted-foreground">'+esc(r.meta)+'</div>' : '')+
-      '<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">'+
+      '<div class="tl-horse">'+
         '<span class="yj-no yj-no1">1</span>'+ hero +
       '</div>'+
       '<div class="tl-kpis">'+

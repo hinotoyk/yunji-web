@@ -19,17 +19,33 @@
  *   作用域限定在 .tl / .yj-pv 之下，避免影响页面其他区域的表格徽章。
  * ============================================================ */
 
-/* ---------- 卡片壳 ---------- */
-.tl-card { display: flex; overflow: hidden; min-width: 0; transition: box-shadow .15s; }
+/* ---------- 卡片壳：**图在上、文在下**，图通栏顶到卡片三边 ----------
+ * §177（2026-11-06 用户「pc 也要像 mb 这样能充满整个卡片」）：竖排不再是 mb 专属，两端同构。
+ * 旧 PC 是「左图 50% + 10px 白边 + 垂直居中」——图比文本块矮，上下露出大片白，图只占卡片一半，
+ * 所以「没充满」。现在卡片恒为纵向 flex，图区通栏（width:auto + align-self:stretch）、无外边距、无圆角，
+ * 圆角由 .tl-card 的 overflow:hidden 统一裁切；文本区紧随其下。 */
+.tl-card { display: flex; flex-direction: column; overflow: hidden; min-width: 0; transition: box-shadow .15s; }
 .tl-card:hover { box-shadow: 0 2px 10px rgba(16, 24, 40, .07); }
 
-/* 图位：横放 A4 比例（宽:高 = 297:210 ≈ √2:1），贴时间轴一侧、垂直居中，
-   四周留 10px 白边（不顶死卡缘）；无图 = 不出图位、卡片退化为纯文本卡（§147） */
-.tl-photo { flex: none; align-self: center; width: 50%; margin: 10px; aspect-ratio: 297/210; background: #f5f5f5; overflow: hidden; border-radius: 4px; }
-.tl-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; cursor: zoom-in; }   /* 点击放大（§161：灯箱通道与 profile 相册一致） */
+/* 图位（§176：图必须完整显示）：容器只定宽、高度跟图走 —— img width:100% + height:auto，
+   图按自身比例完整展开，任何比例都不裁。（旧做法是固定 297:210 + object-fit:cover，上下各裁 1/8~1/3。）
+   解码前的高度由 img 的 width/height 属性（297×210，见 timeline.html photoHTML）先占位，不会顶动卡片。 */
+.tl-photo { flex: none; align-self: stretch; width: auto; margin: 0; background: #f5f5f5; overflow: hidden; }
+.tl-photo img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; transition: transform .35s ease; cursor: zoom-in; }   /* 点击放大（§161：灯箱通道与 profile 相册一致） */
 .tl-card:hover .tl-photo img { transform: scale(1.04); }
 
-.tl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding: 12px 16px; }
+.tl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding: 13px 18px 16px; }
+
+/* 名次行（§175 · 2026-11-05）：着顺徽章 + 主名 + 〈中文名〉 **同一基线一行**。
+   旧做法是 flex-wrap 裸排，容器一窄就「徽章单独一行、中文名掉到行首」——两端都中招（mb 文本列仅 ~170px、
+   PC 480 卡扣掉一半图位后正文也只有 ~190px）。现在拆两层：
+     .tl-horse      = 徽章 + 文本组（不换行，徽章 flex:none）
+     .tl-horse-txt  = 主名 + 中文名（可整体换行到第二行，**换行后仍从主名左缘起**，与主名对齐）
+   主名超宽走省略号（flex:0 1 auto + min-width:0），中文名 flex:none 永不被挤掉。 */
+.tl-horse { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.tl-horse-txt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; }
+.tl-hname { flex: 0 1 auto; min-width: 0; font-size: 16px; font-weight: 600; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-hcn { flex: none; font-size: 12.5px; color: #8a9096; }
 
 /* 比赛名行（等级徽章 + 赛事名）：**恒单行**，PC / mb 同一套 —— 名字超宽由 fitRaceNames() 缩字号，
    缩到下限仍放不下才用省略号兜底（此刻给 title，悬停可看全）。徽章 flex:none 不参与压缩。 */
@@ -56,21 +72,29 @@
 .tl-tag.award { background-color: rgba(220, 160, 38, .16); color: #8f6408; }
 .tl-tag.manual { background-color: rgba(138, 144, 150, .14); color: #5c636a; }   /* 人工节点标签：中性灰 */
 
-/* ---------- 迷你数据条：label 上 / 值 下，细竖线分隔 ---------- */
-.tl-kpis { display: flex; flex-wrap: wrap; }
-.tl-kpi { padding: 0 16px; border-left: 1px solid #ececec; }
+/* ---------- 迷你数据条：label 上 / 值 下，细竖线分隔 ----------
+   §175：改 3 等分栅格（原 flex-wrap）——正文列 170~190px 时 flex 会把「人気」挤到第二行，
+   三项本是同一条数据行，必须恒一行；等分后两端形态一致（PC / mb 都是 タイム・上り・人気 三格） */
+.tl-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tl-kpi { padding: 0 16px; border-left: 1px solid #ececec; min-width: 0; }
 .tl-kpi:first-child { padding-left: 2px; border-left: 0; }
 .tl-kpi .k { font-size: 10.5px; font-weight: 600; letter-spacing: .5px; color: #9aa0a6; }
-.tl-kpi .v { margin-top: 1px; font-size: 13.5px; font-variant-numeric: tabular-nums; color: #171717; }
+.tl-kpi .v { margin-top: 1px; font-size: 13.5px; font-variant-numeric: tabular-nums; color: #171717; white-space: nowrap; }
 .tl-kpi .v.hi { color: #0aa7a0; font-weight: 700; }
-@media (max-width: 768px) { .tl-kpi { padding: 0 12px; } }
+@media (max-width: 768px) { .tl-kpi { padding: 0 10px; } }
 
 /* ---------- 卡片内徽章变体（有意覆盖 theme.css 同名类，见文件头说明） ---------- */
 .tl .yj-grade, .yj-pv .yj-grade { margin-left: 0; }   /* 卡片内徽章是行首元素，不左缩进 */
 .tl .yj-no, .yj-pv .yj-no { flex: none; width: 22px; height: 22px; font-size: 12px; }   /* 22px 小号，不撑高卡片 */
 
-/* ---------- 窄屏：卡片内密度收一档（预览页桌面专用，不受影响） ---------- */
+/* ---------- 窄屏：只收紧密度（竖排已是两端默认，见 §177） ----------
+ * §175 把 mb 卡片从「左图 44% + 右文」改成竖排（旧布局正文列只剩 ~170px → タイム/上り/人気 折两行、
+ * 名次与马名各占一行、中文名掉行首）。§177 起这套竖排**上移到基础样式**，PC 同构 ——
+ * 于是这里只剩 mb 专属的「内边距收一档 + 数据条加一条上分隔线」。
+ * 作用域限定在 .tl（正式页）：编辑台预览 .yj-pv 是「单侧一行」桌面骨架，不跟着改。 */
 @media (max-width: 768px) {
-  .tl-photo { width: 44%; }
-  .tl-body { padding: 10px 12px; }
+  .tl .tl-body { padding: 10px 12px 12px; gap: 6px; }
+  .tl .tl-kpis { padding-top: 8px; margin-top: 2px; border-top: 1px solid #f1f1f1; }
+  .tl .tl-kpi { padding: 0 8px; }
+  .tl .tl-kpi:first-child { padding-left: 0; }
 }
