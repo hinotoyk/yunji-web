@@ -40,6 +40,7 @@
 - `data/races-bundle.json`（比赛压缩包，契约 = `docs/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
 - `data/fetch_log.jsonl`（抓取观测日志，逐行 JSON）**入库可追踪**：`.gitattributes` 的 `data/fetch_log.jsonl merge=union` 扛并发 rebase（status/update-data/update-day 三条线都会追加同一文件），`scripts/core/net.py::trim_fetch_log` 按 `LOG_RETENTION_DAYS`（60 天）滚动裁剪，检测频率 `TRIM_CHECK_EVERY`（每 N 次写入一次，避免逐请求全量读 4MB）。构建期 `vite copy-data` 跳过 `*.jsonl`，日志不进 `dist/` 与线上包。
 - 数据更新：`scripts/basic` 与 `scripts/races` **业务隔离、代码抽离复用**——两管线共享逻辑统一下沉中立层 `scripts/core`（路径/站点/颜色等字面量常量单源 = `core/constants.py`，两个 `common.py` 只做薄再导出，不再各持一份拷贝）；中立层不得出现管线概念，各管线风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`；业务模块互不 import 对方。数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `docs/TESTING.md` §4.3）。
+- **GitHub Actions 权限**：workflow 里写 `permissions:` 会**整体覆盖**仓库默认的 "Read and write"——没列出的 scope 直接变 `none`。凡是末步要 `POST /repos/{repo}/actions/workflows/deploy.yml/dispatches`（`update-data`/`status` 都靠它触发 Pages）或 `upload-artifact` 的 job，必须声明 `actions: write`，否则一律 **403（curl exit 22）**。`status.yml` 曾只声明 `contents: write`，2026-10-31 起连续多日标红，实际是数据已提交、仅部署触发失败（`update-data` 当时没写 `permissions`，靠仓库默认才侥幸成功，现已显式声明）。
 
 ## 4. 已删除 / 不要复活
 
