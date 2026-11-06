@@ -44,6 +44,19 @@ console.log("[A] data/datechart.json 产物断言");
 const LAST_D = RUNS.length ? RUNS[RUNS.length - 1].d : "";
 const LAST_MONTH = LAST_D.slice(0, 7);                                   // "2026-10"
 const LAST_MONTH_CN = Number(LAST_MONTH.slice(0, 4)) + "年" + Number(LAST_MONTH.slice(5, 7)) + "月";  // "2026年10月"
+const FIRST_D = RUNS.length ? RUNS[0].d : "";
+const FIRST_MONTH = FIRST_D.slice(0, 7);
+/* §183：页面锚点 = 当前自然月（Asia/Shanghai），与 datechart.html 的 todayParts() 同源。
+ * 数据首/末月仍从产物派生，只用于「回最新」与步进边界断言；当前月无数据是合法状态，不报错。 */
+const TODAY = (function () {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(new Date());
+  const o = {};
+  for (const p of parts) if (p.type !== "literal") o[p.type] = p.value;
+  return { y: +o.year, m: +o.month, d: +o.day };
+})();
+const TODAY_YM = TODAY.y + "-" + String(TODAY.m).padStart(2, "0");
 let badKeys = 0, badField = 0, badSort = 0;
 const rawOk = v => v === "" || typeof v === "number" || typeof v === "string";   // ki/nk/bw 原样透传（斤量可 55.5/"121lb"）
 for (let i = 0; i < RUNS.length; i++) {
@@ -250,14 +263,17 @@ const calClick = attr => els["cal"].handlers.click[0].call(els["cal"], {
 const weekdayCn = ds => "日一二三四五六"[new Date(ds + "T00:00:00").getDay()];
 
 setTimeout(function () {   /* 等 fetch promise 链走完 */
-  console.log("[C1] 初始加载（锚点 = 最新一着日 → 月口径 · 默认只统计 JRA）");
+  console.log("[C1] 初始加载（锚点 = 当前自然月 · 默认只统计 JRA；空月按零值/空态对账）");
+  /* lastWin 只供 [C5] 定位「最近有胜场的月」，不再是初始锚点（§183） */
   const lastWin = scope(src.filter(r => r.p === 1)).reduce((a, r) => (!a || r.d > a.d ? r : a), null);
-  const ay = +lastWin.d.slice(0, 4), am = +lastWin.d.slice(5, 7);
-  const ym = ay + "-" + pad2(am);
-  const sm = sMonth(ym);
-  ok(els["winLabel"].textContent === ay + "年" + am + "月", "窗口标签 → " + els["winLabel"].textContent + "（即选择器触发标签）");
-  ok(kpiOf("出走", els["kpis"]._html) === String(starts(sm).length), "KPI 出走 " + starts(sm).length + "（仅 JRA，剔除未出走，与源数据一致）");
-  ok(String(kpiOf("总赏金", els["kpis"]._html)) === man(prizeOf(sm)), "KPI 总赏金 " + man(prizeOf(sm)));
+  const ay = TODAY.y, am = TODAY.m;
+  let ym = TODAY_YM;
+  let sm = sMonth(ym);
+  ok(els["winLabel"].textContent === ay + "年" + am + "月", "窗口标签 → " + els["winLabel"].textContent + "（当前月，与数据末月/最新一着无关）");
+  ok(kpiOf("出走", els["kpis"]._html) === String(starts(sm).length), "KPI 出走 " + starts(sm).length + "（仅 JRA，剔除未出走；空月=0）");
+  const nStart = starts(sm).length, pSum = prizeOf(sm);
+  const wantPrize = !nStart ? "—" : (pSum ? man(pSum) : "0万");   /* 镜像页面 renderKpis：s.pr ? manYen : (s.n ? "0万" : "—") */
+  ok(String(kpiOf("总赏金", els["kpis"]._html)) === wantPrize, "KPI 总赏金 " + wantPrize + "（空月=—）");
   ok(/^<span class="trophy"><svg[\s\S]*<\/svg><\/span>\d+$/.test(String(kpiOf("重赏胜利", els["kpis"]._html) || "")) &&
      (String(kpiOf("重赏胜利", els["kpis"]._html) || "").match(/<\/span>(\d+)$/) || [])[1] === String(trophyOf(sm)),
     "KPI 重赏胜利 = trophy SVG 徽章 + " + trophyOf(sm) + "（🏆 emoji 已换内联 SVG，2026-10-31 页面美化）");
@@ -273,12 +289,21 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const runDays = new Set(starts(sm).map(r => r.d)).size;
   ok((String(els["cal"]._html).match(/class="dc-cell win/g) || []).length === winDays, "日历有胜格 " + winDays);
   ok((String(els["cal"]._html).match(/class="dc-cell run/g) || []).length === runDays - winDays, "日历有出走无胜格 " + (runDays - winDays));
-  /* 派生式（勿写死「锚点月=末月」）：锚点 = 最近一着所在月，末月可能只有地方/海外出走（JRA 口径无胜场）
-   * → 锚点月 < 数据末月，此时 › 应当可用。断言口径 = 「窗口 = 数据末月 ⇔ › 禁用」。 */
-  const winYm = els["winLabel"].textContent.replace("年", "-").replace("月", "");
-  ok(els["navPrev"] && !els["navPrev"].disabled && els["navNext"].disabled === (winYm === LAST_MONTH),
-    "步进边界：窗口 " + els["winLabel"].textContent + (winYm === LAST_MONTH ? "（数据末月）› 禁用" : "（非末月）› 可用"));
+  /* §183 派生式：› 仅当当前月 < 数据末月时可用；‹ 仅当当前月 > 数据首月时可用。
+   * 当前月超出数据范围（数据滞后 / 未来月）时 › 禁用、‹ 可用，空月同样成立。 */
+  ok(!!els["navPrev"] && els["navPrev"].disabled === (ym <= FIRST_MONTH) &&
+     els["navNext"].disabled === (ym >= LAST_MONTH),
+    "步进边界：当前月 " + ym + " · 数据 " + FIRST_MONTH + "~" + LAST_MONTH +
+    " → ‹" + (ym <= FIRST_MONTH ? "禁用" : "可用") + " / ›" + (ym >= LAST_MONTH ? "禁用" : "可用"));
   ok(/明细 · \d{4}年\d+月 · \d+ 条/.test(els["dTitle"]._html), "明细标题带记录条数（单位「条」，与 KPI 出走区分）");
+  /* §183：当前月无记录时，[C1] 的零值/空态/步进断言已先跑完；后续需要真实明细的交互断言
+   * 切到数据末月再跑（ym/sm 随之更新）——空月覆盖不丢，也不把「没有数据」当成失败。 */
+  if (!sm.length) {
+    ok(String(els["dBody"]._html).includes("该口径暂无出走记录"), "空月明细 = 空态提示（当前月无记录不报错）");
+    dpTrigger(); dpClick({ name: "data-latest", v: "1" });
+    ym = LAST_MONTH;
+    sm = sMonth(ym);
+  }
 
   console.log("[C2] 内嵌比赛表同款明细（PC 18 列 = 基准字段子集，列序随基准 + mb 软分行卡片）");
   const pcHtml = String(els["dBody"]._html).split('md:hidden')[0] || "";
@@ -309,35 +334,37 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   ok(els["dBody"]._html.includes("騎手") === false && els["dBody"]._html.includes("骑手："), "mb 卡 label：value 中文标签（骑手：）");
   ok(/\d+\(\+\d+\)|\d+\(-\d+\)/.test(String(els["dBody"]._html)), "马体重合并 500(+2) 格式存在");
 
-  /* 马名语言切换（§53.7）：PC 列头是 .yj-name-toggle 按钮；点击后「马名」列文本在
-   * 日文名（h）↔ 中文名（hc）之间切换；无中文名的马回退日文名（不显示 #id） */
-  const horseCol = r => {
-    const m = String(r).match(/<a class="hjump"[^>]*>([^<]*)<\/a>/);
-    return m ? m[1] : null;
-  };
-  const withHc = sMonth(ym).filter(r => (RUNS.find(x => x.d === r.d && x.id === r.id) || {}).hc);
-  const hcRow = withHc[0];
-  const hcName = hcRow ? RUNS.find(x => x.d === hcRow.d && x.id === hcRow.id).hc : "";
-  const jpName = hcRow ? RUNS.find(x => x.d === hcRow.d && x.id === hcRow.id).h : "";
-
-  /* [C2.1] 切换**前**：馬名列显示日文名 */
-  ok(hcRow && String(els["dBody"]._html).includes(">" + esc(jpName) + "</a>"), "切换前馬名列 = 日文名（" + jpName + "）");
+  /* 马名语言切换（§53.7 / §183）：样本从**当前页实际明细 DOM** 派生，不要求该月恰有中文名马——
+   * 有中文名 → 切成中文名再切回；无中文名 → 验证回退日文名；整月无记录 → 验证空态提示、不报失败。 */
+  const domHtml0 = String(els["dBody"]._html);
+  const pick = r => RUNS.find(x => x.d === r.d && x.id === r.id) || null;
+  const sample = sm.map(pick).find(p => p && domHtml0.includes(">" + esc(p.h) + "</a>")) || null;
+  const jpName = sample ? sample.h : "";
+  const hcName = sample ? sample.hc : "";
   ok(String(els["dBody"]._html).includes("yj-name-toggle"), "PC 列头/明细标题存在马名切换按钮（yj-name-toggle）");
-  ok(/<th[^>]*><button type="button" class="yj-name-toggle"/.test(pcHtml), "PC「马名」列头即切换按钮");
-  /* [C2.2] 点击切换 → 明细重渲染，馬名列变中文名 */
   const tgl = document._handlers.click.find(f => String(f).indexOf("yj-name-toggle") >= 0);
   ok(!!tgl, "页面挂了 .yj-name-toggle 的点击委托");
-  if (tgl) {
-    tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
-    const pcAfter = String(els["dBody"]._html).split('md:hidden')[0] || "";
-    ok(hcName && pcAfter.includes(">" + esc(hcName) + "</a>"), "切换后馬名列 = 中文名（" + hcName + "）");
-    ok(!pcAfter.includes(">" + esc(jpName) + "</a>"), "切换后不再显示原日文名");
-    /* [C2.3] 再点一次切回日文名（幂等往返） */
-    tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
-    const pcBack = String(els["dBody"]._html).split('md:hidden')[0] || "";
-    ok(pcBack.includes(">" + esc(jpName) + "</a>"), "再点一次切回日文名");
-    /* [C2.4] 无中文名的马：回退日文名，不出现 #id */
-    ok(!/#\d+<\/a>/.test(pcBack), "无中文名的马回退日文名（不显示 #id）");
+  if (!sm.length) {
+    ok(domHtml0.includes("该口径暂无出走记录"), "空月明细 = 空态提示（当前月无记录不报错）");
+    console.log("  --  马名切换：当前月无明细，跳过（空月不算失败）");
+  } else {
+    ok(/<th[^>]*><button type="button" class="yj-name-toggle"/.test(pcHtml), "PC「马名」列头即切换按钮");
+    ok(!!sample, "切换前馬名列 = 日文名（" + jpName + "，样本取自当前页明细）");
+    if (tgl) {
+      tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
+      const pcAfter = String(els["dBody"]._html).split('md:hidden')[0] || "";
+      if (hcName) {
+        ok(pcAfter.includes(">" + esc(hcName) + "</a>"), "切换后馬名列 = 中文名（" + hcName + "）");
+        ok(!pcAfter.includes(">" + esc(jpName) + "</a>"), "切换后不再显示原日文名");
+      } else {
+        ok(pcAfter.includes(">" + esc(jpName) + "</a>"), "无中文名的马切换后回退日文名（" + jpName + "）");
+      }
+      /* [C2.3] 再点一次切回日文名（幂等往返） */
+      tgl.call(document, { target: { closest: sel => sel === ".yj-name-toggle" ? {} : null } });
+      const pcBack = String(els["dBody"]._html).split('md:hidden')[0] || "";
+      ok(pcBack.includes(">" + esc(jpName) + "</a>"), "再点一次切回日文名");
+      ok(!/#\d+<\/a>/.test(pcBack), "无中文名的马回退日文名（不显示 #id）");
+    }
   }
 
   console.log("[C3] 场地范围 JRA/NAR/海外（多选，默认 JRA；最后一个不关）");
@@ -354,7 +381,7 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
     "+NAR 明细赛事名 → nar.netkeiba.com SP 页（地方独立子域分流，§80.2）");
   vseg("海外"); VT.add("海外");
   ok(+kpiRuns() === starts(sm).length + nar + ovs, "+海外 → 出走 " + (starts(sm).length + nar + ovs) + "（全部场地）");
-  ok(nar > 0 && ovs >= 0, "锚点月地方场 " + nar + " 条 / 海外 " + ovs + " 条（数据形态核对）");
+  ok(nar >= 0 && ovs >= 0, "窗口月地方场 " + nar + " 条 / 海外 " + ovs + " 条（空月/数据滞后可为 0，数据形态核对）");
   vseg("海外"); VT.delete("海外");
   vseg("地方"); VT.delete("地方");
   ok(+kpiRuns() === baseRuns, "回退默认 JRA → 出走 " + baseRuns);
@@ -503,8 +530,15 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
 
   console.log("[C7] 年口径（12 月卡 + 下钻）与未完走降灰");
   seg("year");
-  const sy = sYear(ay);
-  ok(els["winLabel"].textContent === ay + "年", "窗口标签 → " + els["winLabel"].textContent);
+  /* §183：跨年 / 数据滞后时当前年可能一条记录都没有 → 年卡仍应正常画 12 个零值卡；
+   * 需要真实记录的下钻断言改在数据末年跑，不把「未来空年」当成失败。 */
+  let ay7 = ay;
+  if (sYear(ay7).length === 0) {
+    ay7 = +LAST_D.slice(0, 4);
+    dpTrigger(); dpClick({ name: "data-y", v: String(ay7) });
+  }
+  const sy = sYear(ay7);
+  ok(els["winLabel"].textContent === ay7 + "年", "窗口标签 → " + els["winLabel"].textContent);
   ok((String(els["cal"]._html).match(/class="dc-ym( zero)?"/g) || []).length === 12, "12 个月卡");
   ok(+kpiRuns() === starts(sy).length, "年 KPI 出走 " + starts(sy).length);
   ok(String(kpiOf("通算战绩", els["kpis"]._html) || "").replace(/<[^>]+>/g, "") === "[" + br4(sy).join("-") + "]", "年通算战绩 4 段 [" + br4(sy).join("-") + "]（格式保留 - 连字符）");
@@ -513,12 +547,13 @@ setTimeout(function () {   /* 等 fetch promise 链走完 */
   const dnfAll = src.filter(r => typeof r.p === "string");
   const nrAll = src.filter(r => NR_SET.has(String(r.p)));
   ok(dnfAll.length > 0, "源数据含未完走/未出走 " + dnfAll.length + " 条（中止/失格 " + (dnfAll.length - nrAll.length) + " · 取消/除外 " + nrAll.length + "）");
-  const dnf = dnfAll.find(r => +r.d.slice(0, 4) === ay) || dnfAll[0];
+  const dnf = dnfAll.find(r => +r.d.slice(0, 4) === ay7) || dnfAll[0];
   if (!VT.has(dnf.vt)) { VT.add(dnf.vt); vseg(dnf.vt); }   /* 目标场 地未激活则激活（勿硬编码 venue：kzn/yunji 数据分布不同） */
   calClick({ name: "data-m", v: String(+dnf.d.slice(5, 7)) });
-  ok(els["winLabel"].textContent === dnf.d.slice(0, 4) + "年" + (+dnf.d.slice(5, 7)) + "月", "年卡下钻 → " + els["winLabel"].textContent);
-  const sdm = sMonth(dnf.d.slice(0, 7));
-  ok(+kpiRuns() === starts(sdm).length, "月 KPI 出走 " + starts(sdm).length + "（" + dnf.d.slice(0, 7) + "）");
+  const dnfM = ay7 + "-" + pad2(+dnf.d.slice(5, 7));   /* 下钻落在页面当前年（空年时已切到数据末年） */
+  ok(els["winLabel"].textContent === ay7 + "年" + (+dnf.d.slice(5, 7)) + "月", "年卡下钻 → " + els["winLabel"].textContent);
+  const sdm = sMonth(dnfM);
+  ok(+kpiRuns() === starts(sdm).length, "月 KPI 出走 " + starts(sdm).length + "（" + dnfM + "）");
   ok(String(els["dBody"]._html).includes("yj-mb dnf") || String(els["dBody"]._html).includes("text-muted-foreground"), "未完走降灰（mb 卡 dnf / PC 行 muted）（" + dnf.d + " " + dnf.p + "）");
   /* 明细分页（§101）：目标行可能不在第 1 页 → 从第 1 页起逐页翻找
    * （st.dp 跨 render 持久化，先显式回第 1 页；勿假设 dnf 落在首页：kzn/yunji 数据分布不同） */

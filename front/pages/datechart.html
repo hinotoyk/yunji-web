@@ -528,7 +528,13 @@ function dpRange(){
   MAX_M = RANGE.max ? dpMIdx(+RANGE.max.slice(0,4), +RANGE.max.slice(5,7)) : 0;
 }
 function dpOpen(){
-  DP.open = true; DP.y = st.y; DP.m = st.m; DP.d = dstr(st.y, st.m, st.d);
+  DP.open = true;
+  /* §183：锚点 = 当前自然月，可能超出数据范围（数据滞后 / 未来月）→ 面板浏览态钳到数据范围内，
+   * 否则一打开面板整屏月格都是禁用态、用户无从选择；窗口标签仍保持当前月不变。 */
+  var mi = Math.min(MAX_M, Math.max(MIN_M, dpMIdx(st.y, st.m)));
+  var ds = dstr(st.y, st.m, st.d);
+  DP.y = Math.floor(mi / 12); DP.m = mi % 12 + 1;
+  DP.d = ds > RANGE.max ? RANGE.max : (ds < RANGE.min ? RANGE.min : ds);
   document.getElementById("dp").setAttribute("data-on", "true");
   document.getElementById("dpTrigger").setAttribute("aria-expanded", "true");
   renderDpPanel();
@@ -737,7 +743,18 @@ document.getElementById("cal").addEventListener("click", function(e){
   }
 });
 
-/* ---- 初始化：fetch 预计算产物 → 锚点 = 最新有胜场的日期；失败/空数据显示对应状态 ---- */
+/* ---- 初始化：fetch 预计算产物 → 锚点 = 当前自然月（§183 用户定稿：今天是几月就显示几月） ----
+ * 不随「最近一着 / 数据末日」跳月；当前月没有任何记录（月初、数据滞后、未来月）也照常渲染空态：
+ * KPI 归零 / 日历画整月 / 明细出「该口径暂无出走记录」，不回退、不报错。
+ * 时区统一 Asia/Shanghai：与 CI（UTC runner）及体检脚本 todayParts() 同源，避免跨月边界各算一天。 */
+function todayParts(){
+  var parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(new Date());
+  var o = {};
+  parts.forEach(function(p){ if (p.type !== "literal") o[p.type] = p.value; });
+  return { y: +o.year, m: +o.month, d: +o.day };
+}
 (function init(){
   YJ.cache.fetch("datechart").then(function(data){
     RUNS = (data && data.runs) || [];
@@ -749,10 +766,8 @@ document.getElementById("cal").addEventListener("click", function(e){
     }
     computeRange();
     dpRange();
-    var lastWin = null;
-    RUNS.forEach(function(r){ if (r.p === 1 && (!lastWin || r.d > lastWin.d)) lastWin = r; });
-    var base = lastWin || RUNS[RUNS.length - 1];
-    st.y = +base.d.slice(0, 4); st.m = +base.d.slice(5, 7); st.d = +base.d.slice(8, 10);
+    var t = todayParts();
+    st.y = t.y; st.m = t.m; st.d = t.d;
     render();
   }).catch(function(e){
     document.getElementById("cal").innerHTML = "";

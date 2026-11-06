@@ -220,7 +220,7 @@ function pgSizeDef(){ return isMb() ? 10 : 100; }
 
 /* mb 高级筛选折叠（§162；用户追加定稿：mb 默认行只留 7 行）：
  * PC=全行平铺；mb 默认露出 出走马/跑道/场地/距离/性别/着顺/级别，
- * 马场、后3F、赛道方向、出生年份、比赛年份、竞马场×3、人气/母父/骑手/调教师/生产牧场/马主/体重
+ * 马场状态、后3F、赛道方向、出生年份、比赛年份、竞马场×3、人气/母父/骑手/调教师/生产牧场/马主/体重
  * 收进 .f-adv 折叠区。ADV_MANUAL=null=自动（隐藏维度有已选值即展开，如 ?f= 下钻）；用户点过按钮后固定。
  * PC 不折叠（渲染时不产生 .f-adv 包裹，行集随设备切换在 renderFilters 重建） */
 var ADV_MANUAL=null, ADV_OPEN=false;
@@ -537,10 +537,10 @@ function renderFilters(){
   /* 行序（用户 v10 定稿；§50 增 母父，§50.6 调整尾部两行，2026-09 增 生产牧场/马主/体重 三个搜索下拉，
    * 2026-10 增 后3F（紧随着顺，wide 独行）；§162 mb 端 常用 7 行之外收进高级筛选折叠区，PC 全行平铺）：
    * 「A-B」= 一行两列；无 - = 独占一行（wide）
-   * 出走马-跑道 / 场地-马场 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
+   * 出走马-跑道 / 场地-马场状态 / 距离-赛道方向 / 出生年份-比赛年份 / 性别-着顺 /
    * 后3F / 级别 / 竞马场·中央 / 竞马场·地方 / 竞马场·海外 / 人气-母父 / 骑手-调教师 / 生产牧场-马主 / 体重 */
   var _mb=isMb();
-  var condRow=row("cond","马场",condOpts), agariRow=rowWide("agari","后3F",AGARI_OPTS);
+  var condRow=row("cond","马场状态",condOpts), agariRow=rowWide("agari","后3F",AGARI_OPTS);
   var primaryRows=
       horseRow+
       row("surface","跑道",SURFACE_OPTS)+
@@ -552,7 +552,7 @@ function renderFilters(){
       (_mb?"":agariRow)+
       rowWide("grade","级别",GRADE_OPTS);
   var advRows=
-      (_mb?condRow+agariRow:"")+   /* mb：马场/后3F 也进折叠区，保持卡片内相对顺序 */
+      (_mb?condRow+agariRow:"")+   /* mb：马场状态/后3F 也进折叠区，保持卡片内相对顺序 */
       row("turn","赛道方向",TURN_OPTS)+
       (byears.length?rowWide("byear","出生年份",byears.map(function(b){ return {v:b,l:b}; }),"filter-chips--years"):"")+
       (years.length?rowWide("year","比赛年份",years.map(function(y){ return {v:y,l:y}; }),"filter-chips--years"):"")+
@@ -595,7 +595,7 @@ function renderFilters(){
 /* ===== 独立 PC 跨马表：列宽策略（v6/v7；列集与字段口径见 front/public/race-rows.js 的 lib 列集）=====
  * 1) 列定义（表头/单元格/mb 项/最小宽）来自共享模块 → 本页不再写任何列清单；
  *    跑道+距离在 lib 列集里合并为一列「距离」：草1200 / 泥1200 / 障1000 / AW1000
- * 2) 固定列（日期/距离/枠番…赏金）= 格式上限 colW；弹性列（马名/赛事名/场地/天气/马场/骑手/调教师）
+ * 2) 固定列（日期/距离/枠番…赏金）= 格式上限 colW；弹性列（马名/赛事名/场地/天气/马场状态/骑手/调教师）
  *    = 当前页最长内容 pageW（马名/赛事名含级徽章宽）——都只是「最小宽」，不再决定最终宽。
  * 3) 留白分配（三阶段加权注水 fill()）：弹性文本列先吃（软上限 2.0×）→ 余量给数字列（软上限 1.5×）
  *    → 再有余量全表均分（保证表宽恒等于容器，右侧不留空条）。24 寸及以下留白本就被弹性列吃光，
@@ -753,7 +753,7 @@ function renderResults(){
      * ① 量最小宽：固定列按格式上限 colW、弹性列按当前页最长内容 pageW（canvas 粗排 + DOM 精量）；
      * ② 按档位分配留白（TIER_CAP：文本列上限随档收窄、数字列随档放宽 → 余量全表均分）→ 表宽恒等于容器；
      * ③ 表内留白 > AIR_TARGET 就升一档字号重算（11.5 → 15.5px），量尺/表头/徽章同步换档。
-     * 表头 马场/体重/赔率 为短标签，仅本表硬编码（不改 i18n，内嵌/mb 页仍用全称） */
+     * 表头 体重/赔率 为短标签，仅本表硬编码；馬場 统一走 i18n 全称「马场状态」（§182，与筛选行/摘要条同名） */
     /* 页内最长内容量宽：fn(en) 返回字符串或 {t:文本, x:额外宽}
      * canvas 粗排取前 5 名 → 只对这 5 个候选做 DOM 精量（避免 100 行逐格触发排版） */
     function pageW(fn){
@@ -906,7 +906,7 @@ function dimCfg(key){
   return {k:key,l:key};
 }
 /* 维度中文名（已选条件摘要条用；chip 行 label 与这里保持一致） */
-var DIM_LABEL={horse:"出走马",venue:"场地",track:"竞马场",surface:"跑道",dist:"距离",cond:"马场",grade:"级别",
+var DIM_LABEL={horse:"出走马",venue:"场地",track:"竞马场",surface:"跑道",dist:"距离",cond:"马场状态",grade:"级别",
                result:"着顺",year:"比赛年份",byear:"出生年份",turn:"赛道方向",ninki:"人气",sex:"性别",
                trainer:"调教师",jockey:"骑手",mps:"母父",weight:"体重",breeder:"生产牧场",owner:"马主",agari:"后3F"};
 /* 摘要条里的值显示名：FLT 存的是 chip 的 v（与显示 l 不同源的维度在此换算；其余原样展示） */

@@ -188,7 +188,7 @@ YJ.raceRows = (function () {
 
   /* ================= 列定义（全站比赛记录表格的唯一字段口径） =================
    * k      列键（BASE_COLS 基准列序按它引用；mb 行分组也用）
-   * th     表头文案（i18n key，经 T() 翻译）；视图 th 表可给**字面量短标签**覆盖（如 lib 的「马场/体重/赔率」）
+   * th     表头文案（i18n key，经 T() 翻译）；视图 th 表可给**字面量短标签**覆盖（如 lib 的「体重/赔率」）
    * flex   跨马表列宽注水时的「弹性文本列」标记（其余为数字/定长列）
    * cls    embed 表单元格类名；clsLib = lib 表单元格类名
    * pc(r,en,o)         → PC 单元格内 HTML（不含 <td> 包裹）
@@ -380,7 +380,7 @@ YJ.raceRows = (function () {
   var BASE_TOP = ["date", "name", "sexage", "place"];   /* mb 顶部槽；"name" = 名称槽，见 mbCardHTML；
                                                          * sexage = 馬名槽后的元信息槽（§78；embed 视图也展示，§78.1） */
   var BASE_LINES = [
-    ["race", "distMerged", "tenki", { k: "baba", label: "马场" }],
+    ["race", "distMerged", "tenki", "baba"],
     ["time", "chakusa", "agari"],
     ["waku", "umaban", "tosu", "kinryo", "ninki"],
     [{ k: "bw", label: "体重" }, { k: "odds", label: "赔率" }, "prize"],
@@ -403,8 +403,8 @@ YJ.raceRows = (function () {
     lib: {
       thCls: "px-[2px] py-2 text-center text-[10px] font-semibold whitespace-nowrap tracking-[.5px]",
       hide: [], onlyIfHorse: [],
-      th: { horse: "出走马 ⇄", baba: "马场", bw: "体重", odds: "赔率" },
-      mbLabel: { baba: "马场", bw: "体重", odds: "赔率" },
+      th: { horse: "出走马 ⇄", bw: "体重", odds: "赔率" },
+      mbLabel: { bw: "体重", odds: "赔率" },
       mbLines: BASE_LINES
     }
   };
@@ -505,7 +505,7 @@ YJ.raceRows = (function () {
         if (k === consumed) return "";
         var e = pick(k);
         if (!e || !e.mbItem) return "";
-        var lb = (typeof spec === "object" && spec.label != null) ? spec.label : e.mbLabel;   /* 行内标签覆盖（lib 的 体重/马场/赔率） */
+        var lb = (typeof spec === "object" && spec.label != null) ? spec.label : e.mbLabel;   /* 行内标签覆盖（lib 的 体重/赔率） */
         return e.mbItem(r, en, o, lb) || "";
       }).join("");
       return items ? '<div class="yj-mb-line">' + items + '</div>' : "";

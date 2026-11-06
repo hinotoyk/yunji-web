@@ -73,8 +73,8 @@
 .tl-tag.manual { background-color: rgba(138, 144, 150, .14); color: #5c636a; }   /* 人工节点标签：中性灰 */
 
 /* ---------- 迷你数据条：label 上 / 值 下，细竖线分隔 ----------
-   §175：改 3 等分栅格（原 flex-wrap）——正文列 170~190px 时 flex 会把「人気」挤到第二行，
-   三项本是同一条数据行，必须恒一行；等分后两端形态一致（PC / mb 都是 タイム・上り・人気 三格） */
+   §175：改 3 等分栅格（原 flex-wrap）——正文列 170~190px 时 flex 会把「人气」挤到第二行，
+   三项本是同一条数据行，必须恒一行；等分后两端形态一致（PC / mb 都是 时间・后3F・人气 三格） */
 .tl-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tl-kpi { padding: 0 16px; border-left: 1px solid #ececec; min-width: 0; }
 .tl-kpi:first-child { padding-left: 2px; border-left: 0; }

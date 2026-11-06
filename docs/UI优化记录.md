@@ -2139,3 +2139,70 @@ window.YJ_ECHARTS = echarts;
 | 条形右端空白 / 轴下空白 | 默认 | 无 ✓ | — |
 
 每次点击**只开一个**标签页（去重生效）；`npm run build` 通过，控制台/网络零报错（`#chart canvas` 1 个，CUR_ROWS=100）。
+
+## §182 · 文案口径统一：「马场」→「马场状态」、航迹线 KPI 中文化（2026-11-06）
+
+**用户反馈**：① 比赛记录页筛选行「马场」与结果表列头「马场」应叫「马场状态」（值是 良/稍重/重/不良）；
+② 航迹线卡片迷你数据条「タイム / 上り / 人気」应显示「时间 / 后3F / 人气」。
+
+**最终思路（单一出处 = i18n 字典）**：`front/public/i18n.js` 早有 `馬場 → 马场状态`、`タイム → 时间`、
+`上り → 后3F`、`人気 → 人气`，问题出在**展示层绕过字典**：lib 视图把 baba 列硬编码成短标签「马场」、
+timeline 卡片把三个 KPI 写成日文原键。
+
+- ① 删掉 `race-rows.js` 中 lib 视图的 baba 短标签覆盖三处（th / mbLabel / BASE_LINES 行内 label），
+  表头与 mb 卡片自然回落字典全称；「体重/赔率」短标签保留（列宽考虑）。PC 列宽由
+  `LIB_TH = LIB_COLS.map(c => c.thm)` 随表头文案自动量宽，列宽算法零改动。
+  筛选行 label、`DIM_LABEL.cond`、stats 页签「马场」及相关注释同步为「马场状态」→ 全站口径一致。
+- ② `timeline.html` 补引 `i18n.js`，`kpi()` 内统一 `esc(YJ.i18n.t(label))`（label 仍传日文原键，
+  两个渲染分支共用）；编辑台实时预览（`editor.js`）同款三格改走 `YJ.i18n.t(...)`，四个编辑页均已引入字典。
+  不改任何后端 JSON / 数据产物。
+
+**改动文件**：`front/pages/{races,stats,timeline,timeline-cards.css}`、`front/public/{race-rows,editor}.js`。
+
+**验证**：`npm run build` ✓ 7.18s（races-bundle 276 马 / 868 条 round-trip 通过）；dist 核对
+`pages/races.html` / `pages/stats.html` 含「马场状态」、`pages/timeline.html` 含 `i18n.js` 引用、
+`editor.js` 含 `YJ.i18n.t("タイム")`；vm 运行时对账：`cols("lib").baba.th === "马场状态"`、
+`["タイム","上り","人気"].map(t) === 时间 / 后3F / 人气`，embed 视图表头同为「马场状态」。
+
+**同步**：kzn §118（同文修复；kzn 卡片布局 / SRK 措辞 / 品牌头保持原样，不做整批同步）。
+
+**冒烟既有欠账（与本次无关，未改测试脚本）**：`verify_datechart.cjs` yunji 13/113、kzn 3/112 失败。
+复核后确认**不是断言值过期**（[C1] 期望值全部从 `data/races` 源数据独立重算），真因两条：
+- ① **锚点口径分歧**：页面 `datechart.html:753` 取「全场地（含地方/海外）最新一着」作锚点（yunji → 2026-11-05 → 窗口 2026年11月），
+  脚本 `C1:254` 经 `scope()` 只按 JRA 取最新一着（yunji 最新 JRA 一着 2026-10-31 → 期望 2026-10），
+  于是 C1 七项 + C3 三项 + 马名切换三项全部错位；kzn 两口径同在 11 月，故 C1/C3 全过。
+- ② **马名切换样本数据耦合**：脚本 `:318` 只在当前锚点月的 JRA 明细里找带中文名（`hc`）的马，
+  kzn 2026-11 月 JRA 8 条里 0 条有中文名 → 样本为空 → 3 项假失败（失败消息括号为空即证据）。
+kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契约与 1:1 对账全绿。
+**影响**：`run_update.py --ci` 把该脚本当门禁，失败即「跳过数据提交」（`update-data.yml` 每日北京时间 06:00 跑），
+`--check` 亦报红；另默认 JRA 口径却锚到地方赛月份，会让用户打开页面落在几乎空的月份（11 月 JRA 仅 5 条，10 月 71 条）。
+以 HEAD 版 `race-rows.js` 对账：embed 视图表头/标签改动前后**完全一致**，datechart 页面不受本次影响。
+该欠账已由 §183 解决（用户定：锚点 = 当前自然月 + 空月兼容），本节只记录复核结论。
+
+## §183 · 日期统计页锚点 = 当前自然月 + 空月兼容（2026-11-06）
+
+**用户定稿**：「今天是几月份就几月份，兼容没有数据也别报错就行了」。
+
+**最终思路**：
+- 口径统一：页面锚点不再取「全场地最新一着」，改为**当前自然月**（`todayParts()` 用 `Intl.DateTimeFormat` 固定
+  Asia/Shanghai，与 CI 的 UTC runner、体检脚本同源，跨月边界不会各算一天）；不再随数据末日/最后一胜跳月，
+  默认只统计中央赛也不再与锚点场地口径打架 → §182 的锚点分歧由此消除。
+- 空月 = 合法状态：当前月无记录（月初 / 数据滞后 / 未来月）时 KPI 归零、总赏金「—」、日历画整月空格、
+  明细出「该口径暂无出走记录」、› 禁用 ‹ 可用；不抛错、不回退到旧月份。
+- `dpOpen()` 面板浏览态钳到数据范围内（窗口标签仍显示当前月），避免当前月超出数据范围时打开面板整屏禁用。
+- 体检 `verify_datechart.cjs` 同源：`TODAY`/`FIRST_MONTH` 常量；[C1] 期望锚点改当前月，总赏金/步进边界全派生；
+  马名切换样本改从当前页明细 DOM 反查（有中文名验切换、无中文名验回退、空月验空态），不再要求「某月恰有中文名马」；
+  当前月无记录时 [C1] 零值/空态断言先跑完，再「回最新」切到数据末月跑 [C2][C3] 交互断言，覆盖率不降；
+  [C7] 当前年无数据时自动切数据末年，不把未来空年当失败。
+
+**改动**：`front/pages/datechart.html`（todayParts / init 锚点 / dpOpen 钳制）、
+`scripts/datechart/verify_datechart.cjs`（常量 + C1/C2/C3/C7 断言）。两仓改前逐字同文，按指南整拷同步（kzn 工作区转 CRLF）。
+
+**验证**：
+- 两仓 `npm run build` ✓（10.98s / 8.73s，races-bundle round-trip 通过）；dist/pages/datechart.html 含
+  `todayParts` + `Asia/Shanghai` + 面板钳制。
+- 冒烟：`verify_datechart` yunji **113/113**、kzn **111/111** 全绿；`run_update.py --check` 四段全 OK（门禁恢复）；
+  第五段 `verify_sire_wins` 11/11 全绿。
+- **空月实证**：临时探针把「今天」模拟成 2027-01-15（数据范围外、整月 0 条），整份冒烟仍 ALL PASS
+  （yunji 114 / kzn 112）——窗口 2027年1月、出走 0、总赏金 —、明细空态、无异常；探针跑完已删。
+- 未跑 `--ci`（会 commit+push），改动未 commit / 未 push。

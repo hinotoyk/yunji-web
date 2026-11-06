@@ -2289,9 +2289,9 @@ YJ.editor = (function () {
               (store.hero_cn ? '<span class="tl-hcn">〈' + esc(store.hero_cn) + "〉</span>" : "") +
             "</span></div>" : "") +
         ((store.time || store.agari || store.pop) ? '<div class="tl-kpis">' +
-            '<div class="tl-kpi"><div class="k">タイム</div><div class="v hi">' + esc(store.time || "—") + "</div></div>" +
-            '<div class="tl-kpi"><div class="k">上り</div><div class="v">' + esc(store.agari || "—") + "</div></div>" +
-            '<div class="tl-kpi"><div class="k">人気</div><div class="v">' + esc(store.pop || "—") + "</div></div></div>" : "") +
+            '<div class="tl-kpi"><div class="k">' + YJ.i18n.t("タイム") + '</div><div class="v hi">' + esc(store.time || "—") + "</div></div>" +
+            '<div class="tl-kpi"><div class="k">' + YJ.i18n.t("上り") + '</div><div class="v">' + esc(store.agari || "—") + "</div></div>" +
+            '<div class="tl-kpi"><div class="k">' + YJ.i18n.t("人気") + '</div><div class="v">' + esc(store.pop || "—") + "</div></div></div>" : "") +
         ((store.jockey || store.trainer) ? '<div class="text-[12px] text-muted-foreground space-y-0.5">' +
             (store.jockey ? "<div>騎手 " + esc(store.jockey) + "</div>" : "") +
             (store.trainer ? "<div>調教師 " + esc(store.trainer) + "</div>" : "") + "</div>" : "");

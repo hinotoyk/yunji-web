@@ -23,6 +23,7 @@
 <script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../i18n.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../loading.js"></script>
 <script src="../lightbox.js"></script>
@@ -54,9 +55,11 @@ function tagHTML(t){
          (t.crown ? '<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8L8.3 12L12 5.5L15.7 12L20.5 8L19 18L5 18Z"/><circle cx="3.5" cy="6.2" r="1.9"/><circle cx="12" cy="3.6" r="1.9"/><circle cx="20.5" cy="6.2" r="1.9"/></svg>' : '')+
          esc(t.label)+'</span>';
 }
-/* 迷你数据条单元：label 上 / 值 下（hi=青绿加粗，胜果核心数据） */
+/* 迷你数据条单元：label 上 / 值 下（hi=青绿加粗，胜果核心数据）
+ * §182：label 传比赛字段日文原键（タイム/上り/人気），统一经 i18n.js 字典转中文，
+ *       不在页面写死译文；编辑台预览同款三格在 editor.js 里走同一字典。 */
 function kpi(label, value, hi){
-  return '<div class="tl-kpi"><div class="k">'+esc(label)+'</div>'+
+  return '<div class="tl-kpi"><div class="k">'+esc(YJ.i18n.t(label))+'</div>'+
          '<div class="v'+(hi?' hi':'')+'">'+esc(value)+'</div></div>';
 }
 /* 騎手/調教師行：后端 team 为「 ｜ 」拼接的单串（缺失整段不出现），前端按分隔符拆成一行一人 */
