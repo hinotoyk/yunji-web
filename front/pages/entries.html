@@ -35,8 +35,10 @@
   </section>
 </div>
 
-<script src="../data-config.js"></script>
 <script src="../site-config.js"></script>
+<script src="../data-config.js"></script>
+<script src="../yj-util.js"></script>
+<script src="../yj-cache.js"></script>
 <script>
 (function () {
   "use strict";
@@ -78,10 +80,43 @@
     return embedP;
   }
 
+  /* ---- 宿主能力注入（RC embed v2.6.0 对接规范 = RC docs/DESIGN.md §10.1）----
+   * 组件只管显示：译名与马匹页都从本仓 basic.json 取，组件不判断优先级、不发额外请求。
+   * 回调必须同步 → 先 await 数据再 mount；数据挂了就退回「无译名、不可点」，页面照常。 */
+  var HORSE_MAP = null;
+  function ensureHorseMap() {
+    if (HORSE_MAP) return Promise.resolve(HORSE_MAP);
+    return YJ.cache.fetch("basic").then(function (b) {
+      var m = new Map();
+      ((b && b.horses) || []).forEach(function (h) { if (h.jbis_id) m.set(String(h.jbis_id), h); });
+      HORSE_MAP = m;
+      return m;
+    }).catch(function () { HORSE_MAP = new Map(); return HORSE_MAP; });
+  }
+  function hostHooks(map) {
+    return {
+      /* 译名：港译 → 自译（组件按 kind 给自译加 * 号，并在表下给一行说明） */
+      name: function (jbisId) {
+        var h = map.get(String(jbisId));
+        if (!h) return null;
+        if (h["香港馬名"]) return { zh: h["香港馬名"], kind: "hk" };
+        if (h["自译馬名"]) return { zh: h["自译馬名"], kind: "self" };
+        return null;
+      },
+      /* 马匹页：profile.html 认的是本仓内部 id（basic.json 的 id），不是 jbis_id */
+      horse: function (jbisId) {
+        var h = map.get(String(jbisId));
+        return h && h.id != null ? "profile.html?horse=" + h.id : null;
+      }
+    };
+  }
+
   function mount() {
     return loadEmbed().then(function () {
+      return ensureHorseMap();
+    }).then(function (map) {
       /* 组件自带加载/失败/重试状态渲染；数据失败时组件 mount 会 reject，此处兜底不打断页面 */
-      return window.RC_ENTRIES_EMBED.mount(mountEl, { base: RC_BASE, sire: SIRE });
+      return window.RC_ENTRIES_EMBED.mount(mountEl, { base: RC_BASE, sire: SIRE, host: hostHooks(map) });
     }).catch(function (e) {
       /* 组件脚本本身拉不到（与组件内数据失败态不同层）：本页兜底渲染 */
       if (!mountEl.querySelector(".rc-emb-state")) {
