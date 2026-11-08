@@ -54,15 +54,26 @@
 
   var mountEl = document.getElementById("entries-mount");
   var embedP = null;   /* 组件脚本动态加载一次（Promise 缓存，同 stats.html SIRE RANK 做法） */
+  /* 版本戳（与本站 vite autoVersionPlugin 同一约定，§174）：
+     RC 构建时把 embed/entries-table.js 的 sha1 前 10 位写进 embed/manifest.json，
+     这里先读 manifest 再拼 ?v=<hash> —— 内容不变 → URL 不变 → 缓存命中；RC 改了组件 → 哈希变 → 立即取新版。
+     **不在这里手写版本号**（手写必然忘记 bump，线上永远是旧组件）；manifest 读不到（旧部署/断网）
+     就退回不带 ?v= 的裸 URL，功能不受影响，只是可能吃 10 分钟 CDN 缓存。 */
   function loadEmbed() {
     if (!embedP) {
-      embedP = new Promise(function (res, rej) {
-        var s = document.createElement("script");
-        s.src = RC_BASE + "embed/entries-table.js";
-        s.onload = function () { res(); };
-        s.onerror = function () { embedP = null; rej(new Error("组件加载失败")); };
-        document.head.appendChild(s);
-      });
+      embedP = fetch(RC_BASE + "embed/manifest.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (m) {
+          var v = m && m.hash ? "?v=" + encodeURIComponent(m.hash) : "";
+          return new Promise(function (res, rej) {
+            var s = document.createElement("script");
+            s.src = RC_BASE + "embed/entries-table.js" + v;
+            s.onload = function () { res(); };
+            s.onerror = function () { embedP = null; rej(new Error("组件加载失败")); };
+            document.head.appendChild(s);
+          });
+        });
     }
     return embedP;
   }
