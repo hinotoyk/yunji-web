@@ -59,7 +59,8 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      # 站点根 = 仓库根：dist/pages/*.html 里的 ../../data 指向站点根 data/（与本地 :8090 结构一致）
+      # 站点根 = 仓库根：dist/pages/*.html 里的 ../../data 指向站点根 data/（本地 python serve.py 服务 dist/，
+      # 同一相对路径解析到 dist/data 副本 —— 线上/本地口径一致，故预览无需服务整个仓库根）
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

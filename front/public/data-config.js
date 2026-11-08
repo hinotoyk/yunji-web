@@ -27,7 +27,7 @@ window.YJ_DATA = {
    * racing-calendar：出走表站（JBIS/Racing Post 出馬表采集，每日两次自动更新，DESIGN.md §10）。
    *   entries.html 挂载 embed/entries-table.js 组件（RC_ENTRIES_EMBED.mount）——
    *   组件自带数据编排与解包，sire = YJ_SITE.sireName（config/sire.json 单源）；
-   *   调试 `?rcdev=1` 切本地 http://127.0.0.1:9090/（npm run serve，已带 CORS *）。 */
+   *   调试 `?rcdev=1` 切本地 http://127.0.0.1:9093/（该仓 `npm run serve`，已带 CORS *；端口单源 = 其 serve.config.json）。 */
   remote: {
     jbisRank: 'https://hinotoyk.github.io/jbis-sire-rank-history/',
     rc: 'https://hinotoyk.github.io/racing-calendar/'

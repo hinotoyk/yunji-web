@@ -323,7 +323,7 @@ yunji-web/
 
 1. `npm run build` 成功，`dist/` 与改前基线 diff 仅限：品牌文案对应产物、新增 `dist/site-config.js`
 2. `dist/assets/theme-*.css` 含全部在用类（Tailwind 编译期坑，AGENTS.md §1）
-3. 本地 `python -m http.server 8090` 冒烟 8 页：标题、侧栏、标语、数据加载、编辑台入口正常；
+3. 本地 `python serve.py`（固定 :9090，服务 `dist/`）冒烟 8 页：标题、侧栏、标语、数据加载、编辑台入口正常；
    编辑台报头（editor.js）、profile 动态 title 显示配置品牌
 
 ### 6.3 新项目模拟（C4，**真离线**）

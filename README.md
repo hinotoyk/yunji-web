@@ -51,12 +51,14 @@ cd front
 npm install
 npm run build
 
-# 本地预览（dist 已自包含数据，服务项目根或 dist/ 均可）
-python -m http.server 8090            # 项目根 → http://127.0.0.1:8090/dist/index.html
-python -m http.server 8091 --directory dist   # 或直接服务 dist → http://127.0.0.1:8091/
+# 本地预览：端口固定（单源 = 项目根 serve.config.json），服务 dist/，自动打开首页
+cd ..
+python serve.py             # → http://127.0.0.1:9090/index.html
+python serve.py --no-open   # 只起服务，不弹浏览器
 ```
 
-> 必须用 http 访问（file:// 下 fetch 失败）；Vite dev server（`:5173`）取不到数据，仅开发热更新用。
+> 必须用 http 访问（file:// 下 fetch 失败）；端口被占用时 `serve.py` **直接报错退出，不会换号**——四兄弟站约定 yunji `9090` / kzn `9091` / jbis-sire-rank-history `9092` / racing-calendar `9093`。
+> Vite dev server（Vite 默认 `:5173`，根是 `front/`、取不到 `../data`）只做热更新，**不占本站约定端口**；看数据一律走 `python serve.py`。
 > 每次改 `front/` 后 `npm run build` 再刷新验证；改数据后同样需重新构建才会进 `dist/data/`。
 
 ## 新项目：换种马（单配置源）
@@ -69,7 +71,7 @@ python -m http.server 8091 --directory dist   # 或直接服务 dist → http://
 3. `python run_update.py --init` 全量重建数据（需联网抓取；`--init` 会删空 `data/`）。
 4. `cd front && npm run build` 构建站点（品牌文案构建期注入，`dist/site-config.js` 由 `front/scripts/gen-site-config.mjs` 自动生成）。
 5. **手动替换品牌资产**（不在配置范围）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`，并更新 `front/package.json` 的 `name`/`description` 元数据。
-6. 本地 `python -m http.server 8090` 冒烟 8 页后推送部署。
+6. 本地 `python serve.py`（:9090 服务 `dist/`）冒烟 8 页后推送部署。
 
 ## 数据更新
 

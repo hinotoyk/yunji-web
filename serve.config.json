@@ -1,0 +1,7 @@
+{
+  "name": "yunji-web",
+  "port": 9090,
+  "host": "127.0.0.1",
+  "root": "dist",
+  "open": "index.html"
+}

@@ -20,7 +20,7 @@
      已开赛收进「最近一周」折叠区）。
      引用单源：RC 官网地址 = data-config.js remote.rc；种马名 = YJ_SITE.sireName
      （config/sire.json 构建期注入）——kzn 等模板站改 config 即自动引用自家种马。
-     本地（localhost/127.0.0.1）自动指向本地 RC（:9090，npm run serve），线上走 remote.rc；
+     本地（localhost/127.0.0.1）自动指向本地 RC（:9093，racing-calendar 仓 `npm run serve`），线上走 remote.rc；
      覆盖：`?rcdev=1` 强制本地、`?rcdev=0` 强制线上。 -->
 <div id="page" class="mx-auto w-full px-6 pt-[26px] pb-[60px] max-md:px-3.5 max-md:pt-2 max-md:pb-12 md:w-[90%]">
 
@@ -41,11 +41,11 @@
 (function () {
   "use strict";
   /* ---- 引用参数（§174）：base = YJ_DATA.remote.rc；sire = YJ_SITE.sireName ----
-   * 本地调试自动探测：localhost / 127.0.0.1 默认指向本地 RC（npm run serve · :9090），
-   * 线上部署走 remote.rc —— 本地打开无需带任何参数（旧版要 ?rcdev=1，漏带即 404 组件加载失败）。
+   * 本地调试自动探测：localhost / 127.0.0.1 默认指向本地 RC（racing-calendar 仓 `npm run serve` · :9093，
+   * 端口单源 = 该仓 serve.config.json），线上部署走 remote.rc —— 本地打开无需带任何参数（旧版要 ?rcdev=1，漏带即 404 组件加载失败）。
    * 覆盖：`?rcdev=1` 强制本地、`?rcdev=0` 强制线上。 */
   var RC_REMOTE = String((window.YJ_DATA && YJ_DATA.remote && YJ_DATA.remote.rc) || "");
-  var RC_LOCAL = "http://127.0.0.1:9090/";
+  var RC_LOCAL = "http://127.0.0.1:9093/";
   var isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   var RC_BASE = isLocalHost ? RC_LOCAL : RC_REMOTE;
   if (/[?&]rcdev=1\b/.test(location.search)) RC_BASE = RC_LOCAL;

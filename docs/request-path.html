@@ -114,6 +114,7 @@ svg#graph{display:block}
   <div class="kicker">Cloud Tracks · Data Pipeline</div>
   <h1><span class="dot"></span>云迹「后端全流程」路径图</h1>
   <p class="sub">以 <b>脚本/数据源为节点</b>、<b>数据流向为箭头</b>：建档 → 基础 ∥ 竞赛 → 预计算×3 → <b>五门禁检查</b> → <b>压缩（字体子集 / 构建期 JSON minify）</b> → <b>CI（update-data.yml → deploy.yml → Pages）</b>，外加 <b>编辑台本机回写</b> 与 <b>core 中立层 / 人工表</b>。点击任一节点或连线看它抓什么、何时触发、产出什么；顶部切换视图点亮对应子链路。</p>
+  <p class="sub" style="color:var(--amber-deep);border-left:3px solid var(--amber);padding-left:10px;margin-top:10px">⚠ <b>端口注记（2026-11-08）</b>：下图里的 <b>:8090</b> / <b>:9090</b> 都是<b>历史口径</b>（当时 <b>edit_server.py</b> = 静态 + 编辑 API 单端口，该服务 2026-09-30 已删除）。现行本地预览的端口单源 = 仓根 <b>serve.config.json</b>（yunji 9090 / kzn 9091 / jbis-sire-rank-history 9092 / racing-calendar 9093），一律 <b>python serve.py</b> 服务 dist/。图与图例未改写，仅此标注。</p>
 </header>
 
 <div class="ctl">

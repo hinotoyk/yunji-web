@@ -22,7 +22,7 @@
      必须先于 yj-visit.js 加载（统计域名白名单读 YJ_SITE.domains）。 -->
 <script src="site-config.js"></script>
 <!-- 访问统计（§97 双线：Vercount 计数 + GoatCounter 计数/展示）：唯一注入点在 public/yj-visit.js，
-     由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :8090 / file:// / *.github.io 一概不加载
+     由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :9090 / file:// / *.github.io 一概不加载
      （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/UI优化记录.md §97（§85 不蒜子 → §87 Vercount）。 -->
 <script src="yj-visit.js?v=3"></script>
 <!-- 全屏浮层渲染端（§149.2，2026-10-31）：内容页都在外壳 iframe 里，页内 fixed 遮罩只能盖到内容区、

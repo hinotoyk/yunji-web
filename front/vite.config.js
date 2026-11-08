@@ -1,6 +1,9 @@
 const { resolve } = require('path');
 const { spawnSync } = require('child_process');
 const { defineConfig } = require('vite');
+// 端口单点 = 项目根 serve.config.json（本地预览 python serve.py 读同一份，四兄弟站各占一号：
+// yunji 9090 / kzn 9091 / jbis 9092 / racing-calendar 9093）。strictPort：占用就报错，绝不静默换号。
+const SERVE = require('../serve.config.json');
 
 // 多页应用：外壳 + 各功能子页（iframe 架构，每页独立入口）
 // edit = 编辑页（D6 独立入口，§82.4 起恒为草稿箱模式：线上提交走 GitHub API → CI，无本机服务依赖）
@@ -50,6 +53,8 @@ function buildRacesBundle() {
 // .json 在 dist 侧 minify（源 data/ 不动，CI diff 仍可读）：basic.json 等约 30% 是缩进空白。
 // 替换式：races-bundle 打包成功后跳过 data/races/*.json（bundle 等值替代，dist 净减小）。
 // 日常快速迭代可跳过复制（沿用 dist 里上一次的 data）：COPY_DATA=skip npm run build
+// ⚠ 但 emptyOutDir 会先清空 dist —— skip 时 data 不复制 → dist/data 直接消失（页面数据全 404）。
+//   只有「确认这次不需要数据」时才用 skip；正常情况下别加。
 async function copyData() {
   if (process.env.COPY_DATA === 'skip') return;
   const bundled = buildRacesBundle();
@@ -153,6 +158,12 @@ function autoVersionPlugin() {
 module.exports = defineConfig({
   // 相对路径 base：产物可部署到任意子目录
   base: './',
+  // 本站只认一个端口（serve.config.json 的 port）：python serve.py 与 vite preview 都服务 dist/。
+  // dev server 不是预览入口（根是 front/，取不到 ../data），不占约定端口：走 Vite 默认 5173 + strictPort，
+  // 占用即报错退出，不静默换号。
+  server: { strictPort: true },
+  // preview 服务的就是 dist/，与 python serve.py 同端口同根（二者别同时开）
+  preview: { port: SERVE.port, strictPort: true },
   plugins: [
     { name: 'gen-font', apply: 'build', buildStart: genFont },
     siteConfigPlugin(),

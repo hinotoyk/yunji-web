@@ -17,7 +17,7 @@ YJ.editor = (function () {
   var RE_PATH = "data/races_edits.json";           /* 白名单 4：比赛记录人工编辑（§104 批量表格写入；契约 = docs/SCHEMA.md §9） */
   var PHOTO_API = "/photo";                        /* M2b：multipart，服务端生成文件名（仅 local 形态） */
   var PHOTO_OWNER_TL = "timeline";                 /* 时间线节点图的文件名前缀（落盘 timeline-<n>.webp） */
-  var DEFAULT_PORT = 8090;                          /* D13：单端口，静态服务同进程 */
+  var DEFAULT_PORT = 9090;                          /* 本站约定端口（单源 = 项目根 serve.config.json）；本机编辑 API 已下线，探测失败即草稿箱模式 */
   var PROBE_MS = 1800;
   /* 线上一次性提交（GitHub writer）：单仓库单分支，PAT 由编辑台「连接 GitHub」面板写入 localStorage */
   var GH_REPO = "hinotoyk/yunji-web", GH_BRANCH = "main";
@@ -825,7 +825,7 @@ YJ.editor = (function () {
     return run(1);
   }
 
-  /* 端口可配：?port= > localStorage[storeKey('edit.port')] > 8090 */
+  /* 端口可配：?port= > localStorage[storeKey('edit.port')] > 9090（serve.config.json） */
   function resolvePort() {
     var q = new URLSearchParams(location.search).get("port");
     var ls = null;

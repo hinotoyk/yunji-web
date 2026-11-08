@@ -34,7 +34,8 @@
 ## 3. 数据与路径
 
 - 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`/`*.jsonl`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `docs/SCHEMA.md`**（生成脚本文件头只留一行指路），管线说明见 `docs/pipeline.md`。
-- 服务器服务**项目根**（如 `python -m http.server 8090 --directory 项目根`）或直接服务 `dist/` 均可（dist 已自包含数据副本），务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
+- **本地预览一律 `python serve.py`**（项目根；服务 `dist/`，端口单源 = `serve.config.json` 的 **9090**，启动即打开 `http://127.0.0.1:9090/index.html`，`--no-open` 只起服务）。禁止再手写 `python -m http.server <port>`（端口散落 + 缺 no-cache/CORS）。`dist/` 已自包含数据副本，务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
+- **端口是约定不是偏好**：四兄弟站 yunji `9090` / kzn `9091` / jbis-sire-rank-history `9092` / racing-calendar `9093`，各仓 `serve.config.json` 为唯一出处。端口被占用时脚本**直接报错退出**——不要改成自动顺延（`entries.html` 硬编码了 RC 的 9093，顺延即静默失配）；换端口只改该 JSON，并连带核对跨站引用。
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
 - **前端数据一律走统一缓存控制器 `front/public/yj-cache.js`（`YJ.cache.fetch(name[, opts])`）**：注册表按产物给 TTL（当前全 12h，可按产品覆写），禁止页面绕过控制器直连 fetch 数据产物（编辑台 no-store 语义除外）。**改数据目录/位置时同步核对 `yj-cache.js` 注册表的 `url/prefix`**。
 - `data/races-bundle.json`（比赛压缩包，契约 = `docs/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
@@ -51,4 +52,4 @@
 
 - 站点：**云迹 · 云崽档案**（单一种马产驹的个人查阅/检索用，当前收录コントレイル产驹）。
 - **子项目（模板站身份）**：本仓是子项目站的同步源。现有 kzn-web（絆 · キズナ产驹，独立仓库不共享 git 历史）。凡涉及「复制新子项目 / 把本仓改造同步到子项目 / 子项目回灌」，一律先读 **`docs/子项目复制与同步指南.md`**（品牌保留清单 + 同步规程 + 冒烟断言改写红线 + 回灌欠账清单），禁止凭感觉整拷。
-- 部署：GitHub Pages 静态站，**站点根 = 仓库根**，入口 `/dist/index.html`（dist 已自包含 `dist/data/` 副本；后续可改为只发布 `dist/`）；push main 时 `.github/workflows/deploy.yml` 自动 `npm run build` 并发布。本地预览用服务项目根或 `dist/` 的静态服务器（`:8090`）。
+- 部署：GitHub Pages 静态站，**站点根 = 仓库根**，入口 `/dist/index.html`（dist 已自包含 `dist/data/` 副本；后续可改为只发布 `dist/`）；push main 时 `.github/workflows/deploy.yml` 自动 `npm run build` 并发布。本地预览用项目根 `python serve.py`（固定 `http://127.0.0.1:9090/`，服务 `dist/`）。
