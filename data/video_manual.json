@@ -1,0 +1,12 @@
+{
+ "_readme": "★ 视频回放人工覆写表（人只碰这个文件，脚本永不写入；人工值永远优先于自动匹配）。键 = 比赛键：有 race_id 用 race:<race_id>（如 race:202604030411），无 race_id 的海外台账场用 slot:<日付>|<場名>|<R>。值字段：url（必填，任意 http(s) 链接；B 站链接自动解析 BV 号走站内 iframe 播放，其他链接记 other 源、前端降级为新标签页打开）、title（选填，弹窗标题）、page（选填，多P视频分P号，默认 1）、subtitle（选填，true=带字幕，默认 false）、note（选填，备注）。⚠ 本表随构建进 dist/data/（公网可读），别写私人内容；'__' 前缀键被脚本忽略。改完跑 python scripts/video/build_video_map.py 重算 + npm run build 进 dist。",
+ "_examples": {
+  "race:202604030411": {
+   "url": "https://www.bilibili.com/video/BV1xx411c7mD/",
+   "title": "2026/8/30 新潟11R 3歳以上1勝クラス",
+   "page": 1,
+   "subtitle": true,
+   "note": "示例：改用另一个视频源（照抄前请把本条目或整个 _examples 删掉）"
+  }
+ }
+}

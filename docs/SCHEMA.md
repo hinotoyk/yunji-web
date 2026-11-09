@@ -485,3 +485,79 @@
   `來源:"人工"`、`本賞金:0`；落库时同样过 结果/格/芝ダ 归一 + `order_record` 重排 + 日期排序。
 - **前端草稿段**：编辑台草稿箱 `d.rc`（形状同本表三段），提交时叠加远端（同组键草稿覆盖远端、del 连带清 mod、
   重建行自动撤 del、add 双键去重），合并逻辑单源 = `front/public/editor.js::mergeRaceEdits`。
+
+## 10. video-map.json + video_manual.json + video-sources.json —— 视频回放（§185）
+
+比赛记录「回放」列的数据链。**契约三件套**：配置（人工维护）→ 自动产物（脚本生成）→ 人工覆写（脚本只读，人工值永远优先）。
+
+### 10.1 config/video-sources.json（配置，人工维护；换 UP 主只改这里）
+
+```json
+{
+  "mid": 3493136521235298,            "space_url": "https://space.bilibili.com/…",
+  "fetch": { "seasons_list_page_size": 10, "archives_page_size": 30, "domain_sleep": 1.5 },
+  "search": { "keyword": "" },        // 全量投稿通道：留空 = 自动取 UP 昵称（card 接口）
+  "match": {
+    "date_full":  "(?P<y>20\\d{2})[./\\-](?P<m>\\d{1,2})[./\\-](?P<d>\\d{1,2})",   // 2025-11-09 / 2025/9/28
+    "date_ymd_ja": "(?P<y>20\\d{2})年(?P<m>\\d{1,2})月(?P<d>\\d{1,2})日",           // 2026年04月17日
+    "date_md_ja":  "(?P<m>\\d{1,2})月(?P<d>\\d{1,2})日?",                          // 10月26日（年份=视频 pubdate）
+    "venue":      "(?P<v>東京|中山|…|东京|小仓|…)",                                 // 日文+简体双形
+    "venue_alias": { "东京": "東京", "小仓": "小倉", "福岛": "福島", "函馆": "函館", … },
+    "race_no":    "(?P<r>\\d{1,2})\\s*[Rr]"                                         // 5R / 3r
+  },
+  "subtitle_hint": { "yes": ["字幕","中字","熟肉","双语","CC"], "no": ["生肉","无字幕","字幕なし"] }
+}
+```
+
+- `mid` 为空 = 功能关闭态（脚本显式退出）。**子项目站（kzn 等）各自维护本文件**（品牌保留清单项，不随模板同步）。
+- 字幕**二态**（用户定稿 2026-11）：`subtitle_hint.yes` 命中标题 → `true`，否则 `false`；画面内嵌硬字幕 B 站 API 判不了（`x/player/v2` 只暴露 CC 软字幕）→ **以人工表为准**。
+
+### 10.2 data/video-map.json（自动产物；`run_update.py --video` → scripts/video/ 两步生成）
+
+```json
+{
+  "_meta": { "schema": "video-map/v1", "updated": "…", "mid": …, "auto": 111, "manual": 0,
+             "unmatched": 85, "multi_p": 4, "suspect": 0, "match_how": { "精确": 111 } },
+  "videos": {
+    "race:202501010405": { "source": "bilibili", "bvid": "BV…", "url": "https://www.bilibili.com/video/BV…/",
+                            "title": "2025/8/3 札幌5R 2歳新馬 …", "video_title": "", "page": 1,
+                            "subtitle": false, "match": "auto" }
+  }
+}
+```
+
+- **键 = 比赛键**（与 `scripts/races/racelib.py::race_key` 同构，改键两处同步）：有 `race_id` → `race:<race_id>`；无（海外台账场）→ `slot:<日付>|<場名>|<R>`。同场多驹共享一键 → 全部产驹行同列显示同一视频。
+- **匹配在构建期做，前端只查表**（正则不进浏览器）：标题三信号（日期+场地+R）→ `(日付,場名,R)` 查比赛索引；不齐（追切/展示/直播回放）或同键冲突 → 不落库，进 `data/video_report.md` 待人工。
+- **无年份标题（「11月8日」）的年份口径**：按视频 `pubdate` 推断（含 ±1 年跨年校正），**推断年查不到就判未收录，绝不跨年硬配**。反例（2026-11 实测踩坑）：`11月8日 京都3R ゴールデンプロミス`（2026-11-08，当日中央赛未入库）曾被"同月日唯一"抢到 **2025-11-08 京都3R**；现在只在报告里点名「跨年候选」供人工确认。
+- **马名校验**：标题含片假名马名而该场出走马无此马 → 判疑似错配，不落库并写报告（`suspect` 计数）。宁可不落库，不可挂错场。
+- **多 P 视频按分 P 拆场**：整条标题匹配不到时，逐 P 用分 P 标题（`pages[].part`）匹配，命中记 `page=N`（例：`2025/8/24-8/25 比赛合集` 3 段 → 中京3R / 札幌5R / 新潟6R 各一场）。分 P 详情由 `fetch_video.py` 写进 `_tmp/video/videos.json` 的 `pages`，`build_video_map.py` 保持纯离线。
+- 抓取通道：**主通道 = 站内搜索按 UP 昵称**（`search_type=video&keyword=<昵称>&order=pubdate`，返回条目 `author` 恒为本 UP 主 → 等价全量投稿列表；2026-11 实测 192 条 / 10 页）；**兜底 = 合集/系列接口**（`seasons_series_list`/`seasons_archives_list`/`x/series/archives`，清单 page_size 上限 10，但只覆盖被收录的部分 —— 实测仅 29/192，**不能当全量用**）。`x/space/wbi/arc/search` 对服务器 IP 一律风控（-352 / 412）。兜底：`fetch_video.py --from-file 手工导出.json`。
+- **风控识别（关键）**：B 站对机房/海外 IP 常返回 **HTTP 200 + `code:0`，但 `data` 里只有 `v_voucher` 验证票、没有 `result`**。`common.guard_risk()` 专门识别这种「假成功」并抛 `RiskControl` —— 否则会被当成“该 UP 主没有投稿”，把映射洗成空。
+- **清单 `data/video_raw.json` 入库**（`data/_tmp/` 被 gitignore，Actions 读不到）：CI 抓不到时用这份基线照样能重算映射（新入库的比赛能挂上旧视频）。`copy-data` 显式跳过它 → 不进 dist。
+- **累积合并（默认）**：抓取结果与已有清单按 `bvid` 并集，**只增不减**；`--replace` 才覆盖。抓不全（如只有合集通道可用，29/192）绝不会把已有 111 场映射清空。
+- `page` = 多 P 视频分 P 号（默认 1）；`video_title` = 分 P 命中时保留整条视频标题（前端 tooltip 用 `title`，即该场的分 P 标题）。
+- 每次 `build_video_map.py` 另出人看清单 `data/_tmp/video/videos.md`（全量视频名 + URL + 匹配结果，`_tmp` 不进库不进 dist）。
+
+#### 10.2.1 日频方案（GitHub 定时 + 本机兜底，二者互补）
+
+| 方式 | 触发 | 能力 | 说明 |
+|---|---|---|---|
+| `.github/workflows/video-task.yml` | `update-data` 成功后自动串联（每天 1 次）；亦可手动 dispatch | **尽力而为** | `--via both --best-effort`：机房 IP 被风控时只打 `::warning::` 注解、沿用旧清单、无变化不提交 → 站点零噪音 |
+| `scripts/video/local_refresh.py` | Windows 任务计划程序 / 手动 | **全量可靠**（家宽 IP） | 抓取 → 重算 → `git commit/push` → CI 的 deploy 自动构建上线 |
+
+- 想提高 Actions 成功率：在仓库 Secrets 配 **`BILI_COOKIE`**（浏览器 Cookie 串，含 `SESSDATA`），脚本会自动带 Cookie 请求；不配则匿名请求（本机匿名可用，机房 IP 多半不行）。
+- 无论哪条链路，`data/video_manual.json` 的**人工值永远优先**，CI 不写它。
+
+### 10.3 data/video_manual.json（人工覆写表；写入者唯一 = 人，脚本永不写）
+
+```json
+{ "_readme": "…", "_examples": { "race:202604030411": { "url": "…", "title": "…", "page": 1, "subtitle": true, "note": "…" } } }
+```
+
+- 键同 10.2 比赛键（`_` 前缀键忽略）；值字段：`url`（必填，任意 http(s)；B 站链接前端自动解析 BV 号走站内 iframe 播放，其他链接降级新标签页打开 + 「其他链接」蓝阶图标）、`title`、`page`、`subtitle`（true=带字幕角标「字」）、`note`。
+- 人工值**永远优先**（`build_video_map.py` 落盘时合并 + `front/public/yj-video.js::load` 前端再合并，双保险）；⚠ 本表随构建进 `dist/data/`（公网可读），别写私人内容。
+- 改完重算：`python scripts/video/build_video_map.py` + `npm run build`。
+
+### 10.4 前端消费（只读）
+
+`front/public/yj-video.js`（`YJ.video`，注册进 `yj-cache.js` 的 `videoMap`/`videoManual`，12h 统一缓存）：`load()` 合并两表 → `cellHTML(r)`（race-rows.js 動画列调用，无视频空态）→ 点击开 16:9 浮层（`player.bilibili.com/player.html`，点击才注入 src、关闭即清空）；样式 = `theme.css` `.yj-vid*`/`.yj-vm*`（B 站品牌粉 #FB7299 指定色块，单一出处）。

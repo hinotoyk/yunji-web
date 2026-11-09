@@ -83,6 +83,8 @@ YJ.i18n = (function () {
     "jockey_id": "骑手 ID",
     "本賞金": "本赏金",
     "來源": "来源",
+    // 视频回放列（§185；数据/交互 = front/public/yj-video.js，契约 = docs/SCHEMA.md §10）
+    "動画": "回放",
     // 血统 pedigree 常用
     "fno": "FNo",
     "cross": "クロス",

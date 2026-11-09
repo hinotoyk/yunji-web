@@ -1,0 +1,123 @@
+name: video-task
+
+# 视频回放日频任务（scripts/video：B 站 UP 主 → 全量清单 → 标题匹配比赛键 → data/video-map.json）。
+# 触发模型（与 status-task 同款串联，不新增独立 cron，避免与 update-data 抢同一批文件）：
+#   update-data 成功结束后由 workflow_run 自动触发 → 此时 main 已含当天最新 data/races，匹配才有新场次可挂。
+#   另留 workflow_dispatch 手动兜底（首跑验证 / 换 UP 主后立即重算）。
+#
+# ⚠ 关键事实（2026-11 实测，勿删）：B 站对**机房 IP** 有风控 —— 站内搜索接口会返回
+#   HTTP 200 + code=0，但 data 里只有 v_voucher 验证票、没有 result；投稿列表接口直接 412。
+#   GitHub runner 属机房 IP，**大概率抓不到**（本机家宽 IP 实测 192 条全量正常）。
+#   因此本任务的设计原则是「尽力而为、失败不动数据」：
+#     ① scripts/video/fetch_video.py --best-effort：风控/网络失败只打 ::warning:: 注解，exit 0；
+#     ② 默认**累积合并**（不覆盖）：清单只增不减，抓不全绝不清空；
+#     ③ 清单入库 data/video_raw.json：抓取全挂时仍能用上一次基线重算映射（新入库的比赛照样能挂上旧视频）；
+#     ④ 无变化不 commit → 不触发部署，站点零噪音。
+#   想真正拿到全量：配 secret BILI_COOKIE（自己浏览器的 Cookie 串，含 SESSDATA）提高过风控概率；
+#   或在本机跑 scripts/video/local_refresh.py（家宽 IP，必成）再 push，本任务随后自动跟上。
+#
+# 前置要求：仓库 Settings → Actions → Workflow permissions → "Read and write permissions"。
+on:
+  workflow_run:
+    workflows: ["update-data"]   # 按 update-data.yml 的 name 匹配
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      via:
+        description: 抓取通道
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both        # 搜索 + 合集系列（推荐）
+          - search      # 只搜索（全量，但最容易被风控）
+          - seasons     # 只合集系列（覆盖不全，风控宽松）
+      replace:
+        description: 用本次结果覆盖清单（默认关闭 = 累积合并，更安全）
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write   # 末步 dispatch deploy.yml（GITHUB_TOKEN 的 push 不触发 push 事件）
+
+concurrency:
+  group: video-task
+  cancel-in-progress: false
+
+jobs:
+  video:
+    # 只在上游 update-data 成功结束后触发；失败/取消不跑。手动 dispatch 时无 workflow_run 事件 → 放行。
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40        # 全量 ≈ 200 请求 × 1.5s 限速 ≈ 5~6 分钟，留足余量（风控重试不无限等）
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # 落库要 git pull --rebase，浅克隆 rebase 不可靠
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 纯 stdlib（urllib），无需 pip install；BILI_COOKIE 未配置时为空串，脚本自动不带 Cookie。
+      - name: 抓取视频清单（风控/网络失败不阻断）
+        env:
+          BILI_COOKIE: ${{ secrets.BILI_COOKIE }}
+        run: |
+          VIA="${{ inputs.via }}"
+          VIA="${VIA:-both}"                    # 定时触发时 inputs 为空 → 兜底 both
+          ARGS="--via $VIA --best-effort"
+          [ "${{ inputs.replace }}" = "true" ] && ARGS="$ARGS --replace"
+          echo "fetch args: $ARGS"
+          python scripts/video/fetch_video.py $ARGS
+
+      - name: 重算视频映射（比赛键匹配 + 人看清单）
+        run: python scripts/video/build_video_map.py
+
+      - name: 输出本次结果摘要
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          d = json.loads(pathlib.Path("data/video-map.json").read_text(encoding="utf-8"))
+          m = d.get("_meta") or {}
+          raw = json.loads(pathlib.Path("data/video_raw.json").read_text(encoding="utf-8"))
+          print(f"清单 {len(raw)} 条 → 映射 {len(d.get('videos') or {})} 场 "
+                f"（自动 {m.get('auto')} · 人工 {m.get('manual')} · 未匹配 {m.get('unmatched')}）")
+          print(f"::notice::视频映射共 {len(d.get('videos') or {})} 场 / 清单 {len(raw)} 条")
+          PY
+
+      - name: 提交数据（有变化才提交）
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 只提交视频三件产物：video_manual.json 由人维护，CI 绝不改（git add 不带它也无妨，列出便于审阅）
+          git add data/video_raw.json data/video-map.json data/video_report.md
+          if ! git diff --cached --quiet; then
+            git commit -m "data: video map update $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase --autostash origin main || { git rebase --abort; echo "::error::远端冲突，本次视频提交放弃"; exit 1; }
+            git push origin "HEAD:${GITHUB_REF_NAME:-main}"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::video-map 已更新并推送"
+          else
+            echo "::notice::视频产物无变化，跳过提交（风控抓不到时这是预期结果）"
+          fi
+
+      # 与 update-data / status-task 同款：默认 GITHUB_TOKEN 的 push 不触发 deploy.yml 的 push 事件
+      - name: 触发 Pages 部署
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code=$(curl -sS -o /tmp/dispatch.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/dispatches" \
+            -d '{"ref":"main"}')
+          if [ "$code" = "204" ]; then
+            echo "::notice::已触发 deploy.yml 重新部署"
+          else
+            echo "::error::dispatch 返回 HTTP $code"; cat /tmp/dispatch.json; exit 1
+          fi

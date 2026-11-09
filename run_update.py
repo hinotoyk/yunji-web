@@ -15,6 +15,7 @@
   --since N     轻量时段增量：只抓最近 N 天内出赛的马的成绩（不跑详情/判变，需配合 --races；
                 含台账环防海外台账马误伤）
   --ledger      仅台账：只拉台账海外场并入（不跑 netkeiba）
+  --video       视频回放：抓 B 站 UP 主视频清单 + 离线匹配 → data/video-map.json（本地跑；CI 不抓 B 站）
   --ci          CI 全自动：基本增量 + 比赛增量 + 校验 + 日期图断言(node) + git 提交（全部通过才提交）
 
 输出约定：详细输出进 test-logs/update-<时间戳>.log，stdout 每步一行状态（便于远程监督）。
@@ -28,6 +29,7 @@
     python run_update.py --races-force
     python run_update.py --check --fix
     python run_update.py --ledger
+    python run_update.py --video                # 视频回放（B 站抓取在本地跑）
     python run_update.py --ci [--year 2025,2026]
 """
 import argparse
@@ -56,6 +58,7 @@ STATS = ROOT / "scripts" / "stats" / "build_stats.py"               # 统计总�
 VERIFY_STATS = ROOT / "scripts" / "stats" / "verify_stats.cjs"      # 统计总览断言校验（node：产物契约/源对账/页面冒烟）
 VERIFY_RACES_DRILL = ROOT / "scripts" / "races" / "verify_drill.cjs"      # 比赛记录页下钻冒烟（统计矩阵行 → races.html?f= 全链路）
 VERIFY_RACES_RESULT = ROOT / "scripts" / "races" / "verify_result.cjs"    # 比赛记录页着顺三态口径对账（读 data/races 全量）
+VIDEO = ROOT / "scripts" / "video"                                       # 视频回放（B 站抓取 + 离线匹配 → data/video-map.json）
 FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
@@ -157,6 +160,7 @@ def main():
     g.add_argument("--day", help="按指定日期快速更新：YYYYMMDD 或逗号分隔多个")
     g.add_argument("--check", action="store_true", help="数据校验")
     g.add_argument("--ledger", action="store_true", help="仅台账海外并入")
+    g.add_argument("--video", action="store_true", help="视频回放：抓 B 站 UP 主清单 + 匹配落盘（本地跑，CI 不抓 B 站）")
     g.add_argument("--ci", action="store_true", help="CI 全自动：基本+比赛+校验+日期图/统计/下钻断言+git 提交")
     ap.add_argument("--year", default="", help="建档年份（--basic/--ci 用，如 2025,2026；默认现有年份）")
     ap.add_argument("--since", type=int, default=0, help="时段增量天数（配 --races，轻量模式）")
@@ -165,7 +169,7 @@ def main():
     ap.add_argument("--jra-only", action="store_true", help="配 --day：跳过 NAR 地方")
     args = ap.parse_args()
 
-    log(f"══ 更新开始 {TS} · 策略: {next(k for k in ('init','basic','races','horse','races-force','day','check','ledger','ci') if getattr(args, k.replace('-', '_')))} ══ 日志: {LOG_FILE}")
+    log(f"══ 更新开始 {TS} · 策略: {next(k for k in ('init','basic','races','horse','races-force','day','check','ledger','video','ci') if getattr(args, k.replace('-', '_')))} ══ 日志: {LOG_FILE}")
 
     def lim():
         return ["--limit", str(args.limit)] if args.limit else []
@@ -227,6 +231,9 @@ def main():
         run_step("时间线·事件预计算", TIMELINE)
         run_step("日期图·数据预计算", DATECHART)
         run_step("统计·数据预计算", STATS)
+    elif args.video:
+        run_step("视频·抓取清单", VIDEO / "fetch_video.py")
+        run_step("视频·匹配落盘", VIDEO / "build_video_map.py")
     elif args.ci:
         y = ["--year", args.year] if args.year else []
         run_step("CI·建档新马对账", BASIC / "build_registry.py", *y)

@@ -28,6 +28,7 @@
 <script src="../race-bundle.js"></script>
 <script src="../i18n.js"></script>
 <script src="../site-config.js"></script>
+<script src="../yj-video.js"></script>
 <script src="../race-rows.js"></script>
 <script src="../selector.js"></script>
 <script src="../bus.js"></script>
@@ -37,6 +38,8 @@ var esc = YJ.util.esc;  /* HTML 转义：单一出处 public/yj-util.js */
 var sexOf = YJ.util.sexOf;  /* 当前性别（性別_当前 优先，回退官方 性別）：单一出处同上 */
 
 var EMBED = /[?&]embed=1/.test(location.search);
+/* §185 回放列：视频映射预取（YJ.video 未加载/加载失败 → 空表，回放列整列空态，不阻塞任何渲染链） */
+function videoLoad(){ return (window.YJ && YJ.video) ? YJ.video.load() : Promise.resolve(); }
 /* 从基本信息「在比赛记录中查看详情」跳转带来的 ?horse=id：独立模式预置出走马筛选 */
 var URL_HORSE = YJ.util.qs("horse");
 var PAGE = document.getElementById("page");
@@ -132,14 +135,18 @@ function renderHorse(id){
   var url = YJ_DATA.url('races/'+id+'.json');
   var renderR = function(hh){
     /* 比赛数据主路径：全库压缩包（races-bundle，构建期 276 个逐马文件 → 1 请求），
-     * 12h 统一缓存（YJ.cache）内零请求；dist 替换式下无逐马文件 → 失败回退直连（源树模式兜底） */
-    YJ.cache.fetch("bundle").then(function(b){
+     * 12h 统一缓存（YJ.cache）内零请求；dist 替换式下无逐马文件 → 失败回退直连（源树模式兜底）。
+     * §185 回放列：视频映射与 bundle 并行拉取（YJ.video.load 失败静默空表，不阻塞本链） */
+    Promise.all([YJ.cache.fetch("bundle"), videoLoad()]).then(function(all){
+      var b = all[0];
       var hs = YJ.raceBundle.decode(b)[String(id)] || [];
       hs.sort(raceCmp);   /* 日期降序 + 同日発走降序（无発走视为最大排最前），内嵌 PC/mb 共用 */
       lastR = { hh: hh || {id:id}, races: hs };
       renderRaces(lastR.hh, lastR.races);
     }).catch(function(){
-      fetch(url).then(function(r){
+      videoLoad().then(function(){
+        return fetch(url);
+      }).then(function(r){
         if(!r.ok) throw new Error("HTTP "+r.status);
         return r.json();
       }).then(function(races){
@@ -1088,8 +1095,10 @@ function initLibrary(){
   YJ.selector.loadHorses(YJ_DATA.url('basic.json')).then(function(horses){
     /* 主路径：全库压缩包（races-bundle，构建期把 276 个逐马文件打成 1 请求 ~44KB gzip）；
      * 12h 统一缓存（YJ.cache）内零请求，SWR 后台校验由控制器自理。
-     * bundle 键 = races_file 末段文件名主干（兼容 data/ 前缀，split("/").pop()）；未出道马的空文件 → 空数组，自然跳过 */
-    YJ.cache.fetch("bundle").then(function(b){
+     * bundle 键 = races_file 末段文件名主干（兼容 data/ 前缀，split("/").pop()）；未出道马的空文件 → 空数组，自然跳过。
+     * §185 回放列：视频映射并行拉取（load 失败静默空表；legacy 兜底路径不再等待视频——回放列可能晚一拍，可接受） */
+    Promise.all([YJ.cache.fetch("bundle"), videoLoad()]).then(function(all){
+      var b = all[0];
       var by=YJ.raceBundle.decode(b), entries=[];
       horses.forEach(function(h){
         if(!h.races_file) return;

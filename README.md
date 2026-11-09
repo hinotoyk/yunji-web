@@ -89,6 +89,7 @@ python run_update.py <策略>
 | `--day 20261020[,..]` | 按天快速更新（SP 结果页；可配 `--jra-only` 跳过地方） |
 | `--check [--fix]` | 数据一致性校验（+ 自动补跑修复） |
 | `--ledger` | 只拉台账海外并入 |
+| `--video` | 视频回放：本地抓 B 站 UP 主视频清单 + 离线匹配 → `data/video-map.json`（CI 每日也会尽力抓一次，见下） |
 | `--ci [--year …]` | 基本+比赛+校验+git 提交（GitHub Actions 每日） |
 
 详细验证点 / 回归清单 / 排查指南见 `docs/TESTING.md`；管线内部流程见 `docs/pipeline.md`。
@@ -97,6 +98,7 @@ python run_update.py <策略>
 
 - **GitHub Actions**：push main 时 `.github/workflows/deploy.yml` 自动 `npm run build`，把仓库根（含 `dist/` + `data/`）发布为 Pages 站点根，访问 `https://<user>.github.io/<repo>/dist/index.html`。
 - **数据自动更新**：`.github/workflows/update-data.yml` 每天 UTC 22:00 跑 `--ci`（数据仓库模式，跑完有变化自动 commit+push），也可手动触发选策略。
+- **视频回放日频**：`.github/workflows/video-task.yml` 在 `update-data` 成功后自动串联（每天 1 次，尽力而为 —— B 站对机房 IP 有风控，抓不到只告警不动数据）；想确保全量就在本机跑 `python scripts/video/local_refresh.py`（家宽 IP 必成，抓取→重算→push），或用 Windows 任务计划程序每天定时执行它。可选 Secret `BILI_COOKIE` 提高 Actions 通过率。
 - 前置：Settings → Pages → Source 选 **GitHub Actions**；Settings → Actions → Workflow permissions 勾选读写。
 
 ## 文档导航

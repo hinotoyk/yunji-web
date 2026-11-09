@@ -425,6 +425,40 @@ scripts/status/
 
 ---
 
+## 4.6 视频回放任务（B 站 UP 主 · 2026-11 新增，§185）
+
+比赛记录「回放」列的数据源，独立于 basic/races 两管线（业务隔离：不写 basic.json / races/*.json）。
+产物契约 = `docs/SCHEMA.md` §10；日常入口 `python run_update.py --video`（fetch → match 两步）。
+
+```
+scripts/video/
+├── common.py            # 共享：B 站域名限速（api.bilibili.com 1.5s）+ 接口 URL + 配置/路径单源 + jget（纯 stdlib）
+│                        #   + guard_risk()（识别 v_voucher 风控票）/ RiskControl 异常
+├── fetch_video.py       # 搜索通道按 UP 昵称拉**全量投稿** + 分 P 详情 → data/video_raw.json（入库）
+│                        #   （--via seasons 走合集兜底 / --all-pages 全量拉分P / --from-file 手工导入
+│                        #    / --best-effort CI 模式 / --replace 覆盖而非累积合并）
+├── build_video_map.py   # 标题三信号（日期+场地+R）→ 比赛键 → data/video-map.json + video_report.md
+│                        #   + data/_tmp/video/videos.md（人看：全量视频名 + URL + 匹配结果）
+└── local_refresh.py     # 本机日频兜底：抓取 → 重算 → git commit/push（CI 负责构建部署）
+```
+
+- **抓取通道**：投稿列表接口 `x/space/wbi/arc/search` 对服务器 IP 一律风控（-352/412，2026-11 实测）；
+  **站内搜索接口按 UP 昵称可通**（`search_type=video&keyword=<昵称>&order=pubdate`，返回条目 author 恒为本 UP 主）
+  → 这才是全量通道；**合集/系列接口只覆盖被收录的部分**（实测 29/192，不能当全量）。
+- **日频怎么跑（两条互补链路，见 `.github/workflows/video-task.yml` + `scripts/video/local_refresh.py`）**：
+  - GitHub：`update-data` 成功结束后自动串联（每天 1 次），`--via both --best-effort`。**机房 IP 大概率被风控**
+    （HTTP 200 但 `data` 只有 `v_voucher` 票）→ 只告警、沿用 `data/video_raw.json` 基线重算、无变化不提交，
+    站点零噪音。配 Secret `BILI_COOKIE` 可提高通过率。
+  - 本机：`local_refresh.py`（家宽 IP 必成，实测 193 条全量）→ push 后 CI 自动部署。
+  - 两条链路都遵守：**清单累积合并（只增不减）** + **人工表 `video_manual.json` 永远优先**（CI 不写它）。
+- **匹配在构建期做，前端只查表**（正则不进浏览器）；配置 = `config/video-sources.json`（mid + 正则 + UP 昵称，
+  子项目站各自维护）；人工覆写 = `data/video_manual.json`（脚本只读，人工值永远优先）。
+- **两条防错规则**（实测踩坑后加）：① 无年份标题的推断年查不到就判未收录，**不跨年硬配**（否则「11月8日 京都3R」
+  会挂到去年同月日那场）；② 标题马名不在该场出走马里 → 判疑似错配不落库（`_meta.suspect` + 报告点名）。
+- **多 P 视频按分 P 拆场**：整条标题匹配不到时逐 P 匹配（`page=N`），「8/24-8/25 比赛合集」这类才不漏。
+
+---
+
 ## 5. 校验与编排
 
 - **门禁**：`python scripts/check_data.py`（退出码 0）+ 四个断言脚本

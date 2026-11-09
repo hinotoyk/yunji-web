@@ -64,6 +64,9 @@ async function copyData() {
     await fs.mkdir(dstDir, { recursive: true });
     for (const ent of await fs.readdir(srcDir, { withFileTypes: true })) {
       if (ent.name === '_tmp') continue;
+      /* 视频回放的全量清单（data/video_raw.json）只给 scripts/video 匹配用（入库当 CI 基线），
+         前端只读 video-map.json → 不必进 dist，省 ~35KB 首包无关体积 */
+      if (ent.name === 'video_raw.json') continue;
       if (bundled && ent.isDirectory() && rel + ent.name === 'races') continue;  /* 逐马小文件已被 bundle 替代 */
       const s = path.join(srcDir, ent.name);
       const d = path.join(dstDir, ent.name);

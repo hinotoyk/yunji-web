@@ -360,6 +360,19 @@ YJ.raceRows = (function () {
       pc: function (r) { return esc(r.調教師 || ""); },
       mbItem: function (r, en, o, lb) { return r.調教師 ? mbi(lb, esc(r.調教師)) : ""; },
       min: function (ctx) { return ctx.page(function (en) { return en.r.調教師; }); }
+    },
+    /* 视频回放列（§185）：数据/按钮/浮层单一出处 = front/public/yj-video.js（YJ.video）——
+     * 本模块只出壳（该场无视频 / YJ.video 未就绪 → cellHTML 返回 ""，空态干净不占感官）。
+     * 页面须在 race-rows.js 之前引入 yj-video.js（races.html / datechart.html 已接）；
+     * 数据契约 = docs/SCHEMA.md §10（键：race:<race_id> / slot:<日付>|<場名>|<R>）。 */
+    video: {
+      th: "動画", cls: TT, clsLib: TTL, mbLabel: "動画",
+      pc: function (r) { return (window.YJ && YJ.video) ? YJ.video.cellHTML(r) : ""; },
+      mbItem: function (r) {
+        var h = (window.YJ && YJ.video) ? YJ.video.cellHTML(r) : "";
+        return h ? mbi(null, h, { raw: true }) : "";
+      },
+      min: function (ctx) { return ctx.fmt("回放") + 38; }   /* 按钮固定宽：图标21+字2×fs+内边距+角标 */
     }
   };
 
@@ -384,12 +397,12 @@ YJ.raceRows = (function () {
     ["time", "chakusa", "agari"],
     ["waku", "umaban", "tosu", "kinryo", "ninki"],
     [{ k: "bw", label: "体重" }, { k: "odds", label: "赔率" }, "prize"],
-    ["jockey", "trainer"]
+    ["jockey", "trainer", "video"]
   ];
-  /* 基准列序（22 列，§78 增 性齢 紧随馬名、§101 上り 紧随着順）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
-     枠番 → 馬番 → 頭数 → 斤量 → 人気 → 着順 → 上り → タイム → 着差 → 体重 → 賠率 → 賞金 → 騎手 → 調教師 */
+  /* 基准列序（23 列，§78 增 性齢 紧随馬名、§101 上り 紧随着順、§185 末位增 動画）：馬名 → 性齢 → 日付 → 場名 → レース名 → 距離 → 天候 → 馬場 →
+     枠番 → 馬番 → 頭数 → 斤量 → 人気 → 着順 → 上り → タイム → 着差 → 体重 → 賠率 → 賞金 → 騎手 → 調教師 → 動画 */
   var BASE_COLS = ["horse", "sexage", "date", "venue", "race", "distMerged", "tenki", "baba", "waku", "umaban", "tosu",
-                   "kinryo", "ninki", "place", "agari", "time", "chakusa", "bw", "odds", "prize", "jockey", "trainer"];
+                   "kinryo", "ninki", "place", "agari", "time", "chakusa", "bw", "odds", "prize", "jockey", "trainer", "video"];
 
   var VIEWS = {
     embed: {

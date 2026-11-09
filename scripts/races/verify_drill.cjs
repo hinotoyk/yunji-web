@@ -288,14 +288,15 @@ setTimeout(function () {
     ok(t.includes('f-tag">2人気') && !t.includes('f-tag">1人気'), "删除后筛选条只剩 2人気（整体重建路径同步刷新）");
   }
 
-  console.log("[C3] 性齢列（§78/§78.1）：lib 22 列 性齢 紧随出走马；embed（profile 下段/明细）也展示");
+  console.log("[C3] 性齢列（§78/§78.1）+ 動画列（§185）：lib 23 列 性齢 紧随出走马、動画 末位；embed 也展示");
   {
     const keys = global.YJ.raceRows.cols("lib").map(c => c.k);
-    ok(keys.length === 22 && keys[0] === "horse" && keys[1] === "sexage",
-      "lib 列集 22 列，性齢 紧随出走马（列序随基准）");
+    ok(keys.length === 23 && keys[0] === "horse" && keys[1] === "sexage",
+      "lib 列集 23 列，性齢 紧随出走马（列序随基准）");
+    ok(keys[22] === "video", "動画（视频回放）列在末位（§185，stub 无 YJ.video → 空单元格不崩）");
     const eCols = global.YJ.raceRows.cols("embed");
-    ok(eCols.length === 17 && eCols[0].k === "sexage",
-      "embed 无馬名上下文 17 列、性齢 首列（datechart 传 horse → 18 列；§159 枠番/馬番 解禁 + §78.1 性齢紧随着順）");
+    ok(eCols.length === 18 && eCols[0].k === "sexage",
+      "embed 无馬名上下文 18 列、性齢 首列（datechart 传 horse → 19 列；§159 枠番/馬番 解禁 + §78.1 性齢紧随着順 + §185 動画）");
     const en0 = global.LIB.entries.find(en => String(en.r["性"] || "").trim() && String(en.r["年齢"] || "").trim());
     ok(!!en0 && global.YJ.raceRows.rowLibHTML(en0).includes(">" + en0.r["性"] + en0.r["年齢"] + "</td>"),
       "lib 行 性齢 单元格 = " + (en0 ? en0.r["性"] + en0.r["年齢"] : "(无样本)"));

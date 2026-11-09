@@ -2246,3 +2246,60 @@ kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契�
 **验证**：探针页实测最终 src = `.../embed/entries-table.js?v=9e7a6cf6c1`；改一行组件 → 哈希变；本页截图正常渲染（马号色带 + 彩衣都在）。
 
 **注**：kzn-web 目前**没有** `pages/entries.html`（grep 无 `RC_BASE`/`rcdev`），模板站接入时把 `loadEmbed()` 整段（含 manifest 读取）一起搬，别只搬 `<script>` 那几行。
+
+## §185 · 比赛记录加「视频回放」列：B 站源 + 离线匹配 + 站内播放浮层（2026-11-09，用户三问定稿）
+
+**需求**：用户要在比赛记录加一列视频回放，引用 B 站 UP 主（mid=3493136521235298）的比赛录像。三个问题一起定：① 怎么配 UP 主 + 抓全量 + 正则匹配比赛（允许人工换源填其他链接）；② B 站站外播放要支持、样式做好看；③ B 站 logo 标识来源 + 人工字段标注是否带字幕 + logo 加特征区分字幕。用户决策：人工覆写先手工 JSON、全链路一次做完、字幕**二态**（有/无，默认无）。
+
+**数据链（构建期做掉，前端只查表——正则不进浏览器）**：
+
+- 配置 `config/video-sources.json`（mid + 匹配正则 + 场地别名 + 字幕关键词；换 UP 主只改这里，子项目站各自维护）。
+- 抓取 `scripts/video/fetch_video.py`：**免登录合集/系列接口**（`seasons_series_list` page_size≤10 / `seasons_archives_list` / `x/series/archives`）拉全量 → `data/_tmp/video/videos.json`。实测 29 条全量到手；**投稿全量接口 `x/space/wbi/arc/search` 对服务器 IP 一律风控**（无签名 -352、WBI 签名 + buvid + dm_* 仍 412）→ **CI/GitHub Actions 不抓 B 站**，抓取只在本地跑（`run_update.py --video`），产物入库随 copy-data 进 dist；`--from-file` 手工导出兜底。
+- 匹配 `scripts/video/build_video_map.py`：标题三信号（日期三种形态 / 场地中文→日文归一 / R）→ `(日付,場名,R)` 查全库比赛索引 → `race:<race_id>`（无 id 海外场 `slot:日付|場名|R`，与 `racelib.race_key` 同构）→ `data/video-map.json`。**实测 27/29 自动命中**；剩 2 条（直播回放、跨日合集）按设计留 `data/video_report.md` 待人工。同场多驹共享一键 → 全部产驹行同列同视频，天然正确。
+- 人工覆写 `data/video_manual.json`（脚本只读，值永远优先）：`url` 任意 http(s)——B 站链接前端自动解析 BV 号走站内 iframe，其他源降级新标签页 + 蓝阶「其他链接」图标；`subtitle: true` → 角标「字」。
+
+**前端形态**：
+
+- `race-rows.js` 基准列 22 → **23 列**（動画末位，`BASE_LINES` 末组同加）；量宽 `min = fmt("回放")+38`，`libLayout` 派生自动跟随。embed 视图同步展示（profile 下段 / datechart 明细）；**无视频整格空态**（`cellHTML` 返回 ""，不占感官）。
+- 新模块 `front/public/yj-video.js`（`YJ.video`）：`load()`（`YJ.cache.fetch` videoMap/videoManual 合并，失败静默空表）→ `cellHTML(r)`（按钮）→ document 级事件委托开**16:9 浮层**（`player.bilibili.com/player.html?bvid=&page=&high_quality=1&danmaku=0&autoplay=1&no_related=1`；**点击才注入 src、关闭即清空**——几十行表格绝不并发拉播放器；Esc/遮罩/× 关闭；底部「带字幕」chip +「在 B 站打开 ↗」）。races.html 两条渲染链（embed renderHorse / 独立 initLibrary）均 `Promise.all([bundle, videoLoad()])` 并行预取；datechart init 预取 + renderDetail「未就绪 → load 完成重渲染一次」兜底（ready 检查防循环）。
+- **B 站 logo = 简化自绘小电视**（品牌粉 #FB7299，指定品牌色块例外，单一出处 theme.css `.yj-vid*`）；**字幕二态**：`subtitle=true` 右上角粉底白字「字」角标，false 无角标（无噪音）。交互（YJ.video 未加载/数据失败 → 整列退场不崩）。
+- i18n `動画 → 回放`；`yj-cache.js` 注册 `videoMap`/`videoManual`（12h）。
+
+**断言同步**（列数硬编码）：`verify_drill.cjs` C3 段 22/17/18 → **23/18/19**，并新增「動画列末位 + stub 无 YJ.video 空单元格不崩」断言。
+
+**验证**：`npm run build` 通过（`dist/assets/theme-*.css` 含 yj-vid×7 / yj-vm×14 处，`dist/data/video-map.json` 6.7KB、`dist/yj-video.js` 带内容哈希版本戳，races/datechart 两页已引）；`verify_drill.cjs` **61/0 全绿**（新增 1 条断言）；`verify_result.cjs` 三态对账通过；node 端到端冒烟（真实 bundle + video-map → cellHTML 输出 `data-yj-vid` 按钮、无字幕无角标、manual `_` 键忽略、embed 行 18 td）；`python serve.py` 本地 9090 实测 video-map/video_manual/yj-video.js/races.html 全 200。数据契约见 `docs/SCHEMA.md` §10、管线说明见 `docs/pipeline.md` §4.6。
+
+**踩坑记录**：verify_drill 的 node stub 环境不加载 yj-video.js → races.html 直接调 `YJ.video.load()` 抛 TypeError 打挂整页初始化（LIB=null 连坐五条断言）。修法 = 页面侧 `videoLoad()` 防御（YJ.video 缺失 → `Promise.resolve()`），这也是正确的容错语义：视频模块缺席时回放列整列空态、主数据链零影响。
+
+### §185.1 修正（2026-11-09 晚，用户反馈「匹配错了」）
+
+用户指出回放匹配有误，复查后定位**四个问题**，全部修掉：
+
+1. **清单不全（根因）**：原实现只走合集/系列接口，拿到 29 条；该 UP 主实际投稿 **192 条**（`x/space/navnum` 与 `x/web-interface/card` 均报 191~192）。合集只收被整理过的部分，2026 年整季比赛录像几乎全漏。→ 新主通道：**站内搜索按 UP 昵称**（`search_type=video&keyword=<昵称>&order=pubdate`，实测 10 页 192 条，返回条目 `author` 恒为本 UP 主），合集退为兜底（`--via seasons`）。
+2. **多 P 视频整条丢弃**：`2025/8/24-8/25 比赛合集` 是 3 分 P，真实场次在分 P 标题里，原实现按整条标题匹配 ⇒ 录不到。→ fetch 阶段对疑似多 P 拉 `x/web-interface/view` 存 `pages`，build 阶段逐 P 匹配并记 `page=N`（实测拆出 4 场，含中京3R/札幌5R/新潟6R）。
+3. **跨年错配（真·匹配错）**：`11月8日 京都3R ゴールデンプロミス`（2026-11-08，当日中央赛未入库）曾被"同月日唯一候选"抢到 **2025-11-08 京都3R**（シティプロスパー/ネッタイヤライ）。→ 改为：推断年查不到就判未收录，**绝不跨年硬配**，只在报告写「跨年候选 xxx（未采用，人工确认）」。
+4. **新建马名校验 + 场地正则回归**：标题片假名马名不在该场出走马 → 判疑似错配不落库（`_meta.suspect`）；另修自身回归——改场地正则时漏掉中文「东京」，导致 11 条 2026 场次全掉（`東京` 被重复写了两遍）。
+
+**结果**：27 → **111 场**（全部走「精确」命中；107 条马名验证通过，4 条标题本身没写马名但日期/场地/R 精确）；前端 873 行里 **165 行**出现回放按钮（同场多驹共享）。断言 61/0、datechart 113 全过。人看清单 `data/_tmp/video/videos.md`（192 条：发布日 / 标题 / 分P / URL / 匹配结果）。
+
+### §185.2 日频自动化（2026-11-10）：GitHub 定时 + 本机兜底，风控感知不洗数据
+
+用户问「能不能上 GitHub 每天定时抓」。能做，但**不能天真地抓**：实测 B 站对机房 IP 返回的是
+`HTTP 200 + code:0 + data:{v_voucher}`（只有验证票、没有 result）—— 如果按「结果为空」处理，
+每天会把 111 场映射洗成 0 场。所以这一轮的核心不是加 cron，而是把「抓不到」变成安全事件。
+
+**四处改动**：
+
+1. **风控识别**（`scripts/video/common.py::guard_risk`）：`data` 只有 `v_voucher` 且无 `result/list` → 抛
+   `RiskControl`。同时 `jget` 支持环境变量 `BILI_COOKIE`（CI 配 Secret 用登录态提高通过率）。
+2. **清单入库**（新 `data/video_raw.json`，193 条 / ~50KB）：`data/_tmp/` 被 gitignore，Actions 读不到 →
+   抓取全挂时仍能用基线重算映射（当日新入库的比赛照样能挂上旧视频）。`copy-data` 显式跳过它，不进 dist。
+3. **累积合并 + best-effort**（`fetch_video.py`）：默认按 `bvid` 并集**只增不减**（`--replace` 才覆盖），
+   实测「只放开合集通道（29 条）」时清单仍是 193 条、映射仍是 111 场；`--best-effort` 让 CI 失败也 exit 0。
+4. **新工作流** `.github/workflows/video-task.yml`：`update-data` 成功后串联（每天 1 次，不新增独立 cron 以免抢文件），
+   `--via both --best-effort` → 重算 → 无变化不提交 → 有变化才 commit + dispatch deploy。
+   另加 `scripts/video/local_refresh.py` 作本机兜底（家宽 IP 必成，抓取→重算→push）。
+
+**验证**：`py_compile` 过；YAML `safe_load` 结构检查过（1 job / 7 steps）；`guard_risk` 三态单测过
+（正常放行 / 仅 v_voucher 拦截 / 有 result 时放行）；`local_refresh.py --no-push` 真跑一遍（193 条清单 →
+111 场映射，新增 0）；模拟「只抓到合集 29 条」→ 清单 193 不被清空，且**并集多捞到 1 条搜索漏掉的视频**。

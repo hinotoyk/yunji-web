@@ -45,6 +45,10 @@ YJ.cache = (function () {
     stats:     { ttl: TTL_DEF, url: function () { return YJ_DATA.url("stats.json"); } },
     datechart: { ttl: TTL_DEF, url: function () { return YJ_DATA.url("datechart.json"); } },
     timeline:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("timeline.json"); } },
+    /* 视频回放（§185）：自动匹配产物 + 人工覆写表（人工值优先，合并逻辑 = yj-video.js load）。
+     * 抓取/匹配在本地跑（scripts/video/，B 站对服务器 IP 风控 → CI 不抓）；两产物随 copy-data 进 dist。 */
+    videoMap:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("video-map.json"); } },
+    videoManual: { ttl: TTL_DEF, url: function () { return YJ_DATA.url("video_manual.json"); } },
     /* 跨站引用（2026-10-27）：jbis-sire-rank-history 派生产物。arg = "<board>/<jbisId>"
      * （如 "t4-gen-central@2023/0001237042"），URL 单一出处 = data-config.js YJ_DATA.remote.jbisRank；
      * 对方站每日构建发布，结构升级有 index.json/schema 可校验，失败由控制器回退旧缓存。

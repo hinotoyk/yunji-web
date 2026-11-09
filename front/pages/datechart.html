@@ -60,6 +60,7 @@
 <script src="../i18n.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../site-config.js"></script>
+<script src="../yj-video.js"></script>
 <script src="../race-rows.js"></script>
 <script>
 /* ================= 日期统计 · 日历（真实数据版） =================
@@ -433,6 +434,7 @@ function detailPagerHTML(which, page, pages, total){
   '</div>';
 }
 
+var vidPending = false;   /* §185 回放列兜底标志（防 load 循环重渲染） */
 function renderDetail(mode, key){
   /* 排序照搬 races.html 模块 33：日期降序（新→旧）；同日発走降序（大→小），
    * 缺失视为最大（排同日最前）；同场（発走相同）按着顺升序（未完走 99 殿后）、同着顺按レース名 */
@@ -478,6 +480,15 @@ function renderDetail(mode, key){
   document.getElementById("dBody").innerHTML =
     pc + detailPagerHTML("pc", st.dp.pc, pagesPc, runs.length) +
     mb + detailPagerHTML("mb", st.dp.mb, pagesMb, runs.length);
+  /* §185 回放列兜底：视频映射未就绪时先渲染（cellHTML 空态），load 完成后重渲染一次补按钮；
+   * ready 检查防循环（load 失败 MAP 仍空 → 不重渲染、不再触发） */
+  if (window.YJ && YJ.video && !YJ.video.ready() && !vidPending) {
+    vidPending = true;
+    YJ.video.load().then(function(){
+      vidPending = false;
+      if (YJ.video.ready()) renderDetail(mode, key);
+    });
+  }
 }
 
 /* ---- 交互（事件委托） ---- */
@@ -756,6 +767,10 @@ function todayParts(){
   return { y: +o.year, m: +o.month, d: +o.day };
 }
 (function init(){
+  /* §185 回放列：视频映射与 datechart 产物并行预取（明细渲染时基本已就绪；
+   * renderDetail 里另有「未就绪 → load 完成后重渲染一次」的兜底，双保险不循环；
+   * YJ.video 未加载（stub/旧缓存环境）→ 预取静默跳过） */
+  if (window.YJ && YJ.video) YJ.video.load();
   YJ.cache.fetch("datechart").then(function(data){
     RUNS = (data && data.runs) || [];
     if (!RUNS.length){
