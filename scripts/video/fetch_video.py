@@ -182,15 +182,25 @@ def need_pages(v):
 
 
 def fill_pages(videos, all_pages=False):
-    """给多 P 视频补 pages（分 P 标题 = 真正的单场信息）。单 P 不写字段，保持产物瘦。"""
+    """给多 P 视频补 pages（分 P 标题 = 真正的单场信息）。单 P 不写字段，保持产物瘦。
+
+    熔断：连续 5 条 view 失败（机房 IP 被风控时全部 412/超时）→ 直接放弃本轮分 P 详情，
+    避免 87 条 × 30s 超时把 CI job 撑爆（已抓到的清单照常保留，旧 pages 由合并逻辑续命）。
+    """
     targets = [v for v in videos.values() if all_pages or need_pages(v)]
     print(f"分 P 详情：{len(targets)} / {len(videos)} 条需要拉 view")
+    fails = 0
     for i, v in enumerate(targets, 1):
         try:
             d = common.jget(f"{common.VIEW_URL}?bvid={v['bvid']}")
         except Exception as e:                      # noqa: BLE001
+            fails += 1
             print(f"⚠ {v['bvid']} view 失败：{e}")
+            if fails >= 5:
+                print(f"::warning::view 连续失败 {fails} 次（疑似风控/网络）→ 放弃剩余 {len(targets) - i} 条分 P 详情")
+                break
             continue
+        fails = 0
         pages = d.get("pages") or []
         v["videos"] = int(d.get("videos") or len(pages) or 1)
         if v["videos"] > 1:

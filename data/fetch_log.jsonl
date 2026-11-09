@@ -22423,3 +22423,8 @@
 {"ts": "2026-11-10 00:34:18", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/web-interface/view", "status": "200", "dur_s": 0.15, "retries": 1, "note": ""}
 {"ts": "2026-11-10 00:34:20", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/web-interface/view", "status": "200", "dur_s": 0.12, "retries": 1, "note": ""}
 {"ts": "2026-11-10 00:34:22", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/web-interface/view", "status": "200", "dur_s": 0.1, "retries": 1, "note": ""}
+{"ts": "2026-11-10 00:36:18", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/polymer/web-space/seasons_series_list", "status": "200", "dur_s": 0.2, "retries": 1, "note": ""}
+{"ts": "2026-11-10 00:36:19", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/polymer/web-space/seasons_archives_list", "status": "200", "dur_s": 0.12, "retries": 1, "note": ""}
+{"ts": "2026-11-10 00:36:21", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/series/archives", "status": "200", "dur_s": 0.11, "retries": 1, "note": ""}
+{"ts": "2026-11-10 00:36:23", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/series/archives", "status": "200", "dur_s": 0.13, "retries": 1, "note": ""}
+{"ts": "2026-11-10 00:36:24", "script": "fetch_video.py", "host": "api.bilibili.com", "path": "/x/series/archives", "status": "200", "dur_s": 0.11, "retries": 1, "note": ""}
