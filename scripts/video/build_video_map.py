@@ -232,10 +232,11 @@ def main():
                                  f"马：{'/'.join(sorted(info[key]['horses']))}）→ 不落库，请人工确认")
                 continue
             if key in out:
-                unmatched.append(f"{v.get('bvid')} · {ctitle} · 与 {out[key]['bvid']}"
-                                 f"（P{out[key]['page']}）同键 {key}（保留首条，人工裁决请用 video_manual.json）")
+                first = out[key][0] if out[key] else {}
+                unmatched.append(f"{v.get('bvid')} · {ctitle} · 与 {first.get('bvid')}"
+                                 f"（P{first.get('page')}）同键 {key}（保留首条，人工裁决请用 video_manual.json）")
                 continue
-            out[key] = {
+            out[key] = [{
                 "source": "bilibili",
                 "bvid": v.get("bvid"),
                 "url": f"https://www.bilibili.com/video/{v.get('bvid')}/",
@@ -244,7 +245,7 @@ def main():
                 "page": cpage,
                 "subtitle": any(k in (whole + ctitle) for k in sub_hint),
                 "match": "auto",
-            }
+            }]
             matched += 1
             hit_any = True
             hows[how] = hows.get(how, 0) + 1
@@ -253,34 +254,55 @@ def main():
         if len(cands) > 1 and not hit_any:
             unmatched.append(f"{v.get('bvid')} · {whole} · 多 P {len(cands) - 1} 段全部未命中")
 
-    # ---- 人工覆写（永远优先；`_` 前缀键忽略） ----
+    # ---- 人工覆写（永远优先；`_` 前缀键忽略）----
+    # 多源（§186）：值可为 {"sources":[{url,title,page,subtitle},...]} / 单对象（旧契约兼容） / 直接数组。
+    # 默认 **replace**（人工配置 = 该场最终源列表）；`append:true` 才追加到自动源之后。
+    # 显式 {"sources":[],"clear":true} = 清空该场自动视频。
     manual_n = 0
     if common.VIDEO_MANUAL_JSON.exists():
         manual = json.loads(common.VIDEO_MANUAL_JSON.read_text(encoding="utf-8"))
         for k, mv in manual.items():
-            if k.startswith("_") or not isinstance(mv, dict):
+            if k.startswith("_"):
                 continue
-            url = str(mv.get("url") or "").strip()
-            if not url:
+            raws, append, explicit_empty = [], False, False
+            if isinstance(mv, list):
+                raws = mv
+            elif isinstance(mv, dict):
+                append = bool(mv.get("append"))
+                if isinstance(mv.get("sources"), list):
+                    raws = mv["sources"]
+                    explicit_empty = not raws and bool(mv.get("clear"))
+                elif mv.get("url"):
+                    raws = [mv]
+            srcs = []
+            for s in raws:
+                if not isinstance(s, dict):
+                    continue
+                url = str(s.get("url") or "").strip()
+                if not url:
+                    continue
+                hit = BILI_URL_RE.search(url)
+                srcs.append({
+                    "source": "bilibili" if hit else "other",
+                    "bvid": hit.group(1) if hit else "",
+                    "url": url,
+                    "title": str(s.get("title") or (mv.get("title") if isinstance(mv, dict) else "") or ""),
+                    "page": int(s.get("page") or (mv.get("page") if isinstance(mv, dict) else 1) or 1) or 1,
+                    "subtitle": bool(s.get("subtitle", mv.get("subtitle") if isinstance(mv, dict) else False)),
+                    "match": "manual",
+                })
+            if not srcs and not explicit_empty:
                 continue
-            hit = BILI_URL_RE.search(url)
-            entry = {
-                "source": "bilibili" if hit else "other",
-                "bvid": hit.group(1) if hit else "",
-                "url": url,
-                "title": str(mv.get("title") or ""),
-                "page": int(mv.get("page") or 1) or 1,
-                "subtitle": bool(mv.get("subtitle")),
-                "match": "manual",
-            }
-            if k not in out or out[k]["match"] != "manual":
-                out[k] = entry
-                manual_n += 1
+            if append and out.get(k) and out[k][0].get("match") == "auto":
+                out[k] = out[k] + srcs
+            else:
+                out[k] = srcs
+            manual_n += 1
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     doc = {
         "_meta": {
-            "schema": "video-map/v1",
+            "schema": "video-map/v2",
             "updated": now,
             "mid": cfg.get("mid"),
             "auto": matched,
@@ -318,8 +340,10 @@ def main():
 
     # ---- 全量清单（人看：视频名 + URL + 匹配结果；放 _tmp 不进库不进 dist） ----
     key_of_bvid = {}
-    for k, e in doc["videos"].items():
-        key_of_bvid.setdefault((e["bvid"], int(e.get("page") or 1)), k)
+    for k, srcs in doc["videos"].items():            # v2：每场 = 源数组（自动 1 个 / 人工多个）
+        for e in srcs:
+            if e.get("bvid"):
+                key_of_bvid.setdefault((e["bvid"], int(e.get("page") or 1)), k)
     cl = ["# 视频清单（全量 " + str(len(videos)) + " 条）", "",
           "| # | 发布 | 标题 | 分P | URL | 匹配 |", "|---|---|---|---|---|---|"]
     for i, v in enumerate(sorted(videos, key=lambda x: -(x.get("pubdate") or 0)), 1):

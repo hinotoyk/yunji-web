@@ -361,10 +361,11 @@ YJ.raceRows = (function () {
       mbItem: function (r, en, o, lb) { return r.調教師 ? mbi(lb, esc(r.調教師)) : ""; },
       min: function (ctx) { return ctx.page(function (en) { return en.r.調教師; }); }
     },
-    /* 视频回放列（§185）：数据/按钮/浮层单一出处 = front/public/yj-video.js（YJ.video）——
-     * 本模块只出壳（该场无视频 / YJ.video 未就绪 → cellHTML 返回 ""，空态干净不占感官）。
-     * 页面须在 race-rows.js 之前引入 yj-video.js（races.html / datechart.html 已接）；
-     * 数据契约 = docs/SCHEMA.md §10（键：race:<race_id> / slot:<日付>|<場名>|<R>）。 */
+    /* 视频回放列（§185 / §186 / §187）：数据/按钮/播放浮层单一出处 = front/public/yj-video.js（YJ.video）。
+     * 本模块只出壳；页面须在 race-rows.js 之前引入 yj-video.js（races.html / datechart.html 已接）。
+     * §187：**编辑统一放编辑台「比赛记录批量编辑」**（草稿箱 + PAT 写 data/video_manual.json），
+     *   正式页只读 → 该场无视频 / 数据未就绪 / YJ.video 缺席一律返回 ""（空态干净、不崩 stub）。
+     * 数据契约 = docs/SCHEMA.md §10（键：race:<race_id> / slot:<日付>|<場名>|<R>；v2 每场 = 源数组）。 */
     video: {
       th: "動画", cls: TT, clsLib: TTL, mbLabel: "動画",
       pc: function (r) { return (window.YJ && YJ.video) ? YJ.video.cellHTML(r) : ""; },
@@ -372,7 +373,7 @@ YJ.raceRows = (function () {
         var h = (window.YJ && YJ.video) ? YJ.video.cellHTML(r) : "";
         return h ? mbi(null, h, { raw: true }) : "";
       },
-      min: function (ctx) { return ctx.fmt("回放") + 38; }   /* 按钮固定宽：图标21+字2×fs+内边距+角标 */
+      min: function (ctx) { return Math.max(ctx.fmt("回放") + 8, 34); }  /* §186.1 只图标：小电视 28px */
     }
   };
 

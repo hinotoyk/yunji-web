@@ -516,15 +516,19 @@
 
 ```json
 {
-  "_meta": { "schema": "video-map/v1", "updated": "…", "mid": …, "auto": 111, "manual": 0,
-             "unmatched": 85, "multi_p": 4, "suspect": 0, "match_how": { "精确": 111 } },
+  "_meta": { "schema": "video-map/v2", "updated": "…", "mid": …, "auto": 111, "manual": 0,
+             "unmatched": 86, "multi_p": 4, "suspect": 0, "match_how": { "精确": 111 } },
   "videos": {
-    "race:202501010405": { "source": "bilibili", "bvid": "BV…", "url": "https://www.bilibili.com/video/BV…/",
-                            "title": "2025/8/3 札幌5R 2歳新馬 …", "video_title": "", "page": 1,
-                            "subtitle": false, "match": "auto" }
+    "race:202501010405": [
+      { "source": "bilibili", "bvid": "BV…", "url": "https://www.bilibili.com/video/BV…/",
+        "title": "2025/8/3 札幌5R 2歳新馬 …", "video_title": "", "page": 1,
+        "subtitle": false, "match": "auto" }
+    ]
   }
 }
 ```
+
+- **v2（§186）= 每场一个源数组**（`videos[key]: [source, …]`），支持一场多个视频源。自动产物恒 1 源；人工表可给多源。前端 `normList()` 同时兼容 v1 的单对象（升级过渡/旧缓存）。
 
 - **键 = 比赛键**（与 `scripts/races/racelib.py::race_key` 同构，改键两处同步）：有 `race_id` → `race:<race_id>`；无（海外台账场）→ `slot:<日付>|<場名>|<R>`。同场多驹共享一键 → 全部产驹行同列显示同一视频。
 - **匹配在构建期做，前端只查表**（正则不进浏览器）：标题三信号（日期+场地+R）→ `(日付,場名,R)` 查比赛索引；不齐（追切/展示/直播回放）或同键冲突 → 不落库，进 `data/video_report.md` 待人工。
@@ -551,13 +555,41 @@
 ### 10.3 data/video_manual.json（人工覆写表；写入者唯一 = 人，脚本永不写）
 
 ```json
-{ "_readme": "…", "_examples": { "race:202604030411": { "url": "…", "title": "…", "page": 1, "subtitle": true, "note": "…" } } }
+{
+ "_readme": "…",
+ "race:202604030411": {
+  "sources": [
+   { "url": "https://www.bilibili.com/video/BV1xx411c7mD/", "title": "带字幕版", "page": 1, "subtitle": true },
+   { "url": "https://www.bilibili.com/video/BV1yy411c7mE/", "title": "另一机位", "page": 1, "subtitle": false }
+  ]
+ }
+}
 ```
 
-- 键同 10.2 比赛键（`_` 前缀键忽略）；值字段：`url`（必填，任意 http(s)；B 站链接前端自动解析 BV 号走站内 iframe 播放，其他链接降级新标签页打开 + 「其他链接」蓝阶图标）、`title`、`page`、`subtitle`（true=带字幕角标「字」）、`note`。
-- 人工值**永远优先**（`build_video_map.py` 落盘时合并 + `front/public/yj-video.js::load` 前端再合并，双保险）；⚠ 本表随构建进 `dist/data/`（公网可读），别写私人内容。
-- 改完重算：`python scripts/video/build_video_map.py` + `npm run build`。
+- **多源三种写法**：`{"sources":[…]}`（推荐）/ 单个 `{"url":…}`（v1 兼容）/ 直接数组 `[…]`。每个源字段：`url`（必填，任意 http(s)；B 站链接自动解析 BV 号走站内 iframe，其他链接＝`other` 源）、`title`、`page`（默认 1）、`subtitle`（true=「字」角标）。
+- 外层开关：`append:true` = 把人工源**追加**到自动源之后（默认 `replace`：人工列表就是该场最终源列表）；`{"sources":[],"clear":true}` = 清空该场自动视频。`_` 前缀键忽略。
+- 人工值**永远优先**（`build_video_map.py` 落盘时合并 + `yj-video.js::load` 前端再合并，双保险）；⚠ 本表随构建进 `dist/data/`（公网可读），别写私人内容。
+- 改完重算：`python scripts/video/build_video_map.py` + `npm run build`。**正式配置入口 = 编辑台「比赛记录批量编辑」**（见 10.4 末）。
 
 ### 10.4 前端消费（只读）
 
-`front/public/yj-video.js`（`YJ.video`，注册进 `yj-cache.js` 的 `videoMap`/`videoManual`，12h 统一缓存）：`load()` 合并两表 → `cellHTML(r)`（race-rows.js 動画列调用，无视频空态）→ 点击开 16:9 浮层（`player.bilibili.com/player.html`，点击才注入 src、关闭即清空）；样式 = `theme.css` `.yj-vid*`/`.yj-vm*`（B 站品牌粉 #FB7299 指定色块，单一出处）。
+`front/public/yj-video.js`（`YJ.video`，注册进 `yj-cache.js` 的 `videoMap`/`videoManual`，12h 统一缓存）：
+
+- `load()` 两层合并 → `MAP[key] = [source,…]`，优先级 **data/video_manual.json > data/video-map.json**（人工默认 replace，`append:true` 追加，`clear:true` 清空）。
+  模块**只读不写**：§187 之前曾有 localStorage 本机表，因它会盖掉编辑台提交的全站值已移除。
+- `cellHTML(r)` → 回放列只出**图标**（用户定稿 §186.1）：小电视按钮（无文字）、多源右下角数字角标、字幕右上**小胶囊「字」**（§187.1 定稿：16×12 圆角矩形、9px/400 字重，不再是 14px 圆形大角标；角标字小，标题 tooltip 追加「· 带字幕」补足可读性）；无视频 / 数据未就绪 / 模块缺席一律返回 `""`（空态干净）。
+- 点击主按钮：单源 B 站 → 16:9 浮层（`player.bilibili.com/player.html`，点击才注入 src、关闭即清空）；单源 `other` → 新标签页直开；**多源 → 浮层顶部源切换条**（`other` 源在浮层内显示外链卡片）。浮层底部「配置视频源 ↗」直达编辑台。
+- **浮层挂 `window.top.document`（§186）**：内容页都在外壳 `index.html` 的 iframe 里，页内 `fixed` 只能盖到内容区（基本信息页弹窗会偏右下）；同源 iframe 直接操作顶层文档，外壳引了同一份 `theme.css` → 遮罩全屏、弹窗整页居中。直开子页自动退回本 document。遮罩**完全透明**（用户定稿），点空白 / Esc / × 关闭。
+- 样式 = `theme.css` `.yj-vid*` / `.yj-vm*` / `.yj-ve*`（B 站品牌粉 #FB7299 指定色块，单一出处；`.yj-ve*` 由编辑台视频源弹窗复用）。
+
+#### 10.4.1 编辑链路（§187：复用草稿箱 + PAT）
+
+| 环节 | 落点 |
+|---|---|
+| 编辑入口 | `edit-table.html?sheet=races` 的「视频源」列（`editor-table.js::RACE_LAYOUT` 新增 `type:"video"` 列，点击开多源弹窗） |
+| 草稿段 | `d.vid = { "<比赛键>": { sources:[…] } }`（`editor.js::vidGet/vidPut/vidN/vidDropAll`），计入 `draftCount()`，草稿箱显示「回放视频源」条目，`__vid` 可放弃 |
+| 提交 | `editor.js::submitDrafts` 白名单 5 `VM_PATH = data/video_manual.json`：远端 + `mergeVideoManual(remote, d.vid)` → 与其余 4 张人工表同一原子 commit（GitHub Git Data API + PAT） |
+| 生效 | `yj-video.js::load` 直读该表且人工值优先 → **不需要后端重算**；`YJ.cache.bust()` + `watchCI` 后刷新即见。提交成功清 `d.vid` 并派发 `yj-vid-dropped` |
+| 防污染 | 视频源列**不写 `races_edits.json`**：`type:"video"` 列在 `startEdit` 被拦截、不走 `applyCell`；行初始化 4 处跳过该列（`r._pend` 永不出现「视频源」） |
+
+`video-task.yml` 每天重算 `video-map.json` 时会再次把人工表合并进去（幂等），不影响上述即时生效路径。

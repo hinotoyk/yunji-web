@@ -241,30 +241,68 @@
   .yj-name-toggle[data-tip]:hover::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;box-shadow:0 2px 8px rgba(0,0,0,.18);font-weight:400}
   .yj-name-toggle[data-tip]:hover::before{content:"";position:absolute;top:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:#1f2937;z-index:30}
 
-  /* ---------- 视频回放（§185；标记产出 = race-rows.js video 列 + front/public/yj-video.js） ----------
+  /* ---------- 视频回放（§185 / §186 / §187；产出 = race-rows.js video 列 + yj-video.js + 编辑台 editor-table.js） ----------
    * 配色 = B 站品牌粉 #FB7299 及其浅阶（指定品牌色块，例外于「不写死 hex」约定，单一出处 = 此处，
    * 同 PLACE_BG 先例）；图标内描边色由 yj-video.js 的内联 SVG 持有（同族色，改色两处同步）。
-   * B 站源按钮 = 小电视 + 「回放」+（带字幕时）右上角「字」角标（字幕二态：false 无角标，用户定稿 2026-11）；
-   * 人工换源（other）= 通用播放三角 + 蓝阶（chart-2 同族）。 */
-  .yj-vid{display:inline-flex;align-items:center;gap:5px;position:relative;border:1px solid #f4c0d1;background:#fbeaf0;color:#993556;border-radius:7px;padding:2px 8px 2px 6px;font-size:11.5px;line-height:1.55;cursor:pointer;vertical-align:1px;transition:background .15s,border-color .15s,transform .1s}
+   * §186.1 用户定稿：按钮只显示图标（不写「回放」二字）、遮罩完全透明、浮层挂顶层文档整页居中。
+   * 字幕二态（§187.1 定稿）：subtitle=true → 右上**小胶囊「字」**（9px，非圆形大角标），false 无角标；多源右下角数字角标。 */
+  /* §187：页面内不再放编辑入口（编辑统一在编辑台批量编辑）→ 单元格就是一个图标按钮 */
+  .yj-vid{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:25px;padding:0;border:1px solid #f4c0d1;background:#fbeaf0;border-radius:7px;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
   .yj-vid:hover{background:#f8dfe8;border-color:#ed93b1}
   .yj-vid:active{transform:translateY(1px)}
   .yj-vid svg{display:block;flex:none}
-  .yj-vid-sub{position:absolute;right:-5px;top:-6px;min-width:14px;height:14px;border-radius:7px;background:#d4537e;color:#fff;font-size:10px;font-style:normal;line-height:14px;text-align:center;padding:0 2px}
-  .yj-vid--other{border-color:#c9dcf0;background:#e6f1fb;color:#0c447c}
+  .yj-vid--other{border-color:#c9dcf0;background:#e6f1fb}
   .yj-vid--other:hover{background:#dceaf8;border-color:#a9cdec}
-  /* 播放浮层（yj-video.js open）：16:9 站内 iframe + 底部信息行（字幕 chip / B 站源 / 外链） */
-  .yj-vm-mask{ @apply fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4 max-md:p-2; }
-  .yj-vm{ @apply flex max-h-[94vh] w-[min(880px,96vw)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl; }
+  /* §187.1 字幕角标定稿（用户选候选 A 的胶囊形，CC → 小号「字」）：圆角矩形胶囊，不是圆点；
+   * 字必须小（9px / 400，与多源数字角标同字号），只做「有/无」二态提示，不抢主图标。 */
+  .yj-vid-sub{position:absolute;right:-6px;top:-6px;min-width:16px;height:12px;border-radius:4px;background:#d4537e;color:#fff;font-size:9px;font-style:normal;font-weight:400;line-height:12px;text-align:center;padding:0 2px}
+  .yj-vid-n{position:absolute;right:-5px;bottom:-5px;min-width:13px;height:13px;border-radius:7px;background:#fff;border:1px solid #f4c0d1;color:#993556;font-size:9px;font-style:normal;line-height:12px;text-align:center;padding:0 2px}
+  /* 播放浮层（yj-video.js 播放 / editor-table.js 视频源编辑共用骨架）：挂 window.top.document → 整页居中；
+   * 遮罩完全透明（用户定稿），只靠弹窗自身阴影/描边分层；点空白 / Esc / × 关闭。 */
+  .yj-vm-mask{ @apply fixed inset-0 z-[300] flex items-center justify-center bg-transparent p-4 max-md:p-2; }
+  .yj-vm{ @apply flex max-h-[94vh] w-[min(880px,96vw)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl ring-1 ring-black/5; }
   .yj-vm-head{ @apply flex items-center gap-3 border-b border-border px-4 py-3; }
   .yj-vm-title{ @apply min-w-0 flex-1 truncate text-[13.5px] font-semibold; }
+  .yj-vm-sub{ @apply ml-2 text-[11px] font-normal text-muted-foreground; }
   .yj-vm-x{ @apply flex h-7 w-7 flex-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground; }
+  .yj-vm-tabs{ @apply flex flex-wrap gap-1.5 border-b border-border px-4 py-2; }
+  .yj-vm-tab{ @apply rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted; }
+  .yj-vm-tab.is-on{ @apply border-primary bg-primary/10 text-primary; }
   .yj-vm-frame{ @apply aspect-video w-full bg-black; }
   .yj-vm-frame iframe{ @apply h-full w-full border-0; }
+  .yj-vm-ext{ @apply flex flex-col items-center justify-center gap-3 bg-muted text-muted-foreground; }
+  .yj-vm-open{ @apply rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:opacity-90; }
   .yj-vm-foot{ @apply flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5 text-[11.5px] text-muted-foreground; }
   .yj-vm-chip{ @apply rounded px-1.5 py-0.5 text-[11px] bg-muted; }
   .yj-vm-chip--sub{ @apply bg-[#f4c0d1] text-[#993556]; }
+  .yj-vm-cfg{ @apply inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground; }
   .yj-vm-link{ @apply ml-auto font-semibold text-primary hover:underline; }
+  /* 手工配置弹窗（§186）：一场 N 个源，逐行填 URL/标题/分P/字幕 */
+  .yj-ve{ @apply w-[min(680px,96vw)]; }
+  .yj-ve-body{ @apply max-h-[64vh] overflow-y-auto px-4 py-3; }
+  .yj-ve-tip{ @apply mb-3 rounded-md bg-muted/70 px-3 py-2 text-[11.5px] leading-relaxed text-muted-foreground; }
+  .yj-ve-tip code{ @apply rounded bg-card px-1 py-0.5 text-[11px] text-foreground; }
+  .yj-ve-rows{ @apply flex flex-col gap-2.5; }
+  .yj-ve-row{ @apply rounded-lg border border-border p-3; }
+  .yj-ve-row-hd{ @apply mb-2 flex items-center gap-2; }
+  .yj-ve-no{ @apply text-[12px] font-semibold; }
+  .yj-ve-tag{ @apply rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary; }
+  .yj-ve-tag--auto{ @apply bg-muted text-muted-foreground; }
+  .yj-ve-del{ @apply ml-auto flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive; }
+  .yj-ve-f{ @apply mb-2 flex items-center gap-2 text-[11px] text-muted-foreground; }
+  .yj-ve-f>span{ @apply w-8 flex-none; }
+  .yj-ve-f input{ @apply min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-[12px] text-foreground outline-none focus:border-primary; }
+  .yj-ve-f--sm{ @apply mb-0; }
+  .yj-ve-f--sm input{ @apply w-16 flex-none; }
+  .yj-ve-minor{ @apply flex items-center gap-6; }
+  .yj-ve-check{ @apply flex items-center gap-1.5 text-[11.5px] text-muted-foreground; }
+  .yj-ve-add{ @apply mt-3 inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 py-1.5 text-[11.5px] text-muted-foreground hover:border-primary hover:text-primary; }
+  .yj-ve-foot{ @apply items-center; }
+  .yj-ve-btn{ @apply rounded-md border border-border px-3 py-1.5 text-[11.5px] font-medium text-foreground hover:bg-muted; }
+  .yj-ve-btn--primary{ @apply border-primary bg-primary text-primary-foreground hover:bg-primary/90; }
+  .yj-ve-btn--ghost{ @apply border-transparent text-muted-foreground; }
+  .yj-ve-spacer{ @apply flex-1; }
+  .yj-vtoast{ @apply fixed left-1/2 top-6 z-[400] -translate-x-1/2 rounded-lg bg-foreground px-4 py-2 text-[12px] font-medium text-background shadow-lg; }
 
   /* ---------- 编辑台（只有 pages/edit.html + edit-timeline.html + public/editor.js 用）----------
    * 2026-10 v3「工作台」改版（docs/UI优化记录.md §87）：参考成熟编辑菜单的分组语言——

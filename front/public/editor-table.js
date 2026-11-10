@@ -58,6 +58,9 @@ YJ.editorTable = (function () {
     { k: "騎手", w: 90 },
     { k: "賞金", num: 1, w: 108 },
     { k: "來源", w: 70 },
+    /* §187 回放视频源：**不写 races_edits.json**（不是比赛字段），改动单独进 d.vid 草稿 →
+     * 提交 data/video_manual.json。格子点击开多源弹窗，不走 input/select/applyCell 通用链。 */
+    { k: "视频源", w: 132, type: "video" },
     { k: "race_id", ro: 1, w: 110 }
   ];
 
@@ -71,6 +74,7 @@ YJ.editorTable = (function () {
     startOv: {},           /* 会话开始时各马 ov 草稿条目快照（含其它页面产生的草稿键） */
     touchedOv: {},         /* 会话中写过的马 id */
     startRc: null,         /* 会话开始时 d.rc 快照 */
+    vidBase: {},           /* §187 比赛键 → {sources:[…], origin:"auto"|"saved"}（video-map + video_manual 合并） */
     cur: null, editing: null,
     undoJ: [], redoJ: [],
     batch: 0, jbuf: [],     /* 复合操作（粘贴导入等）的日志合并 */
@@ -207,7 +211,7 @@ YJ.editorTable = (function () {
     Object.keys(bundleRows).forEach(function (hid) {
       (bundleRows[hid] || []).forEach(function (rec) {
         var r = {};
-        RACE_LAYOUT.forEach(function (c) { r[c.k] = rec[c.k] == null ? "" : rec[c.k]; });
+        RACE_LAYOUT.forEach(function (c) { if (c.type !== "video") r[c.k] = rec[c.k] == null ? "" : rec[c.k]; });
         r.hid = hid; r._gid = gidOf(rec); r._gk = hid + "|" + r._gid;
         r._base = clone(rec);
         r._baseIdent = { race_id: String(rec.race_id || ""), 日付: String(rec.日付 || ""), 馬名: String(rec.出走馬名 || "") };
@@ -242,7 +246,7 @@ YJ.editorTable = (function () {
     });
     (rc.add || []).forEach(function (rec) {
       var r = clone(rec);
-      RACE_LAYOUT.forEach(function (c) { if (r[c.k] == null) r[c.k] = ""; });
+      RACE_LAYOUT.forEach(function (c) { if (c.type !== "video" && r[c.k] == null) r[c.k] = ""; });
       r.hid = rec.id == null ? "" : String(rec.id);
       r._gid = gidOf(rec); r._gk = "new|" + r._gid + "|" + Math.random().toString(36).slice(2, 7);
       r._base = clone(rec); r._baseIdent = { race_id: "", 日付: String(rec.日付 || ""), 馬名: String(rec.出走馬名 || "") };
@@ -250,6 +254,7 @@ YJ.editorTable = (function () {
       rows.push(r);
     });
     S.sh.races.rows = rows;
+    hydrateVid();
   }
   function recKeysJs(r) {
     var ks = [];
@@ -285,6 +290,150 @@ YJ.editorTable = (function () {
     });
     YJ.editor.rcPut(rc);
   }
+  /* ================= §187 回放视频源列（独立草稿段，绝不写进 races_edits.json） =================
+   * 数据：video-map.json（v2：每场源数组，自动匹配）+ video_manual.json（人工，优先）→ S.vidBase；
+   *       YJ.editor.vidGet() 的 d.vid 草稿再覆盖 → 每行 r._vid。
+   * 提交：editor.js 白名单 5（VM_PATH），单原子 commit 写 data/video_manual.json；
+   *       yj-video.js::load 直接读该表且人工值优先 → **不需要后端重算**，CI 发布完即生效。
+   * 比赛键与 front/public/yj-video.js::raceKey 同构（改键两处同步）。 */
+  function videoKey(r) {
+    var rid = String(r.race_id || (r._baseIdent && r._baseIdent.race_id) || "").trim();
+    if (rid) return "race:" + rid;
+    return "slot:" + String(r.日付 || "") + "|" + String(r.場名 || "") + "|" + String(r.R || "");
+  }
+  function normSources(x) {
+    var arr = Array.isArray(x) ? x
+      : (x && Array.isArray(x.sources) ? x.sources : (x && x.url ? [x] : []));
+    var out = [];
+    arr.forEach(function (s) {
+      var u = s && String(s.url || "").trim();
+      if (!u || !/^https?:\/\//i.test(u)) return;
+      out.push({ url: u, title: String(s.title || ""), page: parseInt(s.page, 10) || 1, subtitle: !!s.subtitle });
+    });
+    return out;
+  }
+  function loadVidBase(vm, vman) {
+    var base = {}, auto = (vm && vm.videos) || {}, k;
+    for (k in auto) base[k] = { sources: normSources(auto[k]), origin: "auto" };
+    var man = vman || {};
+    for (k in man) {
+      if (k.charAt(0) === "_") continue;
+      var s = normSources(man[k]);
+      if (!s.length && !(man[k] && man[k].clear)) continue;
+      if (man[k] && man[k].append && base[k])
+        base[k] = { sources: base[k].sources.concat(s), origin: "saved" };
+      else base[k] = { sources: s, origin: "saved" };
+    }
+    S.vidBase = base;
+  }
+  function hydrateVid() {
+    var draft = YJ.editor.vidGet();
+    S.sh.races.rows.forEach(function (r) {
+      var k = videoKey(r), b = S.vidBase[k] || { sources: [], origin: "" };
+      r._vid = Object.prototype.hasOwnProperty.call(draft, k)
+        ? { key: k, sources: normSources(draft[k]), origin: "draft" }
+        : { key: k, sources: b.sources.slice(), origin: b.origin };
+    });
+  }
+  function resetVidUi() { hydrateVid(); rebuild(); YJ.editor.render(); }
+  function hostDocument() {
+    try { var t = window.top; if (t && t !== window && t.document) return t.document; } catch (e) {}
+    return document;
+  }
+  var VID_X = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var VID_DEL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  function vidRowHtml(s, i, origin) {
+    return '<div class="yj-ve-row" data-vrow="' + i + '">' +
+      '<div class="yj-ve-row-hd"><span class="yj-ve-no">源 ' + (i + 1) + '</span>' +
+      '<span class="yj-ve-tag' + (origin === "auto" ? " yj-ve-tag--auto" : "") + '">' +
+      (origin === "draft" ? "草稿" : origin === "saved" ? "人工表" : origin === "auto" ? "自动匹配" : "新增") + '</span>' +
+      '<button type="button" class="yj-ve-del" data-vdel="' + i + '" aria-label="删除此源">' + VID_DEL + '</button></div>' +
+      '<label class="yj-ve-f"><span>链接</span><input class="yj-ve-url" type="url" placeholder="https://www.bilibili.com/video/BV…/" value="' + esc(s.url || "") + '"></label>' +
+      '<label class="yj-ve-f"><span>标题</span><input class="yj-ve-title" type="text" placeholder="选填，浮层标题" value="' + esc(s.title || "") + '"></label>' +
+      '<div class="yj-ve-minor"><label class="yj-ve-f yj-ve-f--sm"><span>分 P</span><input class="yj-ve-page" type="number" min="1" max="99" value="' + (s.page || 1) + '"></label>' +
+      '<label class="yj-ve-check"><input class="yj-ve-sub" type="checkbox"' + (s.subtitle ? " checked" : "") + '> 带字幕</label></div></div>';
+  }
+  function openVideoEditor(r) {
+    var v = r._vid || { key: videoKey(r), sources: [], origin: "" };
+    var title = [r.日付, r.場名, r.R ? r.R + "R" : "", r.レース名, r.出走馬名]
+      .filter(Boolean).join(" · ").slice(0, 80);
+    var doc = hostDocument(), ov = doc.createElement("div");
+    ov.className = "yj-vm-mask";
+    ov.setAttribute("role", "dialog");
+    ov.innerHTML = '<div class="yj-vm yj-ve">' +
+      '<div class="yj-vm-head"><span class="yj-vm-title">配置回放视频源<small class="yj-vm-sub">' + esc(title) + '</small></span>' +
+      '<button type="button" class="yj-vm-x" data-vx aria-label="关闭">' + VID_X + '</button></div>' +
+      '<div class="yj-ve-body">' +
+      '<p class="yj-ve-tip">一场比赛可配<b>多个源</b>。保存即进<b>草稿箱</b>，点底部「提交到 GitHub」一次性写入 <code>data/video_manual.json</code>；前端直读生效，约 2 分钟 CI。B 站链接自动站内播放，其他链接走外链。</p>' +
+      '<div class="yj-ve-rows" data-vrows>' + v.sources.map(function (s, i) { return vidRowHtml(s, i, v.origin); }).join("") + '</div>' +
+      '<button type="button" class="yj-ve-add" data-vadd>＋ 添加源</button></div>' +
+      '<div class="yj-vm-foot yj-ve-foot">' +
+      '<button type="button" class="yj-ve-btn yj-ve-btn--ghost" data-vreset>恢复自动匹配</button>' +
+      '<span class="yj-ve-spacer"></span>' +
+      '<button type="button" class="yj-ve-btn" data-vcancel>取消</button>' +
+      '<button type="button" class="yj-ve-btn yj-ve-btn--primary" data-vsave>存入草稿箱</button>' +
+      '</div></div>';
+    doc.body.appendChild(ov);
+    var prevOverflow = doc.body.style.overflow;
+    doc.body.style.overflow = "hidden";
+    function close() {
+      doc.body.style.overflow = prevOverflow;
+      doc.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("keydown", onKey, true);
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    doc.addEventListener("keydown", onKey, true);
+    document.addEventListener("keydown", onKey, true);
+    var rows = ov.querySelector("[data-vrows]");
+    function renumber() {
+      $all("[data-vrow]", ov).forEach(function (row, i) {
+        row.setAttribute("data-vrow", i);
+        row.querySelector(".yj-ve-no").textContent = "源 " + (i + 1);
+      });
+    }
+    function collect() {
+      var arr = [];
+      $all("[data-vrow]", ov).forEach(function (row) {
+        var u = $(".yj-ve-url", row).value.trim();
+        if (!u) return;
+        arr.push({
+          url: u, title: $(".yj-ve-title", row).value.trim(),
+          page: parseInt($(".yj-ve-page", row).value, 10) || 1,
+          subtitle: !!$(".yj-ve-sub", row).checked
+        });
+      });
+      return arr;
+    }
+    ov.addEventListener("click", function (e) {
+      if (e.target === ov) { close(); return; }
+      var b = e.target.closest ? e.target.closest("button") : null;
+      if (!b) return;
+      if (b.hasAttribute("data-vx") || b.hasAttribute("data-vcancel")) { close(); return; }
+      if (b.hasAttribute("data-vadd")) {
+        var wrap = doc.createElement("div");
+        wrap.innerHTML = vidRowHtml({ url: "", title: "", page: 1, subtitle: false }, $all("[data-vrow]", ov).length, "new");
+        rows.appendChild(wrap.firstChild); renumber(); return;
+      }
+      if (b.hasAttribute("data-vdel")) {
+        var row = b.closest("[data-vrow]");
+        if (row && row.parentNode) row.parentNode.removeChild(row);
+        renumber(); return;
+      }
+      if (b.hasAttribute("data-vreset")) {
+        YJ.editor.vidPut(v.key, null);
+        close(); resetVidUi(); toast("已恢复自动匹配"); return;
+      }
+      if (b.hasAttribute("data-vsave")) {
+        var arr = collect(), base = S.vidBase[v.key] || { sources: [] };
+        if (!arr.length && !base.sources.length) YJ.editor.vidPut(v.key, null);
+        else if (JSON.stringify(arr) === JSON.stringify(base.sources)) YJ.editor.vidPut(v.key, null);
+        else YJ.editor.vidPut(v.key, { sources: arr });
+        close(); resetVidUi();
+        toast(arr.length ? "已存入草稿箱：" + arr.length + " 个源" : "已清空该场视频源（待提交）");
+      }
+    });
+  }
   function isRaceLevel(key) { return RK.indexOf(key) >= 0; }
   function groupRows(r) {
     return S.sh.races.rows.filter(function (x) { return x._gk === r._gk; });
@@ -298,13 +447,13 @@ YJ.editorTable = (function () {
   function addRaceRow() {
     if (S.sheet !== "races") { toast("基本信息不支持表格新增（建档走抓取管线）"); return; }
     var rec = { id: null, 來源: "人工", 結果: "" };
-    RACE_LAYOUT.forEach(function (c) { if (rec[c.k] == null) rec[c.k] = ""; });
+    RACE_LAYOUT.forEach(function (c) { if (c.type !== "video" && rec[c.k] == null) rec[c.k] = ""; });
     var r = {
       hid: "", _gid: "", _gk: "new|" + Math.random().toString(36).slice(2, 7),
       _base: clone(rec), _baseIdent: { race_id: "", 日付: "", 馬名: "" },
       _pend: {}, _st: "new", _add: rec
     };
-    RACE_LAYOUT.forEach(function (c) { r[c.k] = rec[c.k]; });
+    RACE_LAYOUT.forEach(function (c) { if (c.type !== "video") r[c.k] = rec[c.k]; });
     var sh0 = sh();
     jBegin();
     sh0.rows.push(r);
@@ -425,10 +574,20 @@ YJ.editorTable = (function () {
   /* §150 行级「有待保存改动」判定：基本信息 = 本页 pendOv 有该马条目；比赛 = 新增/删除/格级 _pend */
   function rowDirty(r) {
     return S.sheet === "basic" ? hasOvPend(r)
-      : r._st === "new" || r._st === "del" || !!(r._pend && Object.keys(r._pend).length);
+      : r._st === "new" || r._st === "del" || !!(r._pend && Object.keys(r._pend).length)
+        || !!(r._vid && r._vid.origin === "draft");      /* §187 视频源草稿也算「有待保存改动」 */
   }
   function cellInner(c, r) {
     var v = r[c.k];
+    if (c.k === "视频源") {                              /* §187：源数 + 来源 chip，点击开多源弹窗 */
+      var q = r._vid || { sources: [], origin: "" };
+      if (!q.sources.length) return '<span class="text-muted-foreground/60">＋ 添加</span>';
+      var tag = q.origin === "draft" ? "草稿" : q.origin === "saved" ? "人工" : "自动";
+      var cls = q.origin === "draft" ? "bg-chart3/15 text-chart3"
+        : q.origin === "saved" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground";
+      return '<span class="inline-flex items-center gap-1 rounded px-1.5 py-px text-[10px] font-semibold ' + cls +
+        '">▶ ' + q.sources.length + ' 源</span><span class="ml-1 text-[9.5px] text-muted-foreground">' + tag + "</span>";
+    }
     if (c.k === "結果" && typeof v === "number") return '<b class="' + (v === 1 ? "text-primary" : "") + '">' + v + "</b>";
     if (c.k === "格" && v) {
       var g = (window.YJ_GRADE || {})[v];
@@ -663,6 +822,7 @@ YJ.editorTable = (function () {
     if (!c) return;
     var r = rowAt(ri);
     if (!r) return;
+    if (c.type === "video") { openVideoEditor(r); return; }   /* §187 多源弹窗，不走 input/applyCell */
     setCursor(null);   /* 开编辑器前清掉光标环：提交上一格时 applyCell 会先给它画环，不清会双高亮 */
     if (c.ro) { setCursor(td); return; }
     if (c.k === "出走馬名" && r._st !== "new") { setCursor(td); return; }   /* 已有记录的马名只读 */
@@ -966,9 +1126,13 @@ YJ.editorTable = (function () {
 
     return Promise.all([
       YJ.cache.fetch("basic"),
-      YJ.cache.fetch("bundle")
+      YJ.cache.fetch("bundle"),
+      /* §187 视频源：自动匹配表 + 人工表（缺失/失败一律降级空，表格照常可用） */
+      YJ.cache.fetch("videoMap").catch(function () { return null; }),
+      YJ.cache.fetch("videoManual").catch(function () { return null; })
     ]).then(function (rs) {
       S.bundleBy = YJ.raceBundle.decode(rs[1]);
+      loadVidBase(rs[2], rs[3]);
       hydrateBasic(); hydrateRaces();
       buildNameList();
       bind();
@@ -976,6 +1140,10 @@ YJ.editorTable = (function () {
       buildColMenu(); rebuild();
       document.addEventListener("yj-rc-dropped", function () {
         S.startRc = null; hydrateRaces(); rebuild(); updateSummary();
+      });
+      /* §187 视频源草稿被放弃/提交清箱 → 重新水合视频列（表格行结构不动） */
+      document.addEventListener("yj-vid-dropped", function () {
+        hydrateVid(); rebuild(); updateSummary();
       });
       /* 草稿箱里放弃了一条**字段草稿**（editor.js::discardOne 的普通马匹分支）→ 重新水合基本信息表。
        * 2026-10-30 修：此前该分支只删 localStorage 不派发事件，表格页内存里的 S.pendOv 与
@@ -1001,6 +1169,12 @@ YJ.editorTable = (function () {
         if (S.editing) { S.editing = null; }
         hydrateBasic(); hydrateRaces();
         rebuild();                                 /* 内含 syncToolbar + updateSummary */
+        /* §187：提交后 video_manual.json 已是新值（submitDrafts 已 bust 全站缓存）→ 重拉两份表，
+         * 让「自动/人工」来源标记与源数立刻反映已提交结果，不必等刷新页面。 */
+        Promise.all([
+          YJ.cache.fetch("videoMap").catch(function () { return null; }),
+          YJ.cache.fetch("videoManual").catch(function () { return null; })
+        ]).then(function (vv) { loadVidBase(vv[0], vv[1]); hydrateVid(); rebuild(); });
       });
       return null;
     }).catch(function (e) {

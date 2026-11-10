@@ -456,6 +456,15 @@ scripts/video/
 - **两条防错规则**（实测踩坑后加）：① 无年份标题的推断年查不到就判未收录，**不跨年硬配**（否则「11月8日 京都3R」
   会挂到去年同月日那场）；② 标题马名不在该场出走马里 → 判疑似错配不落库（`_meta.suspect` + 报告点名）。
 - **多 P 视频按分 P 拆场**：整条标题匹配不到时逐 P 匹配（`page=N`），「8/24-8/25 比赛合集」这类才不漏。
+- **多源 + 页面内手工配置（§186）**：产物 `data/video-map.json` 升级 **v2 = 每场一个源数组**；人工表 `data/video_manual.json` 支持
+  `{"sources":[…]}` / 单对象 / 直接数组（`append:true` 追加、`clear:true` 清空）。页面内编辑弹窗把配置写进
+  **localStorage 本机表**（优先级最高，跨 iframe 同步），「复制 JSON」可导出片段粘回人工表让全站生效。
+  前端浮层挂 `window.top.document`（外壳三层 iframe 下才能整页居中），遮罩透明、按钮只留图标 —— 契约见
+  `docs/SCHEMA.md` §10.4，UI 决策见 `docs/UI优化记录.md` §186。
+- **编辑入口收编到编辑台（§187）**：视频源编辑统一在 `edit-table.html?sheet=races` 的「视频源」列，
+  改动进草稿段 `d.vid`（editor.js），提交时与其余 4 张人工表同一原子 commit 写 `data/video_manual.json`
+  （白名单 5）。**前端直读且人工值优先 → 不需要后端重算**；正式页 `yj-video.js` 只读、不再持有
+  localStorage 本机表（否则会盖掉提交值）。视频源列不写 `races_edits.json`（`startEdit` 拦截 + 行初始化跳过）。
 
 ---
 

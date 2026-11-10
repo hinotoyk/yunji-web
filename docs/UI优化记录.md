@@ -2303,3 +2303,49 @@ kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契�
 **验证**：`py_compile` 过；YAML `safe_load` 结构检查过（1 job / 7 steps）；`guard_risk` 三态单测过
 （正常放行 / 仅 v_voucher 拦截 / 有 result 时放行）；`local_refresh.py --no-push` 真跑一遍（193 条清单 →
 111 场映射，新增 0）；模拟「只抓到合集 29 条」→ 清单 193 不被清空，且**并集多捞到 1 条搜索漏掉的视频**。
+
+## §186 · 回放列四项修正：页面内手工配多源 / 浮层整页居中 / 透明遮罩 / 只留图标（2026-11-10，用户看图反馈）
+
+用户看本地预览提了 4 条：① 比赛记录**没办法手工配置视频源**，且要**支持多个源**；② 基本信息页看视频，视频框**不在整个页面最中间**（截图里偏右下）；③ 遮罩深色「好丑」，改**透明**；④ 按钮「只显示图标即可，不用文字」。
+
+**① 手工配置 + 多源（数据契约升级 v2）**
+
+- `data/video-map.json` 从 `videos[key] = 单对象` 改为 **`videos[key] = 源数组`**（`_meta.schema = video-map/v2`）；`build_video_map.py` 的人工表解析支持 `{"sources":[…]}` / 单对象（旧契约） / 直接数组，外层 `append:true` 追加、`clear:true` 清空；前端 `normList()` 兼容两种形状，缓存里旧数据也不炸。
+- **页面内编辑**：回放列每行都有极淡的铅笔（有视频）或虚线 `+`（无视频）入口 → 编辑弹窗可增删多个源（链接 / 标题 / 分 P / 字幕）、「恢复自动匹配」、「复制 JSON」。保存写 **localStorage 本机表**（键 = `YJ.util.storeKey("videoManualLocal")`，调用时求值），优先级高于仓库人工表与自动表；按 `data-yj-vid-cell` 原地刷新按钮、跨 iframe 走 `storage` + `yj:videoChanged`。要全站生效就把复制的片段粘进 `data/video_manual.json` 重算 + build。
+- **多源交互**：图标右下角数字角标；点击开浮层，顶部源切换条逐个切；非 B 站源在浮层内显示外链卡片（单源 other 仍保持新标签页直开）。同场多驹共享一个比赛键 → 配一次全马生效。
+
+**② 浮层整页居中（根因 = 三层 iframe）**
+
+站点是外壳 `index.html`（侧栏）→ `profile.html` → `races.html?embed=1` 三层嵌套，页内 `position:fixed` 只相对**最内层 iframe 视口**居中，所以看起来被挤在右下。修法不是 postMessage 转发（外壳要多引脚本、还要重传数据），而是**同源 iframe 直接把浮层 DOM 挂到 `window.top.document`**：外壳已引同一份 `theme.css`（新类同步可用），`fixed inset-0` 立刻变成全视口居中，Esc / 遮罩 / × 全部在顶层生效（键盘监听同时挂顶层与本页面双保险）。直开子页（`top === window`）自动退回本 document，行为不变。同族先例 = §149.2 血统弹窗 / 灯箱的顶层渲染约定。
+
+**③ 透明遮罩**：`.yj-vm-mask` 的 `bg-black/60` → `bg-transparent`，弹窗自身加 `ring-1 ring-black/5` + 既有 `shadow-2xl` 分层；点空白关闭仍由透明层捕获。
+
+**④ 只留图标**：`.yj-vid` 改 28×25 的方形图标按钮（去掉 `<span>回放</span>`），`.yj-vid-edit` 19px 淡铅笔（hover 整格才显色），`race-rows.js` 量宽 `fmt("回放")+38` → `max(fmt+8, 58)`。字幕「字」角标、B 站粉/其他链接蓝阶保留。
+
+**验证**：`npm run build` 通过（新 CSS `theme-DE7joZkv.css` 含 `.yj-vid-cell/.yj-vid-edit/.yj-vid-n/.yj-vm-tabs/.yj-ve-*/.yj-vtoast`，`dist/index.html` 已引用同一份；`.yj-vm-mask` 编译结果 `background-color:transparent`）；断言 61/0 + 113 + 211 + 结果对账全绿；node 端到端冒烟 9 项通过（v2 数据 / 无文字 / 无视频只有 + / 浮层挂顶层且本页无浮层 / 本机双源角标 / 多源切换条 2 个 tab / 编辑弹窗 2 行 / 单源外链直开 / 清空源回退 + / lib 仍 23 列）。
+
+## §187 · 视频源编辑并入比赛记录批量编辑（草稿箱 + PAT）+ 批量表格横向扩宽（2026-11-10）
+
+用户反馈：① 「源的编辑建议放在比赛记录批量编辑里，这样能复用草稿箱和 PAT 提交机制」；② 基本信息批量编辑 / 比赛记录批量编辑**两侧留白太多，横向扩大、每边只留 100px**。另附一条待定：字幕「字」角标不好看，要求重新设计几个候选（**本轮只出候选，未改代码**）。
+
+**为什么必须同时收编正式页的本机编辑**：§186 的页面内编辑把配置写进 localStorage 本机表且优先级最高 —— 若保留，编辑台 PAT 提交的值会被本机旧值盖掉。故 `yj-video.js` 精简为**只读**：删掉本机表层、编辑弹窗、编辑入口图标与 storage/message 同步；回放列回到「只有一个图标 + 无视频空态」，播放浮层底部加「配置视频源 ↗」直达编辑台（绝对路径按 iframe pathname 拼，外壳顶层文档与直开子页都对）。
+
+**编辑台链路（同构扩展，不新增后端脚本 / 不新增 CI 重算）**：
+
+- 新草稿段 `d.vid = { "<比赛键>": { sources:[…] } }`（`editor.js` 加 `vidGet/vidPut/vidN/vidDropAll`），计入 `draftCount()`；草稿箱抽屉/查询页新增「回放视频源」汇总条目，`__vid` 放弃、`yj-vid-dropped` 通知表格重水合。
+- 新白名单 5 `VM_PATH = data/video_manual.json`：`submitDrafts()` 读远端 → `mergeVideoManual(remote, d.vid)`（保留 `_readme`/未改业务键，草稿按比赛键覆盖，`sources:[]` → `clear:true`）→ 与其余 4 张人工表同一原子 commit；commit message / 成功报告 / 清箱同步补上。
+- **前端直读且人工值优先 → 提交后无需后端重算**，`YJ.cache.bust()` + `watchCI` 后约 2 分钟生效；`video-task.yml` 每日重算 video-map 只是幂等再次合并。
+- 表格：`editor-table.js::RACE_LAYOUT` 末位加 `视频源` 列（`type:"video"`），点击开多源弹窗（复用 `.yj-ve*` 骨架，增删 URL/标题/分P/字幕 + 恢复自动匹配 + 存入草稿箱）。**绝不写 `races_edits.json`**：该列在 `startEdit` 被拦截、不走 `applyCell`；行初始化 4 处跳过它，`r._pend` 永不出现该键。列格显示「N 源 + 自动/人工/草稿」chip，`rowDirty()` 把草稿计入「只看待保存」。
+- 弹窗同样挂 `window.top.document`（编辑台也在外壳 iframe 内 → 整页居中，同 §186）。
+
+**宽度定稿**：`edit-table.html` 两个页签共用同一容器 —— 主内容 `:19` 与底部保存条 `:79` 的 `max-w-[1280px]` → `max-w-none px-[100px]`（桌面每边正好 100px），移动端保留 `max-md:px-3` 单断点降级。表格 `w-max min-w-full` 横向滚动，容器变宽后自然多显示几列。
+
+**验证**：`npm run build` 通过（`theme-C9MvKOjG.css` 编译出 `.px-\[100px\]{padding-left:100px;padding-right:100px}`，`.yj-ve-*` 弹窗类因 editor-table.js 字面量引用全部保留，外壳 `dist/index.html` 与编辑台引用同一份 CSS）；断言 61/0 + 113 + 211 全绿；node vm 冒烟 5 项（合并表保留说明/业务键、覆盖双源、空源 clear；草稿读写清箱；列定义/拦截/4 处跳过；白名单/vmCommit/__vid/导出 API）；回放模块冒烟 4 项（只图标、无编辑入口、无视频空态、浮层挂顶层 + 编辑台绝对路径、lib 仍 23 列）。
+
+### §187.1 字幕角标定稿（用户选候选 A 变体）
+
+用户看完 4 个候选后定：「A 很不错，但是把 CC 改成『字』就好看的，这个字不能大」。
+→ 保留 A 的**圆角矩形胶囊**外形（弃用原先 14×14 的圆形大角标），文字换回中文「字」且**压到 9px / 400 字重**：
+`.yj-vid-sub` = `16×12` 胶囊、`border-radius:4px`、`right/top:-6px`、深粉 `#d4537e` 底白字，与右下多源数字角标（9px）同字号、视觉一套。
+角标字小 → 按钮 `title` 在 `subtitle=true` 时追加「· 带字幕」，hover 仍能看清语义；播放浮层底部「带字幕」chip 保持不变。
+⚠ 当前 111 场自动匹配的字幕全是 false（标题无字幕关键词），**页面上看不到这个角标** —— 要在编辑台「比赛记录批量编辑 → 视频源」弹窗里勾「带字幕」并提交后才出现。

@@ -45,8 +45,9 @@ YJ.cache = (function () {
     stats:     { ttl: TTL_DEF, url: function () { return YJ_DATA.url("stats.json"); } },
     datechart: { ttl: TTL_DEF, url: function () { return YJ_DATA.url("datechart.json"); } },
     timeline:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("timeline.json"); } },
-    /* 视频回放（§185）：自动匹配产物 + 人工覆写表（人工值优先，合并逻辑 = yj-video.js load）。
-     * 抓取/匹配在本地跑（scripts/video/，B 站对服务器 IP 风控 → CI 不抓）；两产物随 copy-data 进 dist。 */
+    /* 视频回放（§185 / §186）：自动匹配产物（v2 每场源数组）+ 人工覆写表（可多源）；
+     * 合并优先级 = localStorage 本机表 > 人工表 > 自动表，逻辑 = yj-video.js load。
+     * 抓取/匹配本地跑，CI 每日尽力抓（风控时沿用入库清单，见 video-task.yml）；两产物随 copy-data 进 dist。 */
     videoMap:  { ttl: TTL_DEF, url: function () { return YJ_DATA.url("video-map.json"); } },
     videoManual: { ttl: TTL_DEF, url: function () { return YJ_DATA.url("video_manual.json"); } },
     /* 跨站引用（2026-10-27）：jbis-sire-rank-history 派生产物。arg = "<board>/<jbisId>"

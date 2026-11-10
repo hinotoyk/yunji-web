@@ -1,12 +1,22 @@
 {
- "_readme": "★ 视频回放人工覆写表（人只碰这个文件，脚本永不写入；人工值永远优先于自动匹配）。键 = 比赛键：有 race_id 用 race:<race_id>（如 race:202604030411），无 race_id 的海外台账场用 slot:<日付>|<場名>|<R>。值字段：url（必填，任意 http(s) 链接；B 站链接自动解析 BV 号走站内 iframe 播放，其他链接记 other 源、前端降级为新标签页打开）、title（选填，弹窗标题）、page（选填，多P视频分P号，默认 1）、subtitle（选填，true=带字幕，默认 false）、note（选填，备注）。⚠ 本表随构建进 dist/data/（公网可读），别写私人内容；'__' 前缀键被脚本忽略。改完跑 python scripts/video/build_video_map.py 重算 + npm run build 进 dist。",
+ "_readme": "★ 视频回放人工覆写表（人只碰这个文件，脚本永不写入；人工值永远优先于自动匹配）。键 = 比赛键：有 race_id 用 race:<race_id>，无 race_id 的海外台账场用 slot:<日付>|<場名>|<R>。【多源，§186】值用 {\"sources\":[ ... ]} 列多个视频源；单个 {\"url\":...} 或直接数组也兼容。每个源的字段：url（必填，任意 http(s)；B 站链接自动解析 BV 号走站内 iframe，其他链接记 other 源）、title、page（多P分P号，默认 1）、subtitle（true=带字幕角标「字」）。可选外层开关：append=true 表示把人工源追加到自动源之后（默认 replace＝人工列表就是该场最终列表）；sources=[] + clear=true 表示清空该场自动视频。⚠ 本表由**编辑台「比赛记录批量编辑」**写入：视频源列点开弹窗 → 存入草稿箱 → 点「提交到 GitHub」用 PAT 单原子提交本文件（白名单 5）；前端直读且人工值优先，CI 发布完即生效，无需后端重算。也可由人直接编辑本文件（改完跑 python scripts/video/build_video_map.py + npm run build）。本表随构建进 dist/data/（公网可读），别写私人内容；'_' 前缀键被忽略。",
  "_examples": {
   "race:202604030411": {
-   "url": "https://www.bilibili.com/video/BV1xx411c7mD/",
-   "title": "2026/8/30 新潟11R 3歳以上1勝クラス",
-   "page": 1,
-   "subtitle": true,
-   "note": "示例：改用另一个视频源（照抄前请把本条目或整个 _examples 删掉）"
+   "sources": [
+    {
+     "url": "https://www.bilibili.com/video/BV1xx411c7mD/",
+     "title": "2026/8/30 新潟11R 3歳以上1勝クラス（带字幕版）",
+     "page": 1,
+     "subtitle": true
+    },
+    {
+     "url": "https://www.bilibili.com/video/BV1yy411c7mE/",
+     "title": "同一场·无字幕机位",
+     "page": 1,
+     "subtitle": false
+    }
+   ],
+   "note": "示例：一场比赛配两个源（照抄前请把本条目或整个 _examples 删掉）"
   }
  }
 }

@@ -15,6 +15,7 @@ YJ.editor = (function () {
   var TL_PATH = "data/timeline_manual.json";       /* 白名单 2：时间线人工节点（M2c） */
   var RM_PATH = "data/races_manual.json";          /* 白名单 3：比赛人工配图（§82.9：race.photo 是人工配置的产物，抓取永不写它） */
   var RE_PATH = "data/races_edits.json";           /* 白名单 4：比赛记录人工编辑（§104 批量表格写入；契约 = docs/SCHEMA.md §9） */
+  var VM_PATH = "data/video_manual.json";          /* 白名单 5：回放视频源人工表（§187 比赛记录批量编辑写入；契约 = docs/SCHEMA.md §10.3；前端直读，无需后端重算） */
   var PHOTO_API = "/photo";                        /* M2b：multipart，服务端生成文件名（仅 local 形态） */
   var PHOTO_OWNER_TL = "timeline";                 /* 时间线节点图的文件名前缀（落盘 timeline-<n>.webp） */
   var DEFAULT_PORT = 9090;                          /* 本站约定端口（单源 = 项目根 serve.config.json）；本机编辑 API 已下线，探测失败即草稿箱模式 */
@@ -258,6 +259,22 @@ YJ.editor = (function () {
     var r = rcGet();
     return (r.add ? r.add.length : 0) + (r.mod ? r.mod.length : 0) + (r.del ? r.del.length : 0);
   }
+  /* 回放视频源（§187）：{ "<比赛键>": { sources:[{url,title,page,subtitle},…] } }；
+   * 比赛键与 yj-video.js::raceKey 同构（race:<race_id> / slot:<日付>|<場名>|<R>）。
+   * 值 sources=[] 表示清空该场视频（提交时写 clear:true）。 */
+  function vidGet() {
+    var d = draftRead();
+    return (d.vid && typeof d.vid === "object" && !Array.isArray(d.vid)) ? d.vid : {};
+  }
+  function vidPut(key, entry) {
+    var d = draftRead(); d.vid = d.vid || {};
+    if (entry && Array.isArray(entry.sources)) d.vid[String(key)] = { sources: entry.sources };
+    else delete d.vid[String(key)];
+    if (!Object.keys(d.vid).length) delete d.vid;
+    draftWrite(d);
+  }
+  function vidDropAll() { var d = draftRead(); delete d.vid; draftWrite(d); }
+  function vidN() { return Object.keys(vidGet()).length; }
   function draftDropHorse(id) {
     id = String(id);
     var d = draftRead(), items = [];
@@ -275,6 +292,7 @@ YJ.editor = (function () {
     if (d.tl && d.tl.table) n++;
     if (d.racePh) n += Object.keys(d.racePh).length;
     if (d.rc) n += rcN();
+    if (d.vid) n += vidN();
     return n;
   }
   function draftHasHorse(id) { return !!(ovGet(id) || phGet(id)); }
@@ -501,6 +519,20 @@ YJ.editor = (function () {
     return out;
   }
 
+  /* 回放视频源表合并（§187）：远端 data/video_manual.json 全量保留（含 _readme/_examples），
+   * 草稿 d.vid 按比赛键覆盖。sources 为空 → {sources:[],clear:true}（清空该场自动匹配）。
+   * 与 races_edits 不同：本表前端 yj-video.js::load 直接读、人工值优先，**不需要后端重算**。 */
+  function mergeVideoManual(remote, vid) {
+    var out = {}, rem = (remote && typeof remote === "object" && !Array.isArray(remote)) ? remote : {};
+    Object.keys(rem).forEach(function (k) { if (k.charAt(0) === "_") out[k] = rem[k]; });
+    Object.keys(rem).forEach(function (k) { if (k.charAt(0) !== "_") out[k] = rem[k]; });
+    Object.keys(vid || {}).forEach(function (k) {
+      var s = (vid[k] && Array.isArray(vid[k].sources)) ? vid[k].sources : [];
+      out[k] = s.length ? { sources: s } : { sources: [], clear: true };
+    });
+    return out;
+  }
+
   /* 提交成功 → 盯 CI 发布（Deploy run 跑完）→ 本页自动拉最新数据重渲染（2026-10-26，§106）。
    * 30s × 12 次（6min）封顶；页面关了即止（下次打开 init 本来就拿最新）。runs API 不可用
    * （限流等）退回看 main 是否出现新提交（CI 重算落库）。 */
@@ -547,6 +579,7 @@ YJ.editor = (function () {
       var baseSha, treeSha, tableSha, tlSha, remoteTable, seqs, uploads = [], committed = {};
       var rmSha, rmRemote, rmOut = {}, rmIds = [], rmCommitted = false;   /* 比赛人工配图（§82.9） */
       var reRemote, reN = 0, reCommitted = false;                         /* 比赛人工编辑表（§104） */
+      var vmRemote, vmN = 0, vmCommitted = false;                         /* 回放视频源表（§187） */
       return gh("/repos/" + GH_REPO + "/git/ref/heads/" + GH_BRANCH).then(function (r) {
         if (!r.ok) throw new Error("读分支失败：" + ((r.body && r.body.message) || "HTTP " + r.status));
         baseSha = r.body.object.sha;
@@ -567,6 +600,9 @@ YJ.editor = (function () {
         return ghContents(RE_PATH);
       }).then(function (c) {
         reRemote = c.json || {};
+        return ghContents(VM_PATH);
+      }).then(function (c) {
+        vmRemote = c.json || {};
         state.gh.log = ["清点图片命名…"]; render();
         return ghPhotoSeqs();
       }).then(function (s) {
@@ -733,13 +769,26 @@ YJ.editor = (function () {
               reCommitted = true;
             });
           }
-          if (!(d.tl && d.tl.table)) return rmCommit().then(reCommit);
+          function vmCommit() {  /* 回放视频源表（§187）：远端 video_manual + 草稿 vid，恒回 promise */
+            var dNow = draftRead(), v = dNow.vid || {};
+            if (!Object.keys(v).length) return Promise.resolve();
+            var vmTable = mergeVideoManual(vmRemote, v);
+            vmN = Object.keys(v).length;
+            return gh("/repos/" + GH_REPO + "/git/blobs", {
+              method: "POST", body: { content: btoa(unescape(encodeURIComponent(JSON.stringify(vmTable)))), encoding: "base64" }
+            }).then(function (r5) {
+              if (!r5.ok) throw new Error("视频源表上传失败：" + ((r5.body && r5.message) || "HTTP " + r5.status));
+              tree.push({ path: VM_PATH, mode: "100644", type: "blob", sha: r5.body.sha });
+              vmCommitted = true;
+            });
+          }
+          if (!(d.tl && d.tl.table)) return rmCommit().then(reCommit).then(vmCommit);
           return gh("/repos/" + GH_REPO + "/git/blobs", {
             method: "POST", body: { content: btoa(unescape(encodeURIComponent(JSON.stringify(d.tl.table)))), encoding: "base64" }
           }).then(function (r2) {
             if (!r2.ok) throw new Error("时间线表上传失败：" + ((r2.body && r2.message) || "HTTP " + r2.status));
             tree.push({ path: TL_PATH, mode: "100644", type: "blob", sha: r2.body.sha });
-          }).then(rmCommit).then(reCommit);
+          }).then(rmCommit).then(reCommit).then(vmCommit);
         });
         return jobs2.then(function () {
           /* 照片 blob 装进 tree（2026-10-01 审计补）：此前 uploads 只进成功报告、从不进 tree，
@@ -757,7 +806,7 @@ YJ.editor = (function () {
           var nP = Object.keys(d.ph || {}).filter(function (k) { return d.ph[k].mode === "set"; }).length;
           var msg = "edit: 编辑台草稿一次性提交（" + nH + " 匹人工值" + (nP ? " · " + nP + " 匹图片" : "") +
             (d.tl && d.tl.table ? " · 时间线表" : "") + (rmIds.length ? " · 比赛配图 " + rmIds.length : "") +
-            (reN ? " · 比赛编辑 " + reN : "") + "）";
+            (reN ? " · 比赛编辑 " + reN : "") + (vmN ? " · 视频源 " + vmN : "") + "）";
           return gh("/repos/" + GH_REPO + "/git/commits", {
             method: "POST", body: { message: msg, tree: r.body.sha, parents: [baseSha] }
           });
@@ -783,6 +832,10 @@ YJ.editor = (function () {
           var dRe = draftRead(); delete dRe.rc; draftWrite(dRe);
           document.dispatchEvent(new CustomEvent("yj-rc-dropped"));
         }
+        if (vmCommitted) {               /* 视频源草稿清箱（§187）+ 通知批量表格页重读已保存值 */
+          vidDropAll();
+          document.dispatchEvent(new CustomEvent("yj-vid-dropped"));
+        }
         /* 提交成功 → 清空本页内存草稿（2026-xx 修）：上面只删了 localStorage 里的草稿，
          * state.draft / state.note / state.photos 仍留着 → 紧接着 render() 里 persistHorse()
          * 会把当前马草稿原样写回 localStorage，草稿箱永远删不掉（commit 已推远端却还挂着）。 */
@@ -795,6 +848,7 @@ YJ.editor = (function () {
           files: uploads.map(function (u) { return u.path; })
             .concat([TABLE_PATH]).concat(hadTL ? [TL_PATH] : []).concat(rmCommitted ? [RM_PATH] : [])
             .concat(reCommitted ? [RE_PATH] : [])
+            .concat(vmCommitted ? [VM_PATH] : [])
         };
         state.tl.dirty = false;
         /* 2026-10-26 修（§106）：提交成功即盖全站缓存失效戳——各浏览页的数据缓存（yj-cache 12h /
@@ -2585,6 +2639,18 @@ YJ.editor = (function () {
         (e._note ? '<div class="mt-1.5 text-[11px] leading-[1.5] text-muted-foreground" title="' + esc(String(e._note)) + '"><b class="yj-ed-lbl mr-1">备注</b>' + esc(noteBrief(e._note)) + "</div>" : "") +
         "</div>";
     });
+    if (d.vid && Object.keys(d.vid).length) {
+      var vd = d.vid, vN = Object.keys(vd).length, vS = 0;
+      vN && Object.keys(vd).forEach(function (k) { vS += ((vd[k] && vd[k].sources) || []).length; });
+      draftRows.unshift('<div class="yj-ed-entry">' +
+        '<div class="flex items-baseline gap-2 min-w-0">' +
+          '<a href="edit-table.html?sheet=races" class="min-w-0 truncate text-[12.5px] font-bold text-accent-foreground">回放视频源 · 比赛记录批量编辑</a>' +
+          '<span class="flex-none rounded bg-chart3/15 px-1 py-px text-[9.5px] font-bold text-chart3">草稿</span>' +
+          '<button data-discard="__vid" class="' + BTN_DANGER + ' ml-auto flex-none" type="button">放弃</button>' +
+        "</div>" +
+        '<div class="mt-1.5 text-[11px] text-muted-foreground">' + vN + " 场 · 共 " + vS +
+          " 个源 → video_manual.json（提交后前端直读生效）</div></div>");
+    }
     if (d.rc) {
       var rcD = d.rc;
       draftRows.unshift('<div class="yj-ed-entry">' +
@@ -2979,6 +3045,10 @@ YJ.editor = (function () {
         rcPut(null);
         document.dispatchEvent(new CustomEvent("yj-rc-dropped"));   /* 批量表格页监听 → 重新水合表格 */
         render();
+      } else if (did === "__vid") {
+        vidDropAll();
+        document.dispatchEvent(new CustomEvent("yj-vid-dropped"));  /* 批量表格页监听 → 重读已保存视频源 */
+        render();
       } else if (did.indexOf("__race:") === 0) {
         var rrid = did.slice(7);
         var rc = rmGet()[rrid];
@@ -3320,7 +3390,8 @@ YJ.editor = (function () {
     /* 草稿箱公共访问（§104 批量表格页复用同一条提交链路）：ov=人工字段草稿，rc=比赛编辑草稿 */
     draftRead: draftRead, draftWrite: draftWrite,
     ovGet: ovGet, ovPut: ovPut, rcGet: rcGet, rcPut: rcPut, rcN: rcN,
-    submitDrafts: submitDrafts, mergeRaceEdits: mergeRaceEdits,
+    vidGet: vidGet, vidPut: vidPut, vidN: vidN, vidDropAll: vidDropAll,
+    submitDrafts: submitDrafts, mergeRaceEdits: mergeRaceEdits, mergeVideoManual: mergeVideoManual,
     /* M2b：压缩 + 入库链路（门禁/夹具直接调这些） */
     compressImage: compressImage, fetchRemote: fetchRemote, webpEncodable: webpEncodable,
     uploadFiles: uploadQueue, uploadURL: uploadURL,
