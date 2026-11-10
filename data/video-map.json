@@ -1,15 +1,15 @@
 {
  "_meta": {
   "schema": "video-map/v1",
-  "updated": "2026-11-09 16:40:31",
+  "updated": "2026-11-10 04:33:35",
   "mid": 3493136521235298,
-  "auto": 111,
+  "auto": 112,
   "manual": 0,
-  "unmatched": 86,
+  "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
   "match_how": {
-   "精确": 111
+   "精确": 112
   }
  },
  "videos": {
@@ -918,6 +918,16 @@
    "bvid": "BV1Sax46xEed",
    "url": "https://www.bilibili.com/video/BV1Sax46xEed/",
    "title": "10月31日 京都7R 3岁以上一胜Class スカイストライプス 1人气1着",
+   "video_title": "",
+   "page": 1,
+   "subtitle": false,
+   "match": "auto"
+  },
+  "race:202608050203": {
+   "source": "bilibili",
+   "bvid": "BV1qwW76MEQP",
+   "url": "https://www.bilibili.com/video/BV1qwW76MEQP/",
+   "title": "11月8日 京都3R ゴールデンプロミス 3人气1着",
    "video_title": "",
    "page": 1,
    "subtitle": false,
