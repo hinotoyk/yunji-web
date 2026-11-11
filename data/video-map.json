@@ -1,10 +1,10 @@
 {
  "_meta": {
   "schema": "video-map/v2",
-  "updated": "2026-11-10 17:29:50",
+  "updated": "2026-11-11 02:14:16",
   "mid": 3493136521235298,
   "auto": 112,
-  "manual": 0,
+  "manual": 1,
   "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
@@ -688,13 +688,12 @@
   "race:202605020111": [
    {
     "source": "bilibili",
-    "bvid": "BV1xCoSBxEMu",
-    "url": "https://www.bilibili.com/video/BV1xCoSBxEMu/",
-    "title": "4月25日 东京11R 青葉賞（G2）ゴーイントゥスカイ 4人气1着",
-    "video_title": "",
+    "bvid": "BV16hVS6GErr",
+    "url": "https://www.bilibili.com/video/BV16hVS6GErr/?t=2339",
+    "title": "【日语中字】飞机云首个重赏子嗣 ，飞向更高的天空 通天飞｜2026 青叶赏",
     "page": 1,
-    "subtitle": false,
-    "match": "auto"
+    "subtitle": true,
+    "match": "manual"
    }
   ],
   "race:202605020706": [
