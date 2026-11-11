@@ -46,6 +46,19 @@
  * sticky 以父盒子 .tl-group 为界，只在本年份区间内跟随，滚出即让位下一年；
  * yearrow 全宽透明层 pointer-events:none，避免悬停时挡住下方卡片的 hover（胶囊自身恢复）。 */
 .tl-yearrow{position:sticky;top:8px;z-index:2;display:flex;justify-content:center;padding:4px 0 20px;pointer-events:none}
+/* §188 sticky 年份胶囊缓退：滚动进行中常显（不挡操作），滚动停止 ~0.9s 后若仍吸附在视口顶
+ * （此时正好盖住下方卡片内容）→ 缓慢淡出；再次滚动立刻恢复。
+ * 动效（§188.1 优化）：淡出 = 透明度 + 轻微上浮缩小（-8px / .95）+ 阴影同步收拢，三轨同一条
+ *   平滑曲线（cubic-bezier(.4,0,.2,1)），不是干瘪的纯 opacity；恢复 = 快速落回（.3s ease-out）。
+ * 只淡出「吸附态」的胶囊：自然流位置的年份标签照常可见（静置阅读时年份上下文不丢）。
+ * 动画作用在胶囊 .tl-year 本体（yearrow 全宽透明层不动，吸附定位不受 transform 影响）；
+ * 吸附态判定在 JS（rect.top ≈ sticky 偏移）→ 挂 .stuck；.tl-idle 由 JS 滚动静默计时挂上。
+ * 过渡包在 no-preference 里尊重系统减动效（减动效下瞬时隐藏，内容不滞留）。 */
+.tl-idle .tl-yearrow.stuck .tl-year{opacity:0;visibility:hidden;transform:translateY(-8px) scale(.95);box-shadow:0 1px 4px rgba(16,24,40,0)}
+@media (prefers-reduced-motion: no-preference){
+  .tl-yearrow.stuck .tl-year{transition:opacity .3s ease-out,transform .3s ease-out,box-shadow .3s ease-out,visibility .3s}  /* 恢复（出现）：快 */
+  .tl-idle .tl-yearrow.stuck .tl-year{transition:opacity .7s cubic-bezier(.4,0,.2,1) .2s,transform .7s cubic-bezier(.4,0,.2,1) .2s,box-shadow .7s ease .2s,visibility .7s ease .2s}  /* 淡出：慢 + 略延迟 */
+}
 .tl-year{pointer-events:auto;background:#fff;border:1px solid #ececec;border-radius:100px;padding:3px 18px;font-size:13px;font-weight:700;color:#171717;box-shadow:0 1px 4px rgba(16,24,40,.06)}
 .tl-yc{margin-left:7px;padding-left:8px;border-left:1px solid #ececec;font-size:11px;font-weight:600;color:#9aa0a6}
 .tl-group{position:relative}

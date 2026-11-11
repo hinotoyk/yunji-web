@@ -257,6 +257,34 @@ function init(){
   });
 }
 init();
+/* ===== §188 sticky 年份胶囊缓退 =====
+ * 痛点（用户 2026-11-11 看图反馈）：mb 往下拉时吸顶的「2026 N 条」胶囊一直盖住卡片内容。
+ * 方案（用户定稿：滚动时可见、停止后慢慢消失）：滚动进行中全部照常显示；
+ *   滚动静默 ~0.9s 后，只把「当前吸附在视口顶」的胶囊缓慢淡出——自然流位置的年份标签不动
+ *   （静置阅读时年份上下文不丢）。吸附态判定 = 胶囊 rect.top 贴住 sticky 偏移（PC 8px / mb 4px，
+ *   与 timeline-page.css 的 top 值同源）；再次滚动立刻整行恢复（CSS 侧出现快 / 消失慢）。
+ * 监听挂 window（iframe 外壳内本页内容滚动同样触发）；渲染只换 #body innerHTML，重跑无副作用。 */
+var IDLE_MS = 900, idleTimer = null;
+function yearStickyTop(){ return window.matchMedia("(max-width:768px)").matches ? 4 : 8; }
+function markStuckPills(){
+  var top = yearStickyTop();
+  var rows = document.querySelectorAll(".tl-yearrow");
+  for (var i = 0; i < rows.length; i++){
+    var t = rows[i].getBoundingClientRect().top;
+    rows[i].classList.toggle("stuck", Math.abs(t - top) < 2);   /* 贴住偏移 = 吸附态；偏高=自然流 / 偏低=被父盒推出 */
+  }
+}
+window.addEventListener("scroll", function(){
+  var tl = document.querySelector(".tl");
+  if (tl) tl.classList.remove("tl-idle");       /* 滚动中：立即恢复显示 */
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(function(){
+    var cur = document.querySelector(".tl");
+    if (!cur) return;
+    markStuckPills();
+    cur.classList.add("tl-idle");               /* 静默超时：吸附中的胶囊开始缓慢淡出 */
+  }, IDLE_MS);
+}, { passive: true });
 /* 照片放大（§161）：卡片照片点击 → 灯箱全屏查看，交互与 profile 相册对齐（§149.3）。
  * 通道一致：外壳内 postMessage(yj:lightbox) 顶层渲染（遮罩全屏含侧栏；外壳以 iframe 地址为
  * base 归一 URL，sender 侧零约束）；直开本页（无外壳）→ 本地 YJ.lightbox 兜底。

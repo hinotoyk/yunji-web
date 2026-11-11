@@ -2349,3 +2349,29 @@ kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契�
 `.yj-vid-sub` = `16×12` 胶囊、`border-radius:4px`、`right/top:-6px`、深粉 `#d4537e` 底白字，与右下多源数字角标（9px）同字号、视觉一套。
 角标字小 → 按钮 `title` 在 `subtitle=true` 时追加「· 带字幕」，hover 仍能看清语义；播放浮层底部「带字幕」chip 保持不变。
 ⚠ 当前 111 场自动匹配的字幕全是 false（标题无字幕关键词），**页面上看不到这个角标** —— 要在编辑台「比赛记录批量编辑 → 视频源」弹窗里勾「带字幕」并提交后才出现。
+
+## §188 · 航迹线 sticky 年份胶囊缓退：滚动中可见、停止后慢慢消失（2026-11-11）
+
+**痛点（用户 mb 看图反馈）**：往下拉时吸顶的「2026 N 条」年份胶囊一直盖在卡片内容上不动。
+
+**方案（用户定稿：拉的时候可以出现，停止之后要慢慢消失）**：
+- 滚动进行中：所有年份胶囊照常显示，**不**做任何处理（滚动即恢复，出现快 0.25s）。
+- 滚动静默 ~0.9s 后：只把「当前吸附在视口顶」的胶囊**缓慢淡出**（0.8s + 0.15s 延迟）；
+  自然流位置的年份标签不动——静置阅读时年份上下文不丢。
+- 吸附态判定 = 胶囊 `getBoundingClientRect().top` 贴住 sticky 偏移（±2px；PC 8px / mb 4px，
+  与 CSS 的 `top` 同源）。偏高 = 自然流、偏低 = 被父盒推出（正在滚出年份区间），都不算吸附。
+
+**落点**：CSS = `front/pages/timeline-page.css`（`.tl-idle .tl-yearrow.stuck` 淡出规则，过渡包在
+`prefers-reduced-motion: no-preference` 里，减动效下瞬时隐藏）；JS = `front/pages/timeline.html`
+（`IDLE_MS=900` 静默计时 + `markStuckPills()` 吸附判定，scroll 监听 passive，iframe 外壳内同样生效）。
+出现快 / 消失慢靠「过渡取自目标状态」实现：恢复态 0.25s、淡出态 0.8s+延迟。
+
+**验证**：`npm run build` 通过，`dist/` 下 CSS/HTML 均含新规则与 `markStuckPills`；`python serve.py`
+打开 `http://127.0.0.1:9090/timeline.html` 缩窄视口实测：滚动中胶囊常显，停住 ~1s 后缓缓淡出，再滚立刻回来。
+
+### §188.1 淡出动画优化（用户反馈"效果对但动画可以更顺"）
+
+纯 opacity 淡出偏干瘪 → 改为三轨组合：透明度 + 轻微上浮缩小（`translateY(-8px) scale(.95)`）+
+阴影同步收拢（`box-shadow → 0`），同一条平滑曲线 `cubic-bezier(.4,0,.2,1)`，时长 0.7s + 0.2s 延迟；
+恢复（出现）= 0.3s ease-out 从上方轻微落回。动画作用点从 yearrow 收窄到胶囊本体 `.tl-year`
+（全宽透明层不动，sticky 吸附定位不受 transform 影响）。其余判定/JS 不变。
