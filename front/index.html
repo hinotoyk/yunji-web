@@ -358,8 +358,9 @@ var eg=document.getElementById("editGate"),
     egLockRow=document.getElementById("egLockRow"),
     egHintLock=document.getElementById("egHintLock"),
     egHintUnlock=document.getElementById("egHintUnlock");
-/* repo 常量单一出处 = public/editor.js 的 GH_REPO（外壳不加载 editor.js，此处重复一份，改动需同步） */
-var EG_REPO="hinotoyk/yunji-web";
+/* repo 常量与 PAT 校验的单一出处 = public/yj-util.js（§190 收口：YJ.util.GH_REPO / verifyPat）——
+ * 外壳 / 编辑页门禁（yj-edit-gate.js）/ 编辑台（editor.js）三处共用，换站只改那一行。
+ * 外壳不再自持 EG_REPO：校验与 403 文案里的仓库名都由 verifyPat 返回。 */
 function gateOpen(){
   var unlocked=EDIT_MODE();
   egLockRow.classList.toggle("hidden",unlocked);
@@ -387,21 +388,16 @@ egGoBtn.addEventListener("click",function(){
   var t=(egToken.value||"").trim();
   if(!t){ gateMsg("请先粘贴 PAT。"); return; }
   egGoBtn.disabled=true; gateMsg("正在向 GitHub 验证…");
-  fetch("https://api.github.com/repos/"+EG_REPO,{
-    headers:{ "Authorization":"Bearer "+t, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" }
-  }).then(function(r){
-    if(r.status===200){
-      try{ localStorage.setItem(YJ.util.storeKey("gh.token"),t); }catch(e2){}
+  /* 校验单一出处 = YJ.util.verifyPat（§190：与编辑页门禁同一套判定与文案） */
+  YJ.util.verifyPat(t).then(function(r){
+    if(r.ok){
+      try{ localStorage.setItem(YJ.util.storeKey("gh.token"),r.token||t); }catch(e2){}
       injectEditNav();
       try{ frameEl.contentWindow.location.reload(); }catch(e3){ frameEl.src=frameEl.src; }
       gateClose();
       return;
     }
-    if(r.status===401) gateMsg("PAT 不正确（401）：请检查是否复制完整。");
-    else if(r.status===403||r.status===404) gateMsg("该 PAT 无权访问本站仓库 "+EG_REPO+"：请确认粘贴的是本站仓库的 fine-grained PAT（另一站点的令牌也会被拒绝）。");
-    else gateMsg("GitHub 返回 HTTP "+r.status+"，请稍后再试。");
-  }).catch(function(){
-    gateMsg("网络错误：无法连接 GitHub API（检查网络/代理后重试）。");
+    gateMsg(r.msg || ("GitHub 返回 HTTP "+r.status+"，请稍后再试。"));
   }).then(function(){ egGoBtn.disabled=false; });
 });
 egExit.addEventListener("click",function(){

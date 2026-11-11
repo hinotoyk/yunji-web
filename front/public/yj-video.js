@@ -237,6 +237,11 @@ YJ.video = (function () {
   /* ---- 播放浮层（多源 = 顶部源切换条；单源 other 源保持新标签页直开） ---- */
   /* 编辑台链接用绝对路径：浮层 DOM 挂在顶层文档（外壳在站点根），而按钮所在页面在 pages/ 下，
    * 直接写相对路径会在两种 base URL 里对错一个 → 从 iframe 自身 pathname 拼，两边都正确。 */
+  /* §190：编辑入口只在编辑模式可见 —— 判定与侧栏编辑导航同一开关（YJ.util.editUnlocked()），
+   * 公网访客（本机无本站 PAT）不再看到「配置视频源」。真写权限仍由 GitHub PAT 把守。 */
+  function canEdit() {
+    try { return !!(window.YJ && YJ.util && YJ.util.editUnlocked && YJ.util.editUnlocked()); } catch (e) { return false; }
+  }
   function editHref() {
     var p = "";
     try { p = (window.location && window.location.pathname) || ""; } catch (e) {}
@@ -273,7 +278,7 @@ YJ.video = (function () {
         (mb && v.source === "bilibili" && (v.bvid || v.aid) ? '<span class="yj-vm-chip">静音起播·点喇叭开声</span>' : "") +
         (v.subtitle ? '<span class="yj-vm-chip yj-vm-chip--sub">带字幕</span>' : "") +
         '<span class="yj-vm-chip">' + (v.source === "bilibili" ? "B 站源" : "其他链接") + "</span>" +
-        '<a class="yj-vm-cfg" href="' + esc(editHref()) + '" target="_blank" rel="noopener" title="在比赛记录批量编辑里配置视频源">配置视频源 ↗</a>' +
+        (canEdit() ? '<a class="yj-vm-cfg" href="' + esc(editHref()) + '" target="_blank" rel="noopener" title="在比赛记录批量编辑里配置视频源">配置视频源 ↗</a>' : "") +
         '<a class="yj-vm-link" href="' + esc(v.url) + '" target="_blank" rel="noopener">在源站打开 ↗</a>' +
       "</div></div>";
   }

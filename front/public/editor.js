@@ -21,7 +21,8 @@ YJ.editor = (function () {
   var DEFAULT_PORT = 9090;                          /* 本站约定端口（单源 = 项目根 serve.config.json）；本机编辑 API 已下线，探测失败即草稿箱模式 */
   var PROBE_MS = 1800;
   /* 线上一次性提交（GitHub writer）：单仓库单分支，PAT 由编辑台「连接 GitHub」面板写入 localStorage */
-  var GH_REPO = "hinotoyk/yunji-web", GH_BRANCH = "main";
+  /* repo 常量单一出处 = yj-util.js（§190 收口）：页面必先引 yj-util.js，此处只取引用，不再各存字面量 */
+  var GH_REPO = YJ.util.GH_REPO, GH_BRANCH = "main";
   var GH_API = "https://api.github.com";
   /* §105 站点前缀键：同源本地双站（kzn/yunji）不串。**一律调用时求值**——加载期读 YJ_SITE 可能还是
    * undefined（页面脚本顺序），会静默退回旧共享键；改后任何加载顺序都安全。 */

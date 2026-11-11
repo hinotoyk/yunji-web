@@ -19,7 +19,7 @@
 | 出走马表（entries） | §174 · §184 · §184.1 |
 | 航迹线（timeline） | §31 · §45 · §148 · §149 · §166 · §175 · §176 · §177 · §179 · §182 · §188 |
 | 视频回放（比赛记录·回放列） | §185 · §185.1 · §185.2 · §186 · §187 · §187.1 · §189 |
-| 编辑台（4 页） | §91–§93 · §105 · §142 · §150 · §154 · §155 · §168 · §169 · §187 |
+| 编辑台（4 页） | §91–§93 · §105 · §142 · §150 · §154 · §155 · §168 · §169 · §187 · §190 |
 | 跨站 / 部署 / 冒烟 / 派生 | §103 · §169 · §170 · §171 · §172 · §173 |
 
 ---
@@ -1712,6 +1712,29 @@ nav（flex-1 overflow-y-auto）被压矮 ~20px → 内容溢出露滚动条；�
 | `…/video/av170001?t=90` | `aid=170001&page=1&…&t=90` |
 | `m.bilibili.com/video/BV1jzHG6DEHC/?p=2&t=1h2m3s` | `bvid=BV1jzHG6DEHC&page=2&…&t=3723` |
 | `b23.tv/AbCdEf` | 不外嵌，浮层给短链说明 + 外链按钮 |
+
+## §190 · 编辑页 PAT 门禁：未解锁不再呈现编辑界面 + 回放浮层「配置视频源」收进编辑模式（2026-11-11，用户提案）
+
+**背景**：用户在回放浮层看到「配置视频源 ↗」，指出这与「有 PAT 才能编辑」的约定相矛盾，进一步要求「进入编辑页面必须有 PAT 校验」。复查后确认这是 §168 的**半个门禁**：那一轮只做到「未解锁不注入侧栏编辑导航」，而 `pages/edit*.html` 本身是公开静态文件 —— 直连 URL（浮层按钮 `target=_blank`、收藏、分享链接）照样能打开整张批量表格，只是提交时才因为没有 PAT 而失败。另有一处真实泄漏：`yj-video.js` 的 `editHref()` 硬拼导航链接，**完全不看** `editUnlocked()`，公网访客人人都能看到这个入口。
+
+**定案**（用户诉求 = 进页即校验，不再只靠「导航不出现」）：
+1. **页面级门禁** `public/yj-edit-gate.js`（新）：4 个编辑页在 `yj-util.js` 之后、`editor*.js` 之前同步引入。已解锁 → 立即 return（零成本、零 DOM 改动）；未解锁 → `html[data-yj-locked]` 打标 + 内联样式 `body{visibility:hidden}`（**先锁可见性**，防表格闪一下），`DOMContentLoaded` 后把 body 换成一张「编辑页 · 需要 PAT」卡片：粘贴 → `YJ.util.verifyPat` 真实验证 → 通过写 `gh.token` → `location.reload()`。卡片另给「返回站点」。
+2. **入口同源**：`yj-video.js` 新增 `canEdit()`（判定 = `YJ.util.editUnlocked()`），浮层底部「配置视频源」只在编辑模式渲染；未解锁时浮层其余功能（播放/切源/在源站打开）不受影响。
+3. **顺带收口（§48 达标：3 处）**：仓库常量与 PAT 校验原先三份（`editor.js` `GH_REPO` / `index.html` `EG_REPO` + 内联 fetch / 门禁要用第三份）→ 统一为 `YJ.util.GH_REPO` + `YJ.util.verifyPat()`（返回 `{ok,status,msg,token}`，401/403/404/网络四档文案一并收口）。外壳 `editGate` 与编辑页门禁共用同一套判定与文案，`editor.js` 改为引用常量（消除字面量重复）。
+
+**定位说明（务必别再误解）**：这是**前台可见性门禁，不是安全边界**。编辑页是公开静态文件，改 JS 即可绕；真正把守写权限的仍是 GitHub PAT（无 PAT 无法提交，§104 原子 commit）。收益 = 公网访客看不到编辑界面、不会误入、与侧栏编辑入口语义一致。§168 的「已知局限」不变：`GET /repos` 只证读权限。
+
+**验证**（`python serve.py` + playwright `--channel msedge`，脚本 `tests/_admin-gate-check.cjs`）：
+| 场景 | 结果 |
+|---|---|
+| 无 token 直连 `pages/edit-table.html?sheet=races` | `#yj-gate` 存在 · `#grid` **不存在**（0 行）· bodyText 只有门禁文案 |
+| 塞 token 后 reload | 门禁消失 · 表格 **889/889 行**渲染 · 侧栏「编辑」组出现 |
+| races 浮层（已解锁） | `.yj-vm-cfg` = 1，href = `/pages/edit-table.html?sheet=races` |
+| races 浮层（未解锁） | 浮层正常渲染（`.yj-vm` = 1）· `.yj-vm-cfg` = **0** |
+
+构建核对：`dist/yj-edit-gate.js` 已拷出（5.2KB）· 4 个编辑页各含 1 处引用 · `dist/assets/theme-*.css` 含 `z-\[9999\]` / `max-w-sm` / `bg-black\/40`。
+
+**⚠ 新增编辑页必须带门禁**：任何新的 `pages/edit*.html` 都要在 `yj-util.js` 后引 `../yj-edit-gate.js`，否则等于给公网开一扇后门。
 
 ## 附录 A · 已归档条目（原文见 git 历史 `7e48d69` 及之前）
 

@@ -151,6 +151,31 @@ YJ.util = (function () {
     try { return !!((localStorage.getItem(storeKey("gh.token")) || "").trim()); } catch (e) { return false; }
   }
 
+  /* ---------------- 本站仓库 + PAT 有效性校验（§190 · 三处共用后收口） ----------------
+   * repo 常量原先散落三份（editor.js `GH_REPO` / index.html `EG_REPO` / 编辑页门禁），
+   * 2026-11-11 收口于此：换子项目（kzn 等）只改这一行。
+   * verifyPat = GitHub API `GET /repos/<repo>`（fine-grained PAT 的 metadata:read 为必选权限）：
+   *   200 → 有效且属本站仓库；401 → token 错；403/404 → 有效但非本站仓库（双站防串）；
+   *   status 0 → 压根没连上 GitHub（不是 token 的错，调用方不得据此清 token）。
+   * ⚠ 已知局限（§168）：只证「有读权限」—— read-only PAT 能解锁，提交时才会失败。 */
+  var GH_REPO = "hinotoyk/yunji-web";
+  function verifyPat(token) {
+    var t = String(token == null ? "" : token).trim();
+    if (!t) return Promise.resolve({ ok: false, status: -1, msg: "请先粘贴 PAT。" });
+    return fetch("https://api.github.com/repos/" + GH_REPO, {
+      headers: { "Authorization": "Bearer " + t, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+    }).then(function (r) {
+      if (r.status === 200) return { ok: true, status: 200, token: t };
+      if (r.status === 401) return { ok: false, status: 401, msg: "PAT 不正确（401）：请检查是否复制完整。" };
+      if (r.status === 403 || r.status === 404) {
+        return { ok: false, status: r.status, msg: "该 PAT 无权访问本站仓库 " + GH_REPO + "：请确认粘贴的是本站仓库的 fine-grained PAT（另一站点的令牌也会被拒绝）。" };
+      }
+      return { ok: false, status: r.status, msg: "GitHub 返回 HTTP " + r.status + "，请稍后再试。" };
+    }, function () {
+      return { ok: false, status: 0, network: true, msg: "网络错误：无法连接 GitHub API（检查网络/代理后重试）。" };
+    });
+  }
+
   /* ---------------- 净效果等值（§154 · 编辑台草稿判脏的统一口径） ----------------
    * 背景：判脏散落 4 种写法（String 裸比 / photoKeys join / JSON.stringify 内联重复×2），
    * 收口为 canon 序列化 + 字符串比较。语义 = 「净效果是否与基线等值」：
@@ -176,7 +201,8 @@ YJ.util = (function () {
   var api = { esc: esc, qs: qs, absUrl: absUrl, manYen: manYen,
     siteId: siteId, storeKey: storeKey, editUnlocked: editUnlocked, canon: canon, effEqual: effEqual,
     splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
-    mainName: mainName, sexOf: sexOf, statusChain: statusChain };
+    mainName: mainName, sexOf: sexOf, statusChain: statusChain,
+    GH_REPO: GH_REPO, verifyPat: verifyPat };
   Object.defineProperty(api, "DRAFT_KEY", { get: function () { return storeKey("edit.drafts.v1"); } });
   return api;
 })();
