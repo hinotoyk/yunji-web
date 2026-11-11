@@ -1,7 +1,7 @@
 {
  "_meta": {
   "schema": "basic/v1",
-  "updated": "2026-11-11 02:16:26",
+  "updated": "2026-11-11 13:06:07",
   "count": 277
  },
  "horses": [
@@ -7177,7 +7177,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "3億800万円 (2025年 セレクトセール)",
-   "photo": "",
+   "photo": [
+    "data/photos/136-1.webp"
+   ],
    "races_file": "data/races/136.json",
    "pedigree_file": "data/pedigree/136.json",
    "受賞歴": []
