@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""中立层配置加载：读 config/sire.json（全站唯一事实源：种马 + 品牌 + 台账，契约见 docs/REFACTOR.md §3.3）。
+"""中立层配置加载：读 config/sire.json（全站唯一事实源：种马 + 品牌 + 台账，契约见 docs/子项目复制与同步指南.md §1.1）。
 
 定位与 constants.py 同级：纯 stdlib（json + pathlib），不 import 任何管线，管线 import 它。
 - 文件缺失/损坏 → sys.exit 显式报错（新项目漏配置第一时间暴露，不让管线静默跑错）；
-- 字段最小校验（§3.4 复核 c）：sire.name_cn / sire.name_ja 为空 → warning + sire.wins
+- 字段最小校验（降级规则见 §1.1）：sire.name_cn / sire.name_ja 为空 → warning + sire.wins
   视为空数组（父子制覇徽章不启用，避免半成品配置拼出「飞机云同胜：」这类孤悬冒号）；
 - 访问器对「缺了会坏功能」的字段（ID / studbook 检索参）返回安全默认并打一次 warning；
   对「空值 = 合法关闭态」的字段（sire.wins 可空数组、ledger.url 空 = 不启用）静默返回默认，
-  依据 §3.3 / §4.1 契约，这些空值是文档化的正常状态而非配置错误。
+  依据 §1.1 契约，这些空值是文档化的正常状态而非配置错误。
 """
 import json
 import sys
@@ -36,7 +36,7 @@ def load():
         raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))   # utf-8-sig: 兼容带 BOM
     except FileNotFoundError:
         sys.exit(f"❌ 配置缺失: {CONFIG_PATH}"
-                 f"（新项目请先按 docs/REFACTOR.md §3.3 创建 config/sire.json）")
+                 f"（新项目请先按 docs/子项目复制与同步指南.md §1.1 创建 config/sire.json）")
     except (OSError, ValueError) as e:          # json.JSONDecodeError ⊂ ValueError
         sys.exit(f"❌ 配置文件损坏/不可读: {CONFIG_PATH}: {e}")
     if not isinstance(raw, dict):

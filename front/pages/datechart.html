@@ -92,7 +92,7 @@ function pad2(n){return n<10?"0"+n:""+n;}
  * vt 场地类型(中央/地方/海外) / bk 马场状态 / ki 斤量 / nk 人气 / tm 时间 / bw 马体重 / dz 增减 / jk·tr 骑手·调教师 ---- */
 var RUNS = [];
 
-/* ---- 重赏口径（同 races.html 筛选 / config/grade-table.json 单源，docs/REFACTOR.md §12）：由
+/* ---- 重赏口径（同 races.html 筛选 / config/grade-table.json 单源，about 键即口径说明）：由
  * window.YJ_GRADE 徽章类派生——徽章类 ∈ {g1,g2,g3} 即重赏（含障害 JG/Jpn；L/OP 是 listed/open 不算）---- */
 var GRADED = {};
 if (window.YJ_GRADE) { for (var gk in window.YJ_GRADE) { var _gb = window.YJ_GRADE[gk][1]; if (_gb === "g1" || _gb === "g2" || _gb === "g3") GRADED[gk] = 1; } }

@@ -16,6 +16,7 @@
 - **每次改样式/类名后必须构建并核对** `dist/assets/theme-*.css` 含新类——编译期框架最大坑：改了类但没编译 → 页面无变化。
 - 探索/候选版放项目根 `tests/`，废案放 `tests/_trash/`；旧 `testpage/` 已归档 `tests/_trash/testpage-snapshot`，只读勿直接改。
 - UI 优化：每改一个模块，先把「最终思路 + 当前成果」写进 `docs/UI优化记录.md`（不展开废案），再合并进正式页面。
+- **文档只放两处**：仓库根 `README.md` / `AGENTS.md` + `docs/`（索引 = `docs/README.md`）。过程文档（重构方案 / 落地审计 / 复用审计 / UI 审查报告）在项目完成后即清理——2026-11 已删 4 篇；**规则与结论必须沉淀到 `docs/` 常驻文档、`AGENTS.md` 或代码注释里**，不要让唯一出处停留在一份一次性报告上。
 
 ## 2. 前端架构（必须遵守，不得退回旧方式）
 
@@ -27,7 +28,8 @@
 - 响应式：统一 `max-md:`（768px）单断点，不要写多个碎断点。
 - i18n：日文字段/枚举 → 中文全部走 `front/public/i18n.js` 字典（`YJ.i18n.t/e/g`），**不改后端 JSON**。
 - 数据语义色（全站一致）：1着/胜=`primary` 青绿、2着=`chart-2` 青、3着=`chart-3` 橙、未完走（中止/取消/除外/失格）=`destructive` 红、重赏徽章（GI/GII/GIII/L/OP）用 `primary`/`chart-*` 分级。
-- 跨页联动走 `bus.js`（postMessage + localStorage），不另起机制。
+- 跨页联动走 `bus.js`（postMessage + **sessionStorage**，按标签页隔离），不另起机制。
+- **跨站引用（entries 出走马表）**：`pages/entries.html` 引 racing-calendar 的纯渲染组件（`window.RC_ENTRIES_EMBED`），组件 URL 的版本戳**必须读 `embed/manifest.json` 的内容哈希**（`?v=<hash>`），禁止手写版本号；宿主注入能力（译名 / 马匹页跳转）按对方仓 `docs/DESIGN.md` §10.1 契约对接，本地自动指向 `:9093`。
 - **站点级存储键必须带站点前缀（§105 定稿）**：localStorage / sessionStorage / IndexedDB 库名 / Cache API 桶名一律经 **`YJ.util.storeKey(k)`** 构造，前缀 = `YJ_SITE.id`（源 = `config/sire.json` site.id，缺省回退共享 `"yj"`）——禁止裸字面量键；且**加载期不得求值**（部分页面 `site-config.js` 晚于模块脚本，加载期算好会静默退回旧共享键 → 同源双站 PAT/草稿/缓存互串，不报错最难查）。新增键先查 `docs/UI优化记录.md` §105 的键清单。
 - **复用抽离（硬性约定，docs/UI优化记录.md §48 定稿）**：公共工具（esc 等）单一出处 `front/public/yj-util.js`（`YJ.util.*`，页面薄别名，禁止复制函数体）；比赛行/徽章/格式化/格级映射一律复用 `front/public/race-rows.js`；着顺浅色三件套 JS 侧 = `race-rows.js` 的 `PLACE_BG`（CSS 侧 = theme.css `.yj-nkm*`，两处互指、改色同步）。**只有全站统一语义或 ≥3 处使用才抽离，仅 2 处不动**；收口只做等值搬移/纯删除，改后照常 build+dist 核对。theme.css `@layer components` 里**不放 JS 动态拼类名、content 无字面量的类**（会被 Tailwind 按候选裁剪，如 `.yj-g*` 必须在 @layer 之外）。细则见 `docs/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。
 
@@ -37,19 +39,21 @@
 - **本地预览一律 `python serve.py`**（项目根；服务 `dist/`，端口单源 = `serve.config.json` 的 **9090**，启动即打开 `http://127.0.0.1:9090/index.html`，`--no-open` 只起服务）。禁止再手写 `python -m http.server <port>`（端口散落 + 缺 no-cache/CORS）。`dist/` 已自包含数据副本，务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
 - **端口是约定不是偏好**：四兄弟站 yunji `9090` / kzn `9091` / jbis-sire-rank-history `9092` / racing-calendar `9093`，各仓 `serve.config.json` 为唯一出处。端口被占用时脚本**直接报错退出**——不要改成自动顺延（`entries.html` 硬编码了 RC 的 9093，顺延即静默失配）；换端口只改该 JSON，并连带核对跨站引用。
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
+- **产物清单（`data/` 下 500+ 个 JSON）**：`basic.json`（合并主表，277 匹）/ `pedigree/{id}.json` / `races/{id}.json` / `timeline.json` / `datechart.json` / `stats.json` / `sire_wins.json`（父子制覇派生）/ `video-map.json`（回放映射）+ `video_raw.json`（B 站抓取基线，只增不减）；人工表 4 张：`manual_overrides.json` / `timeline_manual.json` / `races_manual.json` / `video_manual.json`（契约见 `docs/SCHEMA.md`，`_` 前缀键不参与套用）。
 - **前端数据一律走统一缓存控制器 `front/public/yj-cache.js`（`YJ.cache.fetch(name[, opts])`）**：注册表按产物给 TTL（当前全 12h，可按产品覆写），禁止页面绕过控制器直连 fetch 数据产物（编辑台 no-store 语义除外）。**改数据目录/位置时同步核对 `yj-cache.js` 注册表的 `url/prefix`**。
 - `data/races-bundle.json`（比赛压缩包，契约 = `docs/SCHEMA.md` §8）是**构建期派生产物**：只在 `npm run build` 时由 `front/scripts/build-races-bundle.mjs` 生成进 dist（**替换式**——打包成功则 dist 不拷贝 `data/races/*.json`），**`data/` 仓库不落盘、后端管线不经过它**；数据更新后重新构建即得新 bundle。
 - `data/fetch_log.jsonl`（抓取观测日志，逐行 JSON）**入库可追踪**：`.gitattributes` 的 `data/fetch_log.jsonl merge=union` 扛并发 rebase（status/update-data/update-day 三条线都会追加同一文件），`scripts/core/net.py::trim_fetch_log` 按 `LOG_RETENTION_DAYS`（60 天）滚动裁剪，检测频率 `TRIM_CHECK_EVERY`（每 N 次写入一次，避免逐请求全量读 4MB）。构建期 `vite copy-data` 跳过 `*.jsonl`，日志不进 `dist/` 与线上包。
-- 数据更新：`scripts/basic` 与 `scripts/races` **业务隔离、代码抽离复用**——两管线共享逻辑统一下沉中立层 `scripts/core`（路径/站点/颜色等字面量常量单源 = `core/constants.py`，两个 `common.py` 只做薄再导出，不再各持一份拷贝）；中立层不得出现管线概念，各管线风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`；业务模块互不 import 对方。数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `docs/TESTING.md` §4.3）。
+- 数据更新：`scripts/basic` 与 `scripts/races` **业务隔离、代码抽离复用**——两管线共享逻辑统一下沉中立层 `scripts/core`（路径/站点/颜色等字面量常量单源 = `core/constants.py`，两个 `common.py` 只做薄再导出，不再各持一份拷贝）；中立层不得出现管线概念，各管线风控口径 `DOMAIN_SLEEP`/`STRIP_BASES` 仍由各 `common.py` 持有并以形参注入 `net.bind()`；业务模块互不 import 对方。此外 `scripts/status`（登録状态/抹消馬簿，直写 basic.json）与 `scripts/video`（B 站回放匹配）是**独立支线**，不挂在 `--ci` 里，由 workflow 串联。数据统一落根 `data/`；日常/定时统一入口 `python run_update.py <策略>`。⚠ `--init`/`--races-force` 会删空/覆盖 `data/`，`--ci` 会 commit+push（测试必须隔离，见 `docs/TESTING.md` §4.3）。
 - **GitHub Actions 权限**：workflow 里写 `permissions:` 会**整体覆盖**仓库默认的 "Read and write"——没列出的 scope 直接变 `none`。凡是末步要 `POST /repos/{repo}/actions/workflows/deploy.yml/dispatches`（`update-data`/`status` 都靠它触发 Pages）或 `upload-artifact` 的 job，必须声明 `actions: write`，否则一律 **403（curl exit 22）**。`status.yml` 曾只声明 `contents: write`，2026-10-31 起连续多日标红，实际是数据已提交、仅部署触发失败（`update-data` 当时没写 `permissions`，靠仓库默认才侥幸成功，现已显式声明）。
 
 ## 4. 已删除 / 不要复活
 
 - 早期配色方案 A~D、shadcn 探索页、顶部导航布局方案、暗黑模式 已删除，**不要复活**。
+- **已删除的过程文档（2026-11 清理，磁盘已无此文件，仅 git 历史可查）**：`docs/REFACTOR.md`（重构方案，P1-P5 已落地）、`docs/审计报告-工作区全量改动.md`、`docs/重复代码审计.md`、`docs/UI审查报告-2026-10-30.md`。源码注释里的这些文件名属**历史出处指认**，不必找回；同类内容（配置契约 → `子项目复制与同步指南.md` §1.1、复用约定 → `UI优化记录.md` 文首）已有常驻替身，**不要再新建一次性报告来承载规则**。归档清单见 `docs/README.md` 末节。
 - 项目约定：「请求怎么发」可参考旧实现，「业务流程」要自己重新设计。
 
 ## 5. 项目定位
 
-- 站点：**云迹 · 云崽档案**（单一种马产驹的个人查阅/检索用，当前收录コントレイル产驹）。
-- **子项目（模板站身份）**：本仓是子项目站的同步源。现有 kzn-web（絆 · キズナ产驹，独立仓库不共享 git 历史）。凡涉及「复制新子项目 / 把本仓改造同步到子项目 / 子项目回灌」，一律先读 **`docs/子项目复制与同步指南.md`**（品牌保留清单 + 同步规程 + 冒烟断言改写红线 + 回灌欠账清单），禁止凭感觉整拷。
-- 部署：GitHub Pages 静态站，**站点根 = 仓库根**，入口 `/dist/index.html`（dist 已自包含 `dist/data/` 副本；后续可改为只发布 `dist/`）；push main 时 `.github/workflows/deploy.yml` 自动 `npm run build` 并发布。本地预览用项目根 `python serve.py`（固定 `http://127.0.0.1:9090/`，服务 `dist/`）。
+- 站点：**云迹 · 云崽档案**（单一种马产驹的个人查阅/检索用，当前收录コントレイル产驹，建档 277 匹 / 成绩 276 份）。前端 9 个功能页 + 编辑台 4 页（见 `README.md` 功能页表），已进入维护期：改动以修 bug / 补数据 / 微调体验为主，不再大改架构。
+- **子项目（模板站身份）**：本仓是子项目站的同步源。现有 kzn-web（絆 · キズナ产驹，独立仓库不共享 git 历史）。凡涉及「复制新子项目 / 把本仓改造同步到子项目 / 子项目回灌」，一律先读 **`docs/子项目复制与同步指南.md`**（`config/sire.json` 字段契约 + 品牌保留清单 + 同步规程 + 冒烟断言改写红线 + 回灌欠账清单），禁止凭感觉整拷。
+- 部署：**双平台静态站**——GitHub Pages（站点根 = 仓库根，入口 `/dist/index.html`，push main 由 `deploy.yml` 构建发布）与 Cloudflare Pages（`wrangler.jsonc`，assets = `./dist`）。⚠ CF Pages 会把 `/pages/x.html` **307** 剥成 `/pages/x`，任何 `location.pathname` 与 `.html` 做比对的代码必须先经外壳 `pageKey()` 归一（线上侧栏高亮全灭的坑）。本地预览用项目根 `python serve.py`（固定 `http://127.0.0.1:9090/`，服务 `dist/`）。

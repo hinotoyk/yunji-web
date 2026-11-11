@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""中立层等级表加载：读 config/grade-table.json（格 → 显示文案/徽章类 单一出处，docs/REFACTOR.md §12 R6）。
+"""中立层等级表加载：读 config/grade-table.json（格 → 显示文案/徽章类 单一出处；口径说明见该文件 about 键）。
 
 定位与 sire_config.py 同级：纯 stdlib（json + pathlib），不 import 任何管线，管线 import 它。
 消灭原先跨 5 处手同步的本地表（timeline GRADE / datechart·stats TROPHY_GRADES /
 race-rows.js GRADE / datechart.html GRADED），此处是 Python 侧唯一读取点：
 - 文件缺失/损坏 → sys.exit 显式报错（删本地表后缺源文件必须第一时间暴露，不让管线静默跑错）；
 - GRADED（重赏判定）由徽章类派生：徽章类 ∈ {g1, g2, g3} 即重赏（L/OP 是 listed/open 不算），
-  一条派生规则同时覆盖 Python 三消费端与前端 window.YJ_GRADE 两处消费（§12.1）；
+  一条派生规则同时覆盖 Python 三消费端与前端 window.YJ_GRADE 两处消费；
 - GLBL / GBADGE 为派生别名，等值搬移原 build_timeline.py 的语义，既有调用点变量名不变。
 """
 import json
@@ -38,7 +38,7 @@ def load_grade():
         raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))   # utf-8-sig: 兼容带 BOM
     except FileNotFoundError:
         sys.exit(f"❌ 等级表缺失: {CONFIG_PATH}"
-                 f"（格 → 显示文案/徽章类 单一出处，见 docs/REFACTOR.md §12.2）")
+                 f"（格 → 显示文案/徽章类 单一出处，见 config/grade-table.json 的 about 键）")
     except (OSError, ValueError) as e:          # json.JSONDecodeError ⊂ ValueError
         sys.exit(f"❌ 等级表损坏/不可读: {CONFIG_PATH}: {e}")
     table = raw.get("GRADE") if isinstance(raw, dict) else None

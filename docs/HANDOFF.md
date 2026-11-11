@@ -7,18 +7,18 @@
 
 ## 0. 项目一句话
 
-**云迹 · 云崽档案**：单一种马产驹的个人查阅/检索静态站（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，见 `docs/REFACTOR.md` §1），GitHub Pages 部署，`dist/` 自包含数据副本。
+**云迹 · 云崽档案**：单一种马产驹的个人查阅/检索静态站（当前收录 **コントレイル**（铁鸟翱天 / Contrail，netkeiba id `2017101835`）产驹；换种马只需调整种马配置，字段契约见 `docs/子项目复制与同步指南.md` §1.1），GitHub Pages / Cloudflare Pages 部署，`dist/` 自包含数据副本。
 
 ## 1. 当前状态（最新）
 
 | 维度 | 状态 |
 |---|---|
-| 数据规模 | `data/basic.json` 建档 **277 匹**（2023=131 + 2024=146，id 1~277）；血统 277/277；成绩 276 个 `races/{id}.json` |
-| 前端页面 | 8 个页面**全部实现**：`profile`（基本信息/云崽档案）、`races`（比赛记录）、`stats`（倾向统计）、`datechart`（日期统计）、`timeline`（航迹线）、`pedigree`（血统，profile 内嵌）、`edit` + `edit-timeline`（编辑台，mb 不开放） |
-| 构建 | `front/` `npm run build` → 根 `dist/`（含 `dist/data/` 副本 + races 压缩包 + 字体子集） |
-| 数据更新 | 统一入口 `python run_update.py <策略>`；GitHub Actions 每日 UTC 22:00 跑 `--ci` 自动提交 data/ |
-| 部署 | push main → `deploy.yml` 自动构建并发布仓库根，入口 `/dist/index.html` |
-| 数据一致性 | `--check` + 4 个断言脚本（verify_result / verify_drill / verify_stats / verify_datechart）全绿 |
+| 数据规模 | `data/basic.json` 建档 **277 匹**（2023=131 + 2024=146，id 1~277）；血统 277/277；成绩 276 个 `races/{id}.json`；回放映射 `data/video-map.json` |
+| 前端页面 | **9 个功能页全部实现**：`profile`（基本信息/云崽档案）、`races`（比赛记录，含「回放」列）、`stats`（倾向统计）、`leaderboard`（产驹赏金）、`datechart`（日期统计）、`entries`（出走马表，跨站 embed racing-calendar）、`timeline`（航迹线）、`pedigree`（血统，profile 内嵌）、编辑台 4 页（`edit` / `edit-table` / `edit-timeline` / `edit-drafts`，PAT 解锁，mb 不开放） |
+| 构建 | `front/` `npm run build` → 根 `dist/`（含 `dist/data/` 副本 + races 压缩包 + 字体子集 + `site-config.js` 品牌注入） |
+| 数据更新 | 统一入口 `python run_update.py <策略>`；5 条 GitHub Actions：`deploy` / `update-data`（每日全量 CI）/ `update-day`（当日快更）/ `status`（登録状态）/ `video-task`（回放匹配） |
+| 部署 | push main → `deploy.yml` 自动构建并发布仓库根，入口 `/dist/index.html`；另有 Cloudflare Pages（`wrangler.jsonc`，assets = `./dist`） |
+| 数据一致性 | `--check` + 5 个断言脚本（verify_result / verify_drill / verify_stats / verify_datechart / verify_sire_wins）全绿 |
 
 ## 2. 目录结构
 
@@ -26,7 +26,7 @@
 yunji-web/
 ├── config/                  # 站点/种马配置（sire.json 种马+品牌+台账开关 · grade-table.json 格级单源）
 ├── data/                    # ★ 全部数据产物（basic.json / pedigree/ / races/ / timeline.json / datechart.json / stats.json / 人工表）
-├── docs/                    # ★ 全部人工文档（8 篇，逐篇说明见 docs/README.md 索引与下文）
+├── docs/                    # ★ 全部人工文档（索引见 docs/README.md，过程文档已清理归档）
 ├── scripts/                 # Python 数据管线
 │   ├── core/                #   中立核心层（constants/net/basic_io/manual/text/runtime/sire_config/grade，常量单源 constants.py，不 import 任一管线）
 │   ├── basic/               #   基础管线：建档（JBIS）→ 血统/nk_id/意味（并发）→ 详情（netkeiba）→ merge
@@ -36,10 +36,10 @@ yunji-web/
 ├── front/                   # ★ 前端正式源码（Vite 多页 + Tailwind，产物 → 根 dist/）
 │   ├── index.html           #   外壳：左侧导航 + iframe 内容区（单断点 768px）
 │   ├── pages/               #   8 个功能子页 + theme.css（唯一 Tailwind 输入）
-│   ├── public/              #   共享 JS：data-config / i18n / selector / race-rows / yj-cache / yj-util / bus / device / pedigree / editor / race-bundle / loading
+│   ├── public/              #   共享 JS：data-config / i18n / selector / race-rows / yj-cache / yj-util / bus / device / pedigree / editor(+/editor-table) / race-bundle / loading / lightbox / yj-video / friend-links / yj-visit / rehome
 │   └── scripts/             #   构建期工具：gen-font.mjs（字体子集）+ subset_font.py + gen-site-config.mjs（品牌/格级注入）+ build-races-bundle.mjs（races 压缩包）
 ├── dist/                    # 构建产物（gitignore，CI 现场构建；dist 已自包含 data/ 副本）
-├── run_update.py            # 数据更新统一入口（9 种策略，见 README.md 表格）
+├── run_update.py            # 数据更新统一入口（10 个策略参数，见 README.md 表格）
 ├── run_full_test.py         # 从 0 全量自测（= --init 实际载体，~2 小时）
 ├── AGENTS.md                # AI 助手工作规则（硬性约定汇总）
 └── README.md                # 项目介绍 + 快速开始 + 部署
@@ -101,7 +101,8 @@ yunji-web/
 ## 7. 编辑台（草稿箱模式）
 
 - **恒为草稿箱模式**：本地编辑服务 `edit_server.py` 已于 2026-09-30 **删除**；编辑台把改动存浏览器本地（localStorage/IndexedDB）→ 「提交到 GitHub」走 GitHub Data API **单原子 commit** → push main 后 CI 构建约 2 分钟生效。
-- 页面：`pages/edit.html`（马字段，B 稿「常开直改工作表」）+ `pages/edit-timeline.html`（航迹线人工节点）；`mb 端不开放`（窄屏只显「请在电脑端使用」）。
+- 页面（4 个，侧栏「编辑」分组仅 PAT 验证后才注入 DOM）：`pages/edit.html`（马字段，B 稿「常开直改工作表」）、`edit-table.html`（批量表格：基本信息 / 比赛记录两页签，含视频源列）、`edit-timeline.html`（航迹线人工节点）、`edit-drafts.html`（草稿箱总览：未提交 / 已保存）；`mb 端不开放`（窄屏只显「请在电脑端使用」）。
+- 草稿判脏走 `YJ.util.effEqual`（净效果等值，§154）；入口不再有 `?edit=1` URL 开关（§168，改 PAT 校验解锁）。
 - 图片：上传/外链本地化走 `front/public/editor.js`，照片随 commit 落 `data/photos/`，经人工表钉 `photo` 字段；比赛人工配图走 `data/races_manual.json`（race_id → photo，台账场用虚拟键 `@马id@日付`）。
 - 安全边界：`manual_overrides.json` 等人工表公网可读 → 备注只写业务理由；`_note`/`_orig` 等 `_` 前缀键不参与套用。
 
@@ -128,4 +129,4 @@ yunji-web/
 - 编辑台：草稿箱模式 + 线上一次性提交 + 页面拆分（2026-09-29/30）。
 - 全站措辞：侧边栏「日期图」→「日期统计」、「时间线」→「航迹线」、「XXXX年产」→「XXXX年世代」、「下钻」→「跳转」。
 - 字体：101 片 Google 分片 → 构建期按需全量子集 1 片（2026-09-20 定稿）。
-- 复用收口追补（2026-xx）：取消「两管线代码隔绝（common.py 互不 import）」硬限制 → 改为「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 **`core/constants.py`**（路径+站点 URL+颜色+网络默认单源，两个 common.py 只再导出）；新增 `net.bind(domain_sleep, strip_bases)`（收口两 common 的五连 partial 样板）与 `runtime.install_lazy_http()`（收口两 common 的惰性导出块）。详见 `docs/重复代码审计.md`。
+- 复用收口追补（2026-xx）：取消「两管线代码隔绝（common.py 互不 import）」硬限制 → 改为「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 **`core/constants.py`**（路径+站点 URL+颜色+网络默认单源，两个 common.py 只再导出）；新增 `net.bind(domain_sleep, strip_bases)`（收口两 common 的五连 partial 样板）与 `runtime.install_lazy_http()`（收口两 common 的惰性导出块）。约定细则见 `docs/UI优化记录.md` 文首「★ 全站编码约定 · 复用抽离」。

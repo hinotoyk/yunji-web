@@ -63,7 +63,7 @@ export function gradeTable() {
   const cfg = readJson(GRADE_JSON);
   const t = cfg && cfg.GRADE;
   if (!t || typeof t !== "object" || !Object.keys(t).length) {
-    throw new Error("[gen-site-config] config/grade-table.json 缺非空 GRADE 对象（docs/REFACTOR.md §12.2）");
+    throw new Error("[gen-site-config] config/grade-table.json 缺非空 GRADE 对象（见该文件 about 键与 docs/SCHEMA.md 格口径）");
   }
   return t;
 }

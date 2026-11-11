@@ -44,6 +44,11 @@ YJ.video = (function () {
     try { var t = window.top; if (t && t !== window) return t; } catch (e) {}
     return window;
   }
+  /* 设备判定单一出处 = public/device.js（§10）；缺席时按 PC 处理（不影响主链路） */
+  function isMb() {
+    try { return !!(YJ.device && YJ.device.isMb && YJ.device.isMb()); } catch (e) {}
+    return false;
+  }
 
   /* ---- 图标 ---- */
   var ICO_BILI = '<svg width="19" height="17" viewBox="0 0 28 24" aria-hidden="true">' +
@@ -56,7 +61,48 @@ YJ.video = (function () {
     '<path d="M12 9.5 L18.5 13 L12 16.5 Z" fill="#0f8fd6"/></svg>';
   var ICO_X = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
-  var BILI_URL_RE = /bilibili\.com\/video\/(BV[0-9A-Za-z]{8,})/i;
+  /* B 站链接识别（§189.1）：兼容各种「直接复制」的粘贴形态——
+   *   ① 站点链接  https://www.bilibili.com/video/BV1jzHG6DEHC/?t=2339
+   *   ② 分享链接  https://www.bilibili.com/video/BV16hVS6GErr/?share_source=copy_web&vd_source=5abc…&t=2339
+   *   ③ 移动域名  https://m.bilibili.com/video/BV16hVS6GErr
+   *   ④ av 号     https://www.bilibili.com/video/av170001  /  ?aid=170001
+   * 关键点：**只认「BV 号 / av 号」本身，忽略 share_source / vd_source / spm_id_from 等分享参数**；
+   * t（起播点）与 p（分 P）另行解析，参数顺序无关。
+   * ⚠ b23.tv 短链离线展不开（要发一次 HTTP 302）→ 仍按「其他链接」外链打开。 */
+  function parseBili(u) {
+    var s = String(u || "");
+    var m = /\/video\/(BV[0-9A-Za-z]{8,})/i.exec(s) || /[?&#]bvid=(BV[0-9A-Za-z]{8,})/i.exec(s);
+    if (m) return { kind: "bvid", id: m[1] };
+    var a = /\/video\/av(\d+)/i.exec(s) || /[?&#]aid=(\d+)/i.exec(s);
+    if (a) return { kind: "aid", id: a[1] };
+    return { kind: "", id: "" };
+  }
+
+  /* ---- 起播点 / 分 P：从源链接里解析（§189） ----------------------------------
+   * 用户给的 B 站链接常带时间轴（`.../BVxxx/?t=2339`），分享链接还有 `p=2` 分 P。
+   * player.html 的 SEARCH_PARAM 认识 `t`(number) 与 `muted`(boolean)，但**站点链接上的 t 不会自己传进去**，
+   * 必须由我们拼到 iframe URL 上，否则播放器永远从 0 开始。
+   * 支持格式：纯秒数 `t=2339`、B 站分享的 `t=1h2m3s`、YouTube 风格 `t=1m39s`。 */
+  function parseStart(u) {
+    var m = /[?&#](?:t|start)=([^&#]+)/i.exec(u || "");
+    if (!m) return 0;
+    var v = decodeURIComponent(m[1]);
+    if (/^\d+$/.test(v)) return parseInt(v, 10) || 0;
+    var hms = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i.exec(v);
+    if (hms) return (parseInt(hms[1], 10) || 0) * 3600 + (parseInt(hms[2], 10) || 0) * 60 + (parseInt(hms[3], 10) || 0);
+    return 0;
+  }
+  function parsePage(u) {
+    var m = /[?&#](?:p|page)=(\d+)/i.exec(u || "");
+    return m ? (parseInt(m[1], 10) || 1) : 1;
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtTime(s) {
+    s = Math.max(0, parseInt(s, 10) || 0);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    return h ? h + ":" + pad2(m) + ":" + pad2(x) : m + ":" + pad2(x);
+  }
+
 
   function raceKey(r) {
     var rid = String((r && r.race_id) || "").trim();
@@ -73,13 +119,16 @@ YJ.video = (function () {
     if (!s || typeof s !== "object") return null;
     var url = String(s.url || "").trim();
     if (!/^https?:\/\//i.test(url)) return null;      /* 只收 http(s)，防 javascript: 注入 */
-    var hit = BILI_URL_RE.exec(url);
+    var b = parseBili(url);
     return {
-      source: hit ? "bilibili" : "other",
-      bvid: hit ? hit[1] : "",
+      source: b.kind ? "bilibili" : "other",
+      bvid: b.kind === "bvid" ? b.id : "",
+      aid: b.kind === "aid" ? b.id : "",
+      short: /^https?:\/\/(?:www\.)?b23\.tv\//i.test(url),   /* 短链：离线展不开，只能外链 */
       url: url,
       title: String(s.title || ""),
-      page: parseInt(s.page, 10) || 1,
+      page: parseInt(s.page, 10) || parsePage(url) || 1,
+      start: parseInt(s.start, 10) || parseStart(url),   /* §189 起播点（秒） */
       subtitle: !!s.subtitle,
       match: s.match || match || "manual"
     };
@@ -204,15 +253,24 @@ YJ.video = (function () {
           (s.subtitle ? " · 字" : "") + "</button>";
       }).join("") + "</div>";
     }
-    var frame = (v.source === "bilibili" && v.bvid)
-      ? '<div class="yj-vm-frame"><iframe src="' + esc(
-          "https://player.bilibili.com/player.html?bvid=" + encodeURIComponent(v.bvid) +
-          "&page=" + v.page + "&high_quality=1&danmaku=0&autoplay=1&no_related=1") +
+    /* §189 起播点：把链接里的 t 拼进播放器 URL（player.html 认 t/muted，但站点链接的 t 不会自动透传）。
+     * mb 端额外 muted=1 —— 移动浏览器禁止「有声自动播放」，不静音的话点了根本不会动。 */
+    var mb = isMb();
+    var idq = v.bvid ? "bvid=" + encodeURIComponent(v.bvid) : "aid=" + encodeURIComponent(v.aid || "");
+    var qs = "https://player.bilibili.com/player.html?" + idq +
+      "&page=" + (v.page || 1) + "&high_quality=1&danmaku=0&autoplay=1&no_related=1" +
+      (v.start > 0 ? "&t=" + v.start : "") + (mb ? "&muted=1" : "");
+    var frame = (v.source === "bilibili" && (v.bvid || v.aid))
+      ? '<div class="yj-vm-frame"><iframe src="' + esc(qs) +
         '" title="视频回放" scrolling="no" allowfullscreen="true" allow="fullscreen; autoplay; encrypted-media; picture-in-picture"></iframe></div>'
-      : '<div class="yj-vm-frame yj-vm-ext"><p>此源不是 B 站视频，站外无法内嵌播放</p>' +
+      : '<div class="yj-vm-frame yj-vm-ext"><p class="max-w-[34em] px-5 text-center text-[12.5px] leading-relaxed">' +
+        (v.short ? "b23.tv 短链无法解析出 BV 号（需联网展开），请点下方按钮打开；想站内播放请改填完整视频页链接"
+                 : "此源不是 B 站视频，站外无法内嵌播放") + "</p>" +
         '<a href="' + esc(v.url) + '" target="_blank" rel="noopener" class="yj-vm-open">打开视频 ↗</a></div>';
     return '<div class="yj-vm">' + head(v.title || "视频回放", LABELS[key] || "") + tabs + frame +
       '<div class="yj-vm-foot">' +
+        (v.start > 0 ? '<span class="yj-vm-chip">从 ' + fmtTime(v.start) + " 开始</span>" : "") +
+        (mb && v.source === "bilibili" && (v.bvid || v.aid) ? '<span class="yj-vm-chip">静音起播·点喇叭开声</span>' : "") +
         (v.subtitle ? '<span class="yj-vm-chip yj-vm-chip--sub">带字幕</span>' : "") +
         '<span class="yj-vm-chip">' + (v.source === "bilibili" ? "B 站源" : "其他链接") + "</span>" +
         '<a class="yj-vm-cfg" href="' + esc(editHref()) + '" target="_blank" rel="noopener" title="在比赛记录批量编辑里配置视频源">配置视频源 ↗</a>' +
@@ -232,7 +290,7 @@ YJ.video = (function () {
     var list = sources(key);
     if (!list.length) return;
     var v = list[idx || 0];
-    if (list.length === 1 && (v.source !== "bilibili" || !v.bvid)) {   /* 单源外链：直开新标签页 */
+    if (list.length === 1 && (v.source !== "bilibili" || (!v.bvid && !v.aid))) {   /* 单源外链：直开新标签页 */
       window.open(v.url, "_blank", "noopener");
       return;
     }

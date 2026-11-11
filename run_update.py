@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""统一更新入口：9 种更新策略（供日常运行与 GitHub Actions 定时调用）。
+"""统一更新入口：10 种更新策略（供日常运行与 GitHub Actions 定时调用；--since 为 --races 的修饰参数）。
 
 策略（互斥，--since 可修饰 --races）：
   --init        初始化：删空 data/ 从 0 全量（复用 run_full_test.py 的完整测试流程）
@@ -150,7 +150,7 @@ def run_ledger():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="统一更新入口（9 种策略）")
+    ap = argparse.ArgumentParser(description="统一更新入口（10 种策略）")
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--init", action="store_true", help="初始化：删空 data/ 从 0 全量")
     g.add_argument("--basic", action="store_true", help="基本数据增量")

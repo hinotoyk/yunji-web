@@ -1,11 +1,28 @@
-# 云迹 · UI 优化记录文档
+# docs/UI优化记录.md · 云迹 UI 定稿与全站编码约定
 
-> 本文档记录「云迹」前端各模块 UI 优化的**最终方案**与**当前成果**（按最新状态收口；历史背景/废案/反复迭代过程不展开）。
-> 约定：每改一个模块，先把该模块的最终思路与成果写进本文档，再合并进正式页面（`front/` 源码 → `npm run build` → `dist/` 验证）。
-> 配套：`docs/HANDOFF.md`（交接/规范）、根 `README.md`（项目介绍）、`docs/SCHEMA.md`（数据契约）。
-> **端口注记（2026-11-08）**：正文里 `:8090` / `:8091` / `:9090` 均为**当时的验证口径**（历史记录不改写）。
-> 现行本地预览**端口单源 = 仓根 `serve.config.json`**（yunji `9090` / kzn `9091` / jbis `9092` / racing-calendar `9093`），
-> 一律 `python serve.py`（服务 `dist/`，占用即报错不换号）。读旧记录时把旧端口号自行映射到本站现行端口。
+> **本文件是什么**：云迹前端的**现行 UI 规格 + 硬约定**单一出处。每个条目只保留「最终落地 / 最终状态 / 关键结论 / 仍未变的取舍」，供后续改版与子项目同步时对照。
+>
+> **已清理的内容**（2026-11-11）：逐版微调链（产驹赏金 v2–v13.1）、被后续方案取代的中间态（编辑台双形态、`?edit=1` 开关、不蒜子统计）、一次性 bug 修复流水（§89 / §106–§109 / §133 / §143 / §147 / §151–§153 / §163）、待选型对照页（§178）、已废弃的重复编号（第二个 §87 / §166）。原文全在 git 历史（`7e48d69` 及之前），需要考古时 `git show 7e48d69:docs/UI优化记录.md`。
+>
+> **§ 编号保持原样**：缺号 = 已归档（清单见附录 A）。`AGENTS.md`（§48 / §105）、`HANDOFF.md`、`docs/子项目复制与同步指南.md`（§105 / §139 / §170 / §172 / §184 等）里的引用继续有效。
+
+## 现行条目导航（按页面）
+
+| 范围 | 看哪些 § |
+|---|---|
+| 全局 · 搜索栏 / 字体 / 设备 / 跨页联动 | §3 · §4 · §10 · §12–§14 · §20 · §28–§30 · §36 · §37 · §39 · §42 · §62 · §66 · §72 |
+| 基本信息（profile） | §5 · §7 · §8 · §38 · §54/§55 · §94 · §95 · §97 · §98 · §99 · §136 · §137 · §158 · §159 · §159.1 · §160 |
+| 比赛记录（races） | §9 · §11 · §22 · §25 · §34 · §40 · §46 · §51 · §53 · §56 · §57 · §60 · §61 · §78 · §80 · §100 · §101 · §102 · §161 · §162 · §164 |
+| 倾向统计（stats） | §35 · §44 · §47 · §49 · §50 · §64 · §110 · §135 · §144 · §145 · §157 |
+| 产驹赏金（leaderboard） | §112 · §114 · §115 · §128 · §129 · §130 · §131 · §181 |
+| 日期统计（datechart） | §32 · §33 · §63 · §146 · §165 · §183 |
+| 出走马表（entries） | §174 · §184 · §184.1 |
+| 航迹线（timeline） | §31 · §45 · §148 · §149 · §166 · §175 · §176 · §177 · §179 · §182 · §188 |
+| 视频回放（比赛记录·回放列） | §185 · §185.1 · §185.2 · §186 · §187 · §187.1 · §189 |
+| 编辑台（4 页） | §91–§93 · §105 · §142 · §150 · §154 · §155 · §168 · §169 · §187 |
+| 跨站 / 部署 / 冒烟 / 派生 | §103 · §169 · §170 · §171 · §172 · §173 |
+
+---
 
 ## ★ 全站编码约定 · 复用抽离（§48 定稿，此后一切前端编码必须遵守）
 
@@ -13,7 +30,7 @@
 2. **业务语义组件单一出处**：比赛行/徽章/格式化（`gradeBadge/placeBadge/ninki*/GRADE（含派生 G/GLABEL）/weightOf/venueR…`）一律复用 `public/race-rows.js`，新页面直接引入，禁止本地重写映射表或徽章 HTML。
 3. **数据语义色单一出处**：着顺浅色三件套（1/2/3着+着外）JS 侧 = `race-rows.js` 的 `PLACE_BG`，CSS 侧 = theme.css `.yj-nkm*`，两处互指注释、**改色必须同步**；新增数据语义色先找单一出处再写。
 4. **组件样式进 theme.css**：≥3 页共用或全站统一的样式 → `@layer components` 用 `@apply` 封装（如 `.page-title`/`.sec-title`）；**但类名靠 JS 动态拼接、content 里没有字面量的类（如 `.yj-g*`），必须放在 @layer 之外**——Tailwind 会按 content 候选裁剪 @layer 内规则。
-5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例：`.seg`/`manYen`/`#page.embed` 等）。追补（2026-xx 用户决策）：凡 **2~3 处使用但高度相似**的代码，一律先归档进 `docs/重复代码审计.md` 再统一处理；其中 `.seg`（统一 32px 规范值）与 `manYen`（`YJ.util.manYen(pr, empty)` 参数化）**已经用户确认分叉非刻意后收口**（见该文档 F1.8/F1.9），其余分叉项（如 `#page.embed`）保持不动。
+5. **收录门槛（防为了复用而复用）**：抽离前先 grep 查重复——**全站统一的数据语义，或 ≥3 处使用**才收口；仅 2 处且行为有分叉的明确不动（反例：`.seg`/`manYen`/`#page.embed` 等）。追补（2026-xx 用户决策）：凡 **2~3 处使用但高度相似**的代码，一律先列收口清单（当时归档成一份复用审计文档，2026-11 已删除）再统一处理；其中 `.seg`（统一 32px 规范值）与 `manYen`（`YJ.util.manYen(pr, empty)` 参数化）**已经用户确认分叉非刻意后收口**（见 F1.8/F1.9），其余分叉项（如 `#page.embed`）保持不动。
 6. **零影响红线与验证清单**：复用收口只做等值搬移/纯删除；改完必跑 `npm run build` + 核对 dist（theme css 新类在、旧类无、`dist/data/basic.json` 存在——`COPY_DATA=skip` 与 `emptyOutDir` 叠加会清掉 data）。
 7. **版本戳已自动化，禁止手工 `?v=N`（2026-xx 定稿，取代本条旧规）**：非 module 公共脚本统一由构建期插件
    `vite.config.js` 的 `auto-version` 自动打**内容哈希戳** `?v=<sha1 前 10 位>`（dev/build 通用）。内容不变 →
@@ -23,91 +40,7 @@
 
 ---
 
-## 1. 模块进度总览（最新状态）
-
-| # | 模块 | 状态 | 最终方案一句话 |
-|---|---|---|---|
-| 1 | 搜索栏（智能单框） | ✅ | 单框匹配 8 类字段，下拉彩色名字色块 + 性别徽章 + 计数 |
-| 2 | 字体（思源黑体 + Geist） | ✅ | 本地自托管思源 + Geist 回退，16px/1.40，全站数字等宽（后经 §66 改构建期按需子集） |
-| 3 | 基本信息页两栏布局 | ✅ | 左 400px 常驻搜索列 + 右详情，<1024px 堆叠，未选马显示分类总览 |
-| 4 | 马匹详情「上中下」一体式 | ✅ | 无卡片无分割线，上段黄金比 1:0.618，中段 OVERVIEW 卡，名字四槽占位 |
-| 4.1 | 中段数据概览卡片化 | ✅ | 白底主卡「x战x胜 [x-x-x-x]」+ 三率副卡（后经 §54/§55 改 S9 色带） |
-| 5 | 比赛记录页单行 21 列表 | ✅ | 版本 B 清爽网格 + JBIS 配色 + mb 两行分块 |
-| 5.1 | 比赛记录·内嵌模式 | ✅ | profile 下段精简 15 字段，无过滤，场地+R 组合文案 |
-| 6–8 | 统计/日期图/时间线占位 | ✅ | 均已替换为正式页（§31/§32/§35） |
-| 10 | 设备判定统一入口 | ✅ | `YJ.device`（768px matchMedia）+ 断点翻转重渲染 |
-| 12 | 独立模式全库跨马查询 | ✅ | 8 维筛选（同维多选 OR/跨维 AND）+ 内存分页 |
-| 13 | 跨马结果表 | ✅ | 马名列去年份、表头「出走马」、马名两档切换 |
-| 14 | 马番/枠番列 + 骑手正式名 | ✅ | 数据回填 + jockey_id 归一 |
-| 18/19 | 跨马表列宽 | ✅ | §18 固定百分比无横滚被 §19 取代：最小固定 + 内容自适应 |
-| 20 | 独立 MB 跨马卡片 v2 | ✅ | 5 行镜像 PC 列序 + 字段翻译对齐 |
-| 22 | 赛事名去冗余等级尾缀 | ✅ | 只剥有徽章代劳的 5 类尾缀，其余保留 |
-| 23/26 | 宽屏列宽 v6/v7 | ✅ | 全列参与分配 + 密度分档 + 注水上限随档位 |
-| 24 | 等级徽章 L/OP 不可见修复 | ✅ | G 表取值统一小写对齐 `.yj-gl/.yj-gop` |
-| 25 | 人气徽章改颜色文字 | ✅ | 1/2/3 数字染着顺同款深阶文字色 |
-| 27 | 筛选加「出走马」 | ✅ | tag 型多选，复用 selector 组件 |
-| 28 | 出走马跳转优化 | ✅ | 去掉 `_blank`，走外壳 iframe 内跳转保留侧边栏 |
-| 29 | 内嵌 RACES 加跳转 | ✅ | `races.html?horse=id` 预置出走马筛选 |
-| 30 | 选马器双格式马名 | ✅ | `doubleName` opt-in（仅 profile 开启） |
-| 31 | 时间线页（航迹线） | ✅ | 后端预计算 timeline.json，前端 1 请求纯渲染，6 类事件 |
-| 32 | 日期统计页 | ✅ | 后端预计算 datechart.json，天/周/月/年日历 + KPI 带 + 内嵌明细 |
-| 33 | 同日按发走时间排序 | ✅ | 统一 `raceCmp`，四处生效 |
-| 34 | 着顺过滤三态化 | ✅ | 完赛/未完赛/未出走三态，KPI 改「出走」 |
-| 35 | 倾向统计页 | ✅ | 倾向矩阵（15 维切面）+ 种马榜走势 + 年龄成绩曲线，后端预计算（§135 删重赏之路并重排；§144 矩阵粘性表头/基准行 + 出走样本量条 + MB 单行页签；§145 曲线改 ECharts 定制包：自适应 y 轴 + axis tooltip + 点径=样本量 + 总体平均参考线，图例即世代筛选器，原 genSeg/自绘图例/手写 SVG 全删） |
-| 36 | 着顺语义纯彩字修正 | ✅ | 人气/通算战绩/进板数改同色相深阶文字 |
-| 37 | 赛道方向译名 + 人气筛选多选 | ✅ | 显示层译名 + 复用 selRow 下拉 |
-| 38 | 未选马总览等式 | ✅ | `277 = 146 + 131` 实时聚合；mb 端直接展示 |
-| 39 | 人气徽章与着顺统一 | ✅ | 人气 1/2/3 套用同款浅底彩边徽章 |
-| 40 | 全站 1/2/3 色浅色三件套 | ✅ | #FEED88/#CCDFFD/#ECC6A2 浅底深字 |
-| 41/43 | 通算战绩分节条 | ✅ | §43 修正 §41：连体底色 + 保留 `-` 连字符（渐变接缝） |
-| 42 | 比赛行/徽章抽公共模块 | ✅ | `race-rows.js` 单一出处，datechart 加 `toRow()` 适配 |
-| 44 | 倾向矩阵着别列 | ✅ | v3 终版全部去样式纯数字 |
-| 45 | 时间线骑手/调教师两行 | ✅ | 拆两行 + 発走排序 + 「首胜」+ 小皇冠 |
-| 46 | 级别细分 13 档 | ✅ | 班赛拆级/重赏拆 G1-3、Jpn1-3 |
-| 47 | 矩阵容器高度对齐 | ✅ | 人气表离屏实测量取 max-height |
-| 48 | 全站复用收口 | ✅ | v1 方案 9 项全落地（yj-util/race-rows/PLACE_BG/徽章 CSS/`.yj-g*` 移出 @layer） |
-| 49 | 人气页签升序 + 基准行中性灰 | ✅ | parseInt 升序 + 基准行改中性灰 |
-| 50 | 倾向矩阵新增「母父」维 | ✅ | derive 点 merge_basic.py damsire_of，页签序 11 维定稿 |
-| 51 | 赛事名恒单行缩字号 | ✅ | `.tl-racename` nowrap + 0.5px 步进降字号，等级尾缀改徽章 |
-| 52 | 侧边栏「日期图」→「日期统计」 | ✅ | 菜单 + title/H1 一并改 |
-| 53 | 比赛记录表收口 | ✅ | `race-rows.js` 列定义驱动（BASE_COLS + VIEWS 显隐），字段基准化 |
-| 54/55 | 数据概览 S9 色带 | ✅ | 三率并入主卡 → 定稿「晨雾光晕」渐变描边色带（`.yj-ov-*`） |
-| 56 | 筛选改搜索下拉 | ✅ | 人气/母父/骑手/调教师走 selector `items` 模式，原生 select 退场 |
-| 57 | 海外马两项修正 | ✅ | 马名语言按内容判定 + `性別_当前` 派生单一出处 |
-| 58 | 数据门禁修复 | ✅ | verify_stats/verify_drill 断言回绿，`--check` 五步全绿 |
-| 59 | SP 页性齢拆列 | 🚧 | `性`+`年齢` 入库，存量 276 文件待 `--force` 回填 |
-| 60 | 通算战绩收口 | ✅ | `通算成績_逐场` 由 races 全量推导，check 同口径对账 |
-| 61 | 未出走不算通算 | ✅ | 取消/除外不计出走，日期统计页 `isNR()` |
-| 62 | 跨标签页串扰修复 | ✅ | bus 联动 localStorage → sessionStorage 隔离 |
-| 63 | 周口径跨月补邻月日 | ✅ | 月网格首尾真实邻月日期（`.dc-outm`） |
-| 64 | 马名口径收口 | ✅ | `fallbackName()`（母名の生年）+ `mainName()` 剥生产国尾缀 |
-| 65 | 通算战绩五段 →（§76 四段） | ✅ | 括号五段 [出走-1-2-3-着外]（后经 §76 瘦身为四段） |
-| 66 | 字体方案 b | ✅ | 101 片 → 构建期按需全量子集 1 片 589KB |
-| 67 | 编辑台定稿换皮 | ✅ | 三栏壳 + `.yj-ed-*` 28 类进 theme.css |
-| 68 | 阶段 5 动效门禁结案 | ✅ | 像素差异为字体子集光栅双稳态，非动效问题 |
-| 69 | 6b 前端收口 | ✅ | races 同键行序 `raceTieCmp` + nameToggleHTML 单一出处 |
-| 70 | 动效 + 呈现层回滚 | ✅ | 动效/骨架屏/边到边/分批**全部撤销**（用户拍板），保留缓存/图片 lazy |
-| 71 | 复审收尾修正 | ✅ | editor.js 补 clearBasicCache、edit_server Host 校验、.gitignore 补 _tmp |
-| 72 | 数据层提速 | ✅ | races 压缩包（1 请求 44KB）+ 全站统一缓存控制器 yj-cache |
-| 73 | favicon 补齐 | ✅ | favicon.svg + apple-touch-icon.png，8 页 head 注入 |
-| 74 | 文案更名「云崽档案」+「航迹线」 | ✅ | 侧边栏 + title/H1 一一对应 |
-| 75 | 措辞「年产」→「年世代」 | ✅ | 纯措辞，聚合键零变化 |
-| 76 | 通算战绩五段 → 四段 | ✅ | 去首段出走，括号直接复用 PLACE_BG |
-| 77 | 筛选下拉加宽 + 体重补零 | ✅ | `.f-csel` width 238px + WEIGHT_BINS 补零 |
-| 78 | 性齢列 | ✅ | BASE_COLS 21→22 列，mb 性齢槽；78.1 明细/内嵌也展示 |
-| 79 | 统计页移除注记文案 | ✅ | 删 renderGraded 尾注 span |
-| 80 | 跳转语义统一 | ✅ | 「下钻」改「跳转」+ 新标签页 + 赛事名链接（SP 页中央/地方分流） |
-| 81 | 编辑台大改版 | ✅ | 双形态 + 草稿箱 + 一次性提交 + edit-timeline 拆分 |
-| 82 | 编辑台 B 稿定稿 | ✅ | 「常开工作表」定稿，82.1~82.23 全部落地（详见 §82） |
-| 83 | 编辑入口全站收敛 | ✅ | 所有直跳编辑页入口默认不进视野，唯一开关 URL `?edit=1` |
-| 84 | 钉住标记（📌）移除 | ✅ | 行尾 📌 机制整块删除，浏览页零直跳编辑入口 |
-| 85 | 侧栏页脚访问统计（不蒜子） | ✅ | 只统计线上 `www.yunji.xyz`（本地/其它域不加载），页脚回填站点 PV/UV |
-| 86 | 编辑台照片提交孤儿图修复 | ✅ | photo 条目写入脱离 d.ov 循环，纯传照片也能正确提交（§89） |
-| 87 | 访问统计双线：Vercount 计数 + GoatCounter 展示 | ✅ | 页脚数字改 GoatCounter 公开端点回填并即后台链接；Vercount 保留计数不展示（§97） |
-
----
-
-## 2. 模块最终决策摘要
+## 一、页面与模块定稿（§3–§103）
 
 ### §3 · 搜索栏（智能单框）
 - **最终落地**：`pages/selector.js`（组件主体）+ `pages/profile.html`（`YJ.selector.init`）。
@@ -115,8 +48,8 @@
 - **关键结论**：单框一次匹配 8 类字段（4 名字 + 母名/马主/调教师/生产牧场 + id）；下拉彩色名字色块（青绿=日文/蓝=英文/橙=港译/紫=自译）+ 性别徽章 + 计数徽章；选中回填主名、再点清空重搜。
 
 ### §4 · 字体（全局排版）
-- **最终落地**：`pages/theme.css`（body 栈）+ `pages/fonts/`（noto-sc 101 子集 + geist-latin）。
-- **最终状态**：✅ 用户拍板封版（后被 §66 改为构建期按需子集）。
+- **最终落地**：`pages/theme.css`（body 栈）+ `pages/fonts/`（构建期按需子集，见 §66；Geist 拉丁回退）。
+- **最终状态**：✅ 封版（字体文件方案已由 §66 取代：1 个 woff2 单片 ~589KB）。
 - **关键结论**：思源黑体默认中文 + Geist 拉丁/数字回退；16px/1.40/0.10px；全站 `tabular-nums`；全部本地自托管无 CDN。
 
 ### §5 · 基本信息页两栏布局
@@ -174,10 +107,6 @@
 - **最终状态**：✅ 已合并。
 - **关键结论**：5 行重排镜像 PC 列序；马场/体重/赔率短标签硬编码，其余走 i18n；PC/内嵌零改动。
 
-### §21 · 待决策 · 仓库根 index.html 跳转
-- **最终落地**：未实施（拟定 `<meta http-equiv="refresh">` 方案）。
-- **最终状态**：📌 等待用户决策。
-
 ### §22 · 赛事名去冗余等级尾缀
 - **最终落地**：`pages/races.html`（`raceNameText()`，6 处渲染 + 1 处量尺）。
 - **最终状态**：✅ 已合并。
@@ -187,12 +116,6 @@
 - **最终落地**：`pages/races.html`（`libLayout/fs` + `fill()` 三阶段注水 + `TIER_CAP` 档位表 + canvas 粗排/DOM 精量）。
 - **最终状态**：✅ 已合并。
 - **关键结论**：留白三阶段加权注水（弹性文本 2.0× → 数字 1.5× → 全表均分）；表内留白 >40% 自动升档；v7 注水上限随档位（档位越高赛事名越收、数字列越放）；调参指引见原 §23.7/§26.6。
-
-### §24 · 等级徽章 L/OP 不可见修复
-- **最终落地**：`pages/races.html`（`G` 取值统一小写）。
-- **最终状态**：✅ 已修复。
-- **关键结论**：class 选择器区分大小写，`"L":"gL"` 对 `.yj-gl` 永远不命中。
-- **按语（2026-10-09）**：等级徽章类名后更名 —— `.yj-gl/.yj-gop` → `.yj-listed/.yj-open`（L=Listed/OP=Open 全名，防被误读为格名；见 `config/grade-table.json` 的 `about` 键与 `docs/REFACTOR.md` §12）。本条为历史日志，保留当时类名。
 
 ### §25 · 人气徽章改「着顺同款颜色文字」
 - **最终落地**：`pages/races.html`（`ninkiBadge()` 删胶囊，仅文字色）。
@@ -349,11 +272,6 @@
 - **最终状态**：✅ 已完成。
 - **关键结论**：`--check` 五步全绿，消除 update-data.yml 静默跳过提交隐患。
 
-### §59 · SP 页性齢拆列
-- **最终落地**：`scripts/races/` 解析 SP 页拆 `性`+`年齢` 入库（`RACE_RECORD_ORDER` 模板更新）。
-- **最终状态**：🚧 进行中（存量 276 文件待 `--force` 回填 ≈34 分钟，需用户点头）。
-- **关键结论**：`セン` 归一为 `セ`。
-
 ### §60 · 通算战绩收口
 - **最终落地**：`merge_races.py`（`career_from_recs` 派生 `通算成績_逐场`）+ `profile.html` + `check_data.py` 同口径对账。
 - **最终状态**：✅ 已完成。
@@ -389,49 +307,15 @@
 - **最终状态**：✅ 已完成。
 - **关键结论**：每次 build 现算语料字符集，变了才重子集；wght 限 300–700；fail-soft（CI 无 python 沿用已提交产物）；旧 101 片归档 `tests/_trash/font-101-slices/`。
 
-### §67 · 编辑台定稿换皮
-- **最终落地**：`pages/edit.html`（三栏壳）+ `.yj-ed-*` 28 个类进 theme.css + 文案常规化。
-- **最终状态**：✅ 已完成。
-- **关键结论**：功能逻辑一行不许坏（只动皮与词）；编辑页不得影响浏览页。
-
-### §68 · 阶段 5 动效门禁结案
-- **最终落地**：站点代码一行未改；临时「假修法」回滚。
-- **最终状态**：✅ 方法论结案。
-- **关键结论**：像素差异是字体子集决定的光栅路径双稳态，非动效破的；门禁改「同构建内 off-vs-on」比。
-
-### §69 · 6b 前端收口
-- **最终落地**：`raceCmp` 同键后接 `raceTieCmp`（着顺→race_id→馬番→馬名）；`race-rows.js` 加 `nameToggleHTML`；删死别名。
-- **最终状态**：✅ 已完成。
-- **关键结论**：同键组 135 个/298 行改序是目的非事故；全排列测试证明行序唯一。
-
-### §70 · 动效 + 呈现层回滚
-- **最终落地**：A1~A5 动效、B1 骨架屏、B2 边到边、B5 分批**全部撤销**；保留 B3 共享缓存/B4 图片 lazy/B6 minify/§69 tie-break。
-- **最终状态**：✅ 用户拍板「动效全不要」，已回滚。
-- **关键结论**：回滚不能用整文件 checkout（避免炸掉 tie-break/编辑台/字体子集）；全站回到「一次性渲染 + 写死加载文案」。
-
-### §71 · 复审收尾修正
-- **最终落地**：`editor.js`（`clearBasicCache`）、`edit_server.py`（Host 校验/CORS 收紧）、`.gitignore`（补 `data/_tmp/`）。
-- **最终状态**：✅ 已完成。
-
 ### §72 · 数据层提速（races 压缩包 + 统一缓存）
 - **最终落地**：`front/public/race-bundle.js`（`YJ.raceBundle.pack/decode`）+ `front/scripts/build-races-bundle.mjs`（build 期替换式）+ `front/public/yj-cache.js`（`YJ.cache`，六产物 12h TTL + SWR）。
 - **最终状态**：✅ 已完成。
 - **关键结论**：276 请求→1 请求 44KB gzip；数据全站走统一缓存控制器；`manual_overrides.json` 保持 no-store。
 
-### §73 · favicon 补齐
-- **最终落地**：`front/public/favicon.svg` + `apple-touch-icon.png`（180×180）；8 页 head 注入。
-- **最终状态**：✅ 已完成。
-- **关键结论**：iOS 不认 SVG → 另出满幅方角 PNG（预圆角会渲成黑角）。
-
 ### §74 · 文案更名「云崽档案」+「航迹线」
 - **最终落地**：`index.html`（title/横幅/侧栏图标）+ `timeline.html`（更名「航迹线」）。
 - **最终状态**：✅ 已完成。
 - **关键结论**：改名按 §52「侧栏 + title/H1 一一对应」，数据产物/功能名不改。
-
-### §75 · 措辞「年产」→「年世代」
-- **最终落地**：`stats.html` 7 处 + `build_timeline.py` 标签 + `timeline.json` 重算。
-- **最终状态**：✅ 已完成。
-- **关键结论**：纯措辞改动，聚合键/逻辑零变化。
 
 ### §77 · 筛选下拉加宽 + 体重补零
 - **最终落地**：`races.html`（`.f-csel` width 238px + `WEIGHT_BINS` 补零）。
@@ -443,73 +327,10 @@
 - **最终状态**：✅ 已完成。
 - **关键结论**：全部走共享模块基准，页面零列清单改动。
 
-### §79 · 统计页移除注记文案
-- **最终落地**：`stats.html` 删 `renderGraded()` 尾注 span。
-- **最终状态**：✅ 已完成。
-
 ### §80 · 跳转语义统一
 - **最终落地**：stats 8 处文案 + `window.open(_blank)` + `race-rows.js`（`raceLink()`）+ `build_datechart.py`（runs[] 增 `rid`）。
 - **最终状态**：✅ 已完成。
 - **关键结论**：赛事名链接三分流——中央 `race.netkeiba.com` / 地方 `nar.netkeiba.com` / 海外字母 id 兜底 db；无 race_id 不出链接。
-
-### §81 · 编辑台大改版（双形态 + 草稿箱 + 一次性提交）
-- **最终落地**：`front/public/editor.js`（`local`/`draft` 双形态 + 草稿箱 + GitHub writer 单原子 commit）+ `pages/edit.html` + 新 `pages/edit-timeline.html` + `deploy.yml`（+setup-python）。
-- **最终状态**：✅ 已完成（未 commit；线上链路待用户实测）。
-- **关键结论**：线上直接编辑走「草稿箱存浏览器本地 + 一次性提交」；预览=新标签叠加真实资料页。
-
-### §82 · 编辑台 B 稿定稿（常开工作表）
-- **最终落地**：三稿竞稿 → 用户先选 A 后**改选 B**；`edit.html`/`edit-timeline.html` 重写为单列 max-w-880px 常开直改工作表。
-- **最终状态**：✅ 已完成（82.1~82.23 全部落地）。
-- **关键结论**：B 稿「字段常开直改 + 青绿描边 + 恢复官方值常驻」定稿；时间线编辑台只管人工节点、双入口（引用比赛浅引用 + 自填荣誉）。
-
-#### §82 子节摘要（均为最终决策）
-- **82.1** 需求与竞稿：三稿竞稿，用户改选 B；时间线数据模型定稿（编辑台只管人工节点）。✅
-- **82.2** B 稿落地：速选下拉/保存条视口固定/「改」圆徽；选马来源改直读 basic.json 卸载 selector；时间线引用比赛=浅引用（复用 races-bundle 解码）。✅
-- **82.3** 门禁与状态：构建/冒烟全绿；候选稿三件套留对照。✅
-- **82.4** 追加：本机直连下线（恒为草稿箱模式）、selector 检索回归（compact 组件）、文案减负。✅
-- **82.5** 追加：「改」角标作用域收窄后**整个删除**（待保存由 chip+青绿描边承担）。✅
-- **82.6** 追加：登録状態 瓦片改回下拉（五字段控件形态统一）。✅
-- **82.7** 修复：上传本地图片 TypeError（photoSrc 引用错位 + uploadOne 漏写缓存）。✅
-- **82.8** 修复：外链被 CORS 拒（fetchRemote 三级抓取，最后 weserv.nl 公共代理）。✅
-- **82.9** 新规则：比赛人工配图 `data/races_manual.json`（race_id→photo）；build_timeline 按 race_id 查表。✅
-- **82.10** 追加：时间线 STEP1 原生 select 全换 selector.js compact 搜索组件。✅
-- **82.11** 追加：选马下拉开双名显示（三处 `doubleName:true`）。✅
-- **82.12** 追加：STEP 下拉规格统一（`SEL_CMP` 紧凑规格，宽 380px）。✅
-- **82.13** 追加：mb 端不开放编辑台（三处入口 `max-md:hidden`；窄屏显「请在电脑端使用」）。✅
-- **82.14** 删除 `scripts/edit_server.py` + 跳转带回侧边栏（草稿箱为唯一落盘链；外壳支持 `?page=` 直达）。✅
-- **82.15** 修复：「连接/设置」点了没反应（`state.gh.msg` 判空）。✅
-- **82.16** 临时：压缩管线离线复刻预览（`tests/photo-pipeline-preview/run.mjs`，跑完即弃）。✅（临时任务）
-- **82.17** 图片正式本地化入库：马142 切 `142-3/142-4.webp`、马40 撤外链改 `40-1.webp`；经 manual_overrides 钉 photo 数组。✅
-- **82.18** 修复：删图后老访客 404 → 缓存桶 `yj-data-v1→v2` 整体作废；沉淀硬规「删被引数据文件必须同轮 bump 桶」。✅
-- **82.19** 详情照片区去掉 📌 钉住标记（`avatarHTML()` 删 photo 分支 pinMark）。✅
-- **82.20** 编辑台抽屉「已保存」段折叠 + 马名检索（`#savedQ` 大小写不敏感过滤）。✅
-- **82.21** 修比赛配图草稿「下标当键」：STEP2 键改真 race_id（台账场禁用）；草稿条目可读标签可点击跳回。✅
-- **82.22** 台账场（无 race_id）也可配图：`races_manual` 虚拟键 `@马id@日付`（`rmKeyOf` 单一出处）。✅
-- **82.23** 时间线照片 `/pages/data/…` 404：photo 路径口径定稿 = **页相对 `../data/…` 或外链 URL**，`first_photo()` 补 `../` 前缀。✅
-
-### §83 · 编辑入口全站收敛（`?edit=1` 单一开关）
-- **最终落地**：`pages/timeline.html`（「编辑 ↗」加 `hidden` + `#editEntry`，仅带参时 `classList.remove`）+ `pages/profile.html`（`EDIT_MODE` 门控草稿条里的「回编辑台 ↗」）+ `index.html`（`EDIT_MODE`/`withEdit()` 把 `edit=1` **透传进 iframe**：`?page=` 直达、默认页 profile、侧栏换页三处）。
-- **最终状态**：✅ 已完成（真 HTTP + headless Chrome 宽视口逐项对照，5 场景全绿）。
-- **关键结论**：直跳编辑页的入口默认一律不进视野——外壳「编辑」导航组（既有约定）+ 时间线页内「编辑 ↗」+ profile「回编辑台 ↗」三处共用**同一个开关**：URL 带 `?edit=1`（拼在外壳上即可全站生效，外壳负责透传；也可直接拼在内容页 URL 上）。窄屏仍按 §82.13 由 `max-md:hidden` 隐藏。**验证方法沉淀**：必须走 HTTP + 宽视口——`file://` 下的嵌套 iframe 不加载 CSS（类名隐藏失效），且内容区 <768px 会触发 `max-md:hidden`，两者都会造成假阴性。
-
-### §84 · 钉住标记（📌）整块移除
-- **最终落地**：`pages/profile.html` 删 `PINS`/`PIN_ROW`/`PIN_CLS`/`pinEntry`/`pinField`/`hasPin`/`pinMark`/`loadPins`、行渲染里的 `pinMark(...)`、`currentH` 追踪变量、`[data-edit]` 点击委托（跳 `edit.html?id=`）。
-- **最终状态**：✅ 已完成（构建 + HTTP 复验：行/概览/比赛记录均正常，无 📌）。
-- **关键结论**：行尾 📌 用户判「丑且没必要」整块删除（§82.19 只删掉了照片区那一枚）；浏览页因此**零**直跳编辑页入口（唯一残留的「回编辑台 ↗」按 §83 门控）。顺带收益：profile 不再每次加载多拉一次 `manual_overrides.json`。**保留不动**：「草稿」徽章（未提交草稿提示）与草稿预览提示条。
-
-### §85 · 侧栏页脚接入站点访问统计（不蒜子 · busuanzi）
-- **最终落地**：`public/yj-visit.js`（**新增**：第三方统计脚本的唯一注入点 + 正式域名白名单）+ `index.html`（head 引 `yj-visit.js?v=1`；侧栏页脚「云迹 · 数据仅供分享交流」下方加 `#busuanzi_container_site_pv` / `#busuanzi_container_site_uv` 两个标签，数字位 `#busuanzi_value_site_pv` / `#busuanzi_value_site_uv`）。
-- **最终状态**：✅ 已完成（构建 + dist 核对 + 真 HTTP/headless 复验：正式域名取数回填、本地不加载不显示、统计服务不可达保持隐藏）。
-- **关键结论**：
-  1. **计数归属 = 请求 Referer 的 host**（实测）：无 Referer 直接 `Bad Request`；同 host 不同路径共享一个 `site_pv`；`sub.example.com` 与 `example.com` 各自独立桶。**本地 `127.0.0.1`/`localhost` 是「全网本地测试者共享的桶」**（实测 100 万+，显示出来纯误导），线上每个域名（`www.yunji.xyz` / apex `yunji.xyz` / `<user>.github.io`）各自一个桶、互不相加。
-  2. **门控口径（2026-09-30 用户确认）：只统计线上 `https://www.yunji.xyz/`，本地不掺进来** → `yj-visit.js` 里 `HOSTS = ['www.yunji.xyz']` 白名单，非白名单域名**连脚本都不加载**（不计数也不显示，页脚只剩文案）。要加/换域名只改这一处；**apex `yunji.xyz` 是另一个桶**，不做跳转就会出现两个域名各算一份、数字忽大忽小。
-  3. **PV 口径 = 一次「打开网站」= 一次**（不存在「每页各算一次」的水分）：第三方脚本**只挂外壳** `index.html`（`dist/pages/*.html` 实测 0 处引用），iframe 内换页不重新加载外壳 → 不计；从书签直开内容页时该页无脚本、只做 `location.replace('../index.html?page=…')`（§82.13 回壳）→ 也只计 1 次。只接站点级 `site_pv`（累计打开）/`site_uv`（cookie 去重的独立访客），**不接 `page_pv`**（内容页全在 iframe 内、外壳是唯一 URL，页面级无意义）。
-  4. **空占位防护沿用官方推荐做法**：容器先 `hidden`（Tailwind，等价官方 `style="display:none"`），取数成功才由脚本改成 `display:inline`；3 秒超时/离线/被拦截 → 一直隐藏，不会出现「总访问 次」。注入点放 head（第三方脚本自带 `async`），数字回填由脚本内部 `ready()` 等到 DOM 就绪，不会丢数字。
-  5. **本方案只给「累计」**：不蒜子不提供「今日」维度，要今日数据得另挂百度统计一类带后台的分析（本项目未接）。线上数字从 0 起算；想让线上从某个基数开始，需到不蒜子注册登录后自行改。
-  6. **入口收敛（Cloudflare 侧配置，不在本仓库）**：`yunji.xyz` → `www.yunji.xyz` 的 **301 已在 CF Redirect Rules 配好并线上实测通过**——wildcard `https://yunji.xyz/*` → `https://www.yunji.xyz/${1}`、`301`、勾 Preserve query string（`${1}` 写法：该版界面要求花括号，`$1` 会报 replacement syntax 错）；实测 `?page=pages/races.html` 直达参数与路径均保留，真浏览器从 apex 进入能落到 www 并打开目标页。**明确不做（2026-09-30 用户决定）**：http 裸域（`http://yunji.xyz` 仍返 200，匹配不上 `https://…` 规则）这一格**不跳 www、也不进统计**；其余三格（`https://yunji.xyz`、http/https 的 `www`）都正常计数。以后要补只需再加一条 `http://yunji.xyz/*` → `https://www.yunji.xyz/${1}` 的规则，**不必**开全 zone 的 Always Use HTTPS（那会连带影响该 zone 下其它子域）。
-  7. **UV 实测不可靠，口径以 PV 为准**（2026-09-30 线上实测）：同一浏览器 profile 连开两次，`site_pv` 10→11 的同时 `site_uv` 也 10→11，且该 profile 的 cookie 库里**没有 busuanzi 的 cookie**（第三方 cookie 被浏览器默认拦截）→ 不蒜子的 UV 靠它自己域上的 cookie 去重，**去重失效时 UV 会趋近 PV**。故展示端「总访问」当主指标，「访客」只作参考；要精确独立访客须用第一方分析（百度统计一类）。
-  8. **补救：页脚两端都显示（2026-09-30 用户确认）**。原页脚块是 `hidden md:block`，于是 **mb 端只计数、不显示**（计数脚本挂在外壳 head，与视口无关）——实测手机视口下 `script[src*=busuanzi]` 已注入、`#busuanzi_value_site_pv` 已回填 22，但 `页脚 display:none`、高度 0，且抽屉里 nav 一路延伸到抽屉底边（无页脚）。改为常显（去掉 `hidden`/`md:block`）后：桌面侧栏底部与手机 ☰ 抽屉底部显示同一块，抽屉内页脚矩形底边 == 抽屉底边；桌面像素不变。
-  9. **验证法沉淀（mb 端专用）**：要看手机抽屉内的真实状态，headless 的 `--screenshot` 不够（抽屉默认关着），需 CDP：起 `--remote-debugging-port`，`Runtime.evaluate` 里 `#menuBtn.click()` 后 `Page.captureScreenshot`（本轮临时脚本 `%TEMP%\yj-visit\yj-cdp.mjs`，不入库）。**坑**：headless Chrome 窗口会被最小宽度钳到 ~492px，而 `--screenshot` 仍按请求宽度裁切 → 会造出「mb 端内容被切」的**假象**（实测 shell / iframe 的 `scrollWidth == clientWidth == 492`，**无横向溢出**）；另 `Start-Process -ArgumentList` 不会给含空格的参数加引号，`--host-resolver-rules` 这种会被拆开导致 Chrome 立刻退出——用 `&`/后台 job 启动才安全。
 
 ### §86 · 硬编码白名单收敛 + 障害重赏（JG1-3）纳入重赏口径（2026-10-01）
 - **最终落地**：
@@ -520,7 +341,7 @@
   5. **徽章单表 + 障害重赏**：后端 `build_timeline.py` 的 `GLBL`/`GBADGE` 两张表合并为 **`GRADE = {格: (显示文案, 徽章类)}`**（旧名降级为派生别名），前端 `race-rows.js` 同构（`GRADE` + 派生 `G/GLABEL`，新增导出 `YJ.raceRows.GRADE`），两边补 `JGI/JGII/JGIII → JG1/JG2/JG3`（徽章类复用 `g1/g2/g3`，**不新增 CSS**）。
   6. **重赏口径全链路纳入 JG**：`timeline GRADED` / `stats+datechart TROPHY_GRADES` / 两个校验脚本的 `TROPHY_G`、`gradeKey`、`gradedKeys`、`G_SEQ`、重赏合计 / `races.html gradeMatches`+
      新单级选项 JG1-3 / `datechart.html GRADED` / `stats.html` 级别桶·下钻键·重赏步·帮助文案 / `docs/SCHEMA.md` 口径定义。L/OP 仍不算重赏。
-  7. **（顺带修存量缺陷）三个校验脚本的 DOM stub 补全 `location`**（`verify_stats.cjs`/`verify_datechart.cjs`/`verify_drill.cjs`）：页面 §82.13 的「独立打开=自动回壳」脚本要读 `location.search/pathname` 并调 `location.replace`，stub 只有 `{href:""}` → 页面冒烟段自 9/30 起**每次 eval 即崩**（`undefined.indexOf`），导致 `run_update.py --ci` 的断言门长期判失败（而 workflow 自己的 commit 步骤照旧提交，所以 CI 表面正常、断言实际没跑）。补全后 4 个校验脚本 112+205+60 条断言 + 三态对账全绿。
+  7. **（顺带修存量缺陷）三个校验脚本的 DOM stub 补全 `location`**（`verify_stats.cjs`/`verify_datechart.cjs`/`verify_drill.cjs`）：页面回壳脚本（§88）要读 `location.search/pathname` 并调 `location.replace`，stub 只有 `{href:""}` → 页面冒烟段自 9/30 起**每次 eval 即崩**（`undefined.indexOf`），导致 `run_update.py --ci` 的断言门长期判失败（而 workflow 自己的 commit 步骤照旧提交，所以 CI 表面正常、断言实际没跑）。补全后 4 个校验脚本 112+205+60 条断言 + 三态对账全绿。
 - **最终状态**：✅ 已完成。构建通过（dist 已核对：`races.html` 含 JG1-3 选项、`stats.html` 含 JG 桶、`race-rows.js` 含 `GRADE`）；`timeline/datechart/stats` 三产物重算**内容无变化**（现库无 JG 场次 → 零影响、无回归）；合成 JGI 一着穿透测试通过（级别首胜 JG1/N 胜/世代重赏首胜/统计桶 JG1/筛选命中）；4 个校验脚本全绿。
 - **关键结论**：白名单只许出现在「能同时覆盖未来取值」的地方——**分类口径（中央/地方 vs 其余）用默认值，不用枚举**；枚举仅保留「归一化词表」（如 `DNF_ABBR`/`ROMANS`），命中就归一、未命中就原值透传，**绝不用枚举做准入判定**。所有消费同一口径的副本（前端筛选/统计桶/断言脚本/文档）必须同轮同步，否则会出现「时间线认、筛选页不认」的静默不一致。
 
@@ -531,16 +352,6 @@
 - **最终状态**：✅ 已完成。构建通过；三产物重算**内容无变化**（现库 `格`/`芝ダ` 已是规范值 → 零影响）；40 条 python 断言（归一全写法 + 台账入库 + 落库自愈）+ 14 条前端断言全过；4 个校验脚本 112+205+60 全绿。
 - **关键结论**：「归一化词表」必须在**入库和落库两个口**都做——只在解析侧归一，外部直接落库的值（台账手填、历史文件、编辑台写入）就会漏；同一份数据语义在库里只能有一种写法（`障` 而非 `障害`），消费端要么读规范值，要么在字典里同时容纳两种写法，**不能只认另一种**。另：`str.translate` 只认 ordinal 键，给字符键会**静默不生效**（本次实测踩到，必须用 `str.maketrans` 构造）。
 
-### §87 · 访问统计由不蒜子迁到 Vercount（2026-10-02）
-- **最终落地**：`public/yj-visit.js`（只改注入的 `s.src` → `https://cn.vercount.one/js`）+ `index.html`（引 `yj-visit.js?v=2` 绕缓存；页脚两个 `span` 与 id **零改动**——Vercount 兼容同一套 `busuanzi_container_*`/`busuanzi_value_*`，且额外认 `vercount_*`）。
-- **最终状态**：✅ 已完成（构建 + dist 核对 + 真实 Chrome/CDP 线上复验：数字回填、容器由 hidden 转 inline）。
-- **关键结论**：
-  1. **迁移动因：不蒜子服务端故障，不是本站代码问题**。2026-10-02 实测（Node/OpenSSL 通路，对照 `cn.bing.com` 447ms 正常）：取数 API `https://busuanzi.ibruce.info/busuanzi` 返回 **`502 Bad Gateway`**（另两次 24s/30s 超时），静态脚本本体 `busuanzi.pure.mini.js` 时好时坏（621ms 成功 / 24s 超时）。社区同步佐证：linux.do「不蒜子好像挂了两天了」「又又又挂了，不想忍了」。**区分**：同期 headless Chrome 实测 CF beacon（`static.cloudflareinsights.com`）返回 200/30KB，故 `index:159` 那条 `ERR_SSL_PROTOCOL_ERROR` 在本机属**偶发**、与页脚缺数字**不同源**，不要把两件事混为一谈。
-  2. **诊断法沉淀（本轮新增，可复用）**：判定「页脚数字没了」这类问题必须**分层**——① 用 CDP 看 `#busuanzi_container_site_pv` 的 `display` 与 `#busuanzi_value_site_pv` 文本；② 看 `document.querySelector('script[src*="busuanzi"]')` 是否注入（验证白名单与门控）；③ **单独**探测取数端点本身。本轮 ①② 全绿、③ 502 → 一步定位服务端，避免误改前端。**坑**：本机 `curl.exe`（Schannel）报 `SEC_E_NO_CREDENTIALS`、PS 5.1 `Invoke-WebRequest` 拿不到 HTTPS 响应头，但 **Node（OpenSSL）TLS 正常**——探针一律走 Node，别用 curl 下结论。（另：PS 5.1 无 `-SkipHttpErrorCheck`，`-MaximumRedirection` 亦需 7.0+；`Start-Process -ArgumentList` 启动 headless Chrome 需 `--user-data-dir`，沿用 §85 第 9 条。）
-  3. **Vercount 的两处行为优于不蒜子**：① 用 **POST + `window.location.href`**（不依赖 Referer），故**直接访问也能计数**，没有不蒜子「无 Referer 直接 Bad Request」的毛病；② 取数成功会写 **localStorage 缓存**，API 失败时用上次成功的值续显，比「失败即隐藏」更稳。**已实测** CORS：`access-control-allow-origin: *`、预检 `OPTIONS` 放行 `Content-Type`，POST 返回 `{"status":"success","data":{"site_uv":1,"site_pv":1,"page_pv":1}}`。
-  4. **门控口径不变**：`HOSTS = ['www.yunji.xyz']` 白名单保留（本地/`file://`/`*.github.io` 连脚本都不加载）；apex → www 的 CF 301 已在 §85 第 6 条配好，四个入口都落 www。**代价**：Vercount 是独立服务，累计数字**从 0 重新起算**（不蒜子里那份旧数字仍存于其服务端，若其恢复可查）。
-  5. **仍未解决（已知局限）**：不提供「今日/近 7 天」维度；UV 仍为 cookie 去重近似值（Vercount 为 `max-age=31536000; samesite=lax`，比不蒜子的第三方 cookie 可靠），要精确独立访客仍须第一方分析。
-
 ### §88 · 修复「下钻新开标签页却停在首页」：?page= 扩展名归一 + `..` 校验归位（2026-10-02）
 - **最终落地**：`index.html` 外壳 `?page=` 解析块（1 处）：① 扩展名归一——`pn = u.pathname` 不以 `.html` 结尾则补上，再进校验与赋 src（不动 `u.search`）；② `..` 检查从「`u.pathname` 归一后」改为「`wantPage` 原始串」的路径段正则 `/(^|[\/\\])\.\.($|[\/\\?])/`。
 - **最终状态**：✅ 已完成（构建 + dist 核对 + 真浏览器 7 用例全绿：①用户原 URL 修复、②③④回归、⑤非法域名仍拒、⑥`..` 现在被拒、⑦query 内合法 `..` 未误伤）。
@@ -549,28 +360,6 @@
   2. **诊断法教训：本地静态服务器复现不出这类 bug**。`python -m http.server` 不做扩展名规范化，`/pages/races.html` 直接 200，于是本地全绿、线上全红。**凡涉及 URL 形态的问题，必须打真实托管域名验证**（本轮先用 Node 跟随 307 链发现 `/pages/races` 是 200 且 title 正常，才定位到回壳产物）。反向亦然：本地测「无扩展名直开」会 404，那是**测试环境差异**、不是缺陷。
   3. **旧 `..` 校验是空操作**：`new URL()` 已把 `../` 规范化掉，对 `u.pathname` 判 `".."` 永远不命中（实测 `pages/../pages/races.html` 被照常接受）。改为对**原始串**按路径段匹配后，该形态被正确拒绝；用 `(^|[/\\])\.\.($|[/\\?])` 而非裸 `indexOf("..")`，才不会误伤 query 里合法的 `..`（如 `f=venue:..`）——**安全校验要不误伤合法值，只能按结构匹配，不能按子串匹配**。
   4. **顺带澄清一处易误判**：下钻链接的 `data-href` 是裸相对路径 `races.html?f=…`，本轮实测 `window.open` 从 iframe 内调用时**按 iframe 的 baseURI 解析**（`/pages/stats.html` → `/pages/races.html`），故该写法本身正确、与既有 `raceLink()` 的 `profile.html?horse=` 同构；**若将来改由外壳读 `data-href` 导航，必须换成 `pages/races.html` 全路径**（相对基址不同 → 会落到站点根 `/races.html` 404）。此隐患本轮未改（无调用方），仅记录。
-
-### §89 · 修复「只传照片不写 photo 条目」：编辑台提交孤儿图（2026-10-08）
-- **现象**：提交 `715e836`（编辑台草稿一次性提交）显示「0 匹人工值 · 1 匹图片」→ 图片文件 `data/photos/66-1.webp` 入库，但 `manual_overrides.json` **没有** 66 的 photo 条目 → 乘天风（id 66）页面显示 🐎 占位。
-- **根因**：`editor.js` 批量提交组装里，photo 条目写入（`ent.photo = committed[id]`）**嵌套在 `d.ov`（人工字段草稿）的循环内**。只传照片、不存任何人工字段的马不进该循环 → 图片文件走 `uploads` 通道成功入库，但 photo 条目永不写入人工表。commit message 的「N 匹图片」统计的是**文件数**，与人工表条目数不同步，极具迷惑性。
-- **最终落地**：`front/public/editor.js` 提交组装函数——把 `d.ph`（照片草稿）处理拆成**独立循环**，`mode === "set"`/`"remove"` 的马**无条件**写/删 `photo` 条目（含 `_orig` 官方值快照与 `hasPin` 判定，与人工字段循环同口径），与上传通道对齐；同一匹马 ov+ph 并存时顺序为 ov 先、ph 后叠加，结果与旧行为一致。
-- **数据侧补救**：`data/manual_overrides.json` 补 `"66": {"photo": ["data/photos/66-1.webp"], "_note": "…"}`，`merge_races.py`（离线、幂等）套用 → `basic.json` id 66 photo 生效（diff 仅 6 行），重建 dist 后线上可显示。
-- **验证**：`node --check` 语法通过；`npm run build` + dist 核对（`dist/editor.js` 含独立循环）；`dist/data/basic.json` id 66 `photo=data/photos/66-1.webp`；HTTP `/dist/data/photos/66-1.webp` 200。
-- **教训**：**「文件入库」≠「关联入库」**——编辑台三条通道（马图/比赛图/时间线图）都是「blob 上传 + 表条目」两段式，任何一段漏了都会产生孤儿（此前 `:540` 修的是**文件缺失**方向，本轮修的是**条目缺失**方向）。以后改提交流程，先检查「文件」与「条目」成对。
-
-### §90 · 编辑台 v3「工作台」改版：分组导航 + 状态沉默化（2026-10-13）
-- **动因**：用户对两个编辑页（基本信息 / 航迹线）「都很不满意」，点名参考网上成熟做法、要**简约直观**（附参考截图 = 专业 GIS/航线工具的右键「编辑」分组菜单：组标题 + 图标条目 + 当前项/禁用态的状态语言）。
-- **最终落地**（`front/pages/edit.html` + `edit-timeline.html` 壳重写、`theme.css` 编辑台块重排、`editor.js` 渲染层同步；**逻辑/事件委托/data-\* 钩子零改动**，脚本 bump `editor.js?v=11`）：
-  1. **页首「编辑」分段导航**（参考图「编辑」分组的直译）：✎ 基本信息 / ⌇ 航迹线 两个条目（内联 SVG 线条图标 + 文字），当前项 `aria-current="page"` 白底浮起（`.yj-ed-tabs/.yj-ed-tab`，壳层静态）。替代旧 timeline 报头的「‹ 回马匹编辑」孤链接。
-  2. **状态沉默化（v3 核心约定）**：「与官方一致」不再亮牌（行尾常驻灰 chip 整体删除）——**沉默 = 官方**；仅「已保存」（浅青底 + 青绿 chip）与「待保存/草稿」（橙底 + 橙 chip）两态发声。全表 6 枚常驻徽章 → 0 枚，异常态反而更显眼。
-  3. **行标签主次重排**：中文标签 13px medium 为主 + 日文字段名 10px 灰次级（`.yj-ed-row-k/.yj-ed-row-sub`），替代旧「日文大写在上 + 中文小字在下」的双重平权标签；备注行同步（备注 / _note）。
-  4. **控件减重**：`.yj-ed-in` 38px semibold → 36px medium、focus ring primary/15；photo 列 268→280px。
-  5. **航迹线空态入口卡（signature）**：空态 = 「引用比赛 / 自填荣誉」两张邀请卡（`.yj-ed-card`：图标 + 标题 + 一句说明），替代旧虚线框一句话提示；工具条保留同款入口；有节点后列表盒装化（rounded 容器 + 行 hover）。
-  6. **节点编辑表单 = 青绿描边卡**：本页唯一「进行中」区域与列表/工具条视觉分离；STEP 措辞简化为「选马 / 选比赛」；表单头契约提示缩短。
-  7. **保存条减负**：删独立 `#count` span（计数机制本就并入「草稿箱 · N」按钮文字）；模式点 `.yj-ed-chipdot`；「放弃修改」ghost 化。
-  8. **theme.css 收敛**：删无引用旧类 `.yj-ed-mast/.yj-ed-seg5*/.yj-ed-tile*/.yj-ed-official*/.yj-ed-row-v/.yj-ed-row-acts/.yj-ed-rowedit`；新增 `.yj-ed-tabs/.yj-ed-tab/.yj-ed-row-sub/.yj-ed-card(-ico)/.yj-ed-chipdot`；全部类名仍以完整字面量出现在 pages html / public editor.js（content 覆盖，@layer 不裁）。不新增 hex，语义色沿用 primary/chart3/accent/muted/destructive。
-- **验证**：`node --check` 通过；构建通过（races-bundle 对账 276 马 · 782 条）；dist 核对（theme-*.css 含全部新类、`.yj-ed-tile`/`.yj-ed-official` 已消失；dist/editor.js 含 `yj-ed-card`）；headless Chrome 截图四态全绿——基本信息 idle、基本信息「草稿 + 已保存」混合态（橙/青两态 + 恢复官方值按钮 + 草稿箱 · 1 计数）、航迹线空态双卡、航迹线「2 节点列表 + 自填荣誉表单展开」。
-- **关键结论**：编辑台的「直观」来自**状态语言的克制**——默认全部沉默，只有偏离官方值的两态才发声（对应参考图「禁用项才置灰、其余不解释」的专业工具惯例）；页面间的「直观」来自**常驻分组导航**而非页内回跳链接；空态要当**入口**设计（图标 + 标题 + 说明），不当「没数据」的报错设计。gen-font 本地产物与 CI 字节级漂移再次出现（同 §前轮），`git restore` 回 CI 版即可，属构建噪音非回归。
 
 ### §91 · 航迹线编辑台：节点卡实时预览（2026-10-13）
 - **动因**：用户要求编辑航迹线节点时能**实时预览**「自己填写的卡片效果」。
@@ -714,22 +503,6 @@
 - **文案定稿（同日用户确认，截图 `v103d-*`）**：jbis 展示名「種牡馬ランキング」→「**JBIS LS榜**」、简介「JBIS 每日快照」→「**每日快照**」——长日文名在窄列截断且与 LS 方块不呼应，改后三条目节奏统一（短名 + 短简介），注册表 name/sub/desc 三字段同步。
 - **v3 四站扩展（2026-10-23）**：第 4 站 racing-calendar（出走表，与 jbis 同构 site/→_site/）接入——注册表加 rc 条目（RC 方块 / Racing Calendar / 一键生成出马表）、组标题三轮比稿定稿「**站群导航 NETWORK**」、jbis 展示名改「**JBIS LS Rank榜**」。技术要点：jbis 系皮肤**变量归一化**（--f-* fallback 链）——rc 用 shadcn 风变量命名且语义相反（--muted/--accent 是底色非前景），链序专门设计（rc 走 --muted-foreground/--primary）实现一套 CSS 双站兼容；卡片网格改 repeat(auto-fit,minmax(280px,1fr)) 自适应列宽（3 卡一行）。方案文档升四仓同文；yj 侧栏自动 3 条目零改动。
 
-### §104 · 编辑台 · 批量表格「键盘电子表格流」（基本信息 + 比赛记录 批量增删改，2026-10-24）
-- **动因**：用户要求「基本信息和比赛都能通过类似 Excel 的表格形式批量新增、修改、删除」。出 A（键盘电子表格流）/B（批量选择流）/C（变更台账流）三个候选原型对比（`tests/_trash/edit-table-cand/` 归档，截图 `tests/_shots/et-*`），用户拍板 **A 案**：整页密表 + 单元格就地编辑 + Enter↓/Tab→/方向键 + Ctrl+Z·Y 撤销重做 + 行首勾选批量删除。
-- **定稿结构**：新页 `front/pages/edit-table.html`（编辑导航第 2 项「批量表格」，电脑端专用）+ 新共享模块 `front/public/editor-table.js`（表格引擎）；编辑链路全部复用 `editor.js`——草稿箱、GitHub 连接、一次性原子提交、`_orig` 快照、报告语言零改动。三候选均真实数据验证过（277 匹 / 818 条），A 转正后 B/C 归档废案。
-- **编辑范围（口径）**：
-  - **基本信息页签**：可改字段 = 编辑台字段白名单（`editor.js::FIELDS` 单一出处，14 字段）+ photo；馬名/派生列/技术键只读。**增删行不开放**——建档/移除走抓取管线（JBIS 白名单注册表），人工表管不了（与 §94 口径一致）。
-  - **比赛记录页签**：增/删/改全开放。日付/场名/赛事名等为场次级字段（同组多驹联动改），出走马名/人気/タイム等为马级字段；删除行 = 删该驹该场记录；新增行 馬名 从档案马名 datalist 解析出 id，匹配不到则该行不进草稿（防脏数据）。
-- **落库契约（新增白名单 4）**：`data/races_edits.json`（`{del:[{id,race_id,日付,馬名}], mod:[{…,set:{字段:值|null}}], add:[{…全字段记录, 來源:"人工"}]}`，id=马 id；匹配键 = `record_keys` 对称双键）——**merge_races 每轮 fetch 合并后、派生前重新套用**（del/mod 不烙死在文件里，重抓回来会被再删/再改），套用在派生前 → 収得/通算/主勝鞍/性別_当前 自动跟随。契约 = `docs/SCHEMA.md` §9。
-- **草稿模型**：基本信息批量编辑直写草稿箱 `d.ov`（与编辑台同契约：值=钉住、null=恢复官方值、空值且无钉=不产生条目）；比赛编辑进新草稿段 `d.rc`（同上三段），提交时叠加远端 `races_edits.json`（同组键覆盖、del 连带清 mod、重建行自动撤 del、add 双键去重）。撤销/重做 = 内存日志逐条回滚并同步草稿箱；「放弃修改」按会话快照只回滚本页产生的改动（不碰其它页面的草稿）。
-- **关键结论**：批量表格不另起提交链路——**它就是编辑台的第 4 个入口**，草稿箱/提交/PAT/报告全共享；后端只加一个「编辑表套用」纯函数步骤。Excel 交互（键盘流 + 粘贴导入 TSV + 导出 TSV + 列显隐）负责输入效率，数据一致性交还给既有 merge/派生管线。
-- **验证（2026-10-24）**：`npm run build` 通过（edit-table.html 8.42kB 入包；bundle 818 条 round-trip 对账过）；`theme-*.css` 新类 13/13 编译核对；后端 `apply_race_edits` 隔离单测 6/6（mod 双键命中 / del 台账同日多场组 / add 去重 + 人工缺省 / null 删键 / 空表 no-op）；浏览器 E2E 自测 18/18 全过（`tests/et-selftest.html` 真实 DOM 驱动 dist 页：格编辑→d.ov、追加行→馬名解析 id→rc.add、场次级同组联动→rc.mod、勾选删除→rc.del、撤销/重做/放弃修改全回滚、箱无残留）；headless 截图（`tests/_shots/et-formal-{basic,races}.png`）钉住青绿格 / GI 徽章 / sticky 列 / 4-tab 导航全就位。
-- **补充（2026-10-25 用户反馈 2 条）**：① 外壳侧栏「编辑」组加「**比赛信息编辑**」（基本信息编辑正下方，`data-url="pages/edit-table.html?sheet=races"` 直达比赛页签；data-href 后缀匹配 → 页内切 tab 高亮不错位）；② 批量表格工具条加「**⛶ 全屏**」——初版用 Fullscreen API，实机在 iframe/内嵌环境点击无反应（`allowfullscreen` 权限链被拦），**定稿改 CSS 伪全屏**：表格卡 `#fsTarget` 切 `fixed inset-0 z-[70]` 盖满视口（类切换全部为 JS 字面量 → 编译期扫到），表区限高 `calc(100vh - 200px)`、section 自身 overflow-auto 兜底，ESC / 按钮退出复原；全屏态 = 工具条 + 表格 + 行数脚注（保存条让位，退出后提交）。E2E 自测扩到 20/20（进/出全屏断言各一）。
-- **打磨三连（2026-10-25 用户反馈）**：① **双高亮**——提交上一格时 `applyCell` 会给它补光标环，紧接着开新格编辑器 → 旧环残留；定稿 `startEdit` 开编辑器前 `setCursor(null)` 清环（编辑中位置由输入框自身指示，提交/取消后才落环）。② **编辑态跳表**——`w-full` 输入框在 auto 表格布局里以固有宽度(~170px)参与列宽计算，窄格（抹消日等）被撑开、整表抖动；**定稿编辑控件 `absolute left-0 top-0 h-full w-full` 盖满本格**（absolute 不参与表格布局 → 格子多大框多大，全屏/非全屏一致、窄格零撑开）+ `invisible whitespace-pre` 占位文本保列宽（本格可能是该列最宽者）+ sticky 格不动 `position`（relative 会破坏吸左，sticky 自身即 containing block）。③ **侧栏高亮跟随页签**——页内切页签不产生 iframe load，外壳 load 监听管不到；内容页 `switchSheetUI` postMessage `{type:"yj:page", page, sheet}`（仅认 `e.source === frameEl.contentWindow`）。E2E 21/21（含 absolute 盖满断言）。
-- **导航收拢（2026-10-25 用户定稿）**：编辑台 4 页的**页内页签全部撤下**（edit.html / edit-table.html / edit-timeline.html / edit-drafts.html 的 `.yj-ed-tabs` 块，theme.css 组件类一并删除勿复活），导航**统一收进外壳侧栏「编辑」组 5 条目**：✎ 基本信息编辑（edit.html）/ ⊞ 基本信息批量编辑 / ▤ 比赛记录批量编辑（两条批量共用 `pages/edit-table.html`，`data-navid` 区分；后者 `data-url` 带 `?sheet=races`）/ ⧗ 航迹线 / 🗒 草稿箱。高亮三路齐发：外壳 load 按 `?sheet=` 精确点亮 navid、页内切页签 postMessage 同步、页内跳转（草稿箱跳马/跳场）走 pathname 后缀匹配。独立打开的内容页由 rehome 回壳 → 侧栏导航兜底。E2E 回归 20/20。
-- **小打磨（2026-10-25 用户反馈 2 条）**：① 「⬇ 导出 TSV」撤下（编辑流闭环只进不出，按钮与 `exportTsv`/`tsvBtn` 全链路移除）；② 比赛页签「格（级别）」改**下拉框**——选项 = `racelib.GRADE_ORDER`（GI/JpnI/GII/JpnII/GIII/JpnIII/L/OP）+ 障害 JGI/JGII/JGIII + 班赛 3勝/2勝/1勝クラス + 新馬/未勝利（与 `merge_races` 的 `normalize_grade` 归一、`MAJOR_TIER` 展示层级同口径；现值不在枚举时下拉自动追加保真）。
-- **追記（2026-10-26，与 kzn 双仓同改）**：修复台账行（race_id 空）del/mod 静默无效——前端 del/mod 条目只带 `馬名`（人读标识）而 `record_keys` 读记录字段 `出走馬名`，race_id 空时键集为空被跳过（上文本节「race_id 缺失（台账）走 馬名+日付」名不副实；本仓尚未实际使用 races_edits.json，零存量影响）。定稿在**后端键构建处归一**：`merge_races.entry_match_keys` 复制条目把 馬名 映射为 出走馬名（条目自带 出走馬名 优先、不污染原条目），del/mod 两处匹配改走它；SCHEMA §9 措辞同步；隔离单测 6→**10** 例全过（新增 台账 del / 台账 mod / 出走馬名 优先 / 条目不被污染）。展示层遗留（双仓同形态）：批量表格刷新后台账行的待保存划线/改值高亮不回显（`editor-table.js::recKeysJs` 同口径读 出走馬名）——仅展示层，草稿/远端条目与后端套用不受影响。隔离单测已落成常驻用例 **`scripts/races/verify_races_edits.py`（13 断言）**：台账 del/mod、race 键 del、horse 键 mod、add 与已有/同表去重、add 缺省（來源/本賞金）、null 删键、空表 no-op、条目不被污染、出走馬名 优先；另附「旧口径键集为空 → 复现原 bug」一条。
-
 ### §105 · 编辑存储站点命名空间化（localStorage / Cache / IndexedDB / sessionStorage 键加站点前缀，2026-10-26 双仓同改）
 - **动因**：用户浏览器同时打开 yunji-web 与 kzn-web，kzn 编辑台「连接 GitHub」面板**回显出贴在另一侧的 PAT**。根因：localStorage/Cache API/IndexedDB 全按 **origin**（协议+域名+端口，**路径无关**）隔离，而两仓编辑台键名完全相同——`yj.gh.token`（PAT）/ `yj.edit.drafts.v1`（草稿箱）/ `yj.edit.port` / IndexedDB `yj-edit-blobs` / 缓存桶 `yj-data-v3` / sessionStorage `yj:basic:<v>:<url>`、`yj:currentHorse`。线上两站不同源（www.yunji.xyz vs kzn 的 Cloudflare 域）互不影响；但**本地同端口**（127.0.0.1:8090 先后服务两目录）或 file:// 双开时即同源共用一份存储：PAT 串显（本次实锤）、草稿箱互相可见（在错误站点提交会把对方草稿写进本仓人工表 = 数据污染）、数据缓存互相喂错（两站 `/data/basic.json` 同路径同 URL）。
 - **定稿（单源收口）**：站点级键全部加站点 id 前缀——`config/sire.json` site 段新增 **`id`**（`yunji` / `kzn`），`gen-site-config.mjs` 产出 `YJ_SITE.id`；`yj-util.js` 新增 **`siteId()` / `storeKey(k)`** 单源（缺省回退 `"yj"` = 旧无前缀键，站点配置缺失时的兜底）。各键落地：PAT → `<site>.gh.token`、草稿 → `<site>.edit.drafts.v1`、端口记忆 → `<site>.edit.port`、IndexedDB 库 → `<site>.edit-blobs`、缓存桶 → `<site>.data-v3`、`yj:basic:<v>:<url>` → `<site>.basic:<v>:<url>`、`yj:currentHorse` → `<site>.currentHorse`。
@@ -737,48 +510,10 @@
 - **影响**：一次性切换——旧键数据不再读写：**PAT 需重贴一次**；切换前未提交的旧草稿不再可见（上线前先清点提交；实锤时 kzn 草稿箱为空）；旧缓存桶 `yj-data-v3` 由 `yj-cache.js::cleanLegacyBucket()` 在首次开桶时删除（Cache 条目是可再生的全量数据，删掉只是下次重取），线上访客无感（ETag/304 照常）。
 - **不做自动迁移（复评定稿）**：旧键是两站**共写**的混合数据——草稿箱里可能混着另一站的马匹条目（id 空间不同），PAT 可能是另一站仓库的细粒度令牌（跨仓推送必 403）。盲迁 = 把错误凭据/脏草稿装进新命名空间，比不迁更难排。改为「**不继承 + 提示**」：`editor.js::legacyTokenNote()` 在当前站未配置 PAT 而旧键 `yj.gh.token` 有值时，在「连接 GitHub」面板显式提示重贴一次；旧 IndexedDB 库 `yj-edit-blobs` 不删（里面可能还有未提交草稿图，留着可人工导出，占用体积小）。
 - **验证**：`node --check` 双仓 5 个 public 模块 + gen-site-config.mjs 全过；两仓 `npm run build` 通过（races-bundle round-trip 对账通过）；dist 断言——旧键字面量代码侧零残留（`yj.gh.token` / `yj.edit.drafts.v1` / `yj.edit.port` / `yj-edit-blobs` / `yj:basic:` / `yj:currentHorse` / `caches.open(BUCKET)`），新形态在位（site-config `id` 字段 / `storeKey(` / `function bucket`）；`yj-cache.js` 头注释保留一处旧桶名（说明去向，刻意）。复评补测：node vm 直跑三例（无 site-config → 回退 `yj.*` 旧键；有 `id` → `yunji.*`；桶名惰性求值 `yunji.data-v3` 且加载期 0 次 `caches.open`）；仓库自带冒烟重跑全绿（yj-cache 16/16、stats 205/205、datechart ALL PASS、drill 60/60、result PASS）。
-- **复评追补（2026-10-26 二次审阅，用户授权直接改）**：① 惰性求值收口（bus/editor/profile，见上）；② 旧桶清理 `cleanLegacyBucket()`；③ PAT 旧键提示 `legacyTokenNote()`；④ `site.id` 补进配置契约（`docs/REFACTOR.md` §3.3 + README 新项目步骤）与 `AGENTS.md` 硬规（存储键前缀 + 加载期禁求值）；⑤ `gen-site-config.mjs` 对缺省 `id` 构建期告警（新克隆仓最容易漏）；⑥ `data/fetch_log.jsonl` 裁剪改为**计数门控 + 全量按 ts 过滤**（原「只看首行是否过期」在 merge=union 把旧行夹到中间时会永久跳过裁剪，且逐请求全量读 4MB）；⑦ 常驻用例 `scripts/races/verify_races_edits.py`（13 断言）+ `scripts/verify_fetch_log.py`（原 `tests/` 里的临时脚本移出，补 trim/幂等/门控——`tests/` 按约定不入库，挪到 `scripts/` 才留得住）；⑧ `scripts/races/verify_drill.cjs` 的体重档位断言去掉「540-550 / >550 必须为空」的数据绑定（2026-10 已有 554kg，断言随数据过期）。
+- **复评追补（2026-10-26 二次审阅，用户授权直接改）**：① 惰性求值收口（bus/editor/profile，见上）；② 旧桶清理 `cleanLegacyBucket()`；③ PAT 旧键提示 `legacyTokenNote()`；④ `site.id` 补进配置契约（`docs/子项目复制与同步指南.md` §1.1 + README 新项目步骤）与 `AGENTS.md` 硬规（存储键前缀 + 加载期禁求值）；⑤ `gen-site-config.mjs` 对缺省 `id` 构建期告警（新克隆仓最容易漏）；⑥ `data/fetch_log.jsonl` 裁剪改为**计数门控 + 全量按 ts 过滤**（原「只看首行是否过期」在 merge=union 把旧行夹到中间时会永久跳过裁剪，且逐请求全量读 4MB）；⑦ 常驻用例 `scripts/races/verify_races_edits.py`（13 断言）+ `scripts/verify_fetch_log.py`（原 `tests/` 里的临时脚本移出，补 trim/幂等/门控——`tests/` 按约定不入库，挪到 `scripts/` 才留得住）；⑧ `scripts/races/verify_drill.cjs` 的体重档位断言去掉「540-550 / >550 必须为空」的数据绑定（2026-10 已有 554kg，断言随数据过期）。
 - **关键结论**：跨站共存的工具链，站点级存储键必须自带命名空间；「origin 判定与路径无关」是本质——本地多项目共用一个端口时，任何未前缀的键都会跨项目互串。bus.js §62「sessionStorage 优于 localStorage」防的是**跨标签页**串扰，本次前缀补上的是**同标签跨站导航残留**这另一半。
 
-### §106 · 编辑台提交链路两修：无比赛配图草稿的 TypeError 崩溃 + PAT 校验网络抖动误清除（2026-10-26）
-
-- **动因（用户实测）**：① 编辑台改马匹图片后「提交到 GitHub」报红条 `Cannot read properties of null (reading 'then')`，草稿箱始终挂着「图片=草稿 2 张」提交不出去；② 第一次保存 PAT 后按钮「没反应」，重贴第二次才提交成功。
-- **根因 1（提交崩溃，§104 a2dd6fb 引入）**：`editor.js::submitDrafts` 的 blob 链里 `if (!(d.tl && d.tl.table)) return rmCommit().then(reCommit);`——`rmCommit()` 在**无比赛配图草稿**时按早退约定返回 `null`，对 `null.then` 抛 TypeError 被整链 catch 成提交失败。即 **§104 之后一切「纯马匹字段/图片」的提交（最常见的提交形态）必炸**；当日 17:35 那次提交能成功只因恰好带了「比赛配图 1」（commit 8c14a03）。旧代码（5afb004）是 `return rmCommit();` 作链值，不对其 `.then`，故 §104 加 reCommit 时才暴露。
-- **修法 1**：`rmCommit()` / `reCommit()` 早退分支 `return null` → `return Promise.resolve()`（做 `.then` 回调时两者行为一致，671 行 `.then(rmCommit).then(reCommit)` 路径不受影响），两处调用形态从此恒安全。
-- **根因 2（PAT「保存了没生效」）**：「提交到 GitHub」按钮的 disabled 只看 `ghBusy || 草稿箱空`，**与 PAT 无关**；真正的坑在 `ghTokenSave` 处理器——保存后 `GET /user` 校验，**校验失败一律 `ghClearToken()`**，网络层抖动（status 0，连不上 api.github.com）也被当「token 无效」把刚贴的 PAT 静默删掉，之后点提交只会弹「先在连接 GitHub 里粘贴 PAT」，体感即「保存了没生效、再贴一次才行」。
-- **修法 2**：`ghTestToken()` 失败分支补 `network: r.status === 0`；校验网络失败**保留 token**并明示「GitHub 校验连不上（网络波动），token 已保留」，只有 GitHub 明确拒绝（401 等）才清除。真正 token 贴错的行为不变（照旧清除 + 红字提示）。
-- **验证**：`node --check` 过；`npm run build` 过（races-bundle round-trip 对账通过）；dist/editor.js 含两处修复、页面引用 `?v=` 哈希随内容自动更新（强刷即得）。用户当前挂着的「图片=草稿 2 张」草稿在 localStorage/IndexedDB 原样保留，修复生效后直接再点提交即可。
-- **关键结论**：promise 链里「有时返回 promise 有时返回 null」的函数**不能被无条件 `.then`**——早退分支一律 `Promise.resolve()` 兜底；外部服务的「校验」要把**网络层失败**与**凭据被拒**分开处置，前者不该惩罚用户已输入的凭据。
-
-### §107 · 编辑台持久化与缓存四修：图片/信息莫名消失 · 改后不及时回显 · 提交后缓存不刷新（2026-10-26）
-
-- **动因（用户实测）**：「信息编辑和提交 GitHub 这一块还有很多问题，本地模拟多测几次」——① 上传图片莫名消失；② 改过的信息莫名消失；③ 修改过的信息不及时回显；④ 更新后浏览器缓存应立即失效、自动拉最新。
-- **根因 1（图片消失）**：上传/删图后链路里只有 `renderPhotos`，**不经过** `render → persistHorse`，`state.photos` 的改动只活在内存——此刻切马（`setHorse` 会整块重置 `state.photos`）/ 关页 / shell 里 iframe 换页 = 草稿凭空消失，IndexedDB 里只剩孤儿 blob；上传队列进行中切马更会把已压好的图直接吞掉。
-- **修法 1（editor.js）**：① 新增 `persistPhotosOf(id)`，图片态一变（`setDraft`/`addPhoto`/`delPhoto`/`markNoPhoto`/`unpinPhoto`）**立即落箱**，不再等下一次全量 render；② `setHorse` 第一行先 `persistHorse()`（连同图片草稿）再切；③ `uploadOne` 压缩完成时若已切马，按队列入队时的 `owner` 归属直接 `phPut` 记回**原马**草稿（不再挂错马/丢失）。
-- **根因 2（信息消失）**：`persistHorse` 用 `state.draft` 整条**替换**草稿箱条目，双开编辑页时后写方会把先写方该匹新写的键整条抹掉；备注-only 的条目（`keys.length === 0 && _note`）更是被 `ovPut` 直接当空删掉——「只写备注」从未真正落箱。
-- **修法 2**：① `persistHorse` 改**叠加落箱**：打底 = 箱里现值（`ovGet`），本页 `state` 覆盖其上（备注留空 = 保留旧备注，与 `buildPayload` 同口径）；`ovPut` 保持原语替换语义不动（editor-table.js 批量页的 syncOv/pruneEmpty 依赖它）；② `ovPut` 保留条件放宽为 `keys.length || entry._note`。
-- **根因 3（回显不及时）**：编辑台初始马永远 = 马表第 1 匹，重开页面丢上下文；且提交成功后页面数据要等用户手动刷新。
-- **修法 3**：① `setHorse` 选马写入 bus（`sessionStorage currentHorse` + postMessage），同标签页的预览/资料页跟随；`init` 起始马优先级 = URL `?h=` → bus 记忆马 → 第 1 匹；② 提交成功挂 `watchCI`：轮询 Actions（30s × 12），Deploy run 对 `head_sha` 成功完成后自动 `YJ.cache.bust() + refresh(true)` 刷新本页马表，报告条提示「CI 已发布 · 本页数据已自动刷新」。
-- **根因 4（缓存不刷新）**：全站数据走 `yj-cache`（Cache API + TTL 12h + SWR）+ `selector.js` 的 sessionStorage 1h 路 D；编辑台提交的只是 GitHub 仓库，线上 `basic.json` 要等 CI 重算落库（约 2 分钟）才变——现有缓存层没有任何「外部数据已更新」的失效入口，旧数据最长吃满 12h。
-- **修法 4**：① `yj-cache` 新增 `bust()`：`localStorage` 落失效时间戳（`storeKey("data-bust-ts")`）+ 清 Cache API 桶；`fetch()` 读到时间戳后 15 分钟内强制回源且 `cache:"no-store"`（跳过浏览器 HTTP 缓存，GitHub Pages `max-age=600` 也在内），过期条目无视新鲜窗直接硬刷；② `selector.js` 路 D 读到时间戳即弃 sessionStorage 副本；③ 提交成功即 `bust()` + `watchCI` 发布后二次 `bust()`，双保险。
-- **验证**：新增 `tests/editor-sim.mjs`（node vm 直跑真 public 六模块 + 打桩 DOM/IndexedDB/fetch/GitHub API，可双页上下文共享存储）：27 断言全绿——T1 上传即落箱+换页回显；T2 备注-only 落箱+回显；T3 字段叠加落箱（外部新键不被抹）+切马往返保留；T4 上传队列中途切马 2 张全记回原马；T5 无 tl/racePh 提交不炸+草稿清空+photo/字段落 blob+tree；T6 bust 后本页与「另一标签页」均立即回源 no-store；T7 watchCI 触发自动刷新；T8 重开回到上次那匹。仓库自带冒烟全绿（yj-cache 16/16 · stats 205/205 · datechart 112 · drill 60/60）；`node --check` 过；`npm run build` 过（字体子集因 public/*.js 注释语料 +5 字重算 2129→2134，属正常连带）。
-- **关键结论**：「消失」类症状的共同根源是**持久化只挂在 render 一条链上**——任何旁路（renderPhotos、切马重置、iframe 换页）都能绕过它；存储写入要么在状态变更点即时做（图片），要么先并箱再写（字段）。外部数据更新（CI 发布）要主动向缓存层喊话：失效戳 + 窗口内 no-store 是比改 TTL/加随机参数更可控的失效通道。
-
-### §108 · 草稿箱「ov-only 箱」崩溃：draftRead 统一补形（2026-10-26，双仓同改）
-
-- **动因（用户在 kzn-web 实测，yunji 同款隐患）**：批量表格改值后点「草稿箱」无反应，控制台 `Cannot read properties of undefined (reading '868')`（draftEntriesHTML 的 `d.ph[id]`），草稿箱弹不出来——PAT 都贴不了，整个提交流程卡死。
-- **根因**：`draftRead()` 原样返回箱里 JSON——批量表格页只写 `ov`（从未有图片草稿）时箱里**没有 `ph`/`racePh` 键**；渲染/提交侧多处 `d.ph[id]` 直接下标访问，缺键即 `undefined["868"]`。yunji 一直没炸只是箱里恰好一直有图片草稿（`ph` 键存在），隐患相同。
-- **修法**：`draftRead()` 读出即补形——`ov`/`ph`/`racePh` 缺失或类型不对一律补默认空对象（`blank()` 每次新对象、不复用引用）；读侧全部安全，下次 `draftWrite` 顺手把旧箱补成完整形态。一处收口覆盖全部下游，比在每个调用点加 `d.ph || {}` 更稳。
-- **验证**：`tests/editor-sim.mjs` 新增 T9（预置 `{"ov":{"868":{...}}}` 无 `ph` 键的箱 → 打开草稿箱不炸、未知马以 `#868` 兜底显示、读侧补形后写回即补全键）；模拟台加 `SIM_PUB`/`SIM_REPO` 参数后可直跑另一仓 public——yunji 与 kzn 各 30 断言全绿；`node --check` 过；`npm run build` 过（dist 含「统一补形」标记）。kzn 侧同轮同步了 yunji §106/§107 全量（详见 kzn 仓 `docs/UI优化记录.md` §106）。
-- **关键结论**：双仓同源的模块一处修 bug 必须同步另一处；「箱里缺键」属于**形状假设缺陷**，修在读入口一处即可覆盖全部下游下标访问。
-
-### §109 · 批量表格页带草稿重开报「数据加载失败」：hydrateBasic 未声明标识符（2026-10-26，双仓同改）
-
-
-- **动因（同类排查，yunji 侧未爆但必现）**：§108 修完草稿箱后按同一链路继续查「批量表格 → 草稿箱 → PAT → 提交」——`editor-table.js::hydrateBasic` 第 367 行写的是 `saved == null`（应为局部变量 `sv`），`saved` 在本函数/闭包内**未声明**，严格模式下读取即 `ReferenceError`。因为空箱时循环不执行，用户只在「改过值、箱里已有 ov 条目」的状态下重开本页才触发；异常被 init 的 `.catch` 吞成「数据加载失败：ReferenceError: saved is not defined」，整页表格不渲染。
-- **修法**：`saved` → `sv`（同一分支第 366/368 行用的就是 `sv`，仅此处笔误）。yunji 与 kzn 双仓同改。
-- **验证**：模拟台新增 T11（预置 ov 草稿 → 加载批量表格页 → `hydrateBasic` 水合）：修复前精确复现「数据加载失败：ReferenceError: saved is not defined」且 `pendOv` 为空；修复后两仓各 **32 断言全绿**（含「草稿值正确水合进待保存层」）；`node --check` 过；双仓 `npm run build` 过，dist/editor-table.js 含修正。
-- **关键结论**：`ReferenceError` 类缺陷只在「该分支真被执行」时暴露（空箱/无草稿时不炸），回归测试必须**带着状态**跑（预置草稿再打开页面）；检查脚本的「数据加载失败」吞异常提示本身是线索——这类文案应该带上错误 message，本次即靠它定位。
+## 二、概览图 · 统计 · 产驹赏金（§110–§145）
 
 ### §110 · 统计总览新增「种马榜走势 · SIRE RANK」：跨站引用 jbis-sire-rank-history（2026-10-27）
 
@@ -825,18 +560,6 @@
 - **修一处初版 bug**：展示排序比较器方向写反（`(val(y2)-val(x))*dir` 在默认 desc 时变升序、0 赏金马沉到表首；名次列按 byPr 独立排定不受影响）→ 改为 `(val(x)-val(y2))*dir`。
 - **验证**：`npm run build` 过；dist 核对（leaderboard.html / index 侧栏导航 / theme css 类齐全）。冒烟测试台 `tests/leaderboard-sim.mjs`（Node vm 跑**真**公共脚本 + **真** dist 数据，对账基准 = 由 datechart.json 独立复算）：总榜 KPI「15亿9,942万 / 172 / 🏆4」全对——总额 = datechart meta prize_total；**172 = meta 173 减去仅有一条「取消」记录的 Hazey Jane**（三态口径不计出走，恰证口径正确）；自然年 2026（13亿1,133万）、世代 2023、牝马榜 top 序、并列顺位、重赏徽章、亿/万格式、表头排序全部断言通过。Edge 无头截图在本机环境挂起（探测命令 120s 无输出），渲染验证由 vm 冒烟承担。
 
-### §113 · 赏金榜 v2：撤 1着/出走/重赏 三列 + 四套图表候选（2026-10-28）
-
-- **用户反馈与定稿**：①榜单 **1着/出走/重赏 三列统计有误 → 直接撤列**（只留 # / 馬名 / 赏金；KPI 同步撤「重赏胜利」，只剩 赏金总额/上榜马数；`w` 仍作并列顺位次序键内部保留、不展示）；②**排名没问题**；③「图表的样式不太对」→ 按名次+赏金出**四套图表候选**交用户选型，选定后并入榜单页并按现有切面（榜别/年份/性别）联动。
-- **改动**：`front/pages/leaderboard.html`（删 GRADE/TIER/trophyCell/三列/KPI 重赏项/`race-rows.js` 引入；`COLS` 只剩 赏金）；`tests/leaderboard-sim.mjs` 断言同步（表头唯一数据列=赏金、无 `yj-grade` 残留）。
-- **图表候选** `tests/leaderboard-charts.html`（探索版**不进构建**；`?c=A|B|C|D` 只渲染单方案，供截图）：数据口径与榜单页相同（逐场赏金加总、取消/除外不计、赏金>0 共 **139 匹**）——
-  **A 横向条形榜**（TOP15，条长∝赏金、前三主色实心，经典排行形态，断层一眼可见）；
-  **B 帕累托·集中度**（TOP12 柱 + 累计占比折线 + 80% 参考线；头部 12 匹贡献全库 48.6%，分析向）；
-  **C 占比环图**（TOP6 + 其他 133 匹，中心放总额 15亿9,942万、TOP6 占 38.6%，构成向「一图看大盘」）；
-  **D 面积榜**（squarified treemap：TOP20 + 其他 119 匹；蓝绿=2023年世代/天蓝=2024年世代/灰=其他，块即马，同档案页面积图语言，一览向）。
-- **验证**：`npm run build` 过 + `tests/leaderboard-sim.mjs` 冒烟绿（KPI 两项、表头唯一数据列、四榜序全过）；候选页 vm 冒烟（四方案关键值齐全、A 条数 15、「其他 N 匹」按 139 交叉一致）；Edge 无头截图四方案逐一目检通过（`--headless=new` + 独立 user-data-dir + `Start-Process` 25s 超时保护此路可用；此前 `--dump-dom` 挂起不再追究）；B 初版两处小瑕疵已修：左轴长标签被视口裁掉首位数字（padL 52→88）、注记错字（「化分母」→「作分母」），修后重截确认。
-- **待选**：四方案用户选型中。
-
 ### §114 · 赏金榜 v3 定稿：图表化——空心=总赏金、实心=重赏赏金，撤表格（2026-10-28）
 
 - **用户选型**（四方案候选后）：**方案 A 变体 + 只留图表**——横向条形榜，**空心条 = 总赏金**（按榜首归一），**实心段 = 重赏赏金**（同条内叠加，读出「大头来自重赏还是分场」）；整页撤表格，明细靠悬停 tooltip + 点击行开档案（§80 新标签）。
@@ -852,93 +575,6 @@
 - **渲染重构**：DOM 条形 → canvas。双系列同槽叠加 trick：「总赏金」= 透明填充 + 描边（空心），「重赏赏金」= 实心主色、`barGap:-100%` 叠放且条宽略窄嵌进描边内（v3 语义原样保留）；类目轴标签「名次 马名」超宽截断；条尾金额标签（有重赏的追加 ◆ 重赏金额）；tooltip（axis 触发）出全明细含世代/性别；点击条形开档案（§80 新标签）；切面切换 notMerge 整体重绘 + 700ms 入场动画；`window resize` 防抖重算画布；画布高度 = 行数×26+42px（139 行 ≈3656px 通长画布，页面自然滚动）。本页 CSS 删条形行样式只剩 KPI/图例/空态（无孤儿类）。
 - **验证**：`npm run build` 过（dist 页 15.34 kB；echarts.bar.min.js 515 KB `?v=62b27486ab`）；`tests/leaderboard-sim.mjs` 改 ECharts 桩（捕获 setOption 载荷）：KPI 三项、139 行、榜首双系列值 344,298,000/336,798,000、条尾标签「3亿4,429万 ◆3亿3,679万」、top3 描边强调、2026（137 行/榜首 328,442,000）、世代与牝马序、并列前缀、点击回调注册全过；canvas 绘制本身 vm 无法验证，视觉以实页为准（Edge 无头截图持续不可用，§114 已记录）。
 - **候选页退役**：`tests/leaderboard-charts.html` + 四张候选截图 → `tests/_trash/`（§114 四方案选型完成使命）。
-
-### §116 · 赏金榜 v4.1：条形配色改参照 JBIS sire-rank 样式（2026-10-28）
-
-- **用户反馈**：贴 JBIS 种马排位史「賞金全産 Top-20」截图 → **只改空心/实心的写法，x/y 轴等其余保留现有实现**。改为：总赏金 = **浅青实心条**（`#c9e8e6`，primary 20% 调），重赏赏金 = **主色 `#0aa7a0` 实心段**，两系列同宽（`barMaxWidth` 均 18）、`barGap:-100%` 同槽叠放、两段齐平拼接成一根连续条（深段 0→重赏，浅段重赏→总）——即 JBIS「突出色=重賞」的视觉语法。随之撤掉 v3 遗留的描边空心、top3 描边强调、实心段缩窄嵌内三处写法；圆角只留外端小圆（总赏金右端 `[0,2,2,0]`、重赏段左端 `[2,0,0,2]`，拼缝平直）。
-- **其余不动**：类目轴「名次 马名」截断、条尾金额标签（有重赏追加 ◆ 金额）、tooltip 全明细、点击开档案、入场动画、resize 防抖、KPI 三项。图例小样同步换色（`.i-hollow` 描边样 → `.i-total` 浅色实心）。
-- **验证**：`npm run build` 过；冒烟改断言（两系列同高 18 + `barGap:-100%`、浅/主色、无 per-item 描边、标签/切面序不变）全绿。
-
-### §117 · 赏金榜 v4.2：KPI 瘦身 + 轴标签中文名/名次徽章（2026-10-28）
-
-- **用户五点反馈**：①**撤「上榜马数」KPI**——KPI 只剩 赏金总额 / 重赏赏金 两项；②轴标签**展示中文译名，港译（香港馬名）优先、无则自译（自译馬名）**（数据源 HORSES.cn 原有，未变）；③条尾金额**只标总赏金**（撤 ◆ 重赏后缀，重赏金额归 tooltip）；④**名次、名字右对齐**（axisLabel `align:"right"` + 定宽 210 截断保护）；⑤**名次加徽章样式**——rich text：top3 主色底白字徽章、其余浅灰底灰字（`{rk3|…}/{rk|…}`），第二行 `〈中文译名〉` 10px 灰字。行距 26→32px（容两行标签），画布高 = 行数×32+42。
-- **验证**：`npm run build` 过；冒烟同步（KPI 两项、标签 rich 结构 `{rk3|1} {jp|…}\n{cn|…}`、条尾 formatter 只出总额、画布高 4490px、各切面序）全绿。
-
-### §118 · 赏金榜 v4.3：名次列对齐 + 字号条宽放大（2026-10-28）
-
-- **用户反馈**：①**排名也要右对齐**——截图目检：名字/译名已齐右，但**徽章跟着名字宽度漂移**（名次列不齐）→ 修法 = jp fragment **定宽 172 + `align:"right"`**（rich fragment 支持 width+align），名字框右缘恒定 → 徽章被推到固定 x，名次列竖向对齐；徽章自身定宽 30 居中。②**排名/名字/条形放大 ≥20%**：徽章 11→13（padding [2,6,2,6]）、日文马名 12→15、译名 10→12、条宽 18→22、行距 32→40px（画布 139 行 ≈5602px）、轴标签框 210→260；条尾金额标签维持 11 不动（用户未点名）。
-- **验证**：`npm run build` 过 + 冒烟（徽章 width30/center、jp width172/right、barMaxWidth 22、画布高 5602px、KPI 两项）全绿；**Edge 无头截图恢复可用**（今日此前的 0 字节/13KB 空帧 = 虚拟时间预算与单线程 http.server 并发竞态——同参数偶发，循环重试取 >25KB 帧即可），截图目检确认名次列对齐、名字/译名齐右、字号条宽达标（留档 `tests/leaderboard-v4-preview.png`）。
-
-### §119 · 赏金榜 v5：PC「下拉框」chip 标签 + MB 极简化（2026-10-28）
-
-- **用户反馈**（附 MB 截图「还是有点丑」）三条定稿：①PC **排名和名字拼接成一个整体**、全榜**等长**、确保最长名容纳后**尽可能紧凑**、名字用**筛选下拉框的样式**；②**1/2/3 名特殊处理突出**；③**MB 端花哨全撤**——去掉排名，就 名字+条形图，名字采用**比赛记录表格的切换模式**（默认原名，可切中文，依旧港译优先→自译→回退原名）。
-- **实现**：马名语言新增 `原名/译名` seg（`lb.nm`，入 storeKey 记忆；译名 labelName = 港译→自译→回退原名，双端生效）。PC 类目标签 = **axisLabel 整体 chip**（白底/#e5e5e5 边/6px 圆角/紧凑内距 = theme.css select 同款；`width` 按当前榜最长名自适应 `20+6+maxLen×13.5+18`，clamp 120–250，全榜等长；`overflow:truncate` 兜底）；chip 内 fragment = `{b1|1}{jp|名}`——1/2/3 名语义色徽章（1=#0aa7a0 / 2=#0f8fd6 / 3=#e8742a，同全站 1着/2着/3着），其余灰名次数字，名字 13px 单行。MB = 纯名字 12.5px 右对齐（width 118 截断），无徽章无 chip。行距 PC 32 / MB 30。断点 = `matchMedia("(max-width:768px)")`，跨断点防抖整体重绘。
-- **两个 ECharts 坑（实测踩平）**：①axisLabel `backgroundColor/border/padding` 的 chip 盒宽 **containLabel 估不准**（条形压住 chip）→ `grid.left` 显式 = chip 宽+12，`containLabel:false` 关死；②chip 盒子挂向由 `align` 决定——`"left"` 会把盒子**伸进绘图区**压条形，必须 `"right"`（盒挂轴左，盒内 fragment 仍 LTR：徽章左、名字右）。
-- **验证**：`npm run build` 过；冒烟扩到 7 次 setOption（含译名切换断言「通天飞」、chip 结构 `{b1|1}{jp|…}`、chip 白底/#e5e5e5/圆角 6/align right/宽度 120–250、grid.left 显式、KPI 两项、四切面序）全绿；Edge 截图 PC+MB 目检（留档 `tests/leaderboard-v5-pc.png` / `tests/leaderboard-v5-mb.png`）：PC 等长 chip + 语义色徽章 + 条形零重叠，MB 干净的名字+条形。
-
-### §120 · 赏金榜 v6：两行瓦片 chip + 首行标签被吞排查（2026-10-28）
-
-- **用户反馈**（附 PC 截图）：①「pc端没对齐」——§119 的 label `align:"right"` 同时把 chip **盒内内容**也推右 → 参差；②「没有中文名」——PC 默认原名无 CN；③「样式也很丑」。附 KPI 数字核对：用户截图 12亿3,088万/4亿9,553万 = **总榜×牡馬（含骟）**（总额 15亿9,942万 − 牝 3亿6,854万，分毫不差），数据无 bug，是切面状态。
-- **实现**：①chip 内三个**定宽 fragment 瓦片**填满整行（名次格 0–26 / 名字格 26–chipW / 译名格第二行通栏），外侧 6px 圆角（名次格左上、名字格右上、译名格下两角）、无中缝，`align:"right"` 只剩盒子挂轴左侧一个作用，内容不再漂移；②PC chip 两行 = 主名（随 原名/译名 切换）+ **互补名小字**（默认原名时第二行即中文名，港译优先→自译→回退；互补名缺失或与主名相同则不渲染），PC 中文名默认可见；③名次格底色 = 1/2/3 名语义色（#0aa7a0/#0f8fd6/#e8742a）、4+ 浅灰 #e9ebee，chip 体 #f4f5f6；行距 42（画布 139 行 = 5880px），chipW = max(42+maxLen×13, 34+maxSub×10.5) clamp 120–260，`grid.left = chipW+12`。
-- **ECharts 坑（探针 ?probe=1/2/3 实测定位）**：**axisLabel 级 `backgroundColor`（chip 白底）会让首行标签被整个吞掉**——去掉 width/overflow 无效、grid.top 拉到 80 无效、`--timeout` 真实等待无效；去掉 label 级底色（probe3）首行即回。而 **rich fragment 级底色一直正常**（1/2/3 名徽章全截图都在）→ chip 底色全部下沉到 fragment 瓦片，label 级只留 `align`。另：无头截图条形偏短 = `--timeout` 捕捉在动画中途，实页无碍。
-- **验证**：`npm run build` 过；冒烟（chip 结构 `{b1|1}{jp|…}\n{cn|…}`、`{cn|通天飞}`、label 级底色 undefined 断言、名字格定宽、b1/b2/b3 语义色、画布 5880px、译名切换主辅对调、KPI 两项、四切面序）全绿；Edge 截图目检（留档 `tests/leaderboard-v6-pc.png`）：首行完整、全榜 chip 等宽对齐、中文名在名字下方对齐缩进。
-
-### §121 · 赏金榜 v7：label 五套候选评审 → 「彩色名次数字」定稿（2026-10-28）
-
-- **用户反馈**：候选评审页（`tests/leaderboard-labels.html`，静态示例数据 + 同语境条形，五套并列）→ 用户选定「方案 D · 左侧色条」。裁图留档 `tests/lb-label-A~E.png`。
-- **「色条」三种实现全部失败（实测）**：①fragment 内容 = 空格、②NBSP `\u00a0`、③与底同色的句点（`backgroundColor` + `color` 同色 + fontSize 5）——**含空白类内容的 fragment 被 ECharts 整个丢弃**，底色块一律不渲染（候选页与实页均未画出，像素采样证实行1纯白）；④方块字符 `▌` 着色依赖字体回退，无头环境不出。评审图与实页里真正显示的形态 = **彩色名次数字**（1/2/3 语义色 #0aa7a0/#0f8fd6/#e8742a 加粗、4+ 中灰）+ 两行名（主名 + 互补名小字）。
-- **定稿**：按评审图中用户实际所见落稿——`{r1|1}{jp|主名}\n{cn|互补名}`，名次列定宽 14 居中，jp/cn 定宽填行（等宽防漂移），行距 36（画布 139 行 = 5046px），chipW = max(30+maxLen×13, 30+maxSub×10.5) clamp 120–260，`grid.left = chipW+12`。axisLabel 级 backgroundColor 继续禁用（§120）。探针页归档 `tests/_trash/probe-rich.html`。
-- **验证**：`npm run build` 过；冒烟（`{r1|1}{jp|…}\n{cn|…}`、`{cn|通天飞}`、r1/r2/r3 语义色、名字列定宽 78–230、画布 5046px、译名切换主辅对调、KPI 两项、四切面序）全绿；Edge 截图目检（留档 `tests/leaderboard-v7-pc.png`）。
-- **备注**：若后续仍要「色条」视觉，唯一稳的路是把名次做成色块徽章（§119 方案 A 形态，fragment + 数字实内容 + 底色——已证可渲染），说一声即可切换。
-
-### §122 · 赏金榜 v8：PC 隐藏译名切换 + 修复切换切面后图表消失 + 图例去括号（2026-10-28）
-
-- **① PC 隐藏 原名/译名 切换**：`nameSeg` 加 `md:hidden`（≥768px 隐藏、窄屏保留——MB 命名切换是 v5 定稿）。核对编译产物 `dist/assets/theme-*.css` 含 `.md\:hidden`。
-- **② 切换 总榜/自然年/世代/性别 后图表消失（真凶找到）**：`renderChart` 每次渲染先 `el.innerHTML = ""` 清容器——**把 ECharts 实例持有的 canvas 一并从 DOM 拽走**，随后 `setOption` 画进游离 canvas → 白屏。首屏正常（首次才 init），所以历次截图都没暴露；用户此前「点译名没反应」（v6）同源。修复：容器不再清空——实例复用 `EC.resize()`（行数变化同步高度）+ `notMerge` setOption；仅首次 init 前清一次占位提示；**空切面分支先 `EC.dispose()` 置 null 再写提示**（否则切回数据时同样是孤儿实例白屏）。
-- **③ 图例文案**：`重赏赏金（重赏场次所得，含 2-5着）` → `重赏赏金`（KPI 标签本就无括号）。
-- **验证**：`npm run build` 过；冒烟全绿（7 次 setOption 全部打在活实例上）；PC 截图（留档 `tests/leaderboard-v8-pc.png`：切换按钮消失、图例无括号、图表正常）+ MB 截图（`tests/leaderboard-v8-mb.png`：切换按钮保留、极简 label 不变）。
-
-### §123 · 赏金榜 v9：PC 中文名居中排原名正下方（2026-10-28）
-
-- **用户反馈**：PC 端中文名应「在原名的正下方、居中排布」；此前中文名整体偏左（顶到名次数字下方）。
-- **偏左根因**：两行 fragment **总宽不等**（行1 = 名次16+主名格 = chipW+2，行2 = 缩进16+互补名格 = chipW+14）——`align:"right"` 是**逐行**右锚，短行整体平移 → 行2 左移 14px。教训：**右锚标签的各行 fragment 总宽必须相等**。
-- **定稿**：行1 = 名次格(16) + 主名格(2+chipW−18) = chipW；行2 = 缩进(18+pad) + 互补名格(chipW−18−pad) = chipW，两行同宽同锚不漂移。互补名居中：`pad = (measureText(主名) − measureText(互补名))/2`（canvas 2d 实测，jp 字体 600 12.5px / cn 10.5px），逐行生成 `cn<pad>` 片段样式（同 pad 复用），cn 缺失/互补名比主名宽时 pad=0（退化为左对齐于主名起点）；pad 上限 chipW−30 保最小显示宽。
-- **冒烟**：DOM 桩补 `getContext().measureText`（每字 12px 近似）；断言改 `{cn<pad>|…}` 结构（缩进=18+pad、宽度=chipW−18−pad、译名切换主辅对调用正则匹配）。
-- **验证**：`npm run build` 过、冒烟全绿；截图目检（留档 `tests/leaderboard-v9-pc.png`：通天飞/乘天风/堆状高云/基因王等均居中于原名正下方）。
-
-### §124 · 赏金榜 v10：PC 标签行首加性别色块（参照基本信息列表，2026-10-28）
-
-- **用户反馈**：基本信息页马匹列表每行左缘有性别色条，赏金榜也「在排名前面加多一个色块显示是牝马、牡马还是骟马」。
-- **配色沿用搜索列表/徽章语言**（profile.html `sexBadge` 同源）：牡 `#C9EFFE`/`#0B5A8C`♂、牝 `#FFDBD5`/`#B03A30`♀、骟 `#EFEFEF`/`#5A5A5A`⚲；图例追加三枚色样（骟浅灰加边框防与白底混淆）。
-- **先探针后落稿**：评审页（`tests/leaderboard-labels.html`）加「方案 F · 色条实现探针」8 种实现并列截图目检——§121 判死的「同色句点」等在**单行**标签里其实全部能渲染；真坑在**多行标签 + 隐形占位内容**（见下）。最终取「底色块 + 深色实字符」最稳形态。
-- **两坑实修（首行标签整体被吞，v10 首版复现）**：① **grid.left 预算漏了 axisLabel 的 margin 8**——标签块左缘算出 −4px 探出画布，首行标签整个消失（§120「label 级底色吞首行」的近亲；行 2+ 却正常，极具迷惑性）；修 = `grid.left = chipW + 16`（chipW + margin 8 + 余量 8）。② **隐形占位内容**（色=底色的「0」）在多行标签里同触发首行被吞；修 = 色块内容一律**真实可见字符**（♂/♀/⚲ 深色字，恰是搜索列表徽章原样）。两行标签的色块 = 行1、行2 各一枚 fragment（上 pad 8 下 pad 8）拼通高。
-- **定稿结构**：行1 = 性别条(13) + 名次(16) + 主名格(2+chipW−31) = chipW；行2 = 性别条续(13) + 缩进(31+pad) + 互补名格(chipW−31−pad) = chipW（两行同宽防右锚漂移，§123 规则延续）；chipW = max(32+maxLen×13, 32+maxSub×10.5) clamp 120–260；MB 仍极简不加性别条。性别取 `r.m.sex`（牡/牝/セン，YJ.util.sexOf 口径）。
-- **冒烟**：断言同步 `{sM|♂}{r1|1}…\n{sMb|♂}{cn<pad>|…}` 结构（sM/sF/sG 底色 + 字色、cn 缩进=31+pad、宽度=chipW−31−pad）。
-- **验证**：`npm run build` 过、冒烟全绿（KPI 不变）；截图 + **像素采样三色齐**（牡 3543px / 牝 1076px / 骟 21px，行 1 标签恢复），留档 `tests/leaderboard-v11-pc.png`（§124 内部迭代 v10→v11）。
-- **关键结论**：rich fragment 底色块要稳定渲染必须满足——内容为**真实可见字符**（空白/NBSP/与底同色在多行标签里会连带首行被吞）+ 标签块不得探出画布左缘（grid.left 预算必须含 axisLabel margin）。
-
-### §125 · 赏金榜 v12：回滚色块 → 主名按性别着色定稿（2026-10-28）
-
-- **用户反馈（v11 实机复看）**：①「不需要符号」；②「色块没对齐」（两行 fragment 拼的色块与名次列在实机上错位）。**回滚 §124 全部色块方案**（结构、chipW/grid.left 预算、冒烟断言全退回 §123 v9 形态），改**通过名字表达性别**：牝马粉、牡马蓝、骟马灰，色号同基本信息。
-- **定稿**：主名片段按性别三份换色（几何完全一致，零对齐负担）——`jpM` 牡蓝 `#0B5A8C` / `jpF` 牝粉 `#B03A30` / `jpG` 骟灰 `#5A5A5A`（= profile.html `sexBadge` 的**字色**；同款底色 `#C9EFFE/#FFDBD5/#EFEFEF` 过浅、当正文看不清，故取字色）；sex 缺失回退 `jp` 黑。图例 PC 加「名字颜色：牡/牝/骟」三个彩色字样（MB 无着色不显示）；互补名小字维持灰 `#a1a1aa`；MB 黑字极简不变。
-- **冒烟**：断言改性别键 `{jpM|…}`（`{jp[MFG]?|…}` 正则兼容回退）、`sM/sF/sG === undefined` 防色块方案回潮、三色断言 + 三片段几何一致断言。
-- **验证**：`npm run build` 过、冒烟全绿（KPI 不变）；截图像素复检（名字区 蓝字 395px / 粉字 174px，前 26 行无骟马故灰 0），留档 `tests/leaderboard-v12-pc.png`。
-- **关键结论**：性别这类「行的固有属性」用**文字着色**表达比加几何元素（色块/徽章）更稳——不参与行宽与对齐预算，也天然免疫 ECharts 多行 fragment 的渲染坑（§120/§121/§124）。
-
-### §126 · 赏金榜 v13：中文名居中真正修好（同盒居中，删 measureText/pad）（2026-10-28）
-
-- **用户反馈**：「中文名又没有居中对齐」（v12 实机截图）。像素剖面复测确认 §123 的 pad 方案**系统性偏左**：主名宽 109/85/73 的行，中文名中心偏左 2/15/23px（此前 v9 目检误判为已居中）。
-- **根因（像素实测规律）**：`align:"left"` 在 ECharts rich 里**「名次+主名」多片段行上不生效**——主名实际按自身片段盒子**居中**渲染（六行主名中心全部 ≈185.0±0.5，与名长无关）；而**单片段行（中文名行）真按 align 左对齐**于盒子起点。§123 用 measureText 算 pad 想把中文名推到主名中心，但主名的真实渲染中心根本不是「盒子起点+字宽/2」，pad 因此系统性错位；且 pad 依赖 canvas measureText 的字体度量，与实际渲染字体/加载时序耦合，永远脆弱。
-- **定稿（顺着渲染器行为）**：cn 与 jp **同盒子**（`padding:[1,0,0,18]`、`width:chipW−18`）+ **`align:"center"`**，两行在同格居中 → 中文名自动居中于主名正下方。**measureText/pad/动态 `cn<pad>` 键全部删除**（rich 更干净，且零字体依赖）。jp 系片段 align 显式改 `"center"`（与实际渲染行为一致）。两行总宽仍相等（名次16+2 + (chipW−18) ≡ 18 + (chipW−18)），无右锚漂移。
-- **验证**：`npm run build` 过、冒烟全绿（断言改固定 `cn` 键 + 同盒/居中断言 + 动态键防回潮）；像素剖面复测五行偏差 **±1px 内**（原 2~23px）；性别着色/名次语义色/KPI 不变，留档 `tests/leaderboard-v13-pc.png`。
-- **关键结论**：ECharts rich 多行标签里 fragment 的实际对齐行为与配置字面不符（多片段行居中、单片段行左对齐），**任何「先测字宽再摆位置」的方案都建立在不可靠的布局模型上**；正确姿势是让两行共用同一几何盒子、把对齐交给渲染器，行为自洽且字体无关。
-
-### §127 · 赏金榜 v13.1：MB 标签贴左（containLabel 自适应）（2026-10-28）
-
-- **用户反馈**：MB 端左侧留白太多，「尽可能的贴着左边」。原 MB `grid.left = 130` 写死 + 标签定宽 118 —— 名字短（尤其译名模式 3~5 字）时标签列右侧对齐、左边整段死空白。
-- **修法**：MB 标签是**纯文本（无 rich）**，§119 的「containLabel 估不准」只针对 rich 标签 → MB 改 `grid.left = 10, containLabel: true`，由 ECharts 按实际标签宽度留位；标签去 `width:118/overflow/align` 定宽截断（当前数据最长 9 字自然放下，名字短时列宽自动收窄、图区随之变宽）。PC 分支不动（仍 chipW+12 + containLabel:false）。
-- **验证**：`npm run build` 过、冒烟全绿（PC 路径不受影响）；MB 截图（留档 `tests/leaderboard-v13-mb.png`）标签起点 ≈ 卡片内 10px，译名模式下列宽自动收窄。
-- **备注**：containLabel 的适用边界 = **纯文本标签可用、rich 标签禁用**（估宽偏差，§119 实测），与本节 MB/PC 分工一致。
 
 ### §128 · 页面更名：赏金榜 → 产驹赏金（2026-10-28，用户选定）
 
@@ -972,32 +608,6 @@
 - **验证**：双仓 build 过、冒烟全绿；CDP 实截 yunji 榜尾（`tests/lb-v15-tail.png`）：141 并列名次、五十音名序（ス→セ→ノ→ハ→ブ→…→レ）、条尾「—」、脚注 34 匹说明全部正确。
 - **追记（§132）**：用户要求撤下脚注「赏金为 0 的 N 匹（含仅中止/取消/除外者）按名字顺序排在榜末」——行为不变，仅去文案（viewRows 的 zero 计数随之删除）；双仓 build/冒烟全绿，渲染层零残留。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### §133 · 编辑台：时间线页草稿变动不刷新保存条——5 处 renderTL 漏刷收口全量 render（2026-10-28）
-
-- **动因（用户实测）**：航迹线页上传比赛配图落箱后，「提交到 GitHub」按钮仍灰着不动（草稿箱抽屉却显示 1 处未提交）；F5 刷新后按钮才亮。
-- **根因**：保存条按钮/草稿箱计数只在全量 `render()` 里重算（`els.save.disabled = ghBusy || !draftCount()`），而时间线页 5 处草稿变更路径只调了局部 `renderTL()`（只重绘配图面板/节点列表），按钮停在页面打开时的旧状态。首个草稿（0→1）按钮不变亮（本次踩中）；「放弃修改」清箱（1→0）按钮不变灰，点提交才报「草稿箱是空的」（反向同病）。
-- **修复（front/public/editor.js，5 处 renderTL → render，render 内含 renderTL）**：① `rmUpload` 完成回调（上传比赛配图落箱）；② 配图面板 `rmdel`（撤销草稿图 1→0 / 标记移除已配置 0→1，双向）；③ `tlApplyEdit`（节点应用，整表快照落箱）；④ `tlDelete`（节点删除确认）；⑤ `tlreset`「放弃修改」（`loadTimeline().then(render)`）。
-- **全编辑台状态刷新审计（同批完成，其余无需改）**：马匹页字段行编辑（softRefreshRow）/备注/图片上传队列/外链/删图/拖拽排序/恢复官方值、批量表格页单元格提交/加行/删行/粘贴导入/撤销重做/放弃会话（YJ.editor.render()）、查询页放弃（discardOne）、提交成功/失败/冲突重试——全部已收口全量 render，✅；剩余 `renderTL()` 直调均为草稿数不变场景（面板开关、选马选赛、编辑表单态、预览图水合）。
-- **验证**：`npm run build` 过；dist/editor.js 5 处 §133 注释落地（L1901/1978/1988/2858/2869）。
-- **追记（2026-10-29）**：已同步 kzn（kzn 侧记 §114）——5 处补丁与注释两仓逐字节一致，对账两仓 editor.js 差异仅剩站名 5 行（絆/云迹、GH_REPO、PAT 注释、线上域名注释、仓库名提示）。
-
 ### §134 · 页面更名：统计总览 → 倾向统计（2026-10-29，用户选定）
 
 - **动因**：用户觉得侧栏「统计总览」不达意——页面主体是「倾向矩阵」（10+ 维切面）而非泛泛总览，提议改 **倾向统计**；与同组「日期统计」（§52 更名先例）句式对齐。
@@ -1026,15 +636,9 @@
 - **落地（theme.css + profile.html，双仓同改）**：y1..y12 共 12 色全 hue 铺开、冷暖交替（蓝/紫/青绿/玫红/橙黄/靛/黄绿/洋红/青/橙/翠绿/蓝），仍 200 浅底 + 同 hue 900 深字（全 Tailwind 调色板类，无自写 hex）；profile.html `YEARC` 同步扩容，取色逻辑不变（年份降序位次、新增年份插队拿 y1 顺移续色、未知年份排最后）——厩年 ≤12 一年一色零重复（kzn 现 9 厩年全异色、云迹 2 年），>12 才取模循环。kzn 侧性别三块徽章色同批补同步（§136 追记，kzn 侧记 §115）。
 - **验证**：两仓 `npm run build` 过；dist/assets/theme-*.css 实测 12 条 y 规则 bg 12 hue 全异（#BAE6FD/#DDD6FE/#99F6E4/#FECDD3/#FDE68A/#C7D2FE/#D9F99D/#F5D0FE/#A5F3FC/#FED7AA/#A7F3D0/#BFDBFE）+ text 900 级对应，两仓一致；kzn 性别三块 = 徽章逐位一致。
 
-### §138 · 冒烟 firstRow 取行漂移审查：kzn tbody 版正确，回灌 yunji（2026-10-30，双仓对账发现）
-
-- **漂移**：verify_stats.cjs 的 `firstRow()`（倾向矩阵「首行」定位）两仓不同——yunji = `split("data-href")[1]` 取第一个带下钻的行（a14f00b 2026-09-16 引入）；kzn = tbody 切片取基准行后第一行 + 原因注释（初始提交即携带，2026-10-13），此后从未回流。
-- **判定：kzn 版正确**。结构依据（stats.html matHtml）：① `<tr class="base">` 基准行硬编码永远第一、永无 data-href → tbody `rows[2]` 恒 = 真实首行；② data-href 版的前提「首行必有下钻」被 `drillURL` 构造性否定——grade「其他」桶与未知 cond 键返回 null（stats.html 529/522 行）→ 该行渲染成无 data-href 的普通行（616 行），`split("data-href")[1]` 会静默跳过它、拿后面的行顶「首行」。
-- **实测**：kzn 数据 grade 14 桶「其他」胜率 18.2% **当前即登顶**——降序首行恰是无下钻行，data-href 版在 kzn 当场假失败（即建仓时被修正的原因）；yunji 数据现无「其他」桶、两个排序极端（新马 13.6%/OP 0.0%）均有下钻 → **纯靠数据凑巧未炸**；且 yunji 未胜利=L 同为 10.0%，无下钻桶登顶时还可能 pct 同值错行假通过（断言静默失真）。
-- **回灌**：yunji firstRow 改 tbody 版（注释补判定依据与本条指引）；`node scripts/stats/verify_stats.cjs` 全绿（193 通过 · 0 失败）。两仓该函数现已一致；脚本剩余差异均为有意站点适配（yunji 世代写死 2 与 2023+2024 字串、kzn 数据驱动 pathGens + .grp 结构断言）。
 ### §139 · 全站 UI 审查与整改：KPI 条/空态/时间线卡片三处副本收口 + 12 项体验修正（2026-10-30）
 
-- **动因**：用户要求「评审现有 UI 设计并提出优化方案，只能读文件不能改」，随后升级为「按建议实施 + 写审查文档」。完整逐项记录（含被否掉的 9 条建议及其理由）= `docs/UI审查报告-2026-10-30.md`，本节只记**结论性决策**。
+- **动因**：用户要求「评审现有 UI 设计并提出优化方案，只能读文件不能改」，随后升级为「按建议实施 + 写审查文档」。完整逐项记录（含被否掉的 9 条建议及其理由）= 当时的 UI 审查报告（2026-11 文档清理时删除，git 历史可查；对照截图仍留 `docs/assets/ui-review-2026-10-30/`），本节只记**结论性决策**。
 - **收口（三处真实副本，本次主要收益）**：
   1. **KPI 条** `.st-kpi`/`.dc-kpi`/`.lb-kpi` 三份六行定义逐字节相同 → 统一为 `theme.css` 的 `.yj-kpis`/`.yj-kpi`（含 mb 媒体查询）。三页本地定义删除，类名替换，各页特有图标（`.trophy`）改挂 `.yj-kpi` 之下。
   2. **时间线卡片** `edit-timeline.html` 的 `.yj-pv` 块原是 `timeline.html` 页内 `<style>` 的人工副本 → 新建 `pages/timeline-cards.css` 装「视觉原子」（卡片壳/图位/文本区/赛事名行/事件标签/数据条/节点底座/日期排版/徽章变体双作用域），两页共同引用；**布局骨架不共享**（正式页居中轴线左右交替 vs 预览单侧一行，grid 不通用）。
@@ -1199,86 +803,6 @@
 - 未删除工具条的撤销/重做按钮（用户只要求去快捷键，按钮仍在且实测有效）。
 - 未改动 `Delete` 键在**输入框内**的原生行为（那是文本框自带，不属于表格导航）。
 
-### §143 · 修复提交成功后批量表格页不重水合（2026-10-30 深夜）
-
-§142 修好了「**放弃**」路径的双向联动，但「**提交**」路径存在同构的缺口。用户验收时提出："编辑相关的都应该和草稿箱、提交按钮同步，提交后也要该清空的清空，该回显的回显。"
-
-#### ① 根因
-
-`editor.js::submitDrafts()` 成功后的 `then` 里：
-
-```js
-return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
-  state.table = r[0] || {};
-  render();        // ← 只重渲染编辑页自己
-});
-```
-
-- **该清空的确实清空了**：`draftDropHorse()` 已在提交过程中把 `localStorage` 里的 ov 草稿逐条删掉，草稿箱计数、摘要、提交按钮都正确归零。
-- **该回显的没回显**：`editor-table.js` 里的 `S.pendOv` / `S.sh.basic.rows` 是**独立的内存副本**，`editor.js` 的 `render()` 影响不到它。表格页没有任何事件可听 → 提交后仍显示"改过的值"。
-- **更严重的次生 bug**：此时用户再改任意一格，`syncOv()` 会拿**提交前的** `S.startOv` 做 diff，把刚提交掉的旧值当成"用户改动"重新写回 `localStorage` → **已提交的草稿原地复活**。
-
-`__rc`（比赛记录）分支此前只派发了 `yj-rc-dropped`（一个"放弃"语义的事件），提交路径没有任何等价物。
-
-#### ② 修复（两处，各一行 + 一个监听）
-
-**`editor.js`** — 在 `loadTable()` 完成**之后**派发（顺序关键：此时 `state.table` 已换成最新远端表，表格页重算 `savedOf` 才准）：
-
-```js
-return Promise.all([loadTable(), loadTimeline()]).then(function (r) {
-  state.table = r[0] || {};
-  render();
-  document.dispatchEvent(new CustomEvent("yj-draft-committed"));
-});
-```
-
-**`editor-table.js::init()`** — 新增监听，全量重水合：
-
-```js
-document.addEventListener("yj-draft-committed", function () {
-  S.touchedOv = {}; S.pendOv = {};   /* 清掉"用户已改过"的痕迹，否则下次 syncOv 会复活旧草稿 */
-  S.startRc = null;
-  S.undoJ = []; S.redoJ = [];        /* 撤销/重做栈指向的是已提交的旧状态，必须清空 */
-  if (S.editing) { S.editing = null; }
-  hydrateBasic(); hydrateRaces();
-  rebuild();                         /* 内含 syncToolbar + updateSummary */
-});
-```
-
-为什么三样都要清：
-
-| 清什么 | 不清的后果 |
-|---|---|
-| `S.touchedOv` / `S.pendOv` | `hydrateBasic()` 会按新草稿重建 `startOv`，但残留 `touchedOv` 会让下一次 `syncOv()` 用旧 `startOv` 把已提交值写回草稿箱 |
-| `S.undoJ` / `S.redoJ` | 撤销一次会把表格退回到"提交前"的本地状态，与远端已提交的内容冲突，用户以为提交失败 |
-| `S.editing` | 若提交时正好有格在编辑，`blur` 会在重水合后对已换掉的 DOM 提交，写入错行 |
-
-⚠ 双仓同步同样**暂缓**（用户定稿：kzn 侧不动），本次 `editor.js` 改动只落 yunji-web。
-
-#### ③ 自动化验收
-
-**提交链路 16 项全通过**（`tests/css-split-check/_selftest-commit.html`，截图 `commit-test.png`）
-用同源 iframe 驱动真实 `dist/pages/edit-table.html`，`win.fetch` 覆写为只拦截 `api.github.com`（`editor.js::gh()` 用原生 fetch），其余透传；假 PAT 写入 `YJ.util.storeKey('gh.token')`。
-
-| 阶段 | 断言 |
-|---|---|
-| 前置 | 页面就绪 277 行 / GitHub mock + 假 token 就位 |
-| 改一格 | 改格生效 / 摘要反映改动 / 草稿箱按钮显示计数 / 提交按钮已启用 |
-| 提交 | 提交成功（mock 返回 commit url） |
-| **该清空的清空** | **★ localStorage 草稿已清空** / **★ 摘要已归零** / **★ 草稿箱计数归零** / **★ 提交按钮回到 disabled** |
-| **该回显的回显** | **★ 已派发 `yj-draft-committed`** / **★ 表格已重水合回官方值** / **★ 撤销·重做栈已清空** / **★ 草稿箱抽屉显示空态** |
-| **提交后再改** | **★ 只写入本次改动，未复活已提交的「香港馬名」** |
-
-> 关于"表格回官方值"：`loadTable()` 读的是本地静态 `data/manual_overrides.json`（不走 GitHub），所以提交成功后表格必然回到该文件的官方值——这正是**正确**表现（本地静态数据不会因提交而变），也证明草稿已从内存态剥离。真机上 GitHub 侧的 `manual_overrides.json` 已更新，下次构建后静态文件同步。
-
-**放弃路径回归 9 项全通过**（`_selftest-linkage.html`，截图 `linkage-regression.png`）
-确认 §142 的三条放弃路径未被 §143 的改动破坏：A. 草稿箱放弃基本信息（★ 恢复原值 + ★ 草稿已清空）/ B. 草稿箱放弃比赛记录 `__rc`（★ 恢复「回田」）/ C. 底部「放弃修改」（★ 恢复）/ D. 方向键 · Delete 已无效果（快捷键确实移除了）。
-
-#### ④ 未做
-
-- 未让提交后自动 `git pull` 或刷新 `data/manual_overrides.json`——静态数据随构建更新，属构建期职责，不在运行期做网络回写。
-- 未在提交成功后自动关闭草稿箱抽屉（用户可能还想看提交结果），只把它渲染成空态。
-
 ### §144 · 倾向统计：产驹倾向矩阵 PC/MB 展示优化（2026-10-30，用户提出「是否有更优解」）
 
 - **动因（用户）**：产驹倾向 · TENDENCY 的界面是否有更优解，PC 端和 MB 端的展示优化。
@@ -1353,6 +877,7 @@ window.YJ_ECHARTS = echarts;
   - **没有加误差带/置信区间**：数据只给得到「出走 × 前三着」，算 Wilson 区间要改后端预计算；当前用「点径 + 空心 + ▲」三层编码已能表达可靠性。
   - **没有做「导出 PNG」**：ECharts 自带 `getDataURL`，但页面其余图表（种马榜、产驹赏金）都没有导出，单点加会成为孤例。
 
+## 三、界面定稿 · 2026-10-31 起（§146–§188）
 
 ## §146 · 日期统计页 7 项展示优化（2026-10-30）
 
@@ -1363,18 +888,6 @@ window.YJ_ECHARTS = echarts;
 **关键实现**：`dc-wdot` 绝对定位于格左下（`.dc-cell` 补 `position:relative`）。年视图月卡「胜 n」同步改中文。
 
 **验证**：`npm run build` 通过；dist 核对 `datechart-*.css` 含 `dc-idle/dc-wdot/dc-dow.sat/dc-dow.sun/#6b6b70` 全部新类、`dist/pages/datechart.html` 含 SVG 路径与「周/胜」文案。浏览器截图核对（PC 1440 / mb 390）：列头着色、空格浅底、金色奖杯、mb 圆点全部生效，无重叠/截断。截图 `tests/datechart-v2-pc.png`、`tests/datechart-v2-mb.png`（改前基线 `tests/datechart-pc.png`、`tests/datechart-mb.png`）。
-
-## §147 · 年视图战绩条横向错位修复（2026-10-30）
-
-**现象**：仅年视图月卡里，战绩条 [5-4-8-45] 的彩色数字块与渐变连接条高低参差（日历格与 KPI 正常）。
-
-**根因（CDP 实测）**：`datechart-page.css` 的 `.dc-ym b{font-size:13px}` 本意是月份数字，却**误伤战绩条 `bracketHTML` 里的 `<b>`**——数字块 13px/18.2px 高，连接条 `<i>` 继承 16px/22.4px 高，每根连接条上下各凸出 ~2.1px，视觉上成「城垛」。日历格里 b/i 同继承同字号故无感；`.dc-brk-lg` 因自带 padding 齐平亦无感。
-
-**修复**：`.dc-ym b` → `.dc-ym-top b`（选择器收窄到月份标签槽）；原零数据月份的降灰恰好靠 `.dc-ym.zero b` 误伤实现，收窄后补显式规则 `.dc-ym.zero .dc-brk b,.dc-ym.zero .dc-brk i{color:#c6c6ca}`（顺带把此前没灰到的连接条 `<i>` 一并降灰，零月份整条统一）。
-
-**验证**：build + dist 核对（旧选择器清零）；playwright-core（channel msedge）3 倍放大截图：色块连成等高一条、数字垂直居中；零月份 11 月卡 label/digits/dashes = `#a1a1aa`/`#c6c6ca`/`#c6c6ca` 统一灰。截图 `tests/.pw/m3-card.png`、`tests/.pw/m11-zero.png`、`tests/.pw/kpi-brk.png`。
-
-- **§147 补记（奖杯尺寸定稿）**：格内奖杯（日历格/年卡 `.dc-gw`）10px → **16px**（与 KPI「重赏胜利」同大小，用户定稿），mb 端因格子矮（38px）定 12px 防溢出；KPI 奖杯维持 16px（中途误缩 13px 已回退）。
 
 ## §148 · 航迹线（timeline）四组展示优化（2026-10-31，用户问「是否还有优化空间」全选）
 
@@ -1429,28 +942,6 @@ window.YJ_ECHARTS = echarts;
 
 **验证**：`node --check editor.js / editor-table.js` ✓；`npm run build` ✓；dist 核对 theme-*.css 含 `yj-ed-groups/ghead/grid2/cell--pin/cell--dry/thumbs/cover/thumb--add/extdrop/tagpill/tlph` + `outline-style:dashed`/`pr-8`（⚠ `outline-dashed` 经 @apply 内联，直 grep 类名假阴性）、dist/editor.js 含 `isFileDrop/tlMove/sumToggle`、dist/editor-table.js 含 `showPastePreview/onlyDirty/data-hedit`、edit-table.html 含 `cntBasic/dirtyBtn`。无头实测（playwright-core channel msedge，外壳 iframe frameLocator，脚本 `tests/_pw/check150.mjs`，截图 `tests/ui-150-{edit,table,timeline}.png`）：edit 页 5 分组 + 两列网格 + 4 个金额右对齐 + 封面徽标/加号格 + 摘要 chip 点开有明细；table 页改格后页签徽章 0→1、橙格 title 原值对照、277 个「↗」锚点 href=edit.html?id=N、「只看待保存」277→1 行、粘贴预览弹窗出现/取消关闭；tl 页编辑卡图片小格 + 标签胶囊自动进编辑态 + 两个同日期节点 ↑↓ 调序后首行互换；全程 console/pageerror 零报错。**修一处测试中发现的接线遗漏**：edit-table.html 的 `YJ.editorTable.init({...})` 初版漏传 `dirtyBtn/cntBasic/cntRaces`（els 查表有了、html 没传 → 徽章/开关静默失效），已补。
 
-## §151 · §150 修复三连：幽灵待保存 / 下拉统一 / 引用比赛自动带图（2026-10-31，用户实测反馈）
-
-1. **幽灵待保存**（基本信息页）：官方无图的马「上传→清空」后 draft=[] 与官方等值，但 setDraft 无条件 mode="set" → 仍亮「待保存：确无图片」并要求确认/放弃。修复：新增 photoKeys() 等值比较，setDraft 里净效果=盘上生效值时 mode 归零（persistPhotosOf 随 phPut(null) 清掉草稿箱记录）；markNoPhoto 收口进 setDraft 并逐个 blobDel 已删草稿图（补整清的账，原只删记录不清 blob）。
-2. **下拉统一**：a) 新组件 .yj-ed-sel（appearance-none + data-URI 自绘灰箭头 + pr-8，34px 与 .yj-ed-in 同高）——登録状態/性別/抹消_去向種別/选比赛/标签类别 全部换装；b) 原生 datalist（馬主/調教師/抹消_去向場所）弹层跟随系统深色主题且无法定制 → 换受控建议浮层 #yjSugPanel（.yj-ed-sugpanel，fixed 挂 body——台账 overflow-hidden 会裁内嵌面板；宽=触发框、下方空间不足自动上翻；focusin 开 / input 逐键过滤 / 点击拾取 / ↑↓+Enter 键盘流 / Esc 关 / 点外·滚动·resize 关）。sugJustPicked 抑制位防 softRefreshRow 重建 input 的 focusin 立刻重开浮层。edit-table.html 的 et-name-list（表格行内编辑）本轮不动。
-3. **引用比赛自动带图**：build_timeline 自动比赛节点取图链=人工配图>race.photo>马照片，但编辑台 applyRefRace 不填 photo → 同一场比赛自动节点有图、人工节点落表无图（timeline_manual.json 里 manual 节点也不做马图回退）。修复：applyRefRace 末尾补第三级——photo 为空时填 refHorse 的 normList(h.photo)[0]；表单图片栏加 tip「引用比赛自动带马首图（与自动节点同规则）；清空=落表无图」。
-
-**验证**：node --check ✓；npm run build ✓；tests/_pw/check151.mjs（msedge 无头）全绿——幽灵待保存：上传出徽章→清空回「无改动」+提交钮禁用；下拉：select appearance:none+自绘箭头、浮层开/过滤/拾取/Esc/↑↓+Enter 全过；带图：菊花赏选中后 photo=data/photos/40-3.webp、84px 小格 <img> 回显、预览带图。零 console 错误。截图 tests/ui-151-{edit,timeline}.png。
-
-## §152 · 时间线净零快照 + 「钉住值」文案换装（2026-10-31，用户反馈）
-
-1. **草稿箱不同步（加了节点又删）**：TL 草稿 = 整表快照（tlPut），删除唯一节点后快照仍在（events=0 与盘上等值）却仍要求确认/放弃。修复（与 §151 照片修法同思路）：loadTimeline 存 `state.tl.base` 远端原值快照；persistTlDraft 里 `JSON.stringify(tlPayload()) === stringify(base)` → tlDrop + dirty=false（加了又删/改回原样/调序复原均净零）；loadTimeline 同时丢弃历史遗留的净零快照——用户现存的脏快照下次打开自动清掉。
-2. **文案**：用户定稿「人工钉住值」→「人工维护（不被自动更新覆盖）」。换装四处页面文案：edit.html 头注、edit-table.html 图例 chip、草稿箱抽屉「已保存人工表值」→「已保存人工维护值」（tip 合并不被自动更新覆盖）、edit-drafts.html 页首说明。剩余「钉」全为代码注释（editor-table.js / profile.html 排序注释），不属页面文案。
-
-**验证**：node --check ✓；npm run build ✓；tests/_pw/check152.mjs 全绿——加节点「草稿箱·1」→删除后「草稿箱」清空+提交钮禁用+chip 消失；刷新不复活；两页面文案断言通过。零 console 错误。截图 tests/ui-152-timeline.png。
-
-## §153 · 批量表格净零草稿 + 建议浮层两项修复（2026-10-31，用户反馈）
-
-1. **批量表格改前改后同值仍进草稿箱**：setBasicCell 只与官方 base 比对——当「已保存人工值 == 官方值」（CI 合并后常见）时回填同值会产生无意义的「恢复官方值」意图（v:null）。修复：先与会话基线（人工值 ?? 官方值）比，同值 → nu=null 不产生条目；恢复官方值意图仅在与人工值确实不同时保留。hydrateBasic 同步兜底：已存的净零条目（v===null 且 saved==base、v===saved）重开页面时丢弃。
-2. **建议浮层两个交互 bug**：a) 滚动关闭监听（capture）把浮层自身滚动也吞掉 → 一滚面板就消失没法翻页——scroll handler 排除面板内部滚动（target 在面板内则忽略）；b) 输入框自带现值，聚焦即按现值过滤 → 候选只剩它自己——sugSync 分模式：focusin 开「all」全量清单（对齐 datalist 行为）、input 才「filter」；sugKey 的 ↑↓ 改为只 sugRender 重画高亮（重算会打回全量）。
-
-**验证**：node --check ✓；npm run build ✓；tests/_pw/check153.mjs 全绿——已保存格(抹消_去向種別=乗馬)同值重选徽章隐藏；文本格 A→B→A 净零；聚焦带现值調教師出 12 项全量；面板内 wheel 滚动不消失且 scrollTop>0；滚动后点击拾取、输入过滤均正常。零 console 错误。截图 tests/ui-153-table.png。
-
 ## §154 · 草稿判脏「净效果等值」收口为单一函数 YJ.util.effEqual（2026-10-31，用户提问驱动）
 
 **现状核实**：判脏散落 7 个调用点、4 种写法——字段/表格 `String(a)===String(b)` 裸比 ×5（editor.js putFieldDraft；editor-table.js setBasicCell×2 / hydrateBasic×2 / setRaceCell）、照片 `photoKeys()` 键串 `===` ×1、时间线 `JSON.stringify` 内联重复 ×2（loadTimeline / persistTlDraft）。语义同源（净效果 vs 基线），≥3 处跨页 → 按 §48 收口进 yj-util.js。
@@ -1468,10 +959,10 @@ window.YJ_ECHARTS = echarts;
 
 ## §155 · mb 端开放编辑（2026-10-31，用户定稿：mb 体验接近 PC）
 
-**旧门**（§82.13 作废）：四编辑页（edit / edit-table / edit-timeline / edit-drafts）是纯 CSS 门——「🖥️ 请在电脑端使用」占位块 + 主容器/保存条 `max-md:hidden`，代码逻辑本身设备无关。拆除即通。
+**旧门**（mb 只读门，原 §82.13，已随本节作废）：四编辑页（edit / edit-table / edit-timeline / edit-drafts）是纯 CSS 门——「🖥️ 请在电脑端使用」占位块 + 主容器/保存条 `max-md:hidden`，代码逻辑本身设备无关。拆除即通。
 
 **改动**：
-1. 四页删占位块，主容器与 savebar 去 `max-md:hidden`；§82.13 注释改 §155 定稿。
+1. 四页删占位块，主容器与 savebar 去 `max-md:hidden`；旧门注释改 §155 定稿。
 2. **触屏可达性**：照片瓦片 ✕ 原为 `hidden group-hover:inline-flex`（触屏无 hover 不可达）→ 加 `max-md:inline-flex` 常显；PC 行为不变。
 3. **触屏调序**：HTML5 DnD 不触发于触屏 → 瓦片左下 ‹› 小钮（`md:hidden`，`data-pmv` 委托到 movePhoto + render），首/尾位相应钮隐藏；PC 仍走拖拽。
 4. 顺带修文案残留：抽屉「已保存（人工表现值）」→「人工维护值」。
@@ -1490,12 +981,6 @@ window.YJ_ECHARTS = echarts;
 **修复**（front/index.html 接收侧收口，sender 零约束）：收到 `yj:lightbox` 后以 `frameEl.contentWindow.location.href`（同源可读）为 base，`new URL(u, base).href` 归一成绝对 URL 再交 YJ.lightbox.open——相对/绝对/data: 均兼容，未来其他 sender 也不会再犯。
 
 **验证**：搭子路径镜像（tests/_pw/_sub/yunji-web ← dist，:8091）复现部署形态——修复前 img `natural 0x0`、src 解析到站点根（404 实锤）；构建修复后 img `854x1280 → rendered 367x549`、src 正确落子路径、翻页计数 2/2；像素采样确认遮罩（背景 rgb≈37 = 白字×15%）与照片层（rgb≈229 全亮）层级正确；直开本页（无外壳）本地兜底不经此路径、本就正确。390×844 触屏视口，零 console 错误。截图 tests/ui-156-{before,after-mb}.png。
-
-### §156b · 灯箱「复开首图空白」（front 状态残留，2026-10-31 用户二轮反馈）
-
-用户实测：URL 修复后「好了一点，但还要切换照片图才出现」。根因不在 URL——lightbox.js 的 `front` 是模块级变量，`close()` 清 imgs/ov 却**不重置 front**；开灯箱切换过一次（flip 后 front=1）再关掉，复开时 `imgs[front].src` 写进的是 DOM 里带 `opacity-0` 的**隐藏层**（DOM 第一层的 opacity-100 可见层没有 src）→ 首眼空白，切一张走 show()/flip 路径才显现。此前 URL 全 404 时两张都空，此 bug 被掩盖；URL 修好后才浮出。修复：open() 里 `front = 0` 归零（入口状态归一，一处兜住所有复开路径）。
-
-**回归**（:8091 子路径镜像，390×844 触屏）：首开 img1 ✓ → 切 img2 ✓ → 关闭 → 卡切到图2 复开 **img2 立即有图**（修复前此处必空白）→ 反向切回 img1 ✓；全程 opacity=1、零报错。像素采样：背景 rgb≈30-35（遮罩压暗）、照片区全亮。截图 tests/ui-156b-reopen-mb.png。
 
 ## §157 · 目录总览三组统计图交互升级（2026-10-31，用户：pc/mb 设计优化 + 加交互效果）
 
@@ -1606,16 +1091,6 @@ window.YJ_ECHARTS = echarts;
 
 **§162 行集追加（用户追加定稿）**：mb 默认行再收两项——马场、后3F 也进高级筛选折叠区，mb 默认只留 7 行（出走马/跑道/场地/距离/性别/着顺/级别），折叠区内保持卡片相对顺序（马场、后3F 在赛道方向之前）；PC 全行平铺不变。build ✓ + mb-adv-verify 全过 + 截图目检。
 
-## §163 · 金银铜 chip 色点与 tooltip 箭头伪元素冲突（2026-11-01，用户实测反馈）
-
-**现象**：金银铜 chip 鼠标悬停出 tooltip 时，左侧色点跳位/样式突变。
-
-**根因**：chip tooltip 的气泡箭头本就占用 `.filter-chip[data-tip]:hover::before`（border 三角），§161 给金银铜色点也用了 `::before` —— hover 时箭头规则特异性更高（3 类+attr+:hover > 2 类），把色点伪元素整个顶掉换成箭头，色点消失导致布局跳动。
-
-**修复**：色点改真实元素 `span.chip-dot`（chip() 内金银铜注入，CSS `.filter-chip.ag-* .chip-dot` 上色），`::before` 让还给 tooltip 箭头。规则照旧：**同一元素上自定义伪元素与既有 tooltip/浮层伪元素互斥，装饰一律用真实节点**。
-
-**验证**：build ✓；Edge 无头（tests/.pw/dot-verify.js）hover 前后色点 boundingBox 逐字节一致 ✓、chip 尺寸不变 ✓、tooltip 气泡+箭头正常 ✓；截图 tests/_dot-hover.png 目检。
-
 ## §164 · mb 比赛卡片全站统一分组（2026-11-01，用户提问驱动）
 
 **背景**：用户对比 mb 端 比赛记录卡（lib 5 行分组）与 日期统计明细卡（embed 3 行紧凑分组）——列序同源但行编排各异，观感差异大。用户定稿：**两边样式一样，明细只是隐藏一些字段**。
@@ -1643,19 +1118,6 @@ window.YJ_ECHARTS = echarts;
 **效果**：同一条 菊花赏G1 mb 390px 两页 innerText 逐字段全等（含 天气/着差/出赛数/赔率）。
 
 **验证**：产物重算 849 条 ✓；verify_datechart 112 ALL PASS、verify_stats 211 通过；Edge 无头（tests/.pw/mb-full-verify.js）两卡文本全等、无 JS 报错。**未 commit。**
-
-## §166 · timeline 照片卡接入灯箱（2026-11-01，全站终检发现）
-
-**背景**：全站终检发现交互不一致——lightbox.js 仅 profile.html 引用（§149.3），timeline 页照片卡（.tl-photo 297×210）不能点击放大。
-
-**改动**：
-1. `timeline.html`：引入 `../lightbox.js`（直开本页本地兜底）；`photoHTML` 的 `YJ.ui.img` 补 `title="放大查看"`；渲染后委托监听挂 `#body`（render 只换 innerHTML，监听器常驻不叠加）——点击照片 → 图集取当前 DOM 顺序全部卡片照片（跨事件连续翻页），index = 被点照片。
-2. 通道与 profile 相册完全一致（§149.3/§156）：外壳内 `postMessage(yj:lightbox)` 顶层渲染（外壳以 iframe 地址为 base 归一 URL，sender 零约束）；直开本页 → 本地 YJ.lightbox。
-3. `timeline-cards.css`：`.tl-photo img` 补 `cursor:zoom-in`（hover 1.04 微缩放本就有，光标补全可点暗示）。
-
-**效果**：timeline 照片点击全屏放大，‹›/←→/触摸翻页、Esc 关闭，与 profile 同一视觉语言；外壳内遮罩全屏含侧栏。
-
-**验证**：build ✓；dist 核对（timeline.html 含 lightbox.js/openPhotoLightbox、cards css 含 zoom-in、dist/lightbox.js 在位）✓；Edge 无头（tests/.pw/tl-lightbox-verify.js）：7 张照片卡 → 点第 1 张外壳顶层灯箱出现「1 / 7」、→ 翻页「2 / 7」、Esc 关闭 ✓、点第 2 张起始「2 / 7」✓、无 JS 报错；截图 tests/_tl-lightbox.png。**未 commit。**
 
 ## §166 · timeline 照片卡接入灯箱（2026-11-01，全站终检发现）
 
@@ -1773,21 +1235,6 @@ window.YJ_ECHARTS = echarts;
 - 概览：15 张等高卡（PC 5 列 / MB 3 列），零重叠。
 - 冒烟：`verify_stats 211·0` / `verify_drill 60·0` / `verify_datechart 113 ALL PASS`（真实 2 世代数据下曲线默认全选，不受「近 5 世代」影响）。
 
-### §171.1 · 用户否决「横滚藏内容」+ 配色降饱和（2026-11-02 当日返工）
-
-**① 年份不能藏**（用户原话「不能因噎废食」）：§171 把长枚举行改成单行横滚，等于把后半段年份藏进滚动区——PC 上只看到 2026~2020，MB 更糟。
-- 回退：删掉 `.filter-chips--scroll` 全套规则（横滚 + 遮罩 + 隐藏滚动条），恢复 `flex-wrap: wrap`。
-- 新做法：**逐年递增的维度独占整行**（`rowWide`）——`比赛年份` / `出生年份` 从半列移到 wide 行，PC 13 个 chip 折 2 行、窄屏折 4~5 行，**一个都不少**；左侧标签 `align-items:flex-start` 贴首行对齐，不再垂直居中错位。
-- MB 紧凑化：年份行挂 `.filter-chips--years`，窄屏 chip 24px 高 / 11px 字 / 计数 9.5px → 单行高度 **218px → 144px**（实测 13 枚全在，`docOverflow=0`）。
-- 保留 §171 的 `.filter-grid{grid-template-columns:minmax(0,1fr)}`（防止长内容撑破列，与横滚无关，仍是正确约束）。
-
-**② 配色降饱和**（用户「尽量不要用饱和度太高的颜色」）：
-- `.yj-tm--y1..y12`（概览年份卡）：`bg-*-200 / text-*-900` → **`bg-*-100 / text-*-700`**，12 色仍全异色可分辨（实测 sky-100 `rgb(224,242,254)` + sky-700 `rgb(3,105,161)`）。
-- 状态 treemap 同步压一档：live/local/breed/ride/sire 200→100 底、900→800 字；unknown 300→100、unreg 200→100、overseas `primary/20`→`primary/10`；dead 保持 neutral-200 底但字降到 500（与 unknown 靠底色深浅区分）。
-- 性别三卡（#C9EFFE / #FFDBD5 / #EFEFEF）本就是低饱和指定色，未动。
-
-**验证**：`npm run build` ✓；15 世代模拟站实测——PC `比赛年份/出生年份` 各 13 枚、折 2 行（h=58px）、`docOverflow=0`；MB 展开高级筛选后 13 枚全在（h=144px，末位 2014）；概览 15 卡配色实测为 100 级浅底。冒烟 `verify_drill 60·0` / `verify_stats 211·0`。
-
 ## §172 · 父子制覇数据源改派生：sire.wins 从手工表 → 种马成绩页（2026-11-02，kzn 误报驱动）
 
 **起因**：kzn 出现 1 次「父子制覇」——2025-02-09 サトノシャイニング 赢きさらぎ賞，tip「高情厚意同胜：如月赏」。核实发现 `config/sire.json` 的 `sire.wins` 是**手工表**，把キズナ 从未出走的きさらぎ賞写成了胜鞍；`build_timeline.py` 只按赛名精确匹配，没有任何校验源 → 凭空徽章。
@@ -1864,98 +1311,6 @@ window.YJ_ECHARTS = echarts;
 - 顺手修复 RC 两个深链 bug（外部引用暴露出来的）：① `main()` 无条件 `defaultDates()/defaultScope()` 覆盖 URL 恢复的 `?d=/?scope=` → 改为「URL 未指定才套默认」；② `?sire=` 深链按展示名原文存 state，而行内比较用 canonical（JBIS id）→ 永不匹配，改 URL 恢复时过 `canonOf()` 归一。这两个修复同时让 RC 自身分享链接的日期/血统恢复变正确。
 - 宿主侧：`pages/entries.html`（page-title + 来源条「数据来自 Racing Calendar ↗」+ `父：コントレイル` chip + 全高 iframe + load 摘遮罩 + 15s 超时失败态[重试/新标签]）；query 白名单透传（`RC_QS_KEYS = d/w/scope/v/k/sire/ss/bms/q/group`，`sire` 缺省取 `YJ_SITE.sireName`；`rcdev=1` 切本地调试不透传）；`vite.config.js` PAGES 注册；外壳侧栏「🏁 出走马表」置于日期统计与航迹线之间；`data-config.js` `remote.rc` 官网地址单源；`gen-site-config.mjs` 增 `sireName`（sire.sire.name_ja，kzn 改 config 即自动引用キズナ）。
 - 冒烟：双服务实测截图核对——embed 装饰层收起、锁亮色、`?d=2026-10-24&sire=コントレイル` 端到端出「共 11 頭 · 9 R」真实数据行、父列全コントレイル、宿主页与 iframe 视觉无缝。线上生效前置：RC 仓库 push 部署后宿主页才收到新版（本地 `?rcdev=1` 已验证）。
-
-### §174.1 · 改稿：iframe 全页照搬 → embed 组件（兄弟站统一模式，2026-11-02 用户三点反馈）
-
-**用户反馈**：① 参考种马榜走势 · SIRE RANK 的内嵌方式（jbis-sire-rank-history），要结果页，不要把整站网页照搬进来——「给一个名字就能有一个独立内嵌页面的结果」；② 独立内嵌页要简洁、优雅；③ 都是兄弟网站，引入方式要有拓展性、要统一。
-
-**统一模式定稿**（与 SIRE RANK 同构，此后兄弟站引用一律此形）：兄弟站发布 **`embed/` 纯渲染组件 + derived 数据产物**；宿主 = `data-config.js remote` 一处配置 + 动态加载组件脚本（Promise 缓存）+ 挂载点传参 → 内嵌结果。数据/渲染逻辑零复制，宿主不 iframe 整站。
-
-- **RC 侧新组件 `site/embed/entries-table.js`**（构建进 `_site/embed/`，零依赖单文件 IIFE，`window.RC_ENTRIES_EMBED`）：`load`（fetch `derived/index.json` + `derived/{date}.json`，内联 `unpackRows` 解字典包[单源 = src/lib/rows-codec.mjs，两处同步]，**不写存储键**，内存缓存）/ `render`（纯渲染）/ `mount`（load+render+内建加载/失败/重试，宿主一行）。API 与视觉素材（级别徽章映射 LEVEL_CLS、JRA 枠色、北京时间换算）均对齐 RC 主站同源口径。RC 本地 `serve` 补 `Access-Control-Allow-Origin: *`（对齐线上 GH Pages，宿主 `?rcdev=1` 本地联调必需）。
-- **视图（简洁优雅）**：头部 = 标题「<sire> 产驹 · 近期出走」+ 共 N 頭 · M R + Racing Calendar ↗；比赛块按北京时间升序——块头 = 日期周 · 场R · 比赛名 + 级别徽章 + 距离 + 北京时间（primary 粗），馬行 = 枠色芯片 + 番 + 馬名 + 性齢 + 斤量 + 騎手；今天之前自动收进底部 `<details>`「已开赛」折叠区（前瞻为主、历史兜底）；空/载/败三态内建；窄屏 media 逐级收列。颜色走宿主 CSS 变量（`--foreground/--primary/--accent…` 缺省回退同站 token）——friend-links.js 归一化变量同一做法，宿主换肤组件跟随。
-- **宿主 `entries.html` 改稿**：删 iframe/遮罩/超时/参数透传整层，剩 = page-title + `.card` 挂载点 + `RC_ENTRIES_EMBED.mount(el, { base: YJ_DATA.remote.rc, sire: YJ_SITE.sireName })`（约 40 行内联脚本，含组件脚本加载失败兜底态）；`rcdev=1` 调试保留。**`sireName` 单源不变**（kzn 改 config 即引用キズナ），remote.rc 单源不变。
-- **组件视图不带多维筛选**——简洁结果页的定位就是「按种马看近期出走」；要全功能（多维筛选/勾选分享卡）点头部外链去 RC 主站。RC 主站 `?embed=1` iframe 协议降级为附录保留（DESIGN.md §10 附录），日常引用一律组件。
-- **验证**：dump-dom 断言（直开子页 `&embed=1` 防 rehome 回壳）——组件头/汇总「共 48 頭 · 38 R」/比赛块/级别徽章（G3/L/G1）/北京时间/枠色芯片/「已开赛 46 頭」折叠全就位、无失败态。途中修一个组件 bug：`loadDay` 误把内存缓存键（`base|date`）拼进 fetch URL（`|` 非法 URL 字符），改回清理后的 base 拼路径。
-
-### §174.2 · 改稿二：视图改为 JBIS 出馬表式「按日期分组表格」（组件 v1.1.0，2026-11-02 用户两点反馈）
-
-**用户反馈**：① 参考 JBIS 出馬表截图样式（按日期分组的表格，不要现在的卡片式比赛块）；② 本地打开报「出走表暂时加载失败（Failed to fetch）」。
-
-**① 视图重做**（`site/embed/entries-table.js` 的 `render()` 整段重写，VERSION 1.0.0 → 1.1.0）：
-
-| 层 | 做法 |
-| --- | --- |
-| 分组头 | 「11月4日（水） 出走分」+ **30×2px 青绿短线**（`--primary`）+ 右侧「1 頭 / 1 R」；一日一组，组间 16px |
-| 表格 | 真 `<table>`：開催 / レース名 / 芝ダ / 距離 / 出走頭数 / 枠番 / 馬番 / 出走馬；灰底表头（`--muted`）、圆角外框（9px + `--border`）、横向行分隔线 |
-| 场次合并 | **同一场次多匹产驹共用 `rowspan` 场次单元格**（開催/レース名/芝ダ/距離/出走頭数）——JBIS 出馬表原生读法 |
-| 交替底色 | 按**场次块**交替（`.alt td`，非按行）——rowspan 合并块整体同色，读起来是一场一段；hover 高亮 |
-| 单元格内容 | 開催 = 场名 + 体系小字（地方/JRA/英国/法国/美国，`scope` 映射）；レース名 = `3R` 浅青标签 + 名称 + 级别徽章，副行「北京 11/04 11:40」；芝ダ = 芝绿/ダ褐文字；枠番 = JRA 枠色方块；出走馬 = 马名 + 「牡3 · 56kg · 高橋悠里」副行 |
-| 列宽 | `table-layout:fixed` + 百分比列宽（8/23/6/6.5/9.5/6/6/35），余量给「出走馬」；`min-width:600px` 兜底 |
-| 窄屏 <620px | 收起 芝ダ/距離/出走頭数 三列 + `table-layout:auto` + 马名允许折行——**保「出走馬」不被挤出视口**（实测 338px 容器 5 列恰好放下，table 336px 无溢出） |
-
-**踩坑（重要，组件级）**：`render()` 一直没输出 `.rc-emb` 外层容器，而 `--re-*` 变量全定义在 `.rc-emb` 上 → `background:var(--re-primary)` 全部失效，**绿线/灰表头/圆角边框/`3R` 标签凭空消失**（文字仍正常，因为 `color` 失效会继承，不易察觉）。修法：统一走 `setHTML(el, inner)` 套 `<div class="rc-emb">`，mount 的加载/失败态同样套。教训：**CSS 变量作用域和 HTML 根节点必须同源**，纯渲染组件尤其要断言「变量宿主节点存在」。
-
-**② 本地访问失败**：旧版要手工带 `?rcdev=1` 才走本地 RC（:9090），漏带即走线上 `remote.rc`——而线上还没有 `embed/entries-table.js`（未部署）→ 组件脚本 404 → `Failed to fetch`。改为**本地自动探测**：`location.hostname` 是 localhost/127.0.0.1/[::1] 时 `base` 默认取本地 RC，线上取 `remote.rc`；`?rcdev=1` / `?rcdev=0` 仍可强制覆盖。本地打开零参数即可。
-
-**验证**：无头 Edge 直开 `dist/pages/entries.html?embed=1`（防 rehome）dump-dom + 截图（1180 / 2x 放大 / 338px 窄容器 / 已开赛展开）——日期分组、绿线、灰表头、圆角框、枠色块、`3R` 标签、级别徽章（G3）、JRA/地方标注、场次交替底色、多日堆叠全部就位，窄屏无溢出。
-
-### §174.3 · 改稿三：赛事名清洗 + 去冗余转述 + PC 铺开成列（组件 v1.2.0，2026-11-02 用户五点反馈）
-
-**用户反馈**：①「サラ系」重复了，和欧美赞助商名一样都过滤掉；②去掉「地方/JRA」这类转述；③「出走分」是什么鬼，去掉；④已开赛看不出是多久，改成「最近一周」；⑤PC 端页面大，北京时刻、性齢/斤量/騎手 都能当独立列（MB 端问题不大）。
-
-**① 赛事名清洗（显示层，数据原文不动）** `cleanRaceName()` 四步：
-
-| 步骤 | 规则 | 例 |
-| --- | --- | --- |
-| 去重 | JBIS 源重复拼接取前半 | `C２二組 C２二組` → `C２二組` |
-| 去品種前缀 | 删 `サラ系`（JRA/NAR 条件名固有前缀，逐行重复零信息量） | `サラ系２歳 未勝利` → `２歳 未勝利` |
-| 去场次号 | 删 `Race N - `（UAE/USA 源格式，场次号已有 `3R` 标签） | `Race 3 - Arabian Stride Mile Handicap` → `Arabian Stride Mile Handicap` |
-| 去欧美冠名 | 仅当名字 **> 40 字符**时，从尾部连续吸收「类型词 ∪ 修饰词」直到遇冠名词，条件括号/赛种后缀作为尾巴接回 | `Magnet, Better. By Design Handicap Chase (GBB Race)` → `Handicap Chase (GBB Race)`；`GA Wilson Plastering Open NH Flat Race` → `Open NH Flat Race` |
-
-- 阈值 40 字符 + 词表法（`TYPE_WORDS` 22 词 / `MOD_WORDS` 28 词）是**保守**设计：`Mercury Stakes (Group 3)`、`Panoramic Hurdle (Listed)` 这类短正式名一律不动；日文名无空格分词、长度短，天然免疫。
-- 全量实测（1003 个赛事名）：436 个被清洗；欧美 566 个中 365 个被裁剪，抽样核对无把正式赛事名切残的情况（`Open NH Flat Race`、`Conditional Jockeys' Handicap Hurdle` 等复合类型短语完整保留）。
-- 已知不完美：法文序数残片（`Francois I Er Handicap` → `Handicap`）、纯通知式赛事名（`For Hospitality Bookings Call 011…Handicap` → `Handicap`）——已用「兜底再补一个词」缓解，宁可短不可残。
-
-**② 去掉转述**：開催 单元格只留场名（删掉 `地方/JRA/英国/法国/美国` 副行与 `SCOPE_FG` 映射）——场名本身已表明体系，转述是噪音。
-
-**③ 去掉「出走分」**：分组头收为「**11月4日（水）**」+ 青绿短线 + 右侧「N 頭 / M R」。
-
-**④「已开赛」→「最近一周」**：`load()` 的 past 窗口从「今天之前全部日期」改为**今天往前 7 个自然日**（`minusDays(today, 6)`），不再把整月历史都拉下来（顺带少发一半请求）；折叠区文案「最近一周 17 頭（10月27日 ~ 11月1日）」。
-
-**⑤ PC 铺开成 12 列**（原副行信息独立成列，行高从两行降到单行）：
-
-`開催 / レース名 / 芝ダ / 距離 / 出走頭数 / 発走 / 枠番 / 馬番 / 出走馬 / 性齢 / 斤量 / 騎手`
-
-- 列宽百分比 `7 / 20 / 4.5 / 5.5 / 8 / 7 / 5 / 4.5 / 19.5 / 5 / 5 / 9`，`table-layout:fixed` + `min-width:720px`；前 6 列为场次属性（同一场次多匹产驹共用 `rowspan`），后 6 列为每匹一行。
-- 时刻列头用「発走」（与其余日文列头一致），头部注明「· 北京時刻」。
-- 窄屏两档收起：`≤1080px` 收 芝ダ/距離/出走頭数/性齢/斤量（剩 7 列，`table-layout:auto`）；`≤620px` 再收 発走/騎手（剩 5 列：開催/レース名/枠番/馬番/出走馬）。马名永不被挤出视口。
-
-**验证**：全量赛事名清洗抽样、1440/1200 宽 12 列截图、338px 容器 5 列无溢出、展开「最近一周」多日堆叠（10/27、10/28、10/31、11/01 共 17 頭）逐列核对——`サラ系` 已绝迹、開催 只剩场名、発走/性齢/斤量/騎手 各就各位。
-
-### §174.4 · 改稿四：表头顺序 + 字号放大 + 断点改按组件宽度（组件 v1.2.1，2026-11-02 用户两点反馈）
-
-**用户反馈**：① 表头顺序调成 `開催 / レース名 / 発走 / 芝ダ / 距離 / 枠番 / 馬番 / 出走馬 / 性齢 / 斤量 / 騎手`（発走 提到比赛名之后，`出走頭数` 去掉）；② 字体大一些，方便看。
-
-**① 列重排（12 → 11 列）**：`発走` 由第 6 位移到第 3 位（时刻紧挨场次，符合读表顺序，且它本就是场次属性 → 仍属 rowspan 组）；`出走頭数` 删除（对「看这匹马跑哪场」无信息量，且挤占字号空间）。rowspan 场次组变为 `開催/レース名/発走/芝ダ/距離` 五列，马列 `枠番/馬番/出走馬/性齢/斤量/騎手` 六列。列宽重算 `7 / 19 / 7.5 / 5.5 / 6.5 / 5.5 / 5.5 / 20 / 5.5 / 7 / 11`。
-
-**② 字号整体上调一档**（不是等比放大，按信息层级分别调）：
-
-| 位置 | 原 | 现 |
-| --- | --- | --- |
-| 表体基准 / 表头 | 12 / 10.5 | **13 / 11.5** |
-| 马名 | 12.5 | **14** |
-| 開催 / レース名 / 発走 / 斤量 | 12 / 12 / 11.5 / 11.5 | **13 / 13 / 13 / 13** |
-| 馬番 | 12 | **13.5** |
-| 性齢 / 騎手 | 11.5 | **12.5** |
-| 枠番芯片 | 17×17 | **19×19** |
-| 行内距 / 日期头 | 6px / 14px | **8px / 15px** |
-
-行高由约 30px 增至约 36px，表格从「紧凑」转为「舒展」，可读性明显提升。
-
-**③ 断点方案推倒重来（踩坑）**：原用 `@media (max-width:1080px)` 收列，但组件挂在宿主 iframe 里，**视口宽 ≠ 卡片内容宽**（还要减侧栏 200px、`#page` 的 90%、卡片内距 32px）。实测 1024px 窗口时按视口判断为「放得下」，实际容器只有 653px < 表格 `min-width:700px` → 表格溢出被裁，骑手列只剩一个字、马名 ellipsis。
-改为 **`ResizeObserver` 量组件自身宽度 → 打 `data-fit`**（0 = 全列 / 1 = 收 4 列 / 2 = 再收 2 列，阈值 700 / 560），CSS 用属性选择器收列。彻底与宿主布局解耦，iframe 宽度变化也实时跟随；宿主换侧栏宽度不用改组件。
-
-**验证**：1440 / 1200 → 11 列全显示无滚动；1024 → 7 列（開催/レース名/発走/枠番/馬番/出走馬/騎手）骑手完整；字号放大后各列无截断（`芝ダ` 表头 37px vs 列宽 39.6px、`56kg` 48px vs 50.4px 均留有余量）。
 
 ## §175 · 种马榜走势 mb 标注去重叠 + 航迹线 mb 卡片重排（2026-11-05，用户两张截图反馈）
 
@@ -2037,28 +1392,6 @@ window.YJ_ECHARTS = echarts;
 `tests/_box-probe.mjs`（1024）：卡高 509~559、图 400×267~316、正文 400×214、无横向溢出；**mb 390px 与 §176 截图逐像素相同**（`ImageChops` bbox=None，零回归）。
 整页高度 1440 下 4292px（改前约 2300）：这是「图按自身比例铺满」的必然代价——7 场赛事、每屏约 2 张卡，滚动变长但每张图都完整。
 
-## §178 · PC 卡片「缩短 / 更紧凑」两种备选方案对照页（2026-11-06，待用户选型）
-
-§177 之后 PC 卡片变成「通栏图 + 通栏文本」，观感与 mb 一致但整页从 ~2300px 涨到 4292px（1440 下）。
-用户要求把「收窄」与「横排模糊铺底」两种缩短思路出成对照页，用同一批真实事件渲染后选型。
-
-**对照页**：`tests/timeline-pc-cards.html`（候选页，不入 dist；顶部可切 1024/1240/1440 舞台宽度，窄屏横向滚动不压缩）
-
-| 方案 | 结构 | 卡宽 / 图 | 3 场高度 | 取舍 |
-|---|---|---|---|---|
-| **S0 现状（§177）** | 竖排通栏图 | 480 / 480×320 | 1779px | 图最大最"满"，页面最长 |
-| **V1 收窄** | 同 S0，仅卡宽 480→420 | 420 / 420×280 | 1655px | 图小 12%、页面短 124px，其余完全一致（**改动仅 1 行**） |
-| **V2 横排+模糊铺底** | 横排，图区占 46% 并通卡片上下边；图 `contain` 完整显示，空白用**同图模糊放大**填满 | 480 / 实图 ~220×147 | ≈820px | 一屏 4 张、页面最短；图可视面积最小，正文列 259px（马名+中文名易折两行），模糊底是设计而非真实画面 |
-
-**V2 实现要点**（若被选中，落回正式 CSS 时照此写）：
-`.tl-card{flex-direction:row}`；`.tl-photo{position:relative;width:46%;align-self:stretch}`；
-模糊层 `.v2-bg{position:absolute;inset:-8%;background:url(同一张图) center/cover;filter:blur(16px) saturate(1.15);transform:scale(1.06)}`
-（必须是一层实元素，`backdrop-filter` 只能模糊「身后」的内容，做不出同图蔓延的效果）；
-照片本身 `position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%` —— 四向居中且严格保比例，不会被裁。
-`.tl-item.left .tl-photo{order:2}` 恢复（左右两侧的图都贴轴线）。
-
-⚠ V2 需要在 `timeline.html` / `editor.js` 的卡片 markup 里多输出一个模糊层节点（V1 只改 CSS）。
-
 ## §179 · 选型落地：PC 卡宽 480 → 420（V1）（2026-11-06）
 
 §178 对照页三选一，用户定 **V1 · 竖排通栏图 + 卡宽收到 420**。
@@ -2075,42 +1408,6 @@ window.YJ_ECHARTS = echarts;
 编辑台 `.yj-pv` 不含 `.tl-cardwrap`，不受影响（当前为空态，正常）。
 
 …结论：§178 的 V2（横排 + 模糊铺底）未采用，实现要点仍留在上文备查。
-
-## §180 · 赏金排行：点「马名」跳基本信息（条形只开赏金明细）（2026-11-06）
-
-**需求**：用户「赏金排行 · RANKING 能不能从名字跳到基本信息里」，并明确 **「点击日文名或者中文名跳转才行，点击条形图只展示赏金信息」**。
-
-**现状**：`leaderboard.html` 是 ECharts 横向条形图，之前只有 `EC.on("click")`（系于 series）→ **只有条形可点**，
-名字（y 轴类目标签）点了毫无反应。
-
-**关键结论（2026-11-06 二次修正 · §181）**：**定制裁剪包没有任何缺失，`triggerEvent` 要写在「轴」上，不是「axisLabel」上**。
-包里 `AxisBuilder` 的实现是 `var triggerEvent = axisModel.get("triggerEvent")`（axis 选项，默认 false），
-只有它为真才给每个标签挂 `eventData`；写 `yAxis.axisLabel.triggerEvent` 会被**静默忽略**（配置项本身存在，
-`getOption()` 里能看到，所以很容易误判成「裁剪掉了」）。开启后标签 `eventData` 内容实测为：
-`{ componentType:"yAxis", targetType:"axisLabel", value:"{r1|1}{jpM|ゴーイントゥスカイ}\n{cn|通天飞}", tickIndex:0, dataIndex:0 }`
-—— 类目轴连行号 `dataIndex` 都直接给了。另外标签本来就不 `silent`
-（`isLabelSilent = axis.silent || !(axis.triggerEvent || tooltip.show)`，本页 tooltip 是开的），缺的一直只是 `eventData`。
-
-**做法**：
-- `yAxis` 基座加 `triggerEvent:true`（mb / PC 共用），`EC.on("click")` 里按 `p.targetType` 分流：
-  `"axisLabel"` → 开 `profile.html?horse=<CUR_ROWS[p.dataIndex].id>`（§80 新标签页）；
-  `"series"` → `dispatchAction({type:"showTip",...})`，**条形只弹明细、不跳**。
-- **标签列整条兜底**：画布标签是「字形参与命中」，两行富文本之间的行距、名次与名字的左右间隙都是死区，
-  按视觉点「这一行的名字」容易漏 → 再挂一个容器 click：`x < plot左缘` 时按行高反推行号。
-  两条路径用 400ms 时间戳去重，绝不会一次点击开两个标签页。
-- `mousemove` 只在名字列给 `cursor:pointer`（条形区强制 `""`，盖掉 ECharts 给 series 的 pointer）。
-
-**验证**（`tests/_lb-click.mjs`：CDP 派发真实鼠标点击 + hook `window.open` 读回 URL）：
-
-| 落点 | cursor | 打开 | tooltip |
-|---|---|---|---|
-| 点名字（首行标签列，1280） | pointer | `profile.html?horse=40` ✓ | — |
-| 点中文名那一行（行高 78% 处） | pointer | `profile.html?horse=40` ✓ | — |
-| 点条形 | 默认 | **无** ✓ | shown ✓ |
-| 点轴下方空白 | 默认 | 无 ✓ | — |
-
-390px（mb，20 行/页、标签纯名字）同表通过：点名字 → `profile.html?horse=40`，点条形 → 不跳。
-视觉零变化（`tests/_shot/_lb-names-top.png`：名次+日文名+中文名两行、条形与金额照旧）。
 
 ## §181 · 赏金排行点名字：改用组件原生标签事件（修正 §180 的误判）（2026-11-06）
 
@@ -2383,3 +1680,63 @@ kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契�
 nav（flex-1 overflow-y-auto）被压矮 ~20px → 内容溢出露滚动条；本地拉取失败该行隐藏，nav 刚好放下不溢出。
 修复：nav 复用 theme.css 已有的 `.yj-pane` 细滚动条样式（thin / 8px 浅灰圆角），溢出时视觉与侧栏一体，
 不出现经典双箭头。落点 = `front/index.html` nav 加 `yj-pane` 类，零新 CSS。
+---
+
+## §189 · 回放浮层：链接时间轴（`t=`）透传 + mb 静音起播（2026-11-11，用户反馈）
+
+**问题**：用户贴的 B 站回放链接常带时间轴（例：`.../BV16hVS6GErr/?t=2339`，通天飞 · 青叶赏）。PC 端「能跳转能看」，mb 端「既不自动播放也不跳转」。
+
+**根因（两条独立）**：
+1. **`t` 从未传给播放器**：`playerHTML` 只用 `bvid` / `page` 拼 `player.bilibili.com/player.html`，源链接上的 `t=` 被整段丢弃 → iframe 永远从 0 开始（PC 上看到的「能跳」其实是点了「在源站打开」后 B 站站点自己认 t）。
+2. **mb 有声自动播放被浏览器禁止**：移动端对未静音 iframe 的 `autoplay=1` 一律忽略，画面停在首帧，观感即「没播」。
+
+**修法**（`front/public/yj-video.js`，纯前端，数据零改动）：
+- `normSource` 从 `url` 解析**起播点与分 P**：`?t=` / `?start=`（支持 `2339`、`1h2m3s`、`1m39s` 三种写法，`?t=` 也认 `#t=`），`?p=` / `?page=`；表里显式写了 `start` / `page` 时以字段为准。
+- 播放器 URL 追加 `&t=<秒>` —— `player.html` 的 `SEARCH_PARAM` 本来就支持 `t`(number) 与 `muted`(boolean)，但**站点链接上的 t 不会自动透传进去**，必须由我们拼；mb 端再追加 `&muted=1`（移动端仅放行静音自动播放）。
+- 浮层底部新增两枚 chip：「从 38:59 开始」「静音起播·点喇叭开声」（后者仅 mb + B 站源显示），避免用户以为跳错了。
+- 多源切换沿用同一逻辑，每个源解析自己的 `t`；`other` 源仍走外链（链接自带 t 不变）。
+
+**验证**：`node --check` ✓；`COPY_DATA=skip FONT_GEN=skip npm run build` ✓（dist/yj-video.js 含 `&t=` 与静音提示）；无头驱动（stub `YJ.cache` + `YJ.device.isMb`）dump iframe `src` —— mb = `...&autoplay=1&no_related=1&t=2339&muted=1`，PC = `...&t=2339`（无 muted）；页脚 chip 文案正确。解析单测：`?t=2339→2339`、`?t=1h2m3s→3723`、`?p=2&t=90→page2/start90`、无 t→0。
+
+**§189.1 分享链接 / av 号兼容（2026-11-11 用户补充）**：B 站「复制链接」默认长这样 —— `…/video/BV16hVS6GErr/?share_source=copy_web&vd_source=5abc…&t=2339`，参数顺序、数量都不固定。改为 `parseBili()` 统一识别：
+
+- **只认视频 ID**：路径 `/video/BV…`、`?bvid=`、`/video/av123`、`?aid=` 四种都认；av 号走 `player.html?aid=`（cid/bvid 由播放器自己解析）。
+- **分享参数一律丢弃**：`share_source` / `vd_source` / `spm_id_from` / `unique_k` 等不进播放器 URL（避免误导播放器参数解析）。
+- **`t` / `p` 与顺序无关**：`?share_source=…&vd_source=…&t=2339` 正常解析出 `2339`；`t` 在中间、在末尾、带 `#` 都行。
+- **`b23.tv` 短链**：离线展不开（要一次 HTTP 302）→ 仍按「其他链接」外链打开，并在浮层说明「短链无法解析 BV 号，请点打开视频或改填完整链接」，不让用户以为是坏了。
+
+**验证（无头驱动，dump iframe `src`）**：
+| 粘贴形态 | 结果 |
+|---|---|
+| `…/video/BV16hVS6GErr/?share_source=copy_web&vd_source=5abc…&t=2339` | `bvid=BV16hVS6GErr&page=1&…&t=2339` |
+| `…/video/av170001?t=90` | `aid=170001&page=1&…&t=90` |
+| `m.bilibili.com/video/BV1jzHG6DEHC/?p=2&t=1h2m3s` | `bvid=BV1jzHG6DEHC&page=2&…&t=3723` |
+| `b23.tv/AbCdEf` | 不外嵌，浮层给短链说明 + 外链按钮 |
+
+## 附录 A · 已归档条目（原文见 git 历史 `7e48d69` 及之前）
+
+| 已删条目 | 内容 | 去向 / 替代 |
+|---|---|---|
+| §21 | 待决策：仓库根 index.html 跳转 | 已落地为外壳 iframe 路由（§169） |
+| §24 | 等级徽章 L/OP 类名不可见（bug） | 现行口径 = `config/grade-table.json` 的 `about` 键（listed / open） |
+| §59 | SP 页性齢拆列（当时标 🚧 待回填） | 已全量完成，字段见 `docs/SCHEMA.md` §2 |
+| §67–§71 | 编辑台换皮 / 动效门禁结案 / 收口与回滚 | 编辑台现行为见 §150；动效方案已整体撤销（不要再复活） |
+| §73 · §75 · §79 | favicon 补齐 / 措辞「年世代」/ 删统计页注记 | 现状即结果，无需再记 |
+| §81 · §82 · §83 · §84 · §85 | 编辑台双形态、B 稿常开工作表（含 82.1–82.23 微调）、`?edit=1` 开关、钉住标记、不蒜子统计 | 编辑台现行形态见 §150（草稿箱 + 三页 + 分组表单）；入口见 §168；统计见 §97 |
+| §90 | 编辑台 v3「工作台」分组导航 + 状态沉默化 | 被 §150「表单分组化」取代 |
+| §87（第二个） | 访问统计由不蒜子迁 Vercount | 被 §97「双线：Vercount 计数 + GoatCounter 展示」取代 |
+| §89 | 只传照片不写 photo 条目的孤儿图修复 | 已修，编辑台现行为见 §150 / §187 |
+| §104 | 批量表格「键盘电子表格流」 | **已被 §142 撤掉**（键盘流不再存在，勿按 §104 复原） |
+| §106–§109 | 编辑台提交/持久化/草稿箱四个 bug 修复 | 一次性修复流水；现行机制见 §105 · §150 · §154 |
+| §113 · §116–§127 | 产驹赏金 v2–v13.1 逐版微调 | 现行方案见 §112 · §114 · §115 · §128–§131 |
+| §133 | 时间线编辑页保存条不刷新（bug） | 已修；判脏统一走 §154 `effEqual` |
+| §138 | 冒烟 firstRow 取行漂移审查 | 结论已成 `verify_stats.cjs` 现行实现；同步红线见子项目指南 |
+| §143 | 提交成功后批量表格不重水合（bug） | 已修 |
+| §147 · §151 · §152 · §153 | 年视图错位 / 幽灵待保存 / 时间线净零快照 / 草稿判脏修复 | 一次性修复流水；现行判脏口径 = §154 |
+| §156b | 灯箱复开首图空白（为 §156 的二次修复） | 与 §156 同批，已修 |
+| §163 | 金银铜 chip 色点与 tooltip 伪元素冲突 | 已修（`.yj-chip` 伪元素改实元素） |
+| §171.1 | 「横滚藏内容」方案被否决 + 配色降饱和 | 现行为 = §171 的六处收口（不横滚） |
+| §174.1–§174.4 | 出走马表 embed 四次改稿（v1.1–v1.2.1） | 现行组件协议与呈现见 §174 + §184 |
+| §178 | PC 卡片「缩短/紧凑」备选对照页 | 选型已定案于 §179（卡宽 420） |
+| §180 | 赏金排行点马名（第一版误判） | **被 §181 修正**（改用组件原生标签事件） |
+| 重复 §87 / §166 | 编号重复的两个条目 | 各保留第一处；第二个 §87 见本表第 4 行说明 |
