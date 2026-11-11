@@ -2375,3 +2375,11 @@ kzn 其余四段 483 / 60 / 三态闭合 / 11 全绿；数据产物 [A][B] 契�
 阴影同步收拢（`box-shadow → 0`），同一条平滑曲线 `cubic-bezier(.4,0,.2,1)`，时长 0.7s + 0.2s 延迟；
 恢复（出现）= 0.3s ease-out 从上方轻微落回。动画作用点从 yearrow 收窄到胶囊本体 `.tl-year`
 （全宽透明层不动，sticky 吸附定位不受 transform 影响）。其余判定/JS 不变。
+
+### §188.2 侧栏 nav 复用 .yj-pane 细滚动条（本地 vs 线上滚动条差异排查）
+
+现象：本地侧栏无滚动条、线上有 Windows 经典双箭头粗滚动条。根因**不是代码差异**——底部
+「总访问 N 次」行（yj-visit.js，§97 GoatCounter 回填，成功才显示）线上渲染成功使页脚多一行 →
+nav（flex-1 overflow-y-auto）被压矮 ~20px → 内容溢出露滚动条；本地拉取失败该行隐藏，nav 刚好放下不溢出。
+修复：nav 复用 theme.css 已有的 `.yj-pane` 细滚动条样式（thin / 8px 浅灰圆角），溢出时视觉与侧栏一体，
+不出现经典双箭头。落点 = `front/index.html` nav 加 `yj-pane` 类，零新 CSS。

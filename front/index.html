@@ -54,7 +54,9 @@
         <small class="block text-[11px] font-normal tracking-[1px] text-secondary-foreground">{{YJ_SITE_SUBTITLE}}</small>
       </div>
     </div>
-    <nav class="flex-1 overflow-y-auto p-2.5">
+    <!-- §188.2：nav 复用 theme.css 的 .yj-pane 细滚动条——溢出时（如访问量行渲染挤矮 nav）露出
+         Windows 经典双箭头粗滚动条很难看；yj-pane = thin/8px 浅灰圆角，视觉与侧栏一体。 -->
+    <nav class="yj-pane flex-1 overflow-y-auto p-2.5">
       <!-- 导航项选中态（2026-10-30 UI 审查 §4）：浅青底(bg-accent) + 深青字(accent-foreground) +
            左侧 3px 竖条（竖条 = theme.css 的 .nav-item::before，按 data-on 缩放进出）。
            原方案是整条实心 primary 底 + 白字，在 220px 侧栏里面积过大、与灰字未选中项层次突兀。 -->
