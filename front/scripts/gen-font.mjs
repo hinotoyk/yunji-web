@@ -1,15 +1,13 @@
 /* eslint-disable no-console */
 // ============================================================
-// 构建期字体子集生成（P0 字体瘦身 · 方案 b，2026-09-20 定稿）
-//
 // 做什么：每次 build 现算「站点语料字符全集」→ 子集化可变字体 → 产出 1 片 webfont
 //         + 覆盖 front/assets/fonts/noto-sc.css（theme.css 的 @import 入口不变）。
 //         旧 101 片 Google 导出物不再进 dist（替换式，部署包只减不增）。
 //
-// 语料口径（不许写死，见 OPTIMIZATION_PLAN §5.0-1 / tests/font-cand/ANALYSIS.md §3）：
+// 语料口径（不许写死）：
 //   data/**/*.json（排除 _tmp/） ∪ config/*.json ∪ front/index.html ∪ front/pages/*.html ∪ front/public/*.js
 //   —— 数据文件全取「键 + 字符串值」，静态文案全取文件文本（宁多勿漏）。
-//   config/*.json 自 P3 起纳入（docs/REFACTOR.md §5.4）：站点品牌文案（site.name/subtitle/tagline/logo）
+//   config/*.json 也纳入：站点品牌文案（site.name/subtitle/tagline/logo）
 //   已从 front 静态文件迁到 config/sire.json（构建注入），扫描器必须跟随，否则品牌字会掉出子集
 //   （实测丢生僻字 → 侧栏站名回退系统字体）。
 //   当前 ≈1,902 字符（汉字 1,561）；每天 CI 更新数据会带新汉字，所以必须每次 build 重算。

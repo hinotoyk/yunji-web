@@ -106,7 +106,7 @@ def is_done_racing(h):
 
 
 # ---------------- 比赛记录 ----------------
-race_key = racelib.race_key   # 比赛唯一键单源（防御版，docs/REFACTOR.md §5.1 R2 / §9 D4），common 只再导出
+race_key = racelib.race_key   # 比赛唯一键单源（防御版），common 只再导出
 
 
 def record_keys(r):

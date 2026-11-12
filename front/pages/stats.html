@@ -841,9 +841,6 @@ function srkEmbed() {   /* 图表组件脚本只加载一次；加载失败可�
 function srkKpis(data) {
   var his = data.history || [];
   var last = his[his.length - 1] || {};
-  /* 2026-11-05 用户定稿：撤「较前快照」（±增量）与「最新快照」（日期）两格 ——
-   * 增量已由图上单日增量柱/末点表达，日期与名次变化不缺信息，KPI 只留「当下多少、第几」两格，
-   * mb 端两格一行排开、pc 端不再有第三第四格抢视线（两端文案统一）。 */
   var rank = last.rank;
   document.getElementById("srkKpis").innerHTML =
     kpiHTML("当前赏金", last.prizeOverall != null ? manYen(last.prizeOverall * 10000) : "—", "hi") +
@@ -911,7 +908,7 @@ function renderSireRank() {
   Promise.all([YJ.cache.fetch("sireRank", { arg: board }), srkEmbed()]).then(function (r) {
     if (seq !== srkSeq) return;
     window.JBIS_RANK_EMBED.render(el, r[0], {
-      style: "combo",      /* 2026-10-27 用户定稿：单面板（平滑累计+渐变面积）+ 增量柱共用 y 轴；名次副图 v1.3.0 去除 */
+      style: "combo",
       /* 标注（组件 v1.4.1 · 2026-11-05 用户反馈「赏金增量与排名文案压叠」）：
        *   PC = true（跳增日「+金额（N位）」，幅面宽放得下）
        *   MB = "rank"（只报名次变化「N位」）—— 390px 下 +金额 文案宽约 90px，与相邻点必然互压；

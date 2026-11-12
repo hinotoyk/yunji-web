@@ -91,7 +91,7 @@ async function copyData() {
   await walk(resolve(__dirname, '../data'), resolve(__dirname, '../dist/data'), '');
 }
 
-// 站点配置注入（docs/REFACTOR.md §5.4 D1/D2 + §12 R6 · P3）：
+// 站点配置注入：
 //   ① transformIndexHtml 替换 9 个入口的 {{YJ_SITE_NAME/SUBTITLE/TAGLINE/LOGO}} 占位符（dev + build 通用，D2）；
 //   ② closeBundle emit dist/site-config.js（D1：dist 根，window.YJ_SITE + window.YJ_GRADE）；
 //   ③ configureServer 中间件直挂 /site-config.js（vite dev 下也不缺运行时配置）。

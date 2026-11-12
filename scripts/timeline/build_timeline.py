@@ -20,7 +20,7 @@ ROOT = constants.ROOT
 DATA = constants.DATA_DIR
 
 # ---- 常量（口径与前端/races.html 一致） ----
-# 格 → (显示文案, 徽章类)：单一出处 = config/grade-table.json（docs/REFACTOR.md §12/R6）；
+# 格 → (显示文案, 徽章类)：单一出处 = config/grade-table.json；
 # 徽章类复用同级别 g1/g2/g3（Jpn/障害 与中央 G1-G3 视觉同级，靠文案区分）；L/OP 用 listed/open。
 # ★ 与前端 front/public/race-rows.js 的 window.YJ_GRADE（构建注入）同源。
 _GT = grade.load_grade()

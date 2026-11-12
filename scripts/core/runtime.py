@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""中立层运行时收口：UTF-8 stdout 包装 + PEP 562 惰性导入工厂（docs/REFACTOR.md §5.1 R1）。
+"""中立层运行时收口：UTF-8 stdout 包装 + PEP 562 惰性导入工厂。
 
-收口依据 = 逐字重复防漂移（§9 D7）：9 处调用点（两个 common.py + 7 个入口脚本）原先各持一份
+收口依据 = 逐字重复防漂移：9 处调用点（两个 common.py + 7 个入口脚本）原先各持一份
 相同的 UTF-8 包装块 / 惰性 __getattr__，统一收进本模块后改为 1 行调用，行为逐字等价。
 纯 stdlib（io + sys），遵守离线脚本零第三方依赖红线。
 """

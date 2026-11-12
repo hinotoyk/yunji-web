@@ -1,25 +1,4 @@
 #!/usr/bin/env node
-/* 站点配置注入生成器（docs/REFACTOR.md §5.4 D1/D2 + §12 R6 · P3）：
- * 读 config/sire.json（sire + site 段）+ config/friend-links.json + config/grade-table.json，
- * 产出三样东西——
- *   ① dist/site-config.js（D1：emit 到 dist 根，与 copy-data 同模式）：
- *        window.YJ_SITE = {id, name, subtitle, tagline, logo, domains, repo, analytics, jbisId, sireName};
- *        window.YJ_FRIENDS = [...]; window.YJ_GRADE = {...};
- *      浏览器侧所有品牌文案 / 统计账号 / 编辑仓库 / 友链 / 格级表的运行时唯一出处；
- *   ② HTML 占位符替换表（{{YJ_SITE_NAME}} 等 6 个），由 vite.config.js 的 config-inject
- *      插件在 transformIndexHtml 钩子里消费（dev + build 通用，D2）；
- *   ③ 构建期「本站身份」自检报告（report()）：漏配项在 build 输出里飘红。
- *
- * 开源化（2026-11-12，docs/DESIGN.md P0）后的关键约定：
- *   - **空值 = 合法关闭态**：site.repo 空 → 编辑台整体关闭（fail-closed）；site.analytics 两项皆空
- *     → 统计完全静默；friend-links 空 → 侧栏不出现该分组。fork 后即使一个字不改，也不会
- *     误连原作者的仓库 / 统计后台 / 友链。
- *   - site.repo 非空但格式不合法 → **构建失败**（防 "owner/repo/" 这类手滑把 20+ 个 API 拼错）。
- *
- * 本文件是两条路径的单一出处：vite.config.js 动态 import 本模块的导出；
- * 直接 `node front/scripts/gen-site-config.mjs` 则落盘 dist/site-config.js（调试/CI 用）。
- * 归一约定（复核 b）：domains 缺省/非数组 → []（防 yj-visit.js 对 undefined 做 indexOf 抛错）；
- * logo 缺省 → site.name 首字符（回退链与 HTML 占位符同一份逻辑，见 siteVars）。 */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";

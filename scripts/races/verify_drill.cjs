@@ -108,8 +108,6 @@ global.YJ = {
 
 /* 共享模块按浏览器加载顺序入 stub：yj-util.js（YJ.util.esc，§48 后页面薄别名依赖）→ race-rows.js
  * （比赛行/徽章渲染已下沉，见 docs/DESIGN.md §42）。浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序。 */
-/* P3/R6（docs/REFACTOR.md §12.4）：race-rows.js 已改读 window.YJ_GRADE（fail-fast）→ stub 环境须先注入
- * 与浏览器一致的 YJ_SITE / YJ_GRADE（node 侧 fs 读 config 两个 JSON，与 dist/site-config.js 同源）。 */
 const _sireCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "sire.json"), "utf8"));
 const _gradeCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "grade-table.json"), "utf8"));
 window.YJ_SITE = _sireCfg.site || {};

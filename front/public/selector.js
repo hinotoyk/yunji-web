@@ -60,7 +60,7 @@ YJ.selector = (function () {
   let dropInstances = [];
   let docClickInstalled = false;
 
-  /* ============ 路 D · basic.json 跨上下文共享缓存（OPTIMIZATION_PLAN §5.2） ============
+  /* ============ 路 D · basic.json 跨上下文共享缓存 ============
    * 动机：profile 页 + 其内嵌 races / pedigree iframe 各自 fetch 一次 328KB 的 basic.json，
    *   同 tab 内最多 3~5 份重复请求（线上还要各付一个 must-revalidate 条件请求）。
    * 两级：① 内存 horsesCache（同一 JS 上下文，零成本）

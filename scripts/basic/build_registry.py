@@ -51,7 +51,7 @@ def is_unnamed(name):
 
 
 def print_urls(years):
-    """C4 真离线验证（docs/REFACTOR.md §6.3）：换种马 ID / 改生年后离线核对列表 URL 拼装。
+    """换种马 ID / 改生年后离线核对列表 URL 拼装。
 
     按 fetch_progeny（JBIS，含 .replace("#","") 剥锚点 + &page= 追加）与
     fetch_nk_id.fetch_list_all（netkeiba）的真实首页拼装形态打印，打印后直接返回，

@@ -446,8 +446,6 @@ global.fetch = function (url) {
  * stub 按浏览器加载顺序先入 yj-util.js → race-rows.js → loading.js（window=global，挂到同一 YJ），再 eval 页面脚本。
  * ★ #18 撤销骨架屏/分批渲染后 loading.js 只剩 YJ.ui.img（B4 图片标记），stats 页已不调 YJ.ui →
  *   这里入它只为与本分支各页的浏览器加载顺序一致，删了也不影响下列断言。 */
-/* P3/R6（docs/REFACTOR.md §12.4）：race-rows.js 已改读 window.YJ_GRADE（fail-fast）→ stub 环境须先注入
- * 与浏览器一致的 YJ_SITE / YJ_GRADE（node 侧 fs 读 config 两个 JSON，与 dist/site-config.js 同源）。 */
 const _sireCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "sire.json"), "utf8"));
 const _gradeCfg = JSON.parse(fs.readFileSync(path.join(ROOT, "config", "grade-table.json"), "utf8"));
 window.YJ_SITE = _sireCfg.site || {};

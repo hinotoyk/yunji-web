@@ -5,7 +5,7 @@
  *   各页恢复改造前写死的「正在加载…」文案与失败分支、数据等齐后一次性渲染。
  *   现只剩下面这一个保留项 —— 它与动效无关，是纯呈现层的性能/防抖收益：
  *
- *   YJ.ui.img(o)   图片标记：loading="lazy" + decoding="async" + 写死占位尺寸（防 CLS，OPTIMIZATION_PLAN §5.3.2）
+ *   YJ.ui.img(o)   图片标记：loading="lazy" + decoding="async" + 写死占位尺寸（防 CLS）
  *        o: { src, alt, cls, w, h, eager, attrs }（eager=true 用于首屏必须立刻出现的图）
  *
  * ★ 2026-10-31 用户再立项（§149）：重新提供**全局加载动画**（当年撤销的是「骨架屏/ crossfade 渲染动效」

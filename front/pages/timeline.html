@@ -258,13 +258,6 @@ function init(){
   });
 }
 init();
-/* ===== §188 sticky 年份胶囊缓退 =====
- * 痛点（用户 2026-11-11 看图反馈）：mb 往下拉时吸顶的「2026 N 条」胶囊一直盖住卡片内容。
- * 方案（用户定稿：滚动时可见、停止后慢慢消失）：滚动进行中全部照常显示；
- *   滚动静默 ~0.9s 后，只把「当前吸附在视口顶」的胶囊缓慢淡出——自然流位置的年份标签不动
- *   （静置阅读时年份上下文不丢）。吸附态判定 = 胶囊 rect.top 贴住 sticky 偏移（PC 8px / mb 4px，
- *   与 timeline-page.css 的 top 值同源）；再次滚动立刻整行恢复（CSS 侧出现快 / 消失慢）。
- * 监听挂 window（iframe 外壳内本页内容滚动同样触发）；渲染只换 #body innerHTML，重跑无副作用。 */
 var IDLE_MS = 900, idleTimer = null;
 function yearStickyTop(){ return window.matchMedia("(max-width:768px)").matches ? 4 : 8; }
 function markStuckPills(){

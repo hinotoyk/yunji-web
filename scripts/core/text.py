@@ -53,7 +53,7 @@ def trainer_guard(cur, new):
     return norm_trainer(new)
 
 
-# ── 全角 → 半角：双作用域（docs/REFACTOR.md §5.1 R7，v2.4 定案 R7-α/β/γ） ──
+# ── 全角 → 半角：双作用域（v2.4 定案 R7-α/β/γ） ──
 # 必须走 str.maketrans（translate 只认 ordinal 键，直接给字符键会静默不生效）。
 # 全量版表：0x3000（全角空格）→ 空格；FF01-FF5E → ASCII 0x21-0x7E（94 字母数字标点）。
 _FW_TABLE = str.maketrans({0x3000: 0x20, **{0xFF01 + i: 0x21 + i for i in range(94)}})

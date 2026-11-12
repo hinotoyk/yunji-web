@@ -331,7 +331,7 @@ def name_key(s):
     return s.replace(" ", "").replace("　", "")
 
 
-# ── 比赛唯一键（单源，docs/REFACTOR.md §5.1 R2 / §9 D4：统一取防御版，common 只再导出） ──
+# ── 比赛唯一键（单源：统一取防御版，common 只再导出） ──
 def race_key(r):
     """比赛唯一键：优先 race_id（全局稳定），否则 (日付, 場名, R)。"""
     rid = str((r or {}).get("race_id") or "").strip()

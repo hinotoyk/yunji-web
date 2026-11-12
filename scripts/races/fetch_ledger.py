@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """台账海外场增量拉取（竞赛流水线第 4 环，**可选环节**）。
 
-台账 URL 读 config/sire.json 的 ledger.url（--url CLI 参数优先，见 docs/REFACTOR.md §4.2/D8）；
-为空 = 台账未启用 → 打印提示后跳过（exit 0，不联网、不写缓存，并顺带清掉残留旧缓存 D6）。
+台账 URL 读 config/sire.json 的 ledger.url（--url CLI 参数优先）；
+为空 = 台账未启用 → 打印提示后跳过（exit 0，不联网、不写缓存，并顺带清掉残留旧缓存）。
 启用时：下载 Google Sheets 比赛台账 CSV（唯一知道台账细节的代码：URL / 列名映射），
 规范化成记录后**只保留海外场**（venue_type=海外），按 出走馬名 匹配 basic.json
 的马 → 与已有 races 文件按比赛键去重 → 只把**新增海外记录**写缓存：

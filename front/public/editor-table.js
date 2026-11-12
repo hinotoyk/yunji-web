@@ -859,9 +859,6 @@ YJ.editorTable = (function () {
     S.editing = { td: td, ri: ri, key: key, old: old, input: inp, row: r };
     inp.addEventListener("blur", function () { commitEdit(); });
     inp.addEventListener("keydown", function (e) {
-      /* 只保留编辑控件的基础行为（2026-10-30 用户定稿）：Enter 提交本格、Escape 取消本格。
-       * 不再做 Enter↓ / Tab→ 的单元格跳转；Tab 不拦截 → 走浏览器默认焦点移动，
-       * 触发 blur 里的 commitEdit，效果与「点别处」一致。 */
       if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
       else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
     });
@@ -944,9 +941,6 @@ YJ.editorTable = (function () {
     return null;
   }
 
-  /* ---------------- 光标环（仅「点击后高亮当前格」用） ----------------
-   * cursorTd / moveCursor 已于 2026-10-30 删除：它们只服务键盘导航（方向键/Enter↓/Tab→），
-   * 键盘流移除后无调用方。setCursor 保留 —— commitEdit / applyCell 提交后要重新给该格画环。 */
   function setCursor(td) {
     $all("td.ring-2", els.grid).forEach(function (x) { x.classList.remove("ring-2", "ring-primary/60", "ring-inset"); });
     if (!td) { S.cur = null; return; }
