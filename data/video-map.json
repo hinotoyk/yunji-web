@@ -1,10 +1,10 @@
 {
  "_meta": {
   "schema": "video-map/v2",
-  "updated": "2026-11-11 02:14:16",
+  "updated": "2026-11-12 03:16:16",
   "mid": 3493136521235298,
   "auto": 112,
-  "manual": 1,
+  "manual": 4,
   "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
@@ -652,13 +652,12 @@
   "race:202604020607": [
    {
     "source": "bilibili",
-    "bvid": "BV1oAuS6dE3t",
-    "url": "https://www.bilibili.com/video/BV1oAuS6dE3t/",
-    "title": "8月9日 新潟7R レパードS (G3) チェリヴェント 6人气1着",
-    "video_title": "",
+    "bvid": "BV1FfuU68EPQ",
+    "url": "https://www.bilibili.com/video/BV1FfuU68EPQ",
+    "title": "【日语中字】飞机云产驹泥地重赏初制霸 乘风而起吧--乘天风｜2026 猎豹锦标（G3）",
     "page": 1,
-    "subtitle": false,
-    "match": "auto"
+    "subtitle": true,
+    "match": "manual"
    }
   ],
   "race:202604030305": [
@@ -987,13 +986,12 @@
   "race:202608030511": [
    {
     "source": "bilibili",
-    "bvid": "BV1XoRQBqEiP",
-    "url": "https://www.bilibili.com/video/BV1XoRQBqEiP/",
-    "title": "5月9日 京都11R 京都新闻杯（G2）コンジェスタス（塔状高云） 6人气1着",
-    "video_title": "",
+    "bvid": "BV1vKVQ6TEwz",
+    "url": "https://www.bilibili.com/video/BV1vKVQ6TEwz/?t=2021",
+    "title": "【日语中字】三战三胜进军德比 塔状高云 | 2026京都新闻杯",
     "page": 1,
-    "subtitle": false,
-    "match": "auto"
+    "subtitle": true,
+    "match": "manual"
    }
   ],
   "race:202608030701": [
@@ -1354,6 +1352,17 @@
     "page": 1,
     "subtitle": false,
     "match": "auto"
+   }
+  ],
+  "slot:2026-06-07|ウッドバイン|2": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1wsE26EExx",
+    "url": "https://www.bilibili.com/video/BV1wsE26EExx/?t=1902",
+    "title": "【英语中字】 飞机云产驹海外首胜 Grand Warrior（大武士*）",
+    "page": 1,
+    "subtitle": true,
+    "match": "manual"
    }
   ]
  }
