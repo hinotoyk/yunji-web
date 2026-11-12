@@ -198,12 +198,13 @@ python run_update.py <策略>
 - **Cloudflare Pages**：`wrangler.jsonc` 指向 `./dist`（`front/public/_headers` 管缓存头）。⚠ CF 会把 `/pages/x.html` **307** 剥成 `/pages/x`，凡用 `location.pathname` 比对 `.html` 的代码必须先经外壳 `pageKey()` 归一（线上侧栏高亮全灭的坑踩过一次）。
 - **数据自动更新**（5 条 workflow，串联不抢文件）：`update-data.yml`（每天 UTC 22:00 / 北京 06:00 跑 `--ci`）→ `status.yml`（登録状态）与 `video-task.yml`（B 站回放映射）串联；`update-day.yml`（北京 21:00 快更当天赛果）。
 - 前置：Settings → Pages → Source 选 **GitHub Actions**；Settings → Actions → Workflow permissions 勾选读写；末步要 dispatch 部署的 job 必须声明 `actions: write`（否则 403）。
-- **fork 后要改的站点资产**（不在 config 里）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`、`front/package.json` 与 `wrangler.jsonc` 的 `name`、`serve.config.json` 的 `name`/`port`、`.github/workflows/*` 里的仓库名。
+- **fork 后要改的站点资产**（不在 config 里）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`、`front/package.json` 与 `wrangler.jsonc` 的 `name`、`serve.config.json` 的 `name`/`port`。`.github/workflows/*` **不用改**——仓库名走 `${{ github.repository }}`，域名只出现在注释里。逐步清单见 [docs/FORK.md](./docs/FORK.md)。
 
 ## 文档导航
 
 | 文档 | 内容 |
 |---|---|
+| `docs/FORK.md` | **克隆后改成自己应援站的分步手册（给 AI 执行）**：必填/可空字段表、品牌文件清单、首次抓数据 |
 | `AGENTS.md` | AI 助手 / 协作者的**硬规则**（架构不得回退、缺失语义二分法、能力挂载、站点身份走配置） |
 | `docs/SCHEMA.md` | 数据产物字段契约（单一出处；改字段先改这里） |
 | `docs/DESIGN.md` | **架构与约定的唯一出处**：当前状态 / 前端架构 / 编码约定 / 数据管线 / 编辑台 / 决策时间线 / UI 规格 §索引 |
