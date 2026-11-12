@@ -14,8 +14,12 @@
   2. http.server 不带 no-cache：改了 front/ 重新 build 后浏览器仍吃旧 JS/CSS（「看不到新功能」）；
   3. http.server 不带 CORS 头：兄弟站 embed/*.js 跨站 fetch 本站数据会被浏览器拦。
 
-端口被占用时**直接报错退出，不自动顺延**——端口是约定不是偏好：entries.html 硬编码了
+端口被占用时**默认直接报错退出，不自动顺延**——端口是约定不是偏好：entries.html 硬编码了
 racing-calendar 的 9093，顺延即静默失配。换端口只改 serve.config.json。
+
+★ 例外（P1-2，2026-11-12）：`"port": "auto"` 时在 9100-9199 探测第一个空闲号并打印实际地址，
+  专给「同一台机器上又 clone 了一份、不想记端口」的 fork 者用；显式数字仍保持「占用即失败」，
+  四兄弟站的约定端口不会被这个模式改掉。auto 模式启动时会把「跨站引用可能对不上」提示出来。
 """
 import argparse
 import json
@@ -81,6 +85,30 @@ def port_busy(host, port):
         return s.connect_ex((host, port)) == 0
 
 
+def resolve_port(host, conf_port, name):
+    """serve.config.json 的 port → 实际监听端口。
+
+    - 数字：约定端口，占用即 die（四兄弟站 yunji 9090 / kzn 9091 / jbis 9092 / rc 9093）。
+    - "auto"：在 9100-9199 探测第一个空闲号（给「又 clone 了一份、懒得记端口」的场景），
+      打印实际地址；探测失败才 die。auto 不写回 JSON —— 配置文件保持声明式，不改运行期状态。"""
+    raw = str(conf_port).strip().lower()
+    if raw != "auto":
+        try:
+            port = int(raw)
+        except ValueError:
+            die('serve.config.json 的 port 应为数字或 "auto"，当前：%r' % conf_port)
+        if port_busy(host, port):
+            die("端口 %d 已被占用（%s 的约定端口）。\n"
+                "        要么先停掉占用进程：netstat -ano | findstr :%d → taskkill /PID <pid> /F\n"
+                "        要么改 serve.config.json 的 port（连带核对兄弟站/宿主站的跨站引用）。"
+                % (port, name, port))
+        return port, False
+    for port in range(9100, 9200):
+        if not port_busy(host, port):
+            return port, True
+    die("9100-9199 全部被占用，auto 模式找不到空闲端口（显式改 serve.config.json 的 port 吧）")
+
+
 def main():
     ap = argparse.ArgumentParser(description="本地预览（端口来自 serve.config.json，占用即失败）")
     ap.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
@@ -88,7 +116,6 @@ def main():
 
     conf = load_conf()
     host = conf.get("host", "127.0.0.1")
-    port = int(conf["port"])
     name = conf.get("name", os.path.basename(BASE_DIR))
     root = os.path.join(BASE_DIR, conf["root"])
     entry = conf.get("open", "index.html")
@@ -99,11 +126,7 @@ def main():
         die("入口不存在：%s\n        产物不完整，先执行：cd front && npm run build"
             % os.path.join(root, entry))
 
-    if port_busy(host, port):
-        die("端口 %d 已被占用（%s 的约定端口）。\n"
-            "        要么先停掉占用进程：netstat -ano | findstr :%d → taskkill /PID <pid> /F\n"
-            "        要么改 serve.config.json 的 port（连带核对兄弟站/宿主站的跨站引用）。"
-            % (port, name, port))
+    port, is_auto = resolve_port(host, conf["port"], name)
 
     try:
         httpd = ThreadingHTTPServer((host, port), partial(Handler, directory=root))
@@ -114,6 +137,9 @@ def main():
     print("[serve] %s" % name)
     print("[serve] root = %s" % root)
     print("[serve] open = %s" % url)
+    if is_auto:
+        print("[serve] 端口 = auto 模式自动选中（9100-9199 探测）；约定端口请把 port 写成数字")
+        print("[serve] ⚠ 跨站引用（entries.html 的 :9093 / 兄弟站）按约定端口写死，auto 模式下可能对不上")
     print("[serve] Ctrl+C 停止（端口由 serve.config.json 固定，占用即报错不换号）")
 
     if not args.no_open:

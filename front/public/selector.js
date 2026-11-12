@@ -1,4 +1,4 @@
-/* 云迹 · 共享选马器（Tailwind 版）
+/* 共享选马器（Tailwind 版）
  * 与原版逻辑完全一致；视觉全部用 Tailwind utility 类实现。
  * 用法与 selector.js 原版相同：
  *   YJ.selector.init({ el, base, onSelect })
@@ -31,7 +31,7 @@ YJ.selector = (function () {
   function metaHTML(h) {
     return h.生年 || '';
   }
-  /* 主名链 = 日文 → 英文 → 「母名の生年」兜底(母名也缺才退化 #id)；dbl=true 时主名后追加 港译(无则自译)，与主名相同/为空则跳过。双格式契约见 docs/UI优化记录.md §64 */
+  /* 主名链 = 日文 → 英文 → 「母名の生年」兜底(母名也缺才退化 #id)；dbl=true 时主名后追加 港译(无则自译)，与主名相同/为空则跳过。双格式契约见 docs/DESIGN.md §64 */
   function nameHTML(h, dbl) {
     var names = [];
     /* 色块语言按内容判定（YJ.util.nameKind），与 profile 名字四格同口径：

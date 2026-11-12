@@ -18,7 +18,7 @@ parse_races 成绩页 + enrich_from_sp + resolve_trainer/jockey）构建记录�
   payback 结果表只含前 3 名（其余 JS 折叠）→ 只用来拿当天全部 race_id（按会场迭代）；
   完整出赛名单须逐场抓 SP 页，按 nk_id 找命中马。
 
-与既有策略的关系（docs/pipeline.md）：
+与既有策略的关系（见 README「维护与排障」）：
   - 独立闭环：fetch_day → merge_races（删缓存）→ 派生重建。绝不与 --races/--horse 同时写缓存。
   - 落库幂等：merge_races 按 race:{race_id} / horse:{馬名}|{日付} 双键去重，只增不覆盖。
   - 只写 races.json 一种缓存，不碰 detail/changed/ledger（不跑判变/台账），不污染原链路。

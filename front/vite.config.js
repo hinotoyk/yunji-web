@@ -12,8 +12,14 @@ const SERVE = require('../serve.config.json');
 // edit-drafts = 草稿箱查询页（§93：未提交草稿 + 已保存人工值一页通览，与抽屉共用渲染/检索）
 // leaderboard = 产驹赏金（§112：总榜/自然年/世代 × 牡牝三态，前端聚合 datechart+basic；§128 更名）
 // entries = 出走马表（§174：跨站 iframe 引用 racing-calendar ?embed=1&sire=<YJ_SITE.sireName>）
-const PAGES = ['profile', 'races', 'pedigree', 'stats', 'leaderboard', 'datechart', 'timeline', 'entries',
-  'edit', 'edit-table', 'edit-timeline', 'edit-drafts'];
+//
+// ★ 入口清单不再硬编码（L2 可选挂载，2026-11-12）：从 front/pages/*.html 目录派生 ——
+//   删掉一个页面文件不会让 build 失败（「缺了不报错」在构建层的落地）；
+//   「某能力关不关」由 config/features.json 决定，但被关闭的能力**仍然构建**（页面要能显示
+//   「本站未启用」空态卡片，而不是让直连 URL 掉 404）。两者分工：目录 = 事实，features = 意图。
+const FEATURES = require('./scripts/features.cjs');
+
+const PAGES = FEATURES.pageEntries();
 
 const input = { main: resolve(__dirname, 'index.html') };
 PAGES.forEach(function (p) {
@@ -111,6 +117,9 @@ function siteConfigPlugin() {
       const dst = path.resolve(__dirname, '../dist/site-config.js');
       fs.mkdirSync(path.dirname(dst), { recursive: true });
       fs.writeFileSync(dst, gen.siteConfigJs());
+      // P0-8 构建期「本站身份」自检：site.id / repo / 统计开关 / 友链条数 / 种马 —— 漏配项打 ⚠。
+      // 只报告不阻断（repo 格式错误在 siteVars() 里已经抛错），目的是让人一眼看见自己是谁。
+      gen.report();
     },
     configureServer(server) {
       server.middlewares.use('/site-config.js', function (req, res) {
@@ -123,7 +132,7 @@ function siteConfigPlugin() {
   };
 }
 
-// 统一版本戳（2026-xx 定稿，取代手工 ?v=N，UI优化记录 §X 硬规 #7 废止）：
+// 统一版本戳（2026-xx 定稿，取代手工 ?v=N；旧「手工 ?v=」硬规已废止，见 docs/DESIGN.md §4）：
 // 非 module 公共脚本在 build/dev 时由本插件自动打内容哈希戳 ?v=<sha1 前 10 位> ——
 //   内容不变 → URL 不变 → 浏览器缓存命中；内容一变 → 哈希变 → 自动取新文件。
 // 页面源码从此不写 ?v=（也禁止手改哈希），改 public/x.js 无需再 grep 全站 +1。

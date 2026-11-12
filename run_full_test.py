@@ -47,6 +47,11 @@ TS = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 LOG_FILE = LOG_DIR / f"full-{TS}.log"
 results = []          # (步骤名, returncode, 耗时秒)
 
+"""单步子进程超时（秒）。产驹多的种马（kzn ~1221 匹）全量重建会被掐断时调大它（参考 28800s）。
+★ 不按马数自动算（P1-6）：抓取耗时受网络/风控影响，自动算出的值只会给人虚假安全感。"""
+STEP_TIMEOUT = 7200
+TIMEOUT_HINT_HORSES = 400
+
 
 def log(msg="", echo=True):
     """写日志文件；echo 控制是否同时打到 stdout。"""
@@ -58,6 +63,21 @@ def log(msg="", echo=True):
         print(line, flush=True)
 
 
+def startup_notice():
+    """启动自检（P1-6）：打印单步超时 + 库内马数，马多时提醒调大超时（口径与 run_update.py 一致）。"""
+    n = None
+    try:
+        with open(DATA / "basic.json", "r", encoding="utf-8") as f:
+            n = len((json.load(f) or {}).get("horses") or [])
+    except Exception:
+        pass
+    log(f"单步超时 {STEP_TIMEOUT}s（{STEP_TIMEOUT // 3600}h）· 库内马数 "
+        f"{n if n is not None else '未知（尚无 data/basic.json）'}")
+    if n and n > TIMEOUT_HINT_HORSES:
+        log(f"⚠ 产驹较多（{n} 匹）：全量自测若被掐断（出现「✗ 超时」），把 run_full_test.py 顶部的 "
+            f"STEP_TIMEOUT 调大（kzn ~1221 匹用 28800s）。")
+
+
 def run_step(name, script, *args):
     """跑一个子脚本：完整输出进日志，stdout 只打一行状态。返回 (returncode, 秒)。"""
     log(f"\n───── [{name}] {Path(script).name} {' '.join(args)} ─────", echo=False)
@@ -65,9 +85,9 @@ def run_step(name, script, *args):
     try:
         r = subprocess.run([PY, str(script), *args],
                            capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=7200)
+                           encoding="utf-8", errors="replace", timeout=STEP_TIMEOUT)
     except subprocess.TimeoutExpired:
-        log(f"✗ [{name}] 超时(7200s)")
+        log(f"✗ [{name}] 超时({STEP_TIMEOUT}s)")
         results.append((name, -1, time.time() - t0))
         return -1, time.time() - t0
     dt = time.time() - t0
@@ -151,6 +171,7 @@ def main():
     args = ap.parse_args()
 
     log(f"══ 完整流水线自测开始 {TS} ══ 日志: {LOG_FILE}")
+    startup_notice()
     if args.dry_run:
         log("[dry-run] 将删除以下 data/ 内容：")
         wipe_data(dry_run=True)

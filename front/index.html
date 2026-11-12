@@ -22,8 +22,8 @@
      必须先于 yj-visit.js 加载（统计域名白名单读 YJ_SITE.domains）。 -->
 <script src="site-config.js"></script>
 <!-- 访问统计（§97 双线：Vercount 计数 + GoatCounter 计数/展示）：唯一注入点在 public/yj-visit.js，
-     由它按域名门控——只有正式域名 www.yunji.xyz 才加载，本地 :9090 / file:// / *.github.io 一概不加载
-     （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/UI优化记录.md §97（§85 不蒜子 → §87 Vercount）。 -->
+     由它按域名门控——只有 site.domains 白名单里的正式域名才加载，本地 :9090 / file:// / *.github.io 一概不加载
+     （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/DESIGN.md §97（§85 不蒜子 → §87 Vercount）。 -->
 <script src="yj-visit.js?v=3"></script>
 <!-- 全屏浮层渲染端（§149.2，2026-10-31）：内容页都在外壳 iframe 里，页内 fixed 遮罩只能盖到内容区、
      盖不到左侧栏（血统图弹窗「一边遮住一边没盖住」的根因）。约定：内容页把弹窗/灯箱请求
@@ -34,7 +34,7 @@
 <script src="yj-util.js"></script>
 <script src="pedigree.js" defer></script>
 <script src="lightbox.js" defer></script>
-<!-- 「友情档案」三站互跳（yunji / kzn / jbis；方案说明 = docs/友情跳转方案.md）：
+<!-- 「站群导航」友链挂载点（注册表 = config/friend-links.json → 构建注入 YJ_FRIENDS）：
      挂载点在侧栏底部（桌面常驻 + 手机抽屉内），渲染由 public/friend-links.js 完成，
      版本戳由 auto-version 插件自动补。脚本缺失/渲染失败时挂载点保持空白，无占位观感。 -->
 <script src="friend-links.js" defer></script>
@@ -61,26 +61,26 @@
            左侧 3px 竖条（竖条 = theme.css 的 .nav-item::before，按 data-on 缩放进出）。
            原方案是整条实心 primary 底 + 白字，在 220px 侧栏里面积过大、与灰字未选中项层次突兀。 -->
       <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">{{YJ_SITE_SUBTITLE}}</div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/profile.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="profile" data-href="pages/profile.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">📖</span>基本信息
       </div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/races.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="races" data-href="pages/races.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">🐎</span>比赛记录
       </div>
-      <div class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">统计</div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/stats.html" data-on="false">
+      <div data-cap-group="stats,leaderboard,datechart,entries,timeline" class="px-2.5 pb-1.5 pt-3 text-[11.5px] font-semibold uppercase tracking-[1.5px] text-secondary-foreground">统计</div>
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="stats" data-href="pages/stats.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">📊</span>倾向统计
       </div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/leaderboard.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="leaderboard" data-href="pages/leaderboard.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">💰</span>产驹赏金
       </div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/datechart.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="datechart" data-href="pages/datechart.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">📅</span>日期统计
       </div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/entries.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="entries" data-href="pages/entries.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">🏁</span>出走马表
       </div>
-      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-href="pages/timeline.html" data-on="false">
+      <div class="nav-item mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-[9px] text-[14px] text-muted-foreground hover:bg-muted/40 hover:text-foreground data-[on=true]:bg-accent data-[on=true]:font-semibold data-[on=true]:text-accent-foreground" data-cap="timeline" data-href="pages/timeline.html" data-on="false">
         <span class="w-[18px] text-center text-[14px] opacity-90">✈️</span>航迹线
       </div>
 
@@ -110,23 +110,29 @@
       </template>
     </nav>
 
-    <!-- 「友情档案」三站互跳挂载点：public/friend-links.js 渲染（data-site 排除自身）。
-         容器边框/内距由渲染时注入，脚本缺失 = 零痕迹；位置在 nav 之后、版权块之前，
-         与版权块共用 border-t 分节（视觉 = 侧栏另一组，非外链导航混入 iframe 导航）。 -->
-    <div data-friend-links data-site="yunji" data-skin="yj"></div>
+    <!-- 「站群导航」挂载点：public/friend-links.js 渲染（data-site 排除自身；注册表 = config/friend-links.json
+         → 构建注入 window.YJ_FRIENDS）。
+         data-site 由构建期注入的站点 id 填入（占位符 {{YJ_SITE_ID}}，P0-7）：**不要手写站名** —— 漏改的表现是
+         侧栏把自己也列出来（点自己跳自己），而且不会报错。值为空时脚本回退 window.YJ_SITE.id。
+         容器边框/内距由渲染时注入，脚本缺失 / 友链表为空 = 零痕迹（分组整体不出现）；
+         位置在 nav 之后、版权块之前，与版权块共用 border-t 分节（视觉 = 侧栏另一组，非外链导航混入 iframe 导航）。 -->
+    <div data-friend-links data-site="{{YJ_SITE_ID}}" data-skin="yj"></div>
 
     <div class="border-t border-border px-4 py-3 text-[12px] text-muted-foreground">
-      {{YJ_SITE_NAME}} · 数据仅供分享交流
+      <!-- 页脚半句（P1-1）：默认「数据仅供分享交流」，可由 config/sire.json 的 site.copy.footer_note 覆盖 -->
+      {{YJ_SITE_NAME}} · {{YJ_COPY_FOOTER}}
       <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。
            站点访问量（GoatCounter 回填，§97 双线）：链接容器先 hidden（Tailwind），yj-visit.js 拉
            公开端点 counter/TOTAL.json 成功才改 display:inline；超时 5s / 失败 / 被拦截 → 一直隐藏，
-           不会出现「总访问 次」这种空占位。数字本身即后台链接（yunji.goatcounter.com，
-           详情：页面/来源/地区/时段）。非正式域名连脚本都不加载 → 这里只显示上面那行文案。
+           不会出现「总访问 次」这种空占位。
+           ★ 这里**不写 href**（P0-6，2026-11-12）：后台地址随 config/sire.json 的 site.analytics.goatcounter
+           在运行时填入；未配 GoatCounter 时 yj-visit.js 直接把这个节点从 DOM 移除 —— fork 站的页面上
+           不该存在指向原作者统计后台的链接。
            只显示站点级 PV：GoatCounter 公开端点无独立 UV（count_unique 已废弃）→「访客 N 人」撤下；
            Vercount 仍在后台计数、不展示（历史连续 + 冗余对照，§97）。 -->
       <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-none">
-        <a id="gc_container_site_pv" href="https://yunji.goatcounter.com" target="_blank" rel="noopener"
-           class="hidden" title="GoatCounter 统计后台：页面 / 来源 / 地区 / 时段">总访问 <span id="gc_value_site_pv" class="font-medium text-foreground/80"></span> 次</a>
+        <a id="gc_container_site_pv" target="_blank" rel="noopener"
+           class="hidden">总访问 <span id="gc_value_site_pv" class="font-medium text-foreground/80"></span> 次</a>
       </div>
     </div>
   </aside>
@@ -144,7 +150,7 @@
     <div class="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl">
       <div class="mb-1 text-[15px] font-semibold">编辑模式</div>
       <p class="mb-3 text-[12.5px] leading-relaxed text-muted-foreground">
-        <span id="egHintLock">粘贴本站仓库的 fine-grained PAT（仅 hinotoyk/yunji-web · Contents 读写），验证通过后进入编辑模式。令牌只保存在本机浏览器，不会发往 GitHub 以外的任何地方。</span>
+        <span id="egHintLock">粘贴本站仓库的 fine-grained PAT（{{YJ_SITE_REPO_HINT}}），验证通过后进入编辑模式。令牌只保存在本机浏览器，不会发往 GitHub 以外的任何地方。</span>
         <span id="egHintUnlock" class="hidden">编辑模式已开启（本站 PAT 已验证）。退出后编辑导航与各页编辑入口立即收起。</span>
       </p>
       <div id="egLockRow">
@@ -244,7 +250,25 @@ function removeEditNav(){
   nav_editNodes.forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
   nav_editNodes=[]; active=null; collectItems();
 }
-if(EDIT_MODE()) injectEditNav();   /* 默认页（profile）也进编辑模式：子页自行读同一开关 */
+/* ---- 页面能力过滤（L2 可选挂载，2026-11-12）----
+ * 数据源 = window.YJ_SITE.features（构建期由 config/features.json 注入，解析器 = front/scripts/features.cjs）。
+ * 关闭的能力：导航项整条从 DOM 移除；分组标题在其下所有项都关掉时一并移除（不留空标题）。
+ * ★ 必须跑在 collectItems() 之前 —— 它按 .nav-item 全量重挂点击，晚跑会把已删节点的监听留在闭包里。
+ * ⚠ 定位：这是**入口可见性**，不是安全边界。页面文件仍在 dist 里，直连 URL 由 public/yj-cap.js
+ *   换成「本站未启用」空态卡片（这也是"关闭的能力仍然构建"的原因）。 */
+function capOn(id){ var f=YJ_SITE.features; return !f || f[id]!==false; }
+(function applyCaps(){
+  [].slice.call(document.querySelectorAll('[data-cap]')).forEach(function(el){
+    if(!capOn(el.getAttribute('data-cap')) && el.parentNode) el.parentNode.removeChild(el);
+  });
+  [].slice.call(document.querySelectorAll('[data-cap-group]')).forEach(function(el){
+    var any=String(el.getAttribute('data-cap-group')||'').split(',').some(function(id){
+      return capOn(id.trim()) && document.querySelector('[data-cap="'+id.trim()+'"]');
+    });
+    if(!any && el.parentNode) el.parentNode.removeChild(el);
+  });
+})();
+if(EDIT_MODE() && capOn('editor')) injectEditNav();   /* 默认页（profile）也进编辑模式：子页自行读同一开关 */
 collectItems();
 var sidebar=document.getElementById('sidebar');
 var backdrop=document.getElementById('backdrop');
@@ -276,7 +300,7 @@ function go(href,it){
    优先保留用户刚点的那条，避免一次加载点亮两项。谁都不匹配 → 全部熄灭（与改造前一致）。 */
 /* 路径归一（§173）：CF Pages 会把 /pages/x.html 307 成 /pages/x（§88 已在外壳入口与 rehome 两处补过
    .html），于是 iframe 内 location.pathname 不带扩展名 —— 拿它和 data-href="pages/x.html" 做后缀比对
-   必然全部落空，线上（www.yunji.xyz）表现为「侧栏一项都不亮」（GitHub Pages 不剥扩展名 → 一直正常）。
+   必然全部落空，线上（Cloudflare Pages 剥掉扩展名）表现为「侧栏一项都不亮」（GitHub Pages 不剥扩展名 → 一直正常）。
    比对前统一剥掉尾部 .html，两个托管平台结果一致；回写 ?page= 时再补回。 */
 function pageKey(p){ return String(p||'').replace(/\.html$/,''); }
 document.getElementById('frame').addEventListener('load',function(){
@@ -347,7 +371,7 @@ window.addEventListener('message',function(e){
 /* ── 编辑模式解锁对话框（§160）：logo 三连点（800ms 窗口）呼出 ──
  * 校验方式 = GitHub API 真实验证（GET /repos/<repo>，fine-grained PAT 的 metadata:read 为必选
  * 权限，token 有效且指向本站仓库才返回 200）：401 = token 错；403/404 = token 有效但非本站仓库
- * （双站 kzn/yunji 防串）；网络失败不改动本地状态。
+ * （双站防串）；网络失败不改动本地状态。
  * 通过后把 token 写入 gh.token（与编辑台「连接 GitHub」同一把键）→ 编辑台无需再粘贴一次；
  * 注入编辑导航 + 重载当前 iframe（子页读同一开关，编辑入口立即出现）。 */
 var eg=document.getElementById("editGate"),
@@ -359,7 +383,8 @@ var eg=document.getElementById("editGate"),
     egHintLock=document.getElementById("egHintLock"),
     egHintUnlock=document.getElementById("egHintUnlock");
 /* repo 常量与 PAT 校验的单一出处 = public/yj-util.js（§190 收口：YJ.util.GH_REPO / verifyPat）——
- * 外壳 / 编辑页门禁（yj-edit-gate.js）/ 编辑台（editor.js）三处共用，换站只改那一行。
+ * 外壳 / 编辑页门禁（yj-edit-gate.js）/ 编辑台（editor.js）三处共用；值来自 config/sire.json 的
+ * site.repo（P0-5 开源化，2026-11-12），空 = 编辑功能整体关闭。
  * 外壳不再自持 EG_REPO：校验与 403 文案里的仓库名都由 verifyPat 返回。 */
 function gateOpen(){
   var unlocked=EDIT_MODE();
@@ -378,7 +403,11 @@ var logoTap=document.getElementById("logoTap"), tapN=0, tapT=0;
 logoTap.addEventListener("click",function(){
   var now=Date.now();
   tapN=(now-tapT<800)?tapN+1:1; tapT=now;
-  if(tapN>=3){ tapN=0; gateOpen(); }
+  /* 编辑台关闭的两个门（AND，任一关即关）：① site.repo 未配（P0-5 fail-closed）；
+   * ② config/features.json 的 editor=false（L2 可选挂载）。任一为关 → 三连点直接无反应，
+   * 连「请粘贴某仓库的 PAT」这种把人往错仓库引的文案都不该出现。 */
+  var F=YJ_SITE.features;
+  if(tapN>=3){ tapN=0; if(!YJ.util.GH_REPO || (F && F.editor===false)) return; gateOpen(); }
 });
 eg.addEventListener("click",function(e){ if(e.target===eg) gateClose(); });
 document.getElementById("egCancel").addEventListener("click",gateClose);

@@ -1,4 +1,4 @@
-/* 云迹 · 设备判定统一入口（device）
+/* 设备判定统一入口（device）
  * 目标：全站只此一处判断 PC / MB（移动端），后续功能一律
  *       用 YJ.device.isMb() / YJ.device.isPc() 分支，不再散落 innerWidth。
  * 断点：768px，与 Tailwind md:/max-md: 完全一致（AGENTS.md：统一 max-md 单断点），

@@ -21,7 +21,8 @@ import time
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
 import common
 
-YEARS_DEFAULT = ["2023", "2024"]
+# 生年数组：单一出处 = config/sire.json 的 sire.progeny_years（common 已再导出 sire_config）；
+# 不在模块加载期求值（访问器会 sys.exit，导入本模块的其它脚本不该被配置问题连带炸）。
 ROMAN_FULL = {"Ⅰ": "I", "Ⅱ": "II", "Ⅲ": "III", "Ⅳ": "IV", "Ⅴ": "V",
               "Ⅵ": "VI", "Ⅶ": "VII", "Ⅷ": "VIII", "Ⅸ": "IX", "Ⅹ": "X"}
 
@@ -130,11 +131,13 @@ def fetch_list_all(years, sleep=0.6):
 
 def main():
     ap = argparse.ArgumentParser(description="netkeiba 列表 → nk_id 回写 basic.json")
-    ap.add_argument("--year", default=",".join(YEARS_DEFAULT), help="生年数组")
+    ap.add_argument("--year", default=None,
+                    help="生年数组，逗号分隔（缺省 = config/sire.json 的 sire.progeny_years）")
     ap.add_argument("--sleep", type=float, default=0.6)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
-    years = [y.strip() for y in args.year.split(",") if y.strip()]
+    years = ([y.strip() for y in args.year.split(",") if y.strip()] if args.year
+             else common.sire_config.progeny_years())
 
     data = common.load_basic()
     horses = data["horses"]

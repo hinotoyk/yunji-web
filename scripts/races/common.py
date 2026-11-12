@@ -7,7 +7,7 @@
 中立层 net（net 不含管线概念）。业务隔离：races 不 import basic 的任何业务模块，
 共享逻辑统一下沉 core。
 
-设计原则与并发架构见 docs/pipeline.md，比赛记录字段契约见 docs/SCHEMA.md。
+设计原则与并发架构见 README「维护与排障」，比赛记录字段契约见 docs/SCHEMA.md。
 """
 import functools
 import json

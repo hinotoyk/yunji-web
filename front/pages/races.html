@@ -24,6 +24,7 @@
 <script src="../data-config.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../yj-cap.js"></script>
 <script src="../loading.js"></script>
 <script src="../race-bundle.js"></script>
 <script src="../i18n.js"></script>
@@ -70,13 +71,13 @@ function resultCode(n){
 }
 
 /* 单马 KPI 统计（computeStats）与「独立单马 22 列表 / 过滤条」一起，随表格渲染收口删除
- * （其唯一调用点 renderRaces 非内嵌分支本就不可达，见 docs/UI优化记录.md §53） */
+ * （其唯一调用点 renderRaces 非内嵌分支本就不可达，见 docs/DESIGN.md §53） */
 
 /* ---- 排序比较器：日期降序（新→旧）；同日按発走降序（大→小），无発走视为最大（同日排最前）----
  * 発走 是零填充 "HH:MM" 字符串，可直接字符串比较；缺失/空串视为最大。
  * 内嵌单马表（renderHorse 加载后）与独立跨马表（renderResults）共用；
  * PC 表与 mb 卡片渲染同一份有序列表，一份排序四处（内嵌/独立 × pc/mb）同时生效。
- * ★ 末位比较键（docs/UI优化记录.md §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
+ * ★ 末位比较键（docs/DESIGN.md §69）：同一场比赛有多匹产驹 = 完全同键，旧实现返回 0 →
  *   稳定排序只能保持「并入顺序」，而全库 276 个文件是 16 并发逐个 push 进 entries 的（顺序 = 到达时序）
  *   → 最终行序不唯一（实测同键组 135 个 / 298 行）。故同键后一律按数据字段定序：
  *   着顺升序（未完走殿后，与日期统计明细同口径）→ race_id（不同场次不交错）→ 馬番升序 → 馬名。
@@ -106,7 +107,7 @@ function raceTieCmp(a, b){
 }
 
 /* ===== 单马 22 列独立表 / 22 列 mb 卡片：已随「全库跨马查询」上线而失效（renderRaces 只在
- * 内嵌模式被调用，内嵌走 embed 列集），2026-09-18 随表格渲染收口删除（见 docs/UI优化记录.md §53）。
+ * 内嵌模式被调用，内嵌走 embed 列集），2026-09-18 随表格渲染收口删除（见 docs/DESIGN.md §53）。
  * 需要旧形态可从 git 历史取回 ===== */
 function isMb(){ return YJ.device.isMb(); }
 

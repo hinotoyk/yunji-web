@@ -194,7 +194,7 @@ global.YJ = { i18n: {
 } };
 global.YJ_DATA = { url(p) { return "data/" + p; } };
 /* 页面已把「比赛行/徽章渲染」下沉到共享模块 front/public/race-rows.js（与比赛页同一份代码，
- * 见 docs/UI优化记录.md §42）；§48 后页面还依赖 yj-util.js 的 YJ.util.esc（页内薄别名）。
+ * 见 docs/DESIGN.md §42）；§48 后页面还依赖 yj-util.js 的 YJ.util.esc（页内薄别名）。
  * 浏览器里它们先于页面脚本加载，stub 环境须保持同样顺序（yj-util → race-rows），
  * 否则页面脚本取不到 YJ.raceRows / YJ.util。 */
 /* P3/R6（docs/REFACTOR.md §12.4）：race-rows.js 已改读 window.YJ_GRADE、页面 GRADED 由徽章类派生

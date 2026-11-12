@@ -1,0 +1,14 @@
+{
+  "_about": "页面能力表（L2 可选挂载）。只写要关的：缺文件 / 缺键 = 启用。id 表与页面映射的唯一出处 = front/scripts/features.cjs 的 CAPS。关闭后：侧栏入口不出现、直连 URL 显示「本站未启用」空态卡片、构建日志列出关闭项。",
+  "_profile": "profile 是默认落地页，不允许关闭，故不列在此表（写在表里为 false 会被强制改回 true 并告警）。",
+  "features": {
+    "races": true,
+    "stats": true,
+    "leaderboard": true,
+    "datechart": true,
+    "timeline": true,
+    "pedigree": true,
+    "entries": true,
+    "editor": true
+  }
+}

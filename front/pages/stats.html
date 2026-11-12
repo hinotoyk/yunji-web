@@ -53,8 +53,9 @@
   </section>
 
   <!-- ③ 种马榜走势（跨站引用 jbis-sire-rank-history：数据 = 该站 derived/sire-history 派生产物，
-       图表 = 该站发布的纯渲染组件 embed/sire-rank-chart.js，本页只挂载；口径=JBIS 榜单，不受顶部工具条影响） -->
-  <section class="mb-8">
+       图表 = 该站发布的纯渲染组件 embed/sire-rank-chart.js，本页只挂载；口径=JBIS 榜单，不受顶部工具条影响）
+       id="srkSection"：跨站地址未配置（config/sire.json 的 site.cross_site.jbis_rank 空）时整节原地摘除。 -->
+  <section id="srkSection" class="mb-8">
     <div class="mb-2.5 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[1px] text-secondary-foreground">
       <span class="h-3.5 w-1 flex-none rounded bg-primary"></span>种马榜走势 · SIRE RANK
     </div>
@@ -94,6 +95,7 @@
 
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../yj-cap.js"></script>
 <script src="../loading.js"></script>
 <script src="../i18n.js"></script>
 <script src="../yj-cache.js"></script>
@@ -310,7 +312,7 @@ function renderYseg() {
 
 /* ---- ④ 年龄成绩曲线（ECharts 定制包 · §145）----
  * 语义沿用 §135：颜色 = 世代 · 线型 = 指标 · 分母 = 出走。
- * 相对原手写 SVG 的五处改动，每处对应一个实测问题（详见 docs/UI优化记录.md §145）：
+ * 相对原手写 SVG 的五处改动，每处对应一个实测问题（详见 docs/DESIGN.md §145）：
  *   ① y 轴上界自适应 + 超上界贴顶 —— 原固定 50%，14 颗可靠点全挤在底部 30% 高度里互相压线；
  *      撑满 50% 的其实只有一颗 9 场的 44.4%（噪声）→ 刻度只按可靠点定标，噪声点贴顶画 ▲
  *   ② axis tooltip —— 原只有 SVG <title>，必须精确悬停，触屏完全不可用
@@ -670,7 +672,7 @@ function matHtml(tab) {
       return ra - rb;                                  /* 稳定排序：同档保持 n 降序 */
     });
   }
-  /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 docs/UI优化记录.md §44）；8 个数值列表头可点击排序 */
+  /* 着别 1/2/3着/着外 = 纯数字无样式（v3 用户拍板：彩字/浅底胶囊方案均废止，见 docs/DESIGN.md §44）；8 个数值列表头可点击排序 */
   var COLS = [
     { k: "starts", l: "出走" },
     { k: "w",      l: "1着" },
@@ -884,6 +886,9 @@ function srkLoading(on) {
   }
 }
 function renderSireRank() {
+  /* 跨站引用关闭（config/sire.json 的 site.cross_site.jbis_rank 空 = 本站没接 jbis 榜站）→ 整节不渲染。
+   * 三道防线：节元素已在 init 里移除 + 这里早退（切维度/切板/重试都会再进来） + 不发请求。 */
+  if (!(window.YJ_DATA && YJ_DATA.remote && YJ_DATA.remote.jbisRank)) return;
   var el = document.getElementById("srkChart");
   var kpis = document.getElementById("srkKpis");
   var board = srkBoard(), seq = ++srkSeq;   /* 过期渲染丢弃：切板后迟到的旧数据不回写 */
@@ -1044,7 +1049,14 @@ window.addEventListener("resize", function () {
     var n = document.getElementById(id);
     if (n && window.YJ && YJ.ui && YJ.ui.spin) n.innerHTML = YJ.ui.spin({ label: "加载统计数据…", sm: true });
   });
-  renderSireRank();                                    /* 种马榜走势数据独立（JBIS 跨站引用），与 stats.json 并行加载 */
+  /* 跨站引用关闭时整节不进 DOM（P1-0）：先摘掉再决定要不要渲染 —— 否则标题/选择器留着、
+   * 图表永远转圈，看起来像"坏了"而不是"没接"。 */
+  if (!(window.YJ_DATA && YJ_DATA.remote && YJ_DATA.remote.jbisRank)) {
+    var srkSec = document.getElementById("srkSection");
+    if (srkSec && srkSec.parentNode) srkSec.parentNode.removeChild(srkSec);
+  } else {
+    renderSireRank();                                  /* 种马榜走势数据独立（JBIS 跨站引用），与 stats.json 并行加载 */
+  }
   YJ.cache.fetch("stats").then(function (data) {
     STATS = data;
     renderAll();

@@ -1,4 +1,4 @@
-/* 云迹 · 血统渲染（Tailwind 版）
+/* 血统渲染（Tailwind 版）
  * 逻辑与原版完全一致（简约 2 代 / 完整 5 代 / 弹窗）；
  * 视觉全部用 Tailwind utility 类实现，grid-row 动态值走 inline style。
  * API 与原版相同：

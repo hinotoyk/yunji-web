@@ -48,6 +48,7 @@
 <script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../yj-cap.js"></script>
 <script src="../loading.js"></script>
 <script src="../i18n.js"></script>
 <script src="../race-rows.js"></script>
@@ -503,9 +504,22 @@ function renderOverview(hs){
     '<div id="ovStats" class="flex min-h-full flex-col gap-4">'+
       '<div class="rounded-[10px] border border-border bg-card p-6 max-md:p-4">'+
         '<div class="text-[17px] font-bold">{{YJ_SITE_NAME}} · {{YJ_SITE_SUBTITLE}}</div>'+
-        '<div class="mt-1.5 text-[13px] text-muted-foreground">{{YJ_SITE_TAGLINE}}</div>'+
-      '</div>'+statHTML+
+        '<div class="mt-1.5 text-[13px] text-muted-foreground">{{YJ_COPY_INTRO}}</div>'+
+      '</div>'+
+      /* 「关于本站」可选区块（P1-1）：文案源 = config/sire.json 的 site.copy.about，
+         空 → 下面 ovAboutInit() 把整块摘掉（不留空白间距）。建议在这里写应援缘起 + 数据来源一句话。 */
+      '<section id="ovAbout" hidden class="rounded-[10px] border border-border bg-card p-6 max-md:p-4">'+
+        '<div class="text-[13px] font-bold text-secondary-foreground">关于本站 · ABOUT</div>'+
+        '<div class="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{{YJ_COPY_ABOUT}}</div>'+
+      '</section>'+statHTML+
     '</div>';
+  /* 关于区块显隐：文案为空 = 整块移除（不是留个空卡片）；非空 = 去掉 hidden */
+  (function(){
+    var ab=document.getElementById("ovAbout"); if(!ab) return;
+    var txt=(YJ_SITE.copy&&YJ_SITE.copy.about)||"";
+    if(!txt){ if(ab.parentNode) ab.parentNode.removeChild(ab); return; }
+    ab.hidden=false;
+  })();
 
   paintAll(true);
   /* 数字滚动（§157）：仅首次渲染跑一遍（rAF 统一时间轴，ease-out cubic 650ms）；

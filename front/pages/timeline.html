@@ -23,6 +23,7 @@
 <script src="../site-config.js"></script>
 <script src="../data-config.js"></script>
 <script src="../yj-util.js"></script>
+<script src="../yj-cap.js"></script>
 <script src="../i18n.js"></script>
 <script src="../yj-cache.js"></script>
 <script src="../loading.js"></script>
@@ -44,7 +45,7 @@ if(YJ.util.editUnlocked()){ var ee=document.getElementById("editEntry"); if(ee) 
  * 一场比赛 = 一条事件（绝不按标签拆行），该场触发的所有里程碑以标签徽章并列展示；纯展示无筛选。
  * 事件规则（详见 build_timeline.py）：
  *   1. 全局级别首胜（每级别全站仅一次）  1b. 世代新马首胜  2. 全局重赏序数（重赏首胜/重赏第N胜/G2第N胜，跨马累计；级别第1胜=首胜不重复挂）  3. 世代重赏首胜（中央）
- *   4. 父子制覇（飞机云同胜）  5. 受赏 —— 同一场比赛可同时触发多枚徽章。
+ *   4. 父子制覇（父马同胜）  5. 受赏 —— 同一场比赛可同时触发多枚徽章。
  * 渲染：时间自下而上（最新在顶；同日按発走晚者在顶——后端已按 日期→同日発走（缺失视为最大） 升序
  *       输出，同 races.html 模块 33），年份分组降序；中央轴卡片左右交替，图位（横A4比例）恒贴时间轴一侧。
  * 赛事名（race.name）：后端已剥掉徽章代劳的等级尾缀（见 build_timeline.py strip_grade_suffix），

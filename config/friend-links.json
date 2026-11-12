@@ -1,0 +1,29 @@
+{
+  "_about": "「站群导航」友链注册表（构建期注入 window.YJ_FRIENDS，渲染 = front/public/friend-links.js）。数组为空 / 文件缺失 = 侧栏不出现该分组（挂载点保持空白）。字段：id（必填，与本站 site.id 相同者渲染时自动排除）、logo、color、name、sub、url、desc。",
+  "sites": [
+    {
+      "id": "yunji", "logo": "雲", "color": "#0aa7a0",
+      "name": "云迹", "sub": "云崽档案",
+      "url": "https://www.yunji.xyz/",
+      "desc": "コントレイル 产驹档案"
+    },
+    {
+      "id": "kzn", "logo": "絆", "color": "#0aa7a0",
+      "name": "絆", "sub": "绊崽档案",
+      "url": "https://hinotoyk.github.io/kzn-web/dist/",
+      "desc": "キズナ 产驹档案"
+    },
+    {
+      "id": "jbis", "logo": "LS", "color": "#0aa7a0",
+      "name": "JBIS LS Rank榜", "sub": "",
+      "url": "https://hinotoyk.github.io/jbis-sire-rank-history/",
+      "desc": "每日快照"
+    },
+    {
+      "id": "rc", "logo": "RC", "color": "#0aa7a0",
+      "name": "Racing Calendar", "sub": "",
+      "url": "https://hinotoyk.github.io/racing-calendar/",
+      "desc": "一键生成出马表"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-/* 云迹 · 跨 iframe 共享选中马（bus）
+/* 跨 iframe 共享选中马（bus）
  * 目标：profile 页内嵌 races 页时，选中马自动联动，不重载 iframe。
  * 机制：
  *   - broadcast(id)   : 写入 sessionStorage + postMessage 广播给父/子
@@ -8,7 +8,7 @@
  *   YJ.bus.broadcast(3);
  *   YJ.bus.onChange(function(id){ ... });   // 返回取消函数
  *
- * ⚠ 载体必须是 sessionStorage 而非 localStorage（后者同源全局共享，会在别的标签页触发 storage 事件把内嵌比赛记录串掉）：完整根因与实测见 `docs/UI优化记录.md` §62。
+ * ⚠ 载体必须是 sessionStorage 而非 localStorage（后者同源全局共享，会在别的标签页触发 storage 事件把内嵌比赛记录串掉）：完整根因与实测见 `docs/DESIGN.md` §62。
  */
 window.YJ = window.YJ || {};
 YJ.bus = (function () {

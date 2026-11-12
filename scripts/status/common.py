@@ -4,7 +4,7 @@
 
 2026-10（用户定稿）：独立于 basic/races 两管线的日频任务——JRA 抹消/去向/地方调教师追踪。
 数据源 = NAR 竞走馬一覧/馬详情 + keibabook 抹消馬簿/馬検索/近況履歴；直写 data/basic.json
-的抹消组四键 + 調教師（合并持久化语义见 core/manual.apply_overrides / docs/pipeline.md §4）。
+的抹消组四键 + 調教師（合并持久化语义见 core/manual.apply_overrides 与 README「维护与排障」）。
 业务隔离：status 不 import basic/races 的任何业务模块。
 """
 import sys

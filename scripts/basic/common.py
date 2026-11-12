@@ -6,7 +6,7 @@
 薄再导出；本管线特有的风控口径（DOMAIN_SLEEP / STRIP_BASES）仍由这里持有并以形参注入
 中立层 net（net 不含管线概念）。业务隔离：basic 不 import races 的任何业务模块。
 
-设计原则与并发架构见 docs/pipeline.md，basic.json 字段契约见 docs/SCHEMA.md。
+设计原则与并发架构见 README「维护与排障」，basic.json 字段契约见 docs/SCHEMA.md。
 """
 import functools
 import sys

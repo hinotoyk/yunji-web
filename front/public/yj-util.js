@@ -1,5 +1,5 @@
 /* ============================================================
- * 云迹 · 页面级小工具（YJ.util）—— 单一出处
+ * 页面级小工具（YJ.util）—— 单一出处
  * ------------------------------------------------------------
  * esc()：HTML 文本转义。原本在 6 个页面里各复制了一份
  *   （其中 timeline/datechart 的副本已漂移成 `>` 无操作），现收敛于此。
@@ -132,9 +132,9 @@ YJ.util = (function () {
 
   /* ---------------- 站点命名空间（2026-10-26 §105 双仓同改） ----------------
    * 动因：localStorage/Cache API/IndexedDB 全按 origin（协议+域名+端口，路径无关）隔离，而两仓
-   * （kzn/yunji）编辑台键名相同 → 2026-11 起两站端口分开（yunji 9090 / kzn 9091，单源 = 各仓
+   * （两站）编辑台键名相同 → 2026-11 起两站端口分开（各站一个号，单源 = 各仓
    * serve.config.json）后才天然不同源；此前同端口（如 127.0.0.1:8090）先后服务两站 = 同源共用一份存储，
-   * PAT/草稿/数据缓存互相串（实测：kzn 编辑台回显出贴在 yunji 侧的 PAT）。定稿：站点级键全部加
+   * PAT/草稿/数据缓存互相串（实测：B 站编辑台回显出贴在 A 站的 PAT）。定稿：站点级键全部加
    * 站点 id 前缀，单源 = site-config 的 YJ_SITE.id（config/sire.json site.id）；缺省回退 "yj"（旧无
    * 前缀键，站点配置缺失时的兜底）。
    * ⚠ 必须调用时求值：yj-util 在 stats/datechart/races 页先于 site-config.js 执行，加载期读
@@ -148,27 +148,37 @@ YJ.util = (function () {
    * 编辑入口显隐）共用；2026-11-01 起 ?edit=1 URL 开关彻底废除。
    * ⚠ 调用时求值（理由同 storeKey），且 iframe 与外壳同源共享 localStorage → 子页直开同样生效。 */
   function editUnlocked() {
+    if (!ghRepo()) return false;   /* P0-5：未配 site.repo = 编辑功能整体关闭（fail-closed，见 ghRepo 注释） */
     try { return !!((localStorage.getItem(storeKey("gh.token")) || "").trim()); } catch (e) { return false; }
   }
 
   /* ---------------- 本站仓库 + PAT 有效性校验（§190 · 三处共用后收口） ----------------
-   * repo 常量原先散落三份（editor.js `GH_REPO` / index.html `EG_REPO` / 编辑页门禁），
-   * 2026-11-11 收口于此：换子项目（kzn 等）只改这一行。
-   * verifyPat = GitHub API `GET /repos/<repo>`（fine-grained PAT 的 metadata:read 为必选权限）：
+   * repo 原先散落三份（editor.js `GH_REPO` / index.html `EG_REPO` / 编辑页门禁），
+   * 2026-11-11 收口于此，2026-11-12 再进一步：**值来自 config/sire.json 的 site.repo**
+   * （构建期注入 window.YJ_SITE.repo，P0-5 开源化）。换子项目/给 fork 换仓库只改 JSON。
+   * ⚠ 调用时求值（理由同 storeKey）：stats/datechart/races 页 yj-util 先于 site-config.js 执行。
+   * ⚠ 空值语义 = fail-closed（不是回退到原作者的仓库）：editUnlocked 恒 false → 侧栏不注入编辑组、
+   *   编辑页整页换成「未配置编辑仓库」卡片、外壳 logo 三连点打不开对话框。fork 忘配的表现是
+   *   「没有编辑功能」，绝不能是「拿原作者的仓库去校验我的 PAT」。 */
+  function ghRepo() { return (window.YJ_SITE && YJ_SITE.repo) || ""; }
+
+  /* verifyPat = GitHub API `GET /repos/<repo>`（fine-grained PAT 的 metadata:read 为必选权限）：
    *   200 → 有效且属本站仓库；401 → token 错；403/404 → 有效但非本站仓库（双站防串）；
-   *   status 0 → 压根没连上 GitHub（不是 token 的错，调用方不得据此清 token）。
+   *   status 0 → 压根没连上 GitHub（不是 token 的错，调用方不得据此清 token）；
+   *   status -2 → 本站没配置 site.repo（编辑功能关闭，不发任何请求）。
    * ⚠ 已知局限（§168）：只证「有读权限」—— read-only PAT 能解锁，提交时才会失败。 */
-  var GH_REPO = "hinotoyk/yunji-web";
   function verifyPat(token) {
+    var repo = ghRepo();
     var t = String(token == null ? "" : token).trim();
+    if (!repo) return Promise.resolve({ ok: false, status: -2, msg: "本站未配置编辑仓库（config/sire.json 的 site.repo），编辑功能已关闭。" });
     if (!t) return Promise.resolve({ ok: false, status: -1, msg: "请先粘贴 PAT。" });
-    return fetch("https://api.github.com/repos/" + GH_REPO, {
+    return fetch("https://api.github.com/repos/" + repo, {
       headers: { "Authorization": "Bearer " + t, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
     }).then(function (r) {
       if (r.status === 200) return { ok: true, status: 200, token: t };
       if (r.status === 401) return { ok: false, status: 401, msg: "PAT 不正确（401）：请检查是否复制完整。" };
       if (r.status === 403 || r.status === 404) {
-        return { ok: false, status: r.status, msg: "该 PAT 无权访问本站仓库 " + GH_REPO + "：请确认粘贴的是本站仓库的 fine-grained PAT（另一站点的令牌也会被拒绝）。" };
+        return { ok: false, status: r.status, msg: "该 PAT 无权访问本站仓库 " + repo + "：请确认粘贴的是本站仓库的 fine-grained PAT（另一站点的令牌也会被拒绝）。" };
       }
       return { ok: false, status: r.status, msg: "GitHub 返回 HTTP " + r.status + "，请稍后再试。" };
     }, function () {
@@ -202,7 +212,10 @@ YJ.util = (function () {
     siteId: siteId, storeKey: storeKey, editUnlocked: editUnlocked, canon: canon, effEqual: effEqual,
     splitName: splitName, nameKind: nameKind, fallbackName: fallbackName,
     mainName: mainName, sexOf: sexOf, statusChain: statusChain,
-    GH_REPO: GH_REPO, verifyPat: verifyPat };
+    verifyPat: verifyPat };
+  /* GH_REPO 保持属性形态（editor.js 等调用点零改动），但改成惰性 getter 读 site.repo：
+   * 与 DRAFT_KEY 同理由 —— 加载期 YJ_SITE 可能还不存在。 */
+  Object.defineProperty(api, "GH_REPO", { get: ghRepo });
   Object.defineProperty(api, "DRAFT_KEY", { get: function () { return storeKey("edit.drafts.v1"); } });
   return api;
 })();

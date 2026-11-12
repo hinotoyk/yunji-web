@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""中立层配置加载：读 config/sire.json（全站唯一事实源：种马 + 品牌 + 台账，契约见 docs/子项目复制与同步指南.md §1.1）。
+"""中立层配置加载：读 config/sire.json（全站唯一事实源：种马 + 品牌 + 台账，字段契约见该文件内注释）。
 
 定位与 constants.py 同级：纯 stdlib（json + pathlib），不 import 任何管线，管线 import 它。
 - 文件缺失/损坏 → sys.exit 显式报错（新项目漏配置第一时间暴露，不让管线静默跑错）；
@@ -12,6 +12,7 @@
 """
 import json
 import sys
+from datetime import date
 
 from core import constants
 
@@ -36,7 +37,7 @@ def load():
         raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8-sig"))   # utf-8-sig: 兼容带 BOM
     except FileNotFoundError:
         sys.exit(f"❌ 配置缺失: {CONFIG_PATH}"
-                 f"（新项目请先按 docs/子项目复制与同步指南.md §1.1 创建 config/sire.json）")
+                 f"（新项目请先按 README「配置即站点身份」创建 config/sire.json）")
     except (OSError, ValueError) as e:          # json.JSONDecodeError ⊂ ValueError
         sys.exit(f"❌ 配置文件损坏/不可读: {CONFIG_PATH}: {e}")
     if not isinstance(raw, dict):
@@ -137,3 +138,49 @@ def ledger_url():
     if isinstance(section, dict):
         return str(section.get("url") or "").strip()
     return ""
+
+
+def progeny_years():
+    """sire.progeny_years —— S8，建档/回写要处理的产驹生年（P0-4，2026-11-12）。
+
+    语义 = **只抓列出的生年**：未出生 / 未登记 / 尚无产驹的年份不写进来即可，天然满足
+    「没到时间不拉」。返回升序字符串数组（管线 URL 拼装与 CLI `--year` 同口径）。
+
+    校验（不静默降级——年份写错的表现是「建档 0 匹 / 漏整代」且不报错，属最难查的一类坑）：
+      缺字段 / 空数组          → sys.exit（新克隆仓库漏配立刻暴露）
+      非整数 / 非数字字符串    → sys.exit
+      年份 < 1980              → sys.exit（显眼的手滑值）
+      年份 > 当前年            → warning + 跳过该年（防手滑写 2027 白跑整轮），其余年份照跑
+      全部被跳过               → sys.exit
+    """
+    v = _sire().get("progeny_years")
+    where = "config/sire.json 的 sire.progeny_years"
+    if v is None:
+        sys.exit(f"❌ 缺少 {where}（例：\"progeny_years\": [2023, 2024]）。"
+                 f"语义 = 只抓这些生年；字段说明见 config/sire.json 内注释与 README「配置即站点身份」")
+    if not isinstance(v, list) or not v:
+        sys.exit(f"❌ {where} 必须是非空数组（例：[2023, 2024]），当前：{v!r}")
+    now = date.today().year
+    out, seen, skipped = [], set(), []
+    for item in v:
+        if isinstance(item, bool):      # bool ⊂ int，先挡掉，防 true 被当成 1 年
+            sys.exit(f"❌ {where} 含非整数项 {item!r}（应写四位数年份，如 2023）")
+        if isinstance(item, int):
+            y = item
+        elif isinstance(item, str) and item.strip().isdigit():
+            y = int(item.strip())
+        else:
+            sys.exit(f"❌ {where} 含非整数项 {item!r}（应写四位数年份，如 2023）")
+        if y < 1980:
+            sys.exit(f"❌ {where} 含明显不合理的年份 {y}（< 1980）。请检查是否手滑。")
+        if y > now:
+            _warn(f"progeny_years.{y}", f"{where} 含未来年份 {y}（当前 {now}）→ 已跳过该年")
+            skipped.append(y)
+            continue
+        if y not in seen:
+            seen.add(y)
+            out.append(str(y))
+    if not out:
+        sys.exit(f"❌ {where} 的年份全部无效（{skipped} 均晚于当前年 {now}）→ 无从建档。"
+                 f"请只写已出生/已登记的生年。")
+    return sorted(out)

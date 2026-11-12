@@ -7,7 +7,7 @@
   --basic       基本数据增量：新马对账建档(--year) + 补缺(血统/nk_id/意味/详情) + merge
   --races       比赛数据增量：详情更新+判变 → 成绩增量(SP页含格/条件/調教師/本賞金) → 台账海外 → 合并
   --horse id    定向更新：只处理指定 id 的马（详情更新 + 成绩增量 + 台账海外 + 合并；
-                台账环防「海外台账马 races 文件丢失后被成绩页 0 场误判为空」——见 docs/TESTING.md §4 边界）
+                台账环防「海外台账马 races 文件丢失后被成绩页 0 场误判为空」——见 README「维护与排障」）
   --races-force 比赛全量刷新：全部马重抓成绩页（覆盖式重建，历史数据修正用；已有记录缺失字段一并回填）
   --day YYYYMMDD[,..]  按指定日期快速更新：当天全部比赛(SP 结果页)→按 nk_id 匹配库内马→抓命中场并入库。
                        比 --races 快（不依赖 netkeiba 马匹成绩页滞后，当天出结果即抓）；支持多日期、--jra-only。
@@ -63,6 +63,12 @@ FULL_TEST = ROOT / "run_full_test.py"
 LOG_DIR = ROOT / "test-logs"
 PY = sys.executable
 
+"""单步子进程超时（秒）。产驹多的种马全量重建会被掐断时调大它（参考 kzn ~1221 匹用 28800s = 8h）。
+★ 不按马数自动算（P1-6 决策）：抓取耗时受网络/站点风控影响，自动算出来的值只会给人虚假安全感
+  —— 宁可显式调大 + 启动时把当前值和马数打出来。--init 转交 run_full_test.py，那边另有自己的超时常量。"""
+STEP_TIMEOUT = 10800
+TIMEOUT_HINT_HORSES = 400
+
 TS = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 LOG_FILE = LOG_DIR / f"update-{TS}.log"
 results = []
@@ -77,15 +83,33 @@ def log(msg="", echo=True):
         print(line, flush=True)
 
 
+def startup_notice():
+    """启动自检（P1-6）：打印单步超时 + 库内马数，马多时提醒调大超时。
+
+    为什么只提醒不自动算：抓取耗时受网络抖动与目标站风控影响，按马数乘系数算出来的值
+    在坏天气里仍会被掐断，反而让人以为是「配置够了」。显式常量 + 现场可见，才不会查错方向。"""
+    n = None
+    try:
+        with open(DATA / "basic.json", "r", encoding="utf-8") as f:
+            n = len((json.load(f) or {}).get("horses") or [])
+    except Exception:
+        pass                                   # 首次运行还没有 basic.json：正常，不必报错
+    log(f"单步超时 {STEP_TIMEOUT}s（{STEP_TIMEOUT // 3600}h）· 库内马数 "
+        f"{n if n is not None else '未知（尚无 data/basic.json）'}")
+    if n and n > TIMEOUT_HINT_HORSES:
+        log(f"⚠ 产驹较多（{n} 匹）：全量重建若被掐断（出现「✗ 超时」），把 run_update.py 顶部的 "
+            f"STEP_TIMEOUT 调大（kzn ~1221 匹用 28800s），或拆成 --basic / --races 分次跑。")
+
+
 def run_step(name, script, *args, exe=None):
     """跑一步子进程（默认 python，exe="node" 跑断言脚本），失败不中断后续步骤（返回码交给调用方决策）。"""
     log(f"\n───── [{name}] {Path(script).name} {' '.join(args)} ─────", echo=False)
     t0 = time.time()
     try:
         r = subprocess.run([exe or PY, str(script), *args], capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=10800)
+                           encoding="utf-8", errors="replace", timeout=STEP_TIMEOUT)
     except subprocess.TimeoutExpired:
-        log(f"✗ [{name}] 超时(10800s)")
+        log(f"✗ [{name}] 超时({STEP_TIMEOUT}s)")
         results.append((name, -1, time.time() - t0))
         return -1, time.time() - t0
     except OSError as e:
@@ -170,6 +194,7 @@ def main():
     args = ap.parse_args()
 
     log(f"══ 更新开始 {TS} · 策略: {next(k for k in ('init','basic','races','horse','races-force','day','check','ledger','video','ci') if getattr(args, k.replace('-', '_')))} ══ 日志: {LOG_FILE}")
+    startup_notice()
 
     def lim():
         return ["--limit", str(args.limit)] if args.limit else []

@@ -4,7 +4,9 @@
 
 业务规则：
   - 唯一性 = (母名, 生年)：同一母马同年只建一档。母名清洗掉产地括注（如 (GER)/(USA)）。
-  - 年份走数组 YEARS，自由添加（当前 ["2023","2024"]；2025/2026 未出赛，可后续补）。
+  - 年份走数组 YEARS，来源 = config/sire.json 的 sire.progeny_years（P0-4，2026-11-12 起
+    不再硬编码；语义 = 只抓列出的生年，未出生/未登记的年份不写进配置即可）。
+    `--year 2023,2025` 可临时覆盖（不入配置）。
   - 每个年份约 2 次请求（items=100，分页翻到底）。
   - 已存在（同 jbis_id 或 同 (母名,生年)）则跳过 —— 兼容手动在 basic.json 加好的马。
   - 建档后分配自增业务主键 id（从 1 开始），后续所有关联（血统/studbook/netkeiba）都用 id 关联。
@@ -22,7 +24,9 @@ import time
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
 import common
 
-YEARS_DEFAULT = ["2023", "2024"]
+# 产驹生年：单一出处 = config/sire.json 的 sire.progeny_years（common 已再导出 sire_config）。
+# 不在模块加载期求值（访问器会 sys.exit，导入本模块的其它脚本不该被配置问题连带炸）。
+YEARS_SOURCE = "config/sire.json · sire.progeny_years"
 
 # 标准字段模板（建档即初始化，默认 ""）：单一出处 core/basic_io.BASIC_FIELDS → common.BASIC_TEMPLATE。
 BASIC_TEMPLATE = common.BASIC_TEMPLATE
@@ -46,18 +50,20 @@ def is_unnamed(name):
     return s == ""
 
 
-def print_urls():
-    """C4 真离线验证（docs/REFACTOR.md §6.3）：换种马 ID 后离线核对産駒列表 URL 拼装。
+def print_urls(years):
+    """C4 真离线验证（docs/REFACTOR.md §6.3）：换种马 ID / 改生年后离线核对列表 URL 拼装。
 
     按 fetch_progeny（JBIS，含 .replace("#","") 剥锚点 + &page= 追加）与
     fetch_nk_id.fetch_list_all（netkeiba）的真实首页拼装形态打印，打印后直接返回，
-    不联网、不写盘。"""
-    jbis_first = (common.JBIS_PROGENY_URL.format(sid=common.JBIS_SIRE_ID, year="2023")
-                  .replace("#", "") + "&page=1")
+    不联网、不写盘。生年数组**逐个年份打印**（验收用：改 sire.progeny_years 后这里应只出配置年份）。"""
+    print(f"生年数组（{YEARS_SOURCE}）: {','.join(years)}")
+    print("JBIS 産駒一覧（fetch_progeny 首页形态，每年一条）:")
+    for y in years:
+        jbis_first = (common.JBIS_PROGENY_URL.format(sid=common.JBIS_SIRE_ID, year=y)
+                      .replace("#", "") + "&page=1")
+        print(f"  [{y}] {jbis_first}")
     nk_first = common.NK_LIST_URL.format(sid=common.NK_SIRE_ID, page=1)
-    print("JBIS 産駒一覧（fetch_progeny 首页形态）:")
-    print(f"  {jbis_first}")
-    print("netkeiba 産駒列表（fetch_nk_id.fetch_list_all 首页形态）:")
+    print("netkeiba 産駒列表（fetch_nk_id.fetch_list_all 首页形态；该列表不按年筛选，抓全量后按生年过滤）:")
     print(f"  {nk_first}")
 
 
@@ -145,16 +151,18 @@ def build(years, dry_run=False):
 
 def main():
     ap = argparse.ArgumentParser(description="JBIS 建档 → basic.json")
-    ap.add_argument("--year", default=",".join(YEARS_DEFAULT),
-                    help="年份数组，逗号分隔，如 2023,2024")
+    ap.add_argument("--year", default=None,
+                    help="年份数组，逗号分隔，如 2023,2024（缺省 = " + YEARS_SOURCE + "）")
     ap.add_argument("--dry-run", action="store_true", help="只打印不写入")
     ap.add_argument("--print-urls", action="store_true",
                     help="只打印 JBIS/netkeiba 産駒列表 URL 拼装样例后返回（离线核对，不联网不写盘）")
     args = ap.parse_args()
     if args.print_urls:
-        print_urls()
+        print_urls(common.sire_config.progeny_years() if not args.year
+                   else [y.strip() for y in args.year.split(",") if y.strip()])
         return
-    years = [y.strip() for y in args.year.split(",") if y.strip()]
+    years = ([y.strip() for y in args.year.split(",") if y.strip()] if args.year
+             else common.sire_config.progeny_years())
     build(years, dry_run=args.dry_run)
 
 

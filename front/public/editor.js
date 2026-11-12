@@ -1,4 +1,4 @@
-/* 云迹 · 编辑链路（YJ.editor）：M2a 五字段 + M2b 图片 + M2c 时间线人工节点；表单 + 校验 + 草稿 + 调 writer。
+/* 编辑链路（YJ.editor）：M2a 五字段 + M2b 图片 + M2c 时间线人工节点；表单 + 校验 + 草稿 + 调 writer。
  * 双形态（2026-09 定稿）：mode "local" = edit_server 在线，直接保存（原管道不变）；
  * mode "draft" = 其余情况（线上打开 / 本地没开服务），编辑进浏览器草稿箱（字段 localStorage + 图片 IndexedDB），
  * 攒够一次性走 GitHub API 提交（Git Data API 单原子 commit，PAT 存 localStorage）→ push main 触发 CI（deploy.yml
@@ -24,7 +24,7 @@ YJ.editor = (function () {
   /* repo 常量单一出处 = yj-util.js（§190 收口）：页面必先引 yj-util.js，此处只取引用，不再各存字面量 */
   var GH_REPO = YJ.util.GH_REPO, GH_BRANCH = "main";
   var GH_API = "https://api.github.com";
-  /* §105 站点前缀键：同源本地双站（kzn/yunji）不串。**一律调用时求值**——加载期读 YJ_SITE 可能还是
+  /* §105 站点前缀键：同源本地双站不串。**一律调用时求值**——加载期读 YJ_SITE 可能还是
    * undefined（页面脚本顺序），会静默退回旧共享键；改后任何加载顺序都安全。 */
   function tokenKey() { return YJ.util.storeKey("gh.token"); }
   function blobDbName() { return YJ.util.storeKey("edit-blobs"); }
@@ -340,7 +340,7 @@ YJ.editor = (function () {
   function ghSaveToken(t) { try { localStorage.setItem(tokenKey(), String(t || "").trim()); } catch (e) { /* ignore */ } }
   function ghClearToken() { try { localStorage.removeItem(tokenKey()); } catch (e) { /* ignore */ } }
   /* §105 切换说明：旧版把 PAT 记在无前缀的 yj.gh.token（两站共用一份，可能存的是另一站仓库的令牌）。
-   * 站点前缀上线后**不自动继承**——避免把 kzn 的 PAT 装进 yunji（推送会 403/Action 失败）；
+   * 站点前缀上线后**不自动继承**——避免把 A 站的 PAT 装进 B 站（推送会 403/Action 失败）；
    * 有旧值且当前站未配时，在「连接 GitHub」面板提示重贴一次。 */
   function legacyTokenNote() {
     if (ghToken()) return "";
@@ -889,7 +889,7 @@ YJ.editor = (function () {
     return (p && /^\d{2,5}$/.test(p)) ? p : DEFAULT_PORT;
   }
 
-  /* 页面本身跑在本机（127.0.0.1 / localhost）才去探测 edit_server；线上页面（https://www.yunji.xyz）
+  /* 页面本身跑在本机（127.0.0.1 / localhost）才去探测 edit_server；线上页面（正式域名）
    * 一律不跨源探测 —— Chrome 142+ 的本地网络限制会拦且要弹权限（2026-09 改案：线上直接走草稿箱模式） */
   function isLocalPage() {
     return /^(127\.0\.0\.1|localhost)$/.test(String(location.hostname || ""));
@@ -1797,7 +1797,7 @@ YJ.editor = (function () {
         esc(photoName(p)) + (m.bytes ? " · " + kb(m.bytes) : "") + "</span>" +
       "</li>";
   }
-  /* §150 照片区（docs/UI优化记录.md §150）：瓦片网格 + 末尾「＋」加号格（点击上传 / 外部文件拖入 /
+  /* §150 照片区（docs/DESIGN.md §150）：瓦片网格 + 末尾「＋」加号格（点击上传 / 外部文件拖入 /
    * Ctrl+V 粘贴）；外链导入收进工具行小钮（state.photos.open 面板复用）。
    * 草稿链路（uploadQueue / persistPhotosOf / IndexedDB）零改动，纯展示层重排。 */
   function photosHTML() {
@@ -2720,7 +2720,7 @@ YJ.editor = (function () {
         (state.ghPanel
           ? '<div class="mt-2 rounded-md bg-muted/40 p-2.5">' +
               '<div class="text-[11px] leading-[1.6] text-muted-foreground">GitHub → Settings → Developer settings → Fine-grained tokens：' +
-              "仅勾 <b class=" + '"text-secondary-foreground"' + ">yunji-web</b> 仓库 · Permissions 勾 <b class=" + '"text-secondary-foreground"' + ">Contents: Read and write</b>（建议 90 天有效期）。</div>" +
+              "仅勾 <b class=" + '"text-secondary-foreground"' + ">" + esc(GH_REPO) + "</b> 仓库 · Permissions 勾 <b class=" + '"text-secondary-foreground"' + ">Contents: Read and write</b>（建议 90 天有效期）。</div>" +
               '<div class="mt-1.5 flex items-center gap-1.5">' +
                 '<input id="ghTokenInput" type="password" value="" placeholder="github_pat_…" autocomplete="off" class="' + INPUT + ' h-8 min-w-0 flex-1 font-normal">' +
                 '<button id="ghTokenSave" class="' + BTN_PRIMARY + '" type="button">保存</button>' +

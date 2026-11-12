@@ -19,7 +19,14 @@
   "use strict";
   var U = window.YJ && YJ.util;
   if (!U || typeof U.editUnlocked !== "function" || typeof U.verifyPat !== "function") return;  /* 依赖缺失：不锁死页面 */
-  if (U.editUnlocked()) return;                                                               /* 已解锁：放行 */
+  /* 编辑台关闭的**两个门（AND，任一关即关）**，本页不是「等你粘 PAT」，而是「这座站没有编辑台」：
+   *   ① site.repo 未配（P0-5，fail-closed：不回退到别人的仓库）；
+   *   ② config/features.json 的 editor=false（L2 可选挂载，2026-11-12）。
+   * 两者文案不同、都要出现 —— 给 fork 访客一个「请粘贴 xx 的 PAT」输入框是最糟的提示。 */
+  var REPO = U.GH_REPO || "";
+  var CAPS = (window.YJ_SITE && window.YJ_SITE.features) || null;
+  var CAP_OFF = !!(CAPS && CAPS.editor === false);
+  if (!CAP_OFF && REPO && U.editUnlocked()) return;                                           /* 已解锁且能力开着：放行 */
 
   /* ① 先锁可见性：body 仍在解析中，用 html 级属性 + 内联样式（不依赖 Tailwind 是否已编译到） */
   try { document.documentElement.setAttribute("data-yj-locked", "1"); } catch (e) {}
@@ -28,6 +35,30 @@
     "html[data-yj-locked] body #yj-gate{visibility:visible!important}" +
     "html[data-yj-locked] body{overflow:hidden!important}";
   (document.head || document.documentElement).appendChild(st);
+
+  if (CAP_OFF || !REPO) {
+    /* 关闭原因只按实际条件拼，两种原因的修复动作完全不同（改 features.json vs 配 site.repo） */
+    var why = CAP_OFF
+      ? "本站未启用编辑台（<code>config/features.json</code> 的 <code>&quot;editor&quot;: false</code>）。"
+      : "本站未配置编辑仓库（<code>config/sire.json</code> 的 <code>site.repo</code>），编辑功能整体关闭。";
+    document.addEventListener("DOMContentLoaded", function () {
+      var box = document.createElement("div");
+      box.id = "yj-gate";
+      box.className = "fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4";
+      box.innerHTML =
+        '<div class="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl">' +
+          '<div class="mb-1 text-[15px] font-semibold">编辑台 · 已关闭</div>' +
+          '<p class="mb-4 text-[12.5px] leading-relaxed text-muted-foreground">' + why + "</p>" +
+          '<div class="flex items-center justify-end">' +
+            '<a href="../index.html" class="rounded-lg bg-primary px-3.5 py-1.5 text-[13px] font-semibold text-primary-foreground transition hover:bg-primary/90">返回站点</a>' +
+          "</div>" +
+        "</div>";
+      var body = document.body;
+      while (body.firstChild) body.removeChild(body.firstChild);
+      body.appendChild(box);
+    });
+    return;
+  }
 
   /* ② DOM 就绪后把 body 换成门禁卡片（编辑 UI 与数据面板不再呈现给访客） */
   document.addEventListener("DOMContentLoaded", function () {

@@ -1,5 +1,5 @@
 /* ============================================================
- * 云迹 · 正式前端主题（Vite + Tailwind）
+ * 正式前端主题（Vite + Tailwind）
  * 方案 F 青绿 × shadcn Neutral 底色（仅亮色）
  * 本文件是 Tailwind 输入：@tailwind 指令 + 字体 + 基础组件类
  * 所有页面 <link rel="stylesheet" href="theme.css"> 共享编译产物
@@ -305,7 +305,7 @@
   .yj-vtoast{ @apply fixed left-1/2 top-6 z-[400] -translate-x-1/2 rounded-lg bg-foreground px-4 py-2 text-[12px] font-medium text-background shadow-lg; }
 
   /* ---------- 编辑台（只有 pages/edit.html + edit-timeline.html + public/editor.js 用）----------
-   * 2026-10 v3「工作台」改版（docs/UI优化记录.md §87）：参考成熟编辑菜单的分组语言——
+   * 2026-10 v3「工作台」改版（docs/DESIGN.md §87）：参考成熟编辑菜单的分组语言——
    * 页首「编辑」分段导航（✎ 基本信息 / ⌇ 航迹线）、状态沉默化（沉默 = 与官方一致，不亮牌）、
    * 中文标签为主 + 日文字段名降为次级。配色只用既有 token：primary 青绿 / chart3 橙（待保存）/
    * accent 浅青（已保存）/ muted / destructive，不新增 hex。
@@ -368,7 +368,7 @@
   .yj-ed-sechead { @apply w-full cursor-pointer select-none text-left; }
   .yj-ed-sec[data-open="false"] > .yj-ed-secbody { @apply hidden; }
 
-  /* §150 表单改版（docs/UI优化记录.md §150）：分组 + 两列网格。
+  /* §150 表单改版（docs/DESIGN.md §150）：分组 + 两列网格。
    * 字段 = 竖排 cell（标签行内联状态胶囊 + 「恢复官方值」小钮），组头青绿小标；
    * 状态着色下沉到控件描边（已保存浅青 · 待保存橙），沉默 = 官方一致无装饰。
    * 行标签 §94 定稿维持：只留中文名（日文字段键身份由 SCHEMA 承担，界面不再双写）。 */
@@ -464,7 +464,7 @@
   .yj-more-arr { @apply ml-px inline-block transition-transform duration-200; }
   .yj-more:hover .yj-more-arr { @apply translate-x-0.5; }
 
-  /* §150 照片网格（docs/UI优化记录.md §150）：120px 缩略图格（首图「封面」徽标 + 序号 + 悬停 ✕）
+  /* §150 照片网格（docs/DESIGN.md §150）：120px 缩略图格（首图「封面」徽标 + 序号 + 悬停 ✕）
    * + 末尾虚线「＋」加号格（点击上传 / 外部文件拖入 / Ctrl+V 粘贴）；容器拖入高亮 = .yj-ed-extdrop。 */
   .yj-ed-thumbs { @apply mt-2 flex list-none flex-wrap gap-2.5 p-0; }
   .yj-ed-thumb { @apply relative m-0 flex w-[120px] flex-none flex-col overflow-hidden rounded-[10px] border border-border bg-muted/20; }
