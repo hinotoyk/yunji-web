@@ -119,7 +119,7 @@
 - **性能**（2026-09-28）：races 压缩包 + 全站统一缓存控制器；字体 101 片分片 → 构建期按需子集 1 片（2026-09-20）。
 - **编辑台**（2026-09-29/30 → 2026-11-01）：草稿箱 + 线上单原子 commit；`?edit=1` 废除，改 PAT 校验解锁（§168）；编辑页整页门禁（§190，2026-11-11）。
 - **代码结构**（2026-xx）：取消「两管线互不 import」硬限制 → 「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 `core/constants.py`；新增 `net.bind()` 与 `runtime.install_lazy_http()`。
-- **开源化**（2026-11-12）：代码 MIT + 数据独立声明（LICENSE / NOTICE）；站点身份全部进 `config/`（`repo` / `analytics` / `cross_site` / `copy` / `progeny_years` / 友链），空值 = 关闭；构建期「本站身份」自检；页面能力表（`features.json` + `yj-cap.js`，关闭的能力仍构建以显示空态）；构建入口改目录派生。
+- **开源化**（2026-11-12）：代码 MIT + 数据独立声明（LICENSE / NOTICE）；站点身份全部进 `config/`（`repo` / `analytics` / `cross_site` / `progeny_years` / 友链），空值 = 关闭；构建期「本站身份」自检；页面能力表（`features.json` + `yj-cap.js`，关闭的能力仍构建以显示空态）；构建入口改目录派生。
 
 ## 11. UI 规格索引（正文归档在 git）
 

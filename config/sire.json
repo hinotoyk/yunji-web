@@ -29,11 +29,6 @@
     "cross_site": {
       "jbis_rank": "https://hinotoyk.github.io/jbis-sire-rank-history/",
       "racing_calendar": "https://hinotoyk.github.io/racing-calendar/"
-    },
-    "copy": {
-      "intro": "",
-      "about": "",
-      "footer_note": ""
     }
   },
   "ledger": { "url": "https://docs.google.com/spreadsheets/d/1PPasJnqqBQy_cbhXLDJ0V11CTUDJs6UBtRwe-nsCNfc/export?format=csv&gid=1454271910" }

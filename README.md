@@ -40,7 +40,7 @@ cd front && npm run build
 
 | 文件 | 管什么 | 空值语义 |
 |---|---|---|
-| `config/sire.json` | 种马档案（ID / 名称 / studbook / 父子制覇 wins / **`progeny_years`**）+ 站点身份（`site.id` / 品牌四件套 / `domains` / **`repo`** / **`analytics`** / **`cross_site`** / **`copy`**）+ 台账 URL | `repo` 空 = 编辑台关闭；`analytics` 空 = 统计静默；`cross_site` 空 = 对应跨站板块关闭；`copy` 空 = 用默认文案；`ledger.url` 空 = 台账环节跳过 |
+| `config/sire.json` | 种马档案（ID / 名称 / studbook / 父子制覇 wins / **`progeny_years`**）+ 站点身份（`site.id` / 品牌四件套 / `domains` / **`repo`** / **`analytics`** / **`cross_site`**）+ 台账 URL | `repo` 空 = 编辑台关闭；`analytics` 空 = 统计静默；`cross_site` 空 = 对应跨站板块关闭；`ledger.url` 空 = 台账环节跳过 |
 | `config/features.json` | **页面能力表**：哪些功能页挂载、哪些不挂 | 缺文件/缺键 = 全部启用；`"entries": false` = 关掉「出走马表」（侧栏入口消失、直连显示「本站未启用」） |
 | `config/friend-links.json` | 侧栏「站群导航」友链数组 | 空数组 = 分组不渲染 |
 | `config/video-sources.json` | B 站 UP 主 mid + 匹配正则 | `mid` 空 = 回放功能关闭 |
@@ -54,16 +54,6 @@ cd front && npm run build
 - `racing_calendar` → 出走马表页（组件来自 racing-calendar 站）。
 
 不配 = 该板块整体不出现（种马榜整节不渲染 / 出走表显示「未配置数据源」），**不会留半截或 404**。它们都是别人的站，fork 后默认不该继续抓原作者的部署。
-
-**文案承载位**（`site.copy`，都可空）：
-
-| 字段 | 用在哪 | 空时 |
-|---|---|---|
-| `intro` | 概览页（未选马）副标题 | 回退 `site.tagline` |
-| `about` | 概览页「关于本站」区块（建议写应援缘起 + 数据来源一句话） | 整块不出现 |
-| `footer_note` | 侧栏页脚「站名 · ___」 | 「数据仅供分享交流」 |
-
-多行文案用 `\n` 换行（构建期转成 `<br>`，其余字符做 HTML 转义，不会破版）。
 
 ### 可选功能（能力表）
 

@@ -119,8 +119,7 @@
     <div data-friend-links data-site="{{YJ_SITE_ID}}" data-skin="yj"></div>
 
     <div class="border-t border-border px-4 py-3 text-[12px] text-muted-foreground">
-      <!-- 页脚半句（P1-1）：默认「数据仅供分享交流」，可由 config/sire.json 的 site.copy.footer_note 覆盖 -->
-      {{YJ_SITE_NAME}} · {{YJ_COPY_FOOTER}}
+      {{YJ_SITE_NAME}} · 数据仅供分享交流
       <!-- 两端都显示（§85 第 8 条）：桌面 = 侧栏底部，手机 = ☰ 抽屉底部。
            站点访问量（GoatCounter 回填，§97 双线）：链接容器先 hidden（Tailwind），yj-visit.js 拉
            公开端点 counter/TOTAL.json 成功才改 display:inline；超时 5s / 失败 / 被拦截 → 一直隐藏，

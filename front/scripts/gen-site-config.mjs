@@ -84,18 +84,6 @@ export function siteVars() {
   const cs = (site.cross_site && typeof site.cross_site === "object" && site.cross_site) || {};
   const crossSite = { jbisRank: str(cs.jbis_rank).trim(), rc: str(cs.racing_calendar).trim() };
 
-  /* copy（P1-1，2026-11-12）：可承载的文案位。三项都可空，且**空 = 保持原样**（不破坏现有观感）：
-   *   intro       概览页副标题（空 → 回退 site.tagline，即旧行为）
-   *   footer_note 侧栏页脚那半句（空 → "数据仅供分享交流"）
-   *   about      概览页「关于本站」区块（空 → 整块不出现）
-   * 开源后的「数据免责与来源声明」建议写进 about（NOTICE 是给法律看的长文，about 是给读者看的一句话）。 */
-  const cp = (site.copy && typeof site.copy === "object" && site.copy) || {};
-  const copy = {
-    intro: str(cp.intro).trim(),
-    about: str(cp.about).trim(),
-    footerNote: str(cp.footer_note).trim()
-  };
-
   /* jbisId（2026-10-27）：sire 的 JBIS 马 ID（config/sire.json 的 sire.jbis_id；注意顶层键也叫
    * sire，故取 sire.sire.jbis_id），跨站引用 jbis-sire-rank-history derived 产物路径用
    * （stats.html 种马榜走势）；缺省 → ""。 */
@@ -112,7 +100,7 @@ export function siteVars() {
   }
   return {
     id, name, subtitle: str(site.subtitle), tagline: str(site.tagline), logo, domains,
-    repo, analytics, jbisId, sireName, crossSite, copy,
+    repo, analytics, jbisId, sireName, crossSite,
     /* 能力表（L2）：{capId: bool}。缺文件/缺键 = 全 true，见 features.cjs。 */
     features: FEATURES.inspect().caps
   };
@@ -166,8 +154,6 @@ export function htmlReplacements() {
   const s = siteVars();
   const escHtml = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  /* 多行文案：先按「& < > " '」转义，再把换行变 <br>（转义在前，避免把用户写的 <br> 当标签透传） */
-  const escLines = (v) => escHtml(v).replace(/\r\n|\r|\n/g, "<br>");
   return {
     "{{YJ_SITE_NAME}}": escHtml(s.name),
     "{{YJ_SITE_SUBTITLE}}": escHtml(s.subtitle),
@@ -177,10 +163,6 @@ export function htmlReplacements() {
     "{{YJ_SITE_REPO_HINT}}": escHtml(s.repo
       ? "仅 " + s.repo + " · Contents 读写"
       : "本站未配置 site.repo，编辑功能已关闭"),
-    /* copy 三项（P1-1）：空值一律回退到原有文案，保证「不填 = 与改造前逐字相同」 */
-    "{{YJ_COPY_INTRO}}": escLines(s.copy.intro || s.tagline),
-    "{{YJ_COPY_FOOTER}}": escHtml(s.copy.footerNote || "数据仅供分享交流"),
-    "{{YJ_COPY_ABOUT}}": escLines(s.copy.about),
   };
 }
 
@@ -193,7 +175,7 @@ export function siteConfigJs() {
   const site = {
     id: s.id, name: s.name, subtitle: s.subtitle, tagline: s.tagline,
     logo: s.logo, domains: s.domains, repo: s.repo, analytics: s.analytics,
-    jbisId: s.jbisId, sireName: s.sireName, features: s.features, crossSite: s.crossSite, copy: s.copy
+    jbisId: s.jbisId, sireName: s.sireName, features: s.features, crossSite: s.crossSite
   };
   const labels = {};
   FEATURES.IDS.forEach((id) => { labels[id] = FEATURES.CAPS[id].label; });
@@ -236,9 +218,6 @@ export function report() {
   /* 能力表：关闭项不是「问题」，是本站的选择 —— 只用一行说清开了几个、关了哪些 */
   line("capabilities", (FEATURES.IDS.length - capOff.length) + "/" + FEATURES.IDS.length +
     (capOff.length ? "（关闭: " + capOff.join(", ") + "）" : "（全开）"));
-  /* copy 三项都是「可空，空 = 保持原样」：只报有/无，不报内容 */
-  const cpOn = ["intro", "about", "footerNote"].filter((k) => s.copy[k]);
-  line("copy", cpOn.length ? "已填: " + cpOn.join(", ") : "（空 → 用默认文案）");
   /* progeny_years 只在 Python 侧消费；这里只做「有没有配」的提示（构建不读管线配置） */
   problems.forEach((p) => console.warn("  ⚠ " + p));
   return problems;
