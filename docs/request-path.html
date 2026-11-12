@@ -244,7 +244,7 @@ nd('g05',1,'full',{c:'mg',scen:[1,2,3],
   tag:'SHARED · 中立层',
   out:'两条管线共用引擎与契约；差异（限速表/日志前缀/缓存目录）由各 common.py 形参注入 net.bind()',
   cond:'无条件（被 import 的库层，本身无网络请求）',
-  role:'抓取引擎唯一出处：重试 + 按域限速带 0.8~1.2 抖动 + fetch_log.jsonl 风控日志（60 天滚动裁剪、merge=union 扛并发）。常量单源 = constants.py（原 paths.py 已并入）；sire_config 读 config/sire.json（契约见 docs/子项目复制与同步指南.md §1.1）；grade 读 config/grade-table.json（格 → 文案/徽章类/重赏判定单源）；artifacts 统一 JSON 写盘（内容无变化跳过写）。离线红线：顶层禁第三方包，requests/bs4 只在发请求处惰性导入。'});
+  role:'抓取引擎唯一出处：重试 + 按域限速带 0.8~1.2 抖动 + fetch_log.jsonl 风控日志（60 天滚动裁剪、merge=union 扛并发）。常量单源 = constants.py（原 paths.py 已并入）；sire_config 读 config/sire.json（字段契约见该文件内注释）；grade 读 config/grade-table.json（格 → 文案/徽章类/重赏判定单源）；artifacts 统一 JSON 写盘（内容无变化跳过写）。离线红线：顶层禁第三方包，requests/bs4 只在发请求处惰性导入。'});
 
 /* ── 1 建档 ── */
 nd('g1',2,'full',{c:'jb',scen:[1,2,3],

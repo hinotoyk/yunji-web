@@ -1,7 +1,7 @@
 # docs/SCHEMA.md · 数据产物字段契约（单一出处）
 
 `data/` 各产物的**字段契约与口径**统一写在这里（原来散在 `scripts/**/build_*.py` 文件头，阶段 6a 搬来）。
-改字段先改这里 + 对应生成脚本；「管线怎么跑」见 `docs/pipeline.md`，跨管线代码结构见同文件。
+改字段先改这里 + 对应生成脚本；「管线怎么跑」见 README「维护与排障」。
 前端只读产物，字段解释以外实现在 `front/`。
 
 ---
@@ -67,7 +67,7 @@
 
 「最多 4 条」的常数 = `scripts/races/merge_races.py::MAJOR_MAX`，层级表 = 同文件 `MAJOR_TIER`；改规则先改这里。
 
-抓取来源分工（详见 `docs/pipeline.md`）：JBIS 建档（id / jbis_id / 馬名 / 母名 / 生年）→ netkeiba 详情（
+抓取来源分工（详见 README「维护与排障」）：JBIS 建档（id / jbis_id / 馬名 / 母名 / 生年）→ netkeiba 详情（
 登録状態 / 性別 / 毛色 / 馬主 / 調教師 / 通算成績 / 獲得賞金 …）→ studbook（馬名意味）→ 血统图（pedigree_file / 母父）
 → 竞赛管线（races_file / 収得賞金 / 性別_当前 / 通算成績_逐场 / 主勝鞍）。
 
@@ -345,7 +345,7 @@
 日期图数据预计算：读 data/basic.json + data/races/*.json → data/datechart.json
 
 页面 front/pages/datechart.html 只做渲染：fetch 本产物 → RUNS → 天/周/月/年 日历聚合
-（2026-09-14 布局样式定稿，按 docs/UI优化记录.md §32.6 接入真实数据）。
+（2026-09-14 布局样式定稿，按 docs/DESIGN.md §32.6 接入真实数据）。
 产物 runs[] 与页面字段完全同构（布局稿 RUNS 契约），本脚本只做
 「字段抽取 + 类型归一 + 排序」，不做任何聚合口径计算——进板数 6 段、🏆 计数、
 赏金合计等全部由前端在 runs[] 上聚合，保证单一事实源（data/races）与页面零换算。
@@ -420,7 +420,7 @@
 
 ## 8. races-bundle.json —— 全库比赛压缩包（构建期派生，源 data/ 不落盘）
 
-**2026-09-28 立项（路 B，D11 替换式；决策与处置记录 = docs/UI优化记录.md §72）**：`data/races/*.json` 276 个逐马文件
+**2026-09-28 立项（路 B，D11 替换式；决策与处置记录 = docs/DESIGN.md §72）**：`data/races/*.json` 276 个逐马文件
 （minified 353KB，站点上为 276 次请求）在 **vite 构建期** 打成单文件
 `dist/data/races-bundle.json`（149.6KB → gzip ≈44KB）。**D11 替换式**：打包成功则 dist
 不再拷贝 `data/races/*.json`；打包失败告警并退回拷贝（叠加形态兜底）。`data/` 仓库永远
