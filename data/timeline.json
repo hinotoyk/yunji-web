@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-10-29T03:48:47",
+  "generated_at": "2026-11-13T16:15:13",
   "source": "basic.json + races/*.json + races_manual.json(比赛人工配图)",
   "stats": {
    "events": 7,
@@ -116,7 +116,7 @@
     "name": "コンジェスタス",
     "cn": "塔状高云"
    },
-   "photo": "../data/photos/202608030511-1.webp",
+   "photo": "../data/photos/202608030511-2.webp",
    "tags": [
     {
      "cat": "graded",
