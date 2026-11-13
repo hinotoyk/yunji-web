@@ -39,18 +39,22 @@ HEADERS = constants.HEADERS
 DEFAULT_SLEEP = constants.DEFAULT_SLEEP
 
 NK = constants.NK
-NK_HORSE_URL = constants.NK_HORSE_URL                          # 马详情页（EUC-JP）
-NK_RESULT_URL = constants.NK_RESULT_URL                        # 成绩页（EUC-JP）
+NK_HORSE_URL = constants.NK_HORSE_URL                          # 马详情页（编码随响应头）
+NK_RESULT_URL = constants.NK_RESULT_URL                        # 成绩页（编码随响应头）
 RACE_SP_URL = constants.RACE_SP_URL                            # 中央/海外 比赛结果页（SP 域）
 RACE_SP_URL_NAR = constants.RACE_SP_URL_NAR                    # 地方 比赛结果页（SP 域）
 
 # ---- 本管线的网络口径（以形参注进中立层：net 不含管线概念） ----
-# netkeiba 对高频抓取敏感；SP 域（race/nar result 页）相对宽松。
-# 运行后可在 data/fetch_log.jsonl 里按 host 观察 403/失败率，按需调整。
+# ★ 觉得抓得太慢？**改下面这几个秒数就是唯一的提速开关**（数值越大越保守越慢）。
+#   这条管线是全流程最耗时的一段：fork 729 匹实测 4866 请求里 2417 个是成绩页，光 db 域等待就占 3.9h。
+#   怎么安全地调小：**不要一次砍半**。先挑一个域降一档（如 db 6.0 → 4.0 / race·nar 3.0 → 2.5），
+#   跑一轮后看 data/fetch_log.jsonl 里该 host 的 ERR 条数与重试比例，稳定几天再降下一档。
+#   反过来的代价：撞 403 不是「慢一次」，而是当天整批数据拿不到（还会连带长退避），默认值宁可保守。
+#   netkeiba 对高频抓取敏感；SP 域（race/nar result 页）相对宽松。
 DOMAIN_SLEEP = {
     "db.netkeiba.com": 6.0,      # 详情 / 成绩页（风控严，保守）
-    "race.netkeiba.com": 2.0,    # 中央/海外 比赛结果页（SP 域）
-    "nar.netkeiba.com": 2.0,     # 地方 比赛结果页（SP 域）
+    "race.netkeiba.com": 3.0,    # 中央/海外 比赛结果页（SP 域；2026-11-13 2.0→3.0：该域曾对机房出口整域回 400）
+    "nar.netkeiba.com": 3.0,     # 地方 比赛结果页（SP 域）
 }
 STRIP_BASES = (NK, "https://race.netkeiba.com", "https://nar.netkeiba.com")
 

@@ -59,7 +59,10 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 180          # 初始化全量最长约 1.5~2 小时
+    timeout-minutes: 360          # = GitHub 单 job 硬上限（6h）。这是「最多能占多久」的保险丝，
+                                  # 不是耗时预算：真正的卡死止损在 run_update.py 的无输出看门狗（20 分钟）。
+                                  # 实测 729 匹冷启动全量 6h02m（4866 请求，其中 5.1h 是限速等待），
+                                  # 原来写 180 会在真正需要时先被砍掉。
     steps:
       - uses: actions/checkout@v4
 

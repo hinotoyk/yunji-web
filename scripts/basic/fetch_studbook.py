@@ -95,11 +95,44 @@ def mare_key(mare):
     return text.norm_mare(text.fw2hw(mare or ""))
 
 
+def _hid_from_profile(soup, want, father):
+    """302 直跳的 Honba 档案页 → 本马现行 hid（名字唯一命中时服务端不做列表，直接 302 到档案页）。
+
+    requests 默认跟随跳转，所以此时拿到的**不是搜索结果表**而是档案页，原「找结果行」逻辑必然扑空。
+    取 hid 的顺序（实测 シルバーステート 档案页）：`SearchChichiShushiList2?hid=`（「本馬を父とする
+    繁殖登録馬を検索」）优先，其次 `Godai1?...hid=`（五代血统表，带本马 hid）—— 页面里其余 hid=
+    是父/母的血统表链接（本页另有 父 ディープインパクト、母 シルヴァースカヤ 两个），不能乱取。
+    双重校验：h1.bamei 的馬名 + table_family「父」栏都要对上，对不上返回 None（宁可报未找到，绝不猜）。"""
+    h1 = soup.select_one("h1.bamei")
+    if h1 is None:                                  # 不是档案页（可能仍是列表页）→ 交给调用方
+        return None
+    if want and strip_anno(h1.get_text(" ", strip=True)) != want:
+        return None
+    if father:
+        got = ""
+        tbl = soup.select_one("table#table_family")
+        if tbl is not None:
+            for tr in tbl.find_all("tr"):
+                th, td = tr.find("th"), tr.find("td")
+                if th and td and th.get_text(strip=True) == "父":
+                    got = td.get_text(" ", strip=True)
+                    break
+        if strip_anno(got) != strip_anno(father):
+            return None
+    for pat in (r"SearchChichiShushiList2\?hid=(\d+)", r"Godai1\?[^\"']*hid=(\d+)"):
+        m = re.search(pat, str(soup))
+        if m:
+            return m.group(1)
+    return None
+
+
 def get_hid(name=None, father=None):
     """搜馬名 → 现行 hid。name/father 缺省读 config/sire.json 的 sire.studbook（S3 配置化）；
     显式传值（含空串）时按原行为透传（father 为空 = 不按父馬过滤）。
 
-    ⚠ 只认「馬名=种马名」的结果行（防单结果页内嵌血统表里的旧/其它 hid 被误抓）。"""
+    ⚠ 只认「馬名=种马名」的结果行（防单结果页内嵌血统表里的旧/其它 hid 被误抓）。
+    ⚠ 名字唯一命中时 studbook 直接 302 到档案页（2026-11-13 补兜底）：列表逻辑扑空后改由
+      `_hid_from_profile` 从档案页取，仍带馬名+父馬双重校验。"""
     if name is None:
         name = sire_config.studbook_name()
     if father is None:
@@ -124,7 +157,10 @@ def get_hid(name=None, father=None):
             m = re.search(r"hid=(\d+)", a["href"])
             if m:
                 return m.group(1)
-    return None
+    hid = _hid_from_profile(soup, want, father)     # 唯一命中 → 302 档案页兜底
+    if hid:
+        print(f"  · studbook 搜索唯一命中 → 302 直达档案页，已从档案页校验取 hid={hid}")
+    return hid
 
 
 def get_progeny_paged(hid, birth_year, sleep=0.4):

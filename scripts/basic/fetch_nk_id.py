@@ -109,7 +109,7 @@ def fetch_list_all(years, sleep=0.6):
     page = 1
     while True:
         url = common.NK_LIST_URL.format(sid=common.NK_SIRE_ID, page=page)
-        soup = common.soup_of(url, encoding="euc-jp")
+        soup = common.soup_of(url)   # 编码跟随响应头（netkeiba 2026-11 已转 UTF-8，勿写死）
         tbl = soup.select_one("table.horse_list_table")
         got = 0
         if tbl:

@@ -8,7 +8,7 @@
 本脚本把这张表改为**从种马本人成绩页派生**，手工表降级为兜底。
 
 做法：
-  1. 读 config/sire.json 的 `sire.netkeiba_id` → 抓 `db.netkeiba.com/horse/result/{id}/`（EUC-JP）；
+  1. 读 config/sire.json 的 `sire.netkeiba_id` → 抓 `db.netkeiba.com/horse/result/{id}/`（编码随响应头）；
   2. 复用竞赛管线解析器 `races/fetch_races.py::parse_races`（与产驹逐场成绩同源同口径）；
   3. 取 `着順 == 1` 的场次 → 解析「格」：先按赛名解析（racelib.race_meta_from_name），
      解析不出再抓该场 SP 结果页确认（每场最多 1 次请求，命中图标 class 才准）；
@@ -65,7 +65,7 @@ def resolve_grade(rec):
     venue_type = racelib.venue_type(rec.get("場名", ""))
     url = (constants.RACE_SP_URL_NAR if venue_type == "地方" else constants.RACE_SP_URL).format(race_id=rid)
     try:
-        sp_html = races_common.fetch(url, encoding="utf-8")
+        sp_html = races_common.fetch(url)
     except Exception as e:                                    # 抓不到就按无格处理（不入表，不阻塞）
         print(f"  ⚠ SP 页抓取失败 {rid}: {e}")
         return ""
@@ -85,7 +85,7 @@ def main(argv):
 
     url = constants.NK_RESULT_URL.format(nk_id=nk)
     print(f"→ 抓取 {sire.get('name_ja', '')} 成绩页 {url}")
-    html = races_common.fetch(url, encoding="euc-jp")
+    html = races_common.fetch(url)   # 编码跟随响应头（netkeiba 2026-11 已转 UTF-8）
     recs = fetch_races.parse_races(html)
     if not recs:
         print("✗ 成绩页解析为空（页面结构变化 / 反爬拦截），本次不写产物")

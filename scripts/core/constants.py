@@ -61,8 +61,8 @@ JBIS_PEDIGREE_URL = JBIS + "/horse/{jbis_id}/pedigree/"
 
 NK = "https://db.netkeiba.com"
 NK_LIST_URL = NK + "/horse/list.html?sire_id={sid}&limit=100&page={page}&sort=age-asc"
-NK_HORSE_URL = NK + "/horse/{nk_id}/"                       # 马详情页（EUC-JP）
-NK_RESULT_URL = NK + "/horse/result/{nk_id}/"               # 成绩页（EUC-JP）
+NK_HORSE_URL = NK + "/horse/{nk_id}/"                       # 马详情页（编码随响应头）
+NK_RESULT_URL = NK + "/horse/result/{nk_id}/"               # 成绩页（编码随响应头）
 
 STUD = "https://www.studbook.jp"
 

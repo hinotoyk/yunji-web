@@ -16,16 +16,20 @@
   python run_full_test.py              # 完整自测（删数据重建）
   python run_full_test.py --dry-run    # 只打印计划与将删除的内容，不执行
 
-预计耗时：第一部分约 35 分钟（血统 277×1.5s ∥ 列表/意味，详情 276×6s 串行），
-          第二部分约 55 分钟（详情 276×6s + 成绩 276×6s），全程约 1.5 小时。
+预计耗时：无实测基准前不要相信任何「预计」（2026-11-13 更正）。fork 用同一套脚本在 729 匹上
+          实测 6h02m / 4866 请求，其中 5.1h 是限速等待、1.84h 才是网络（fetch_log.jsonl 可复算）；
+          按每匹 6.7 请求外推，277 匹约 3.5 小时 —— 原「约 1.5 小时」是按 1 请求/匹 拍的，低估一半以上。
 """
 import argparse
 import datetime
 import io
 import json
+import os
+import queue
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -47,10 +51,16 @@ TS = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 LOG_FILE = LOG_DIR / f"full-{TS}.log"
 results = []          # (步骤名, returncode, 耗时秒)
 
-"""单步子进程超时（秒）。产驹多的种马（kzn ~1221 匹）全量重建会被掐断时调大它（参考 28800s）。
-★ 不按马数自动算（P1-6）：抓取耗时受网络/风控影响，自动算出的值只会给人虚假安全感。"""
-STEP_TIMEOUT = 7200
-TIMEOUT_HINT_HORSES = 400
+"""步骤看门狗：连续 IDLE_TIMEOUT 秒**没有任何输出**判为卡死（2026-11-13 取代原单步总时长超时）。
+
+为什么砍掉总时长超时：耗时是随机变量（fork 实测 729 匹全程 6h02m，其中 5.1h 是限速等待、
+1.84h 才是网络；JBIS 单页 0.5~330s）。任何固定值/按马数缩放都在赌，赌输就是白跑数小时后被杀、
+再拿不完整缓存去合并。脚本每匹马都 print 进度，天然有心跳：还在动就不杀。
+总时长兜底交给 CI job timeout-minutes（GitHub 单 job 上限 6h），本地则靠人看/ctrl-C。
+
+20 分钟的依据：单请求超时 90s（core/net.TIMEOUT）× 最多 4 次重试 + 退避 ≈ 7 分钟，留 3 倍余量。"""
+IDLE_TIMEOUT = 1200
+TOTAL_TIMEOUT = 0        # 总时长兜底（秒），0 = 不设；仅调试/本地应急时可临时给值
 
 
 def log(msg="", echo=True):
@@ -64,44 +74,84 @@ def log(msg="", echo=True):
 
 
 def startup_notice():
-    """启动自检（P1-6）：打印单步超时 + 库内马数，马多时提醒调大超时（口径与 run_update.py 一致）。"""
+    """启动自检：打印卡死判据 + 库内马数（马数只作现场参考，不再据此推算超时；口径与 run_update.py 一致）。"""
     n = None
     try:
         with open(DATA / "basic.json", "r", encoding="utf-8") as f:
             n = len((json.load(f) or {}).get("horses") or [])
     except Exception:
         pass
-    log(f"单步超时 {STEP_TIMEOUT}s（{STEP_TIMEOUT // 3600}h）· 库内马数 "
-        f"{n if n is not None else '未知（尚无 data/basic.json）'}")
-    if n and n > TIMEOUT_HINT_HORSES:
-        log(f"⚠ 产驹较多（{n} 匹）：全量自测若被掐断（出现「✗ 超时」），把 run_full_test.py 顶部的 "
-            f"STEP_TIMEOUT 调大（kzn ~1221 匹用 28800s）。")
+    log(f"卡死判据：连续 {IDLE_TIMEOUT // 60} 分钟无输出即中止（不设总时长上限）"
+        f" · 库内马数 {n if n is not None else '未知（尚无 data/basic.json）'}")
+
+
+def finish(code=0):
+    """收尾：汇总后退出。正常结束与「卡死中止」共用，保证中止路径也有汇总。"""
+    log("\n══ 自测结束 ══")
+    summary()
+    sys.exit(code)
 
 
 def run_step(name, script, *args):
-    """跑一个子脚本：完整输出进日志，stdout 只打一行状态。返回 (returncode, 秒)。"""
+    """跑一个子脚本：输出**流式**写日志（原 capture_output 要等退出才拿得到，卡死时日志全空、
+    也无法判断有没有在动），stderr 并入同一流；连续 IDLE_TIMEOUT 秒无输出 → 判卡死、杀进程、
+    整轮中止（继续跑后面的步骤会用不完整缓存合出一份少数据的库）。返回 (returncode, 秒)。"""
     log(f"\n───── [{name}] {Path(script).name} {' '.join(args)} ─────", echo=False)
     t0 = time.time()
     try:
-        r = subprocess.run([PY, str(script), *args],
-                           capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=STEP_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        log(f"✗ [{name}] 超时({STEP_TIMEOUT}s)")
+        p = subprocess.Popen([PY, str(script), *args],
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                             text=True, encoding="utf-8", errors="replace", bufsize=1,
+                             env={**os.environ, "PYTHONUNBUFFERED": "1"})
+    except OSError as e:
+        log(f"✗ [{name}] 启动失败: {e}")
         results.append((name, -1, time.time() - t0))
         return -1, time.time() - t0
-    dt = time.time() - t0
+
+    q = queue.Queue()
+
+    def _pump():
+        try:
+            for line in p.stdout:
+                q.put(line)
+        finally:
+            q.put(None)
+
+    threading.Thread(target=_pump, daemon=True).start()
+
+    last_out = time.time()
+    killed = ""
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write("\n".join("  | " + ln for ln in (r.stdout or "").splitlines()) + "\n")
-        if (r.stderr or "").strip():
-            f.write("  [stderr]\n" + "\n".join("  ! " + ln for ln in r.stderr.splitlines()) + "\n")
-    results.append((name, r.returncode, dt))
-    status = "完成" if r.returncode == 0 else f"失败(exit={r.returncode})"
+        while True:
+            try:
+                line = q.get(timeout=5)
+            except queue.Empty:
+                now = time.time()
+                if now - last_out > IDLE_TIMEOUT:
+                    killed = f"连续 {IDLE_TIMEOUT}s 无输出"
+                elif TOTAL_TIMEOUT and now - t0 > TOTAL_TIMEOUT:
+                    killed = f"总时长超过 {TOTAL_TIMEOUT}s"
+                if killed:
+                    p.kill()
+                    break
+                continue
+            if line is None:
+                break
+            last_out = time.time()
+            f.write(line if line.endswith("\n") else line + "\n")
+            f.flush()
+
+    rc = p.wait()
+    dt = time.time() - t0
+    if killed:
+        log(f"✗ [{name}] 判为卡死（{killed}）· 已耗时 {dt/60:.1f} 分钟")
+        log("→ 整轮中止：不再执行后续步骤（避免用不完整缓存合并出少数据的库）")
+        results.append((name, -1, dt))
+        finish(2)
+    results.append((name, rc, dt))
+    status = "完成" if rc == 0 else f"失败(exit={rc})"
     log(f"✔ [{name}] {status} · 耗时 {dt/60:.1f} 分钟")
-    if r.returncode != 0:
-        tail = [ln for ln in (r.stdout or "").splitlines() if ln.strip()][-3:]
-        log(f"  …末尾输出: {tail}")
-    return r.returncode, dt
+    return rc, dt
 
 
 def wipe_data(dry_run=False):
@@ -192,8 +242,7 @@ def main():
     # 第二部分：竞赛
     run_step("3/3 第二部分·竞赛 run_all(判变→成绩→本賞金→台账→合并)", RACES / "run_all.py")
 
-    log("\n══ 自测结束 ══")
-    summary()
+    finish(0)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 """详情更新 + 通算成績判变（竞赛流水线第 1 环）。
 
 对 basic.json 里**全部有 nk_id 的马**抓 netkeiba 马详情页
-（db.netkeiba.com/horse/{nk_id}/，EUC-JP），解析后写独立缓存：
+（db.netkeiba.com/horse/{nk_id}/，编码随响应头），解析后写独立缓存：
   - _tmp/detail.json     {id: {登録状態, 性別, 毛色, 馬齢, 生年月日, 産地,
                                 馬主, 調教師, 生産牧場, 通算成績, 獲得賞金 (中央),
                                 獲得賞金 (地方), 欧字馬名, セリ取引価格}}
@@ -115,7 +115,7 @@ def main():
         nk = h["nk_id"]
         url = common.NK_HORSE_URL.format(nk_id=nk)
         try:
-            d = parse_detail(common.fetch(url, encoding="euc-jp"))
+            d = parse_detail(common.fetch(url))   # 编码跟随响应头（勿写死 euc-jp/utf-8）
             detail[str(h["id"])] = d
             # 通算成績判变：两侧空白折叠后精确比较（必须准确）
             old, new = fold_ws(h.get("通算成績")), fold_ws(d["通算成績"])

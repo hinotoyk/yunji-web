@@ -11,12 +11,17 @@ import sys
 
 
 def install_utf8_stdout():
-    """非 UTF-8 控制台（如 Windows GBK）下把 sys.stdout 重包为 UTF-8（errors=replace）。
+    """非 UTF-8 控制台（如 Windows GBK）下把 sys.stdout 重包为 UTF-8（errors=replace，行缓冲）。
 
-    已是 UTF-8 或包装失败（无 buffer 等）时静默原样不动——与各脚本原先内联的逐字块等价。"""
+    已是 UTF-8 或包装失败（无 buffer 等）时静默原样不动——与各脚本原先内联的逐字块等价。
+
+    line_buffering=True（2026-11-13 补）：编排层（run_update / run_full_test）现在按「有没有进度
+    输出」判断子进程卡死，而 TextIOWrapper 默认块缓冲 —— 输出接管道时会攒满 8KB 才吐一次，
+    每匹马一行的进度等于看不见，看门狗会误判成卡死。行缓冲让每条 print 立刻可见。"""
     if not (getattr(sys.stdout, "encoding", "") or "").lower().startswith("utf-8"):
         try:
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace",
+                                          line_buffering=True)
         except Exception:
             pass
 

@@ -27,6 +27,7 @@ from datetime import date, timedelta
 
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
 import common  # noqa: E402
+from core import text  # noqa: E402
 import racelib  # noqa: E402
 
 # netkeiba 状态简写 → 全称（馬場列）
@@ -273,7 +274,7 @@ def trainer_id_from_db_race(rid, hname):
     if not rid or not hname:
         return ""
     try:
-        html = common.fetch(f"https://db.netkeiba.com/race/{rid}/", encoding="euc-jp")
+        html = common.fetch(f"https://db.netkeiba.com/race/{rid}/")
     except Exception:
         return ""
     m = re.search(r'<a[^>]+href="[^"]*/horse/[0-9A-Za-z]+/"[^>]*title="{}"'.format(re.escape(hname)), html or "")
@@ -352,39 +353,38 @@ def fetch_trainer_name(tid):
     """调教师页（db.netkeiba.com/trainer/result/recent/{id}/）→ 正式全名。
     <title>手塚貴久の調教師成績｜競馬データベース - netkeiba.com</title>；失败返回空串。"""
     try:
-        html = common.fetch(f"https://db.netkeiba.com/trainer/result/recent/{tid}/", encoding="euc-jp")
-        m = re.search(r"<title>([^<]+)の調教師成績", html or "")
-        return m.group(1).strip() if m else ""
+        html = common.fetch(f"https://db.netkeiba.com/trainer/result/recent/{tid}/")
+        return text.person_from_title(html, "調教師")
     except Exception:
         return ""
     finally:
         time.sleep(common.sleep_for("https://db.netkeiba.com/"))
 
 
-def resolve_trainer(cb, h, trainer_map):
+def resolve_trainer(cb, trainer_map):
     """调教师正式名归一：SP 页厩舎名可能截断（手塚久 vs 手塚貴久），
     按 trainer_id 查/抓调教师页建映射（按 id 缓存，不重复抓）。
-    抓不到 → 兜底用 basic.json 马级调教师（去掉 (場所) 后缀）；再无 → 保留 SP 原始名。"""
-    tid = cb.get("trainer_id") or ""
-    if tid and tid not in trainer_map:
+
+    **没有 trainer_id 就什么都不写**（2026-11-13 决定）：原实现在此时回退 basic.json 的马级
+    调教师，而马级 = 「本马当前调教师」——历史场次会被写成另一个人的名字，是**错值**不是空值
+    （全流程重放实测：6 场阪神赛事被写成现任地方调教师）。宁缺勿错：抓不到就留空，
+    或保留 SP 页给的当日厩舎原文。"""
+    tid = (cb.get("trainer_id") or "").strip()
+    if not tid:
+        return                        # 没有 id = 这场的调教师无从确认，不猜
+    if tid not in trainer_map:
         trainer_map[tid] = fetch_trainer_name(tid)
     canonical = trainer_map.get(tid) or ""
     if canonical:
         cb["調教師"] = canonical
-        return
-    basic_t = h.get("調教師") or ""
-    m = re.match(r"^(.*?)\s*[（(]", basic_t)
-    if m and m.group(1).strip():
-        cb["調教師"] = m.group(1).strip()
 
 
 def fetch_jockey_name(jid):
     """骑手页（db.netkeiba.com/jockey/result/recent/{id}/）→ 正式全名。
     <title>佐々木大輔の騎手成績｜競馬データベース - netkeiba.com</title>；失败返回空串。"""
     try:
-        html = common.fetch(f"https://db.netkeiba.com/jockey/result/recent/{jid}/", encoding="euc-jp")
-        m = re.search(r"<title>([^<]+)の騎手成績", html or "")
-        return m.group(1).strip() if m else ""
+        html = common.fetch(f"https://db.netkeiba.com/jockey/result/recent/{jid}/")
+        return text.person_from_title(html, "騎手")
     except Exception:
         return ""
     finally:
@@ -403,6 +403,34 @@ def resolve_jockey(cb, jockey_map):
         cb["騎手"] = canonical
 
 
+# SP 富化失败记账（2026-11-13）：SP 页只提供 格/条件/発走/コース/調教師正式名/本賞金，缺了不影响
+# 着顺等主数据入库 —— 所以**绝不阻塞抓取**；但也绝不允许静默：同一场只记一次，跑完末尾统一报。
+# 由来：race.netkeiba.com 对机房出口整域回 400 那次，记录照常入库、日志却说一切正常。
+SP_FAILED = {}          # race_id -> 失败原因（截断）
+
+
+def sp_page(is_local, rid, cache):
+    """取 SP 结果页 HTML：内存缓存 → 网络。失败返回 None 并记账（不抛、不中断）。
+
+    这一页提供的字段（缺了就退化）：格(重赏/OP 标记)、条件(完整名)、発走、コース、本賞金，
+    以及 **trainer_id** —— trainer_id 一旦缺失，調教師 会退回「本马当前调教师」，历史场次写的是
+    错值而不是空值（2026-11-13 全流程重放实测：6 场阪神赛事被写成现任地方调教师名）。
+    同场多马共享（cache 在单次运行内有效），所以请求数取决于「不同场次数」而不是马数。"""
+    key = (is_local, rid)
+    if key in cache:
+        return cache[key]
+    html = None
+    if rid:
+        sp_url = (common.RACE_SP_URL_NAR if is_local else common.RACE_SP_URL).format(race_id=rid)
+        try:
+            html = common.fetch(sp_url)
+        except Exception as e:
+            SP_FAILED.setdefault(rid, str(e)[:70])
+        time.sleep(common.sleep_for(sp_url))
+    cache[key] = html
+    return html
+
+
 def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
     """--force：已有记录缺失 調教師/trainer_id/馬番/発走/コース/性/年齢 → 用 SP 页回填（同场共享缓存）；
     骑手名 → 按 jockey_id 归一正式名（仅对 netkeiba 源记录，台账记录保持台账值）。
@@ -414,16 +442,8 @@ def backfill_existing(ex, cb, h, sp_cache, trainer_map, jockey_map):
     if need_sp:
         rid = str(cb.get("race_id") or "").strip()
         is_local = (cb.get("venue_type") or "").strip() == "地方"
-        key = (is_local, rid)
-        if rid and key not in sp_cache:
-            sp_url = (common.RACE_SP_URL_NAR if is_local else common.RACE_SP_URL).format(race_id=rid)
-            try:
-                sp_cache[key] = common.fetch(sp_url, encoding="utf-8")
-            except Exception:
-                sp_cache[key] = None     # 名字解析兜底
-            time.sleep(common.sleep_for(sp_url))
-        enrich_from_sp(cb, sp_cache.get(key))   # 格/条件 + 発走/コース + 厩舎→調教師 + 本賞金
-        resolve_trainer(cb, h, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
+        enrich_from_sp(cb, sp_page(is_local, rid, sp_cache))   # 格/条件 + 発走/コース + 厩舎→調教師 + 本賞金
+        resolve_trainer(cb, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
         for f in ("調教師", "trainer_id", "発走", "コース", "性", "年齢"):
             if not str(ex.get(f) or "").strip() and cb.get(f):
                 ex[f] = cb[f]
@@ -525,7 +545,7 @@ def _fetch(targets, force=False):
         nk = h["nk_id"]
         url = common.NK_RESULT_URL.format(nk_id=nk)
         try:
-            raw = parse_races(common.fetch(url, encoding="euc-jp"))
+            raw = parse_races(common.fetch(url))   # 编码跟随响应头（勿写死 euc-jp/utf-8）
             recs = load_existing(id_s) or []
             exist_keys = set()
             for r in recs:
@@ -544,16 +564,8 @@ def _fetch(targets, force=False):
                     continue
                 rid = str(cb.get("race_id") or "").strip()
                 is_local = (cb.get("venue_type") or "").strip() == "地方"
-                key = (is_local, rid)
-                if rid and key not in sp_cache:
-                    sp_url = (common.RACE_SP_URL_NAR if is_local else common.RACE_SP_URL).format(race_id=rid)
-                    try:
-                        sp_cache[key] = common.fetch(sp_url, encoding="utf-8")
-                    except Exception:
-                        sp_cache[key] = None     # 名字解析兜底
-                    time.sleep(common.sleep_for(sp_url))
-                enrich_from_sp(cb, sp_cache.get(key))   # 格/条件 + 厩舎→調教師 + 本賞金
-                resolve_trainer(cb, h, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
+                enrich_from_sp(cb, sp_page(is_local, rid, sp_cache))   # 格/条件 + 厩舎→調教師 + 本賞金
+                resolve_trainer(cb, trainer_map)     # 调教师页正式名（db 域，按 id 缓存）
                 resolve_jockey(cb, jockey_map)          # 骑手页正式名（db 域，按 id 缓存）
                 new.append(cb)
             if raw:
@@ -582,7 +594,18 @@ def _fetch(targets, force=False):
     total_new = sum(len(v) for v in races.values())
     print(f"✔ 成绩缓存 {len(races)} 匹 · 新增记录 {total_new} 条 · "
           f"调教师映射 {len(trainer_map)} 个 · 骑手映射 {len(jockey_map)} 个 · "
-          f"全量回填 {len(races_full)} 匹")
+          f"全量回填 {len(races_full)} 匹"
+          + (f" · ⚠ SP 富化失败 {len(SP_FAILED)} 场" if SP_FAILED else ""))
+    if SP_FAILED:
+        # 非阻塞：数据照常入库，但必须让人看见「这批是带伤的」，否则就是静默降级。
+        print(f"⚠ SP 结果页取不到 {len(SP_FAILED)} 场 → 这些场次的 発走/コース/本賞金 为空，"
+              f"格(重赏/OP)/条件 可能不全，調教師 留空（不再用马级调教师兜底：宁可缺，也不写错人）")
+        for rid, why in list(SP_FAILED.items())[:5]:
+            print(f"    · {rid}: {why}")
+        if len(SP_FAILED) > 5:
+            print(f"    · …另有 {len(SP_FAILED) - 5} 场同类失败")
+        print("    → 多为 race.netkeiba.com 拒绝（400/403）；该域恢复后跑 "
+              "`python run_update.py --races-force`（已有记录只补不清）或 `--day` 补回")
 
 
 if __name__ == "__main__":

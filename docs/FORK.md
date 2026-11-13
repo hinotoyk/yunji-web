@@ -85,7 +85,8 @@ python run_update.py --init
 ```
 
 - ⚠ `--init` 会**删空 `data/`** 再全量重建。跑之前确认这是新站，或先备份 `data/`。
-- **耗时**：单步默认超时 3 小时（`run_update.py` 第 69 行 `STEP_TIMEOUT`）。产驹 500 匹以上建议先调大（如 `28800` = 8 小时）。
+- **先花 30 秒跑一次抓取冒烟**：`python scripts/smoke_fetch.py` —— 4~5 个请求，判断上游的编码 / 跳转 / 页面结构今天还认不认这套脚本（只出报告，不动数据、不改退出码）。别等删空 `data/` 之后才发现抓不了（模板仓就踩过：netkeiba 全站转 UTF-8 后，克隆者首刷得到的是全库乱码）。
+- **耗时**：不需要预先调超时。编排层（`run_update.py` / `run_full_test.py` 的 `run_step`）只按「有没有进度输出」判卡死——连续 20 分钟无任何输出即中止并整轮退出；总时长兜底是 CI 的 job `timeout-minutes`（已设 GitHub 上限 6h）。参考实测：729 匹冷启动 6h02m / 4866 请求，其中 5.1h 是限速等待、1.84h 才是网络。
 - 跑挂了就拆开分次跑：`python run_update.py --basic` → `python run_update.py --races`。
 - 抓完重新构建：`cd front && npm run build`。
 - 可选（只本地能跑）：`python run_update.py --video` 抓 B 站回放。

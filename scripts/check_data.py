@@ -11,6 +11,7 @@
       台账为**可选环节**（config/sire.json 的 ledger.url 为空 = 未启用）：
       未启用时数据里本就不会有台账来源记录，本项对账为空报告/空列表，属正常状态，无需处理。）
   5. 信息性统计：nk_id / 欧字馬名 / 馬名意味 / 香港馬名 / 自译馬名 填充数
+  6. 数据体检（**仅报告，不影响退出码与流程**）：乱码特征 / 覆盖率骤降 / 字段整批为空 / 着顺缩写未归一
 
 输出：stdout 摘要 + data/check_report.md（含问题明细与问题 id 清单）。
 
@@ -71,6 +72,135 @@ def actual_starts(recs, src=None):
         if isinstance(res, int) or res in ("中止", "失格", "中", "失"):
             n += 1
     return n
+
+
+# 着顺的合法值（数字另判）：其余字符串都算「没归一」的残留
+_RESULT_OK = {"中止", "取消", "除外", "失格", "中", "失", "取", "除", ""}
+# 乱码特征：A�（UTF-8 解败）+ 縺/繝（EUC-JP 被当 UTF-8 解）+ ã/Ã（被当 latin-1 解）
+_MOJI = ("\ufffd", "縺", "繝", "ã", "Ã")
+
+
+def health_checks(hs):
+    """数据体检（2026-11-13）：**只产出报告，不改退出码、不参与 --fix、不阻断任何抓取/部署/提交**。
+
+    为什么刻意「只报告」：体检一旦能挡住流程，第一反应就是把它关掉或绕过，等于没有；它的价值是
+    让异常先被人看见，判断与处置留给人。故本函数只 append 报告行与打印，不 sys.exit、不改 problems。
+
+    覆盖 fork 实战踩到的四类静默失败（都是「流程全绿、数据全错」）：
+      ① 全库乱码（编码漂移）② 覆盖率骤降（抓取整批失败）③ 字段整批为空（解析失败仍写缓存）
+      ④ 着顺缩写未归一（地方页新写法，统计静默失真）"""
+    lines, fails, warns = [], [], []
+
+    def note(level, msg):
+        lines.append(f"  {'✗' if level == 'fail' else '⚠'} {msg}")
+        (fails if level == "fail" else warns).append(msg)
+
+    # ① 乱码：只看会进页面的名字字段（出现任一特征字形即判定，说明解码或抓取通道出问题）
+    bad = [f"{h.get('id')} {fld}={str(h.get(fld))[:20]}"
+           for h in hs for fld in ("馬名", "母名", "欧字馬名")
+           if any(t in (h.get(fld) or "") for t in _MOJI)]
+    if bad:
+        note("fail", f"馬名/母名 疑似乱码 {len(bad)} 匹（例：{'；'.join(bad[:3])}）"
+                     f" → 查抓取解码是否跟随响应头 charset")
+    else:
+        lines.append("  ✓ 馬名/母名 未见乱码特征（� / 縺 / 繝 / ã / Ã）")
+
+    # ② 覆盖率骤降：基线取上一份 data/check_report.md（随 data/ 提交，clone 者也有历史可比）
+    prev = {}
+    try:
+        if REPORT.exists():
+            for ln in REPORT.read_text(encoding="utf-8").splitlines():
+                if "字段填充:" in ln:
+                    for kv in ln.split("字段填充:", 1)[1].split("·"):
+                        m = re.match(r"\s*(\S+)\s*=\s*(\d+)/(\d+)", kv)
+                        if m:
+                            prev[m.group(1)] = int(m.group(2))
+    except Exception:
+        prev = {}
+    dropped = []
+    for fld in ("nk_id", "pedigree_file", "races_file"):
+        cur = sum(1 for h in hs if h.get(fld))
+        old = prev.get(fld)
+        if old and cur < old * 0.95:          # 只报警「骤降」；抓漏一两匹属常态，不该天天红
+            dropped.append(f"{fld} {old}→{cur}")
+    if dropped:
+        note("fail", f"覆盖率骤降：{' · '.join(dropped)}（较上一份报告的填充数少 5% 以上）"
+                     f" → 多为某一步整批抓取失败，先看 data/fetch_log.jsonl")
+    elif prev:
+        lines.append(f"  ✓ 覆盖率与上一份报告持平（nk_id {prev.get('nk_id', '?')} 为基线）")
+
+    # ③ 字段整批为空：口径要挑准，避免把「还没出赛的当歳马」误判成失败
+    with_nk = [h for h in hs if h.get("nk_id")]
+    if with_nk:
+        empty = sum(1 for h in with_nk if not (h.get("登録状態") or "").strip())
+        if empty / len(with_nk) > 0.40:
+            note("fail", f"登録状態 为空 {empty}/{len(with_nk)}（>40%）"
+                         f" → 详情页解析整批失败也会写缓存，别只看流程是否 exit 0")
+        else:
+            lines.append(f"  ✓ 登録状態 为空 {empty}/{len(with_nk)}，在正常范围")
+    raced, no_sum = [], []
+    for h in hs:
+        p = DATA / "races" / f"{h.get('id')}.json"
+        if not p.exists():
+            continue
+        try:
+            recs = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if recs:
+            raced.append(h)
+            if not (h.get("通算成績") or "").strip():
+                no_sum.append(str(h.get("id")))
+    if raced and len(no_sum) / len(raced) > 0.20:
+        note("fail", f"有比赛记录但通算成績 为空 {len(no_sum)}/{len(raced)}（>20%）"
+                     f"（例：{','.join(no_sum[:5])}）→ 详情解析与成绩数据对不上")
+
+    # ④ 着顺缩写未归一 + ⑤ SP 富化痕迹（発走 / trainer_id）——两个都要遍历 races，一趟读完
+    unnorm = {}
+    dep_tot = dep_empty = tr_empty = 0
+    for p in (DATA / "races").glob("*.json"):
+        try:
+            recs = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for r in recs:
+            v = r.get("結果")
+            if not isinstance(v, int) and v not in _RESULT_OK:
+                unnorm[repr(v)] = unnorm.get(repr(v), 0) + 1
+            if (r.get("venue_type") or "").strip() in ("中央", "地方"):   # 海外没有発走/统一 trainer_id，不计
+                dep_tot += 1
+                if not (r.get("発走") or "").strip():
+                    dep_empty += 1
+                if not str(r.get("trainer_id") or "").strip():
+                    tr_empty += 1
+    if unnorm:
+        note("warn", f"着顺出现未归一值 {unnorm} → 补 racelib.DNF_ABBR（否则统计会静默失真）")
+    else:
+        lines.append("  ✓ 着顺未发现未归一值")
+
+    # ⑤ 発走 与 trainer_id 都是 SP 结果页独有的字段，整批空了 = SP 富化失败（race 域 400/403 的典型症状）。
+    #    基线很干净：中央 788 / 地方 91 条，両者 0% 空。trainer_id 尤其要看 —— 它空了，調教師 会退化成
+    #    「本马当前调教师」，历史场次写的是**错值**而不只是空值，比缺字段更危险。
+    if dep_tot:
+        rate = dep_empty / dep_tot
+        if rate > 0.05:
+            note("fail", f"中央/地方记录 発走 为空 {dep_empty}/{dep_tot}（{rate:.0%}）"
+                         f" → SP 结果页整批取不到（race 域风控或页面结构变了），発走/コース/本賞金 会缺")
+        elif dep_empty:
+            note("warn", f"中央/地方记录 発走 为空 {dep_empty}/{dep_tot} → 少量 SP 富化失败，"
+                         f"域恢复后 --races-force 可补回")
+        else:
+            lines.append(f"  ✓ 発走 全部就位（中央/地方 {dep_tot} 条，均非空）")
+        trate = tr_empty / dep_tot
+        if trate > 0.05:
+            note("fail", f"trainer_id 为空 {tr_empty}/{dep_tot}（{trate:.0%}）→ SP 富化失败："
+                         f"这些场次的 調教師 只能留空（已不再用马级调教师兜底），需 --races-force 重抓补齐")
+        elif tr_empty:
+            note("warn", f"trainer_id 为空 {tr_empty}/{dep_tot} → 少量场次 SP 缺失，调教师取值不可靠")
+        else:
+            lines.append(f"  ✓ trainer_id 全部就位（中央/地方 {dep_tot} 条，均非空）")
+
+    return lines, fails, warns
 
 
 def main():
@@ -180,6 +310,11 @@ def main():
                     fix_todo["nk_id"].append(h["id"])
     lines.append("- 字段填充: " + " · ".join(f"{k}={v}/{len(hs)}" for k, v in stats.items()))
 
+    # 5) 数据体检：只出报告。**不并入 problems、不改退出码** —— 体检一旦能阻断抓取/部署/提交，
+    #    就会被人关掉或绕过；它的职责是把异常摆到人眼前（2026-11-13 定稿）。
+    health_lines, h_fail, h_warn = health_checks(hs)
+    lines += ["", "数据体检（仅报告，不影响任何流程）:"] + health_lines
+
     lines += ["", f"问题合计: {problems}"]
     for k, v in fix_todo.items():
         lines.append(f"  可修复 {k}: {len(v)} 项")
@@ -187,6 +322,9 @@ def main():
     DATA.mkdir(parents=True, exist_ok=True)
     REPORT.write_text("\n".join(lines), encoding="utf-8")
     print(f"✔ 校验完成：问题 {problems} 项 → 详见 {REPORT}")
+    print(f"  数据体检：判死 {len(h_fail)} 项 · 留意 {len(h_warn)} 项（仅报告，不阻断流程）")
+    for ln in h_fail + h_warn:
+        print(f"    · {ln}")
     if problems:
         print("\n".join([ln for ln in lines if ln.startswith("  ✗")][:20]))
 

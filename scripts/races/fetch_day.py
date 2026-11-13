@@ -92,16 +92,23 @@ def collect_race_ids(date, include_nar=True):
         if domain == "NAR" and not include_nar:
             continue
         try:
-            html = common.fetch(date_url, encoding="utf-8")
+            html = common.fetch(date_url)
         except Exception as e:
-            print(f"  [{domain}] payback 抓取失败（可能非赛日）: {e}")
+            msg = str(e)
+            if "400" in msg or "403" in msg:
+                # 被拒 ≠ 非赛日：页面还在（换出口能取到），只是这个域在风控。必须说出来，
+                # 否则「JRA 当天赛果枚举不可用」会被伪装成「今天没比赛」静默通过。
+                print(f"  [{domain}] ⚠ payback 被拒（400/403）→ 当天 {domain} 赛果枚举不可用"
+                      f"（该域疑似风控中）；后续环节继续，已有数据不受影响")
+            else:
+                print(f"  [{domain}] payback 抓取失败（可能非赛日）: {e}")
             continue
         venues = venue_ids_from_payback(html)
         if venues:
             for kid in venues:
                 vurl = f"{base}?kaisai_id={kid}&kaisai_date={date}"
                 try:
-                    vhtml = common.fetch(vurl, encoding="utf-8")
+                    vhtml = common.fetch(vurl)
                 except Exception as e:
                     print(f"  [{domain} 会场{kid}] 抓取失败: {e}")
                     continue
@@ -270,7 +277,7 @@ def main():
         for i, (domain, rid) in enumerate(race_ids, 1):
             sp_url = (common.RACE_SP_URL_NAR if domain == "NAR" else common.RACE_SP_URL).format(race_id=rid)
             try:
-                sp_html = common.fetch(sp_url, encoding="utf-8")
+                sp_html = common.fetch(sp_url)
             except Exception as e:
                 print(f"  [{i}/{len(race_ids)}] {domain} {rid} 抓取失败: {e}")
                 continue

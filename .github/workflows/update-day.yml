@@ -23,7 +23,8 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360          # = GitHub 单 job 硬上限（6h）。日更实际 ~10 分钟，此值只作保险丝，
+                                  # 卡死止损靠 run_update.py 的无输出看门狗（20 分钟），不靠这个预算。
     steps:
       - uses: actions/checkout@v4
 

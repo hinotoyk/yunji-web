@@ -34,7 +34,7 @@ python run_update.py --init                           # ⚠ 会删空 data/ 后�
 cd front && npm run build
 ```
 
-⚠ **路径 C 的警告**：`--init` / `--races-force` 会删空或覆盖 `data/`；日站对机房 IP 与高频访问有风控，管线内置 `DOMAIN_SLEEP` 限速，请勿调低；产驹超过 400 匹的种马，全量重建可能要跑很久，先把 `run_update.py` 里的 `STEP_TIMEOUT` 改大（该脚本启动时会打印当前超时值与马数并提示）。
+⚠ **路径 C 的警告**：`--init` / `--races-force` 会删空或覆盖 `data/`；日站对机房 IP 与高频访问有风控，管线内置 `DOMAIN_SLEEP` 限速——**嫌慢就改它**（`scripts/basic/common.py` / `scripts/races/common.py` 顶部有逐步下调的方法与代价说明，别一次砍半）；产驹多的种马全量重建很慢（实测 729 匹 6 小时，其中 5 小时是限速等待），**不需要预先调任何超时** —— 编排层只按「有没有进度输出」判卡死（连续 20 分钟无输出即中止），总时长兜底是 CI 的 job 上限。
 
 ## 配置即站点身份（`config/` 五个文件）
 
@@ -159,7 +159,7 @@ python run_update.py <策略>
 | `--horse 1,2,3` | 只处理指定 id 的马 |
 | `--races-force` | 全部马重抓成绩页（覆盖式重建） |
 | `--day 20261020[,..]` | 按天快速更新（SP 结果页；可配 `--jra-only` 跳过地方） |
-| `--check [--fix]` | 数据一致性校验（+ 自动补跑修复） |
+| `--check [--fix]` | 数据一致性校验（+ 自动补跑修复）；附带「数据体检」结论（仅出报告，不影响流程） |
 | `--ledger` | 只拉台账海外并入 |
 | `--video` | 视频回放：抓 B 站 UP 主清单 + 离线匹配 → `data/video-map.json` |
 | `--ci [--year …]` | 基本+比赛+校验+派生+git 提交（GitHub Actions 每日） |
@@ -187,7 +187,8 @@ python run_update.py <策略>
 | 编辑台打不开 / 403 | `site.repo` 与 PAT 所属仓库不一致（双站防串是故意的） |
 | 访客数不涨 | `site.domains` 是否含当前域名；GoatCounter 后台是否开了 visitor counter 端点 |
 | 某匹马数据一直缺 | `python run_update.py --horse <id>` 定向跑；再看 `data/fetch_log.jsonl` 里该 host 的状态码 |
-| 全量跑到一半被掐断 | 日志出现 `✗ [步骤] 超时(NNNs)` → 调大 `run_update.py` 顶部的 `STEP_TIMEOUT` |
+| 全量跑到一半被掐断 | 日志出现 `✗ [步骤] 判为卡死（连续 1200s 无输出）` → 站点假死/请求挂住（看 `data/fetch_log.jsonl` 该 host 的状态码与 dur）；若只跑到一半就整轮退出，这是有意的：不完整缓存不许合并提交 |
+| 抓完发现马名乱码/整批空 | 先跑 `python scripts/smoke_fetch.py`（4~5 个请求，30 秒）判断是解码/跳转/结构哪一处变了；再看 `--check` 报告里的「数据体检」段。两者都**只出报告，不阻断流程** |
 | 删了旧图后老访客 404 | 缓存桶要 +1（`front/public/yj-cache.js` 的 `data-vN`） |
 
 **B 站回放**：`config/video-sources.json` 的 `mid` 留空 = 关闭。机房 IP 有风控，抓不到时管线不改数据（沿用已有基线）；本机可用 `scripts/video/local_refresh.py` 补跑，需要登录态可设环境变量 `BILI_COOKIE`。
