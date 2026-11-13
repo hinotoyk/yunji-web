@@ -16,7 +16,7 @@
 - **每次改样式/类名后必须构建并核对** `dist/assets/theme-*.css` 含新类——编译期框架最大坑：改了类但没编译 → 页面无变化。
 - 探索/候选版放项目根 `tests/`，废案放 `tests/_trash/`；旧 `testpage/` 已归档 `tests/_trash/testpage-snapshot`，只读勿直接改。
 - UI 优化：每改一个模块，先把「最终思路 + 一句话结论」写进 `docs/DESIGN.md` §11 的 UI 规格索引（不展开废案与过程链），再合并进正式页面。
-- **文档只放两处**：仓库根 `README.md` / `AGENTS.md` + `docs/`（索引 = `docs/README.md`）。过程文档（重构方案 / 落地审计 / 复用审计 / UI 审查报告）在项目完成后即清理——2026-11 已删 4 篇；**规则与结论必须沉淀到 `docs/` 常驻文档、`AGENTS.md` 或代码注释里**，不要让唯一出处停留在一份一次性报告上。
+- **文档只放两处**：仓库根 `README.md` / `AGENTS.md` + `docs/`（文档清单见根 `README.md`「文档导航」）。过程文档（重构方案 / 落地审计 / 复用审计 / UI 审查报告）在项目完成后即清理——2026-11 已删 4 篇；**规则与结论必须沉淀到 `docs/` 常驻文档、`AGENTS.md` 或代码注释里**，不要让唯一出处停留在一份一次性报告上。
 
 ## 2. 前端架构（必须遵守，不得退回旧方式）
 
@@ -43,7 +43,7 @@
 
 ## 3. 数据与路径
 
-- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`/`*.jsonl`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `docs/SCHEMA.md`**（生成脚本文件头只留一行指路），管线流程见 README「维护与排障」。
+- 数据源在项目根 `data/`，构建时由 `vite.config.js` 的 `copy-data` 插件复制为 `dist/data/`（跳过 `_tmp/` 与 `*.md`/`*.csv`/`*.jsonl`）；前端一律经 **`YJ_DATA.url('...')`** 解析（`front/public/data-config.js` 为**唯一数据源映射点**，`prefix:'..'`，内部拼 `../data/...`）。**改数据目录/位置只改该文件 `prefix`/`root`**，禁止散落写死数据路径。`data/` 各产物的**字段契约与口径单一出处 = `docs/SCHEMA.md`**（生成脚本文件头只留一行指路），管线流程见 `docs/DESIGN.md` §5（日常运行与排障见 README「维护与排障」）。
 - **本地预览一律 `python serve.py`**（项目根；服务 `dist/`，端口单源 = `serve.config.json` 的 **9090**，启动即打开 `http://127.0.0.1:9090/index.html`，`--no-open` 只起服务）。禁止再手写 `python -m http.server <port>`（端口散落 + 缺 no-cache/CORS）。`dist/` 已自包含数据副本，务必 http 访问（file:// 下 fetch 失败）；`scripts/` 更新数据后需重新构建才会进 `dist/data/`。
 - **端口是约定不是偏好**：四兄弟站 yunji `9090` / kzn `9091` / jbis-sire-rank-history `9092` / racing-calendar `9093`，各仓 `serve.config.json` 为唯一出处。端口被占用时脚本**直接报错退出**——不要改成自动顺延（`entries.html` 硬编码了 RC 的 9093，顺延即静默失配）；换端口只改该 JSON，并连带核对跨站引用。
 - `data/basic.json` 是后端合并产物，**前端只读，勿手改**。
@@ -57,7 +57,14 @@
 ## 4. 已删除 / 不要复活
 
 - 早期配色方案 A~D、shadcn 探索页、顶部导航布局方案、暗黑模式 已删除，**不要复活**。
-- **已删除的过程文档（2026-11 清理，磁盘已无此文件，仅 git 历史可查）**：`docs/REFACTOR.md`（重构方案，P1-P5 已落地）、`docs/审计报告-工作区全量改动.md`、`docs/重复代码审计.md`、`docs/UI审查报告-2026-10-30.md`。源码注释里的这些文件名属**历史出处指认**，不必找回；同类内容（配置契约 → `config/*.json` 内的字段注释、复用约定 → `docs/DESIGN.md` §4）已有常驻替身，**不要再新建一次性报告来承载规则**。归档清单见 `docs/README.md` 末节。
+- **已删除的过程文档（2026-11 清理，磁盘已无此文件，仅 git 历史可查）**：源码注释里的这些文件名属**历史出处指认**，不必找回；替身如下，**不要再新建一次性报告来承载规则**：
+  - `docs/REFACTOR.md`（种马配置化 / 复用收口 / docs 整理，P1-P5 已落地）→ 配置契约 = `config/*.json` 内字段注释 + `config/grade-table.json` 的 `about` 键；复用约定 = `docs/DESIGN.md` §4
+  - `docs/审计报告-工作区全量改动.md` → 结论已进 `AGENTS.md` 与 `docs/DESIGN.md`
+  - `docs/重复代码审计.md` → `docs/DESIGN.md` §4「前端编码约定」
+  - `docs/UI审查报告-2026-10-30.md` → `docs/DESIGN.md` §11 的 §139 索引（正文归档 `git show 7e48d69:docs/UI优化记录.md`）
+  - `docs/README.md`（原「文档索引 + 归档账本」，2026-11-13 删除）→ 索引职责归根 `README.md`「文档导航」，归档账本即本条
+- **已删除的专题文档**：`换种马实战.md` → 换站步骤以 `docs/FORK.md` 为准；`友情跳转方案.md` → 现状是 `config/friend-links.json` → `window.YJ_FRIENDS` → `front/public/friend-links.js`；`CONTRIBUTING.md` + `.github/ISSUE_TEMPLATE` + `pull_request_template.md` → 本仓单人维护，**不接外部 issue/PR**。
+- **尚未重新起草**：`子项目复制与同步指南.md`（曾删）——同步规则当前只在 `AGENTS.md`「子项目（模板站身份）」一条，别以为有更详细的文档。
 - 项目约定：「请求怎么发」可参考旧实现，「业务流程」要自己重新设计。
 
 ## 5. 项目定位

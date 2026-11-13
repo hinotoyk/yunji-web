@@ -1,7 +1,7 @@
 # 云迹 · 设计文档（DESIGN）
 
 > 本文件是项目**唯一的架构与约定文档**：项目定位 / 当前状态 / 前端架构 / 编码约定 / 数据管线 / 数据契约 / 编辑台 / Git 协作 / 遗留 / 决策时间线 / UI 规格索引。
-> 其余文档的分工：`README.md` = 怎么跑、怎么换站、维护排障；`AGENTS.md` = 硬规则清单（禁止事项与判据）；`docs/SCHEMA.md` = 数据产物字段契约；`docs/README.md` = 文档索引。
+> 其余文档的分工：`README.md` = 项目介绍与上手（产品视角：亮点 / 页面 / 双端 / 兄弟站，末尾留配置与维护速查）；`docs/FORK.md` = 换站分步手册；`AGENTS.md` = 硬规则清单（禁止事项与判据）；`docs/SCHEMA.md` = 数据产物字段契约。
 >
 > **历史归档**：本文件合并自原 `docs/HANDOFF.md`（架构与决策）、`docs/UI优化记录.md`（UI 规格与编码约定）、`docs/开源化改造清单.md`（开源化改造记录）三份文档（2026-11-12）。UI 条目正文已归档：`git show 7e48d69:docs/UI优化记录.md`；本文只保留**按页面的 § 索引**与**仍然生效的约定**。
 
@@ -29,7 +29,7 @@
 ├── config/        # sire.json（种马+站点身份+跨站+文案）· features.json（页面能力表）
 │                  # friend-links.json（友链）· video-sources.json（B 站源）· grade-table.json（格级单源）
 ├── data/          # 全部数据产物 + 4 张人工表 + photos/
-├── docs/          # 人工文档（索引 docs/README.md；本文件为架构与约定的唯一出处）
+├── docs/          # 人工文档 + 配图（images/；本文件为架构与约定的唯一出处）
 ├── scripts/       # Python 管线：core 中立层 / basic / races / timeline / datechart / stats / status / video
 ├── front/         # 前端源码：index.html 外壳 + pages/ 功能页 + public/ 共享 JS + scripts/ 构建期工具
 ├── dist/          # 构建产物（gitignore，CI 现场构建）
