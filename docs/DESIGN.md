@@ -96,6 +96,7 @@
 - 4 个页面，侧栏「编辑」分组**仅在 PAT 验证后注入 DOM**；mb 端不开放（窄屏只显示「请在电脑端使用」）。
 - 草稿判脏走 `YJ.util.effEqual`（净效果等值）；入口无 `?edit=1` 开关。
 - 图片：上传/外链本地化走 `front/public/editor.js`，照片落 `data/photos/`，经人工表钉 `photo` 字段；比赛配图走 `races_manual.json`（race_id → photo，台账场用虚拟键 `@马id@日付`）。
+- **统一图片位**（§191，2026-11-13 定稿）：马匹照片 / 航迹线节点 / 比赛配图三个配图位共用同一套加图交互（`editor.js` 的 `imgFieldHTML` + `bindImgField` document 级 `data-img*` 委托）：瓦片网格 + 「＋ 添加/替换图片」瓦片（直接包 file input）+ **常驻外链输入行**（文本按 slot 存 `state.imgUrl`，重绘不丢）；整个区域 `data-imgdrop` 支持拖拽——本地文件 = 上传，从别的网页拖图 = 抓 `text/html` 的 `<img src>`（无则 uri-list/纯文本）走外链链路；马匹位多图（拖拽排序 / Ctrl+V / 触屏 ‹ › 保留），另两处单图位（有图后「＋」变「替换」）。链路统一 `imgAddBlob/imgAddFiles/imgAddUrl`：文件 → 浏览器压缩 ≤100KB webp → 草稿落 IndexedDB，提交时统一上传定名；外链 → `fetchRemote` 本地化优先（Wikipedia 词条页地址也认）→ **HTTP 4xx 不采用**（链接已死，报错保留原值）→ 其余失败（防盗链/CORS）原样存外链兜底；站内 `../data/…` 直接存串。值的形状由各 slot 自持（`imgSlot` 适配器）：horse = 路径/外链/`{ref}` 混合数组，tl = `ev.photo` 串（`draft:tl:<ref>` 标记草稿），race = `races_manual` 草稿 `{mode:"set", item|url}`；替换/删除时旧草稿 blob 顺手清。旧 `uploadOne/uploadQueue/uploadURL/rmUpload/rmSetUrl/tlPhotoUpload` 已并入。航迹线空态 = 三张入口邀请卡（引用比赛 / 自填荣誉 / 比赛配图，`max-md:flex-col`），空态工具条只留「放弃修改」，有节点后入口按钮回归工具条。
 - 安全边界：人工表公网可读；`_note`/`_orig` 等 `_` 前缀键不参与套用。
 
 ## 8. Git 协作约定
@@ -136,7 +137,7 @@
 | 出走马表（entries） | §174 · §184 · §184.1 |
 | 航迹线（timeline） | §31 · §45 · §148 · §149 · §166 · §175–§177 · §179 · §182 · §188 |
 | 视频回放 | §185 · §185.1 · §185.2 · §186 · §187 · §187.1 · §189 |
-| 编辑台（4 页） | §91–§93 · §105 · §142 · §150 · §154 · §155 · §168 · §169 · §187 · §190 |
+| 编辑台（4 页） | §91–§93 · §105 · §142 · §150 · §154 · §155 · §168 · §169 · §187 · §190 · §191 |
 | 跨站 / 部署 / 冒烟 / 派生 | §103 · §169–§173 |
 
 **仍然生效的两条跨页规则**（细则在 §190 / §105，实现已在代码里）：

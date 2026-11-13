@@ -104,6 +104,7 @@ YJ.editor = (function () {
   /* v3 空态入口卡图标（内联 SVG，stroke=currentColor；与页首分段导航同一套线条语言） */
   var ICO_FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>';
   var ICO_AWARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>';
+  var ICO_IMG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
   /* 台账形态（profile 式）：一行一字段 + 照片位；类名一律完整字面量（content 扫得到 → @layer 不裁） */
   var VBADGE = "yj-ed-vbadge";
   var ROWEDIT_FOOT = "mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted/40 px-3 py-2";
@@ -124,8 +125,10 @@ YJ.editor = (function () {
     horse: null, draft: {}, note: "", saving: false, report: null, err: "",
     /* 台账渲染态：editing = 正在行内编辑的字段键（同时只开一行，备注输入因此只有一份 #noteInput） */
     editing: "",
-    /* M2b 图片草稿：mode "" = 未改 / set = 写成 list / remove = 恢复官方值（删键）；open = 入库面板展开 */
-    photos: { mode: "", open: false, draft: [], busy: false, meta: {}, log: [], err: "", drag: -1, url: "" },
+    /* M2b 图片草稿：mode "" = 未改 / set = 写成 list / remove = 恢复官方值（删键） */
+    photos: { mode: "", draft: [], busy: false, meta: {}, log: [], err: "", drag: -1 },
+    /* 统一图片位（2026-11-13）：外链输入框常驻，imgUrl = 各 slot 正在输入的链接（key → 文本，重绘不丢） */
+    imgUrl: {},
     /* M2c 时间线：table = 源表快照（保留 _readme 等顶层键），events = 工作副本，edit = 正在新增/编辑的节点
      * （edit.kind = "race"｜"free"：新增入口二选一；race = 引用比赛自动填 date/title/link）。
      * bundle = races-bundle 解码缓存（引用比赛选赛用），bundleFor = 已解码的马 id（切马重解码，全量解码一次后全马可用） */
@@ -664,7 +667,8 @@ YJ.editor = (function () {
         var dRm = d.racePh || {};
         rmIds = Object.keys(dRm).filter(function (k) {
           var v = dRm[k];
-          return v && (v.mode === "remove" || (v.mode === "set" && v.item && v.item.ref));
+          /* 链接草稿（{mode:"set",url}）无 blob，但要参与写入表 + 计入改动数 */
+          return v && (v.mode === "remove" || (v.mode === "set" && ((v.item && v.item.ref) || v.url)));
         });
         if (rmIds.length) {
           jobs = jobs.then(function () {
@@ -672,6 +676,7 @@ YJ.editor = (function () {
               return p.then(function () {
                 var ch = dRm[rid];
                 if (ch.mode === "remove") { rmOut[rid] = null; return null; }
+                if (ch.url) { rmOut[rid] = { photo: ch.url }; return null; }   /* 链接图：不传 blob，直接写串 */
                 var it = ch.item;
                 var name = rid + "-" + ((seqs.names[rid] || 0) + 1) + "." + (it.ext || "webp");
                 return blobGet(it.ref).then(function (b) {
@@ -841,7 +846,7 @@ YJ.editor = (function () {
          * state.draft / state.note / state.photos 仍留着 → 紧接着 render() 里 persistHorse()
          * 会把当前马草稿原样写回 localStorage，草稿箱永远删不掉（commit 已推远端却还挂着）。 */
         state.draft = {}; state.note = ""; state.err = ""; state.editing = "";
-        state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {}; state.photos.open = false;
+        state.photos.mode = ""; state.photos.draft = []; state.photos.meta = {};
         state.ghBusy = false;
         state.gh = {
           ok: true, secs: (Date.now() - t0) / 1000,
@@ -1622,8 +1627,8 @@ YJ.editor = (function () {
       photoLog("直连失败（" + e1.message + "）→ 改走公共代理 images.weserv.nl…", "busy");
       return viaProxy();
     }).catch(function (e2) {
-      throw new Error("拉不下来（" + e2.message + "）。把图右键「另存为」后用「上传本地文件」最稳；" +
-        "或换可直接打开的图片直链。本站强制本地化，不降级存外链。");
+      /* 2026-11-13 统一图片位：本地化失败不再终止——上层 imgAddUrl 会兜底「原样存外链」 */
+      throw new Error("直连与代理都拉不到（" + e2.message + "）");
     });
   }
 
@@ -1695,80 +1700,9 @@ YJ.editor = (function () {
     state.photos.busy = on;
     if (msg) photoLog(msg, "busy");
   }
-
-  /* 压缩 + 入库一张（File | Blob）：local 形态 POST /photo；draft 形态存 IndexedDB，提交时才上传定名 */
-  function uploadOne(file, owner) {
-    var name = file.name || "（无名文件）";
-    return compressImage(file).then(function (r) {
-      if (state.mode === "draft") {
-        var ref = "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e8).toString(36);
-        return blobPut(ref, r.blob).then(function () {
-          var it = { ref: ref, ext: extOf(r.type), name: name, bytes: r.toBytes, from: r.fromBytes,
-            w: r.w, h: r.h, q: r.quality, over: r.over, kept: r.kept };
-          state.photos.meta["draft:" + ref] = { url: URL.createObjectURL(r.blob), bytes: r.toBytes, name: name };
-          if (!owner || !state.horse || String(state.horse.id) === String(owner)) {
-            addPhoto(it);
-          } else {
-            /* 上传队列进行中切了马（2026-10-26 修，§107）：这张图直写**开始上传那匹**的草稿箱，
-             * 不再错挂到当前马头上（旧路径 addPhoto 只认 state.horse，队列里剩下的图全部跟错人）。 */
-            var ph = phGet(owner) || { mode: "set", list: [] };
-            if (ph.mode !== "set") ph = { mode: "set", list: [] };
-            ph.list.push(it);
-            phPut(String(owner), ph);
-            photoLog(name + "：已切到别的马，这张图记回原马（" + owner + "）的草稿", "ok");
-          }
-          photoLog(name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
-            " " + mimeShort(r.type) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) +
-            " → 草稿箱", "ok");
-        });
-      }
-      return writer.savePhoto(r.blob, owner).then(function (res) {
-        var b = res.body || {};
-        if (!b.ok) throw new Error((b.error || "入库失败") + "（HTTP " + res.status + "）");
-        state.photos.meta[b.path] = {
-          bytes: b.bytes, to: r.toBytes, from: r.fromBytes, w: r.w, h: r.h,
-          type: b.mime, q: r.quality, over: r.over, kept: r.kept, name: name
-        };
-        addPhoto(b.path);
-        photoLog(name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
-          " " + mimeShort(b.mime) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) +
-          " → " + b.path, "ok");
-        return r;
-      });
-    });
-  }
-  function uploadQueue(files, owner) {
-    var arr = [].slice.call(files || []);
-    if (!arr.length) return Promise.resolve();
-    photoBusy(true, "处理 " + arr.length + " 张…");
-    var bad = 0;
-    return arr.reduce(function (p, f) {
-      return p.then(function () {
-        return uploadOne(f, owner).catch(function (e) {
-          bad++;
-          state.photos.log.push({ t: (f.name || "文件") + "：" + e.message, k: "err" });
-          renderPhotos();
-        });
-      });
-    }, Promise.resolve()).then(function () {
-      photoBusy(false);
-      if (!bad) state.photos.err = "";
-      render();
-    });
-  }
-  function uploadURL(url) {
-    photoBusy(true, "外链本地化中…");
-    fetchRemote(url).then(function (blob) {
-      blob.name = photoName(url);
-      return uploadOne(blob, state.horse.id);
-    }).catch(function (e) {
-      photoLog("外链：" + e.message, "err");
-    }).then(function () {
-      photoBusy(false);
-      state.photos.url = "";
-      render();
-    });
-  }
+  /* 2026-11-13 统一图片位：uploadOne / uploadQueue / uploadURL 已并入 imgAddBlob / imgAddFiles /
+   * imgAddUrl（见「统一图片位」段）——压缩、草稿落 IndexedDB、切马归属（§107）、外链本地化+
+   * 兜底全部一份实现，马匹 / 时间线 / 比赛配图三个位共用。 */
 
   /* ---------------- 图片区 UI ---------------- */
   function photoBadgeHTML() {
@@ -1779,27 +1713,9 @@ YJ.editor = (function () {
     return photoPinned(state.horse.id) !== undefined ? '<span class="' + BADGE_PIN + '">已保存</span>'
       : '<span class="' + TIP + '">与官方一致</span>';
   }
-  function thumbHTML(p, i, n) {
-    var key = (p && typeof p === "object") ? "draft:" + p.ref : String(p);
-    var m = state.photos.meta[key] || {};
-    /* §150 网格瓦片：首图「封面」徽标，其余序号角标；✕ PC 悬停浮现 / mb 常显（触屏无 hover，§155）。
-     * §155 触屏调序：HTML5 DnD 不触发于触屏 → 左下 ‹ › 小钮（mb only，md:hidden）补齐调序能力。 */
-    var mv = '<span class="absolute bottom-1 left-1 flex gap-1 md:hidden">' +
-      (i > 0 ? '<button data-pmv="' + (i - 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="前移一位">‹</button>' : "") +
-      (n === undefined || i < n - 1 ? '<button data-pmv="' + (i + 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="后移一位">›</button>' : "") +
-      "</span>";
-    return '<li draggable="true" data-pi="' + i + '" class="yj-ed-thumb group">' +
-      '<img src="' + esc(photoSrc(p)) + '" alt="" draggable="false" loading="lazy" decoding="async" class="h-[92px] w-full object-contain">' +
-      (i === 0 ? '<span class="yj-ed-cover">封面</span>' : '<span class="yj-ed-index">' + (i + 1) + "</span>") +
-      mv +
-      '<button data-pdel="' + i + '" type="button" class="' + BTN_DANGER + ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex max-md:inline-flex" title="移出列表（盘上文件保留）">✕</button>' +
-      '<span class="block truncate border-t border-border bg-card px-1.5 py-1 text-[10px] text-muted-foreground" title="' + esc(photoName(p)) + '">' +
-        esc(photoName(p)) + (m.bytes ? " · " + kb(m.bytes) : "") + "</span>" +
-      "</li>";
-  }
-  /* §150 照片区（docs/DESIGN.md §150）：瓦片网格 + 末尾「＋」加号格（点击上传 / 外部文件拖入 /
-   * Ctrl+V 粘贴）；外链导入收进工具行小钮（state.photos.open 面板复用）。
-   * 草稿链路（uploadQueue / persistPhotosOf / IndexedDB）零改动，纯展示层重排。 */
+  /* §150 照片区 → 2026-11-13 统一图片位：瓦片网格 / 加图选择器（本地文件+外链）全部走
+   * imgFieldHTML("horse")（组件见「统一图片位」段）；本函数只保留照片位自己的头部/提示/操作。
+   * 草稿链路（persistPhotosOf / IndexedDB / 拖拽排序）零改动。 */
   function photosHTML() {
     if (!state.horse) return '<div class="hint-empty">先选匹马再管理图片。</div>';
     var id = state.horse.id;
@@ -1810,29 +1726,14 @@ YJ.editor = (function () {
       '<span class="' + TIP + '">' + list.length + " 张 · 首图为档案封面</span>" +
       photoBadgeHTML() +
       (state.photos.busy ? '<span class="' + BADGE_WARN + '">压缩/上传中…</span>' : "") +
-      (state.photos.open ? "" : '<button data-pslot="1" class="' + BTN + ' ml-auto" type="button"' + dis + ">外链导入</button>") +
       "</div>";
-    var panel = state.photos.open
-      ? '<div class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5">' +
-          '<input id="photoURL" value="' + esc(state.photos.url || "") + '" class="' + INPUT + ' h-8 min-w-0 flex-1 font-normal"' +
-            ' placeholder="粘贴图片直链（Wikipedia 词条页地址也认）" autocomplete="off">' +
-          '<button id="photoURLBtn" class="' + BTN_DIS + '" type="button"' + dis + ">本地化</button>" +
-          '<button data-pclose="1" class="' + BTN + '" type="button">收起</button></div>'
-      : "";
-    var tiles = list.map(function (p, i) { return thumbHTML(p, i, list.length); }).join("");
-    var addTile = '<li class="yj-ed-thumb yj-ed-thumb--add' + (list.length ? "" : " yj-ed-thumb--empty") + '">' +
-      '<label class="yj-ed-thumb-add' + (dis ? " opacity-40" : "") + '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5"><path d="M12 5v14M5 12h14"/></svg>' +
-        '<span class="text-[11px]">点击上传</span>' +
-        '<span class="text-[10.5px] text-muted-foreground/70">或把图片拖进本区</span>' +
-        '<input id="photoFile" type="file" accept="image/*" multiple class="hidden"' + dis + "></label></li>";
-    var hint = '<div class="mt-1.5 ' + TIP + '">支持 Ctrl+V 粘贴截图 · 拖动缩略图调顺序 · 悬停缩略图出 ✕ 移出（盘上文件保留）</div>' +
+    var hint = '<div class="mt-1.5 ' + TIP + '">支持 Ctrl+V 粘贴截图 · 把图片拖进本区 · 拖动缩略图调顺序 · 悬停缩略图出 ✕ 移出（盘上文件保留）</div>' +
       (!list.length && photoDirty() ? '<div class="' + TIP + '">已清空 · 待保存（提交后档案无图）</div>' : "");
     var acts = '<div class="mt-2 flex flex-wrap items-center gap-1.5">' +
       (list.length ? '<button data-pnone="' + id + '" class="' + BTN_DIS + '" type="button"' + dis + ">清空为确无图片</button>" : "") +
       (photoPinned(id) !== undefined && !photoDirty() ? '<button data-punpin="' + id + '" class="' + BTN + ' yj-ed-op--danger" type="button"' + dis + ">恢复官方值</button>" : "") +
       "</div>";
-    return head + panel + '<ul class="yj-ed-thumbs">' + tiles + addTile + "</ul>" + hint + acts +
+    return head + imgFieldHTML("horse") + hint + acts +
       (state.photos.log.length ? '<div id="photoStatus" class="mt-2 space-y-0.5">' + state.photos.log.map(function (l) {
         return '<div class="text-[11.5px] ' + (l.k === "err" ? "text-destructive" : l.k === "busy" ? "text-muted-foreground" : "text-primary") + '">' + esc(l.t) + "</div>";
       }).join("") + "</div>" : '<div id="photoStatus"></div>') +
@@ -1842,7 +1743,7 @@ YJ.editor = (function () {
 
   /* ---------------- 拖拽排序（原生 HTML5 DnD，不引库）+ 外部文件拖入（§150） ----------------
    * 同一容器两套 drop 语义按 dataTransfer.types 分流：types 含 "Files" = 资源管理器拖图 →
-   * 走 uploadQueue 压缩入库；否则 = 缩略图重排序。 */
+   * 走 imgAddFiles（统一图片位）压缩入库；否则 = 缩略图重排序。 */
   function dragItem(ev) { return ev.target && ev.target.closest ? ev.target.closest("[data-pi]") : null; }
   function isFileDrop(ev) {
     try {
@@ -1883,7 +1784,7 @@ YJ.editor = (function () {
       ev.preventDefault();
       extRing(false);
       var fs = ev.dataTransfer && ev.dataTransfer.files;
-      if (fs && fs.length) uploadQueue([].slice.call(fs), state.horse && state.horse.id);
+      if (fs && fs.length) imgAddFiles("horse", [].slice.call(fs));
       return;
     }
     if (state.photos.drag < 0) return;
@@ -1897,6 +1798,291 @@ YJ.editor = (function () {
     render();
   }
   function onDragEnd() { state.photos.drag = -1; clearDragRing(); extRing(false); }
+
+  /* ================= 统一图片位（2026-11-13 用户定稿：上传图片的操作逻辑全站一套） =================
+   * 三个配图位（马匹照片 / 航迹线节点 / 比赛配图）共用同一套加图交互（imgFieldHTML + data-img* 委托）：
+   *   瓦片网格 + 末尾「＋ 添加图片」→ 弹选择器：〔选择本地文件〕〔图片链接 + 添加链接〕；
+   *   多图位（马匹照片）可连续加，单图位有图后「＋」自动变「替换」（add 适配器天然覆盖旧值）。
+   * 加图链路统一：文件 → compressImage（≤1280px/≤100KB webp）→ 草稿落 IndexedDB，提交时统一上传定名；
+   * 链接 → 先抓回本地压缩入库（D8 本地化优先，Wikipedia 词条页地址也认）→ 抓不到（防盗链/CORS）
+   * 才原样存外链（外链兜底，不再逼用户另存）。站内路径（../data/…）直接存串不压。
+   * 值的形状仍由各 slot 自持（数据契约不同，不强行合并），本组件只统一「取 / 存 / 渲染 / 加 / 删」：
+   *   horse      多图：元素 = 站内路径 | 外链 | 草稿 {ref,…}
+   *   tl         单图：ev.photo = 串（"draft:tl:<ref>" = 草稿图标记）
+   *   race:<键>  单图：races_manual 草稿 {mode:"set", item|url}（键 = race_id / "@马id@日付"） */
+  function imgNewRef(prefix) {
+    return prefix + Date.now().toString(36) + Math.floor(Math.random() * 1e8).toString(36);
+  }
+  function imgOwnerOf(key) {               /* 本机 edit_server 在线（local 形态）时的入库归属 */
+    if (key === "horse") return state.horse ? state.horse.id : "";
+    if (key === "tl") return PHOTO_OWNER_TL;
+    return key.slice(5);                   /* race:<rid> → rid */
+  }
+  function imgRepaint(key) { if (key === "horse") renderPhotos(); else renderTL(); }
+  function imgSlot(key) {
+    if (key === "horse") return {
+      multiple: true,
+      busy: function () { return !!(state.photos.busy || state.saving); },
+      items: function () {
+        return workingPhotos().map(function (p) {
+          var it = (p && typeof p === "object") ? p : null;
+          var m = it ? (state.photos.meta["draft:" + it.ref] || {}) : (state.photos.meta[String(p)] || {});
+          return { raw: p, src: photoSrc(p), name: it ? (it.name || photoName(p)) : photoName(p),
+            bytes: it ? it.bytes : m.bytes, ref: it ? it.ref : "" };
+        });
+      },
+      /* owner = 队列开始时的马（§107：多张连传中途切马，剩下的图记回原马的草稿箱，不跟错人） */
+      add: function (v, owner) {
+        if (!owner || !state.horse || String(state.horse.id) === String(owner)) { addPhoto(v); return; }
+        var ph = phGet(owner) || { mode: "set", list: [] };
+        if (ph.mode !== "set") ph = { mode: "set", list: [] };
+        ph.list.push(v);
+        phPut(String(owner), ph);
+        photoLog("已切到别的马，这张图记回原马（" + owner + "）的草稿", "ok");
+      },
+      removeAt: function (i) { delPhoto(i); },
+      log: function (m, k) { photoLog(m, k); },
+      busySet: function (on, m) { photoBusy(on, m); },
+      preview: function (ref, url, bytes, name) { state.photos.meta["draft:" + ref] = { url: url, bytes: bytes, name: name }; }
+    };
+    if (key === "tl") return {
+      multiple: false,
+      busy: function () { return !!state.tl.busy; },
+      items: function () {
+        var p = String(editEV().photo || "").trim();
+        return p ? [{ raw: p, src: photoSrc(p), name: photoName(p) }] : [];
+      },
+      add: function (v) {
+        var curP = String(editEV().photo || "");
+        /* 单图位替换：旧草稿图作废（IndexedDB 顺手清，不留孤儿 blob） */
+        if (curP.indexOf("draft:tl:") === 0 && !(v && typeof v === "object" && v.ref === curP.slice(9))) blobDel(curP.slice(9));
+        if (v && typeof v === "object") {
+          tlPhotoMetaPut(v.ref, { ext: v.ext, name: v.name, bytes: v.bytes });
+          editEV().photo = "draft:tl:" + v.ref;   /* 提交时定正式名 ../data/photos/timeline-<n>.<ext> */
+        } else editEV().photo = String(v);
+      },
+      removeAt: function () {
+        var curP = String(editEV().photo || "");
+        if (curP.indexOf("draft:tl:") === 0) blobDel(curP.slice(9));
+        editEV().photo = "";
+      },
+      log: function (m) { state.tl.log = [m]; },
+      busySet: function (on, m) { state.tl.busy = on; if (m) state.tl.log = [m]; },
+      preview: function (ref, url) { state.tl.tlPhotos[ref] = { url: url }; }
+    };
+    if (key.indexOf("race:") === 0) {
+      var rid = key.slice(5);
+      return {
+        multiple: false,
+        busy: function () { return !!state.tl.raceBusy; },
+        items: function () {
+          var c = rmGet()[rid], m = state.tl.raceManual[rid], u = state.tl.racePhUrl[rid];
+          if (c && c.mode === "set" && c.url) return [{ raw: c.url, src: rmSrc(c.url), name: photoName(c.url) }];
+          if (c && c.mode === "set" && c.item)
+            return [{ raw: c.item, src: (u && u !== "pending") ? u : "", name: c.item.name || "草稿图", bytes: c.item.bytes }];
+          if (c && c.mode === "remove") return [];
+          return (m && m.photo) ? [{ raw: m.photo, src: rmSrc(m.photo), name: photoName(m.photo) }] : [];
+        },
+        add: function (v) {
+          var old = rmGet()[rid];
+          if (old && old.mode === "set" && old.item && old.item.ref) blobDel(old.item.ref);   /* 替换 = 旧草稿图作废 */
+          delete state.tl.racePhUrl[rid];
+          if (v && typeof v === "object") rmPut(rid, { mode: "set", item: { ref: v.ref, ext: v.ext, name: v.name, bytes: v.bytes } });
+          else rmPut(rid, { mode: "set", url: String(v) });
+        },
+        removeAt: function () {
+          var c = rmGet()[rid];
+          if (c && c.mode === "set") {                       /* 撤销草稿改动 */
+            if (c.item && c.item.ref) blobDel(c.item.ref);
+            delete state.tl.racePhUrl[rid];
+            rmPut(rid, null);
+          } else rmPut(rid, { mode: "remove" });             /* 盘上已配置 → 提交时删键回退马照片 */
+        },
+        log: function (m, k) { rmLog(m, k); },
+        busySet: function (on, m) { state.tl.raceBusy = on; if (m) rmLog(m, "busy"); },
+        preview: function (ref, url) { state.tl.racePhUrl[rid] = url; }
+      };
+    }
+    return null;
+  }
+  /* 统一压缩入库：File | Blob → compressImage → 草稿 IndexedDB（local 形态走服务端 /photo，旧链路保留） */
+  function imgAddBlob(key, blob, name, owner) {
+    var sl = imgSlot(key);
+    return compressImage(blob).then(function (r) {
+      if (state.mode !== "draft") {
+        return writer.savePhoto(r.blob, owner || imgOwnerOf(key)).then(function (res) {
+          var b = res.body || {};
+          if (!b.ok) throw new Error((b.error || "入库失败") + "（HTTP " + res.status + ")");
+          sl.add(key === "tl" ? "../" + b.path : b.path);
+          sl.log(name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
+            " " + mimeShort(b.mime) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) + " → " + b.path, "ok");
+        });
+      }
+      var it = { ref: imgNewRef(key.split(":")[0] === "race" ? "r" : key === "tl" ? "tl" : "p"),
+        ext: extOf(r.type), name: name, bytes: r.toBytes };
+      return blobPut(it.ref, r.blob).then(function () {
+        /* 顺序关键：先 add 后 preview —— race 适配器的 add 会先清 racePhUrl（撤销旧草稿图），
+         * preview 在前的话 objectURL 刚设就被删掉，瓦片 src 空 → 「回显失败」（2026-11-13 实测） */
+        sl.add(it, owner);
+        sl.preview(it.ref, URL.createObjectURL(r.blob), r.toBytes, name);
+        sl.log(name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
+          " " + mimeShort(r.type) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) + " → 草稿箱", "ok");
+      });
+    });
+  }
+  function imgAddFiles(key, files) {       /* 统一文件入口：拖拽 / 粘贴 / 选择器共用 */
+    var sl = imgSlot(key);
+    var arr = [].slice.call(files || []);
+    if (!sl || !arr.length || sl.busy()) return Promise.resolve();
+    var owner = key === "horse" && state.horse ? state.horse.id : "";   /* 队列开始时的马（§107） */
+    sl.busySet(true, "处理 " + arr.length + " 张…");
+    imgRepaint(key);
+    return arr.reduce(function (p, f) {
+      return p.then(function () { return imgAddBlob(key, f, f.name || "（无名文件）", owner); })
+        .catch(function (e) { sl.log((f.name || "文件") + "：" + e.message, "err"); });
+    }, Promise.resolve()).then(function () { sl.busySet(false); render(); });
+  }
+  function imgAddUrl(key, raw) {           /* 统一链接入口：本地化优先 → 外链兜底 */
+    var sl = imgSlot(key);
+    if (!sl) return Promise.resolve();
+    var u = String(raw || "").trim();
+    if (!u) { sl.log("先填图片链接再添加", "err"); imgRepaint(key); return Promise.resolve(); }
+    if (/^data\//i.test(u)) u = "../" + u;                             /* 仓库相对 → pages 相对（first_photo 同口径） */
+    if (!/^(https?:\/\/|\.\.?\/)/i.test(u)) {
+      sl.log("链接只接受 http(s):// 或站内 ../data/… 路径", "err"); imgRepaint(key); return Promise.resolve();
+    }
+    if (!/^https?:/i.test(u)) {                                        /* 站内已有文件：直接存串，不压 */
+      sl.add(u);
+      sl.log("站内路径已记入：" + u, "ok");
+      delete state.imgUrl[key];
+      render(); return Promise.resolve();
+    }
+    if (sl.busy()) return Promise.resolve();
+    sl.busySet(true, "拉取外链本地化中…");
+    imgRepaint(key);
+    return fetchRemote(u).then(function (blob) {
+      blob.name = photoName(u);
+      return imgAddBlob(key, blob, blob.name, key === "horse" && state.horse ? state.horse.id : "");
+    }).catch(function (e) {
+      /* 防盗链/CORS 抓不回 → 原样存外链（2026-11-13 定稿，页面按外链加载；想入库可右键另存后传文件）。
+       * 但 HTTP 4xx = 链接本身已死，存了也显示不出来 → 明说，并保留原值让用户改。 */
+      var msg = String(e && e.message || e);
+      var dead = /HTTP 4\d\d/.exec(msg);
+      if (dead) {
+        sl.log("链接打不开（" + dead[0] + "，图已不存在或地址不对）——未采用，保留原值；换可直接打开的图片直链", "err");
+        imgRepaint(key);
+        return;
+      }
+      sl.add(u);
+      sl.log("本地化失败（" + msg.split("。")[0] + "）→ 已原样存外链（若瓦片空白 = 该站连浏览器也拦，建议换直链或传本地文件）", "");
+    }).then(function () {
+      sl.busySet(false);
+      delete state.imgUrl[key];          /* 成功/已兜底 → 清输入框；4xx 未采用时保留文本供改 */
+      render();
+    });
+  }
+  /* 统一渲染：瓦片网格（复用 .yj-ed-thumbs 原子）+「＋ 添加/替换」瓦片 + **常驻**外链输入行。
+   * data-pi 保留（马匹位拖拽排序 / 触屏 ‹ › 沿用原委托）；删图统一 data-imgdel；
+   * 整个区域 data-imgdrop：拖入本地文件 = 上传，从别的网页拖图进来 = 抓 URL 走外链链路。 */
+  function imgFieldHTML(key) {
+    var sl = imgSlot(key);
+    if (!sl) return "";
+    var items = sl.items();
+    var dis = sl.busy() ? " disabled" : "";
+    var multi = !!sl.multiple;
+    var full = !multi && items.length > 0;
+    var tiles = items.map(function (it, i) {
+      var mv = multi ? '<span class="absolute bottom-1 left-1 flex gap-1 md:hidden">' +
+        (i > 0 ? '<button data-pmv="' + (i - 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="前移一位">‹</button>' : "") +
+        (i < items.length - 1 ? '<button data-pmv="' + (i + 1) + '" type="button" class="flex h-5 w-5 items-center justify-center rounded bg-black/55 text-[11px] leading-none text-white" title="后移一位">›</button>' : "") +
+        "</span>" : "";
+      return '<li draggable="true" data-pi="' + i + '" class="yj-ed-thumb group">' +
+        '<img src="' + esc(it.src) + '" alt="" draggable="false" loading="lazy" decoding="async" class="h-[92px] w-full object-contain">' +
+        (multi ? (i === 0 ? '<span class="yj-ed-cover">封面</span>' : '<span class="yj-ed-index">' + (i + 1) + "</span>") : "") +
+        mv +
+        '<button data-imgdel="' + esc(key) + '" data-imgidx="' + i + '" type="button" class="' + BTN_DANGER +
+          ' absolute right-1 top-1 hidden h-6 px-1.5 group-hover:inline-flex max-md:inline-flex" title="移除">✕</button>' +
+        '<span class="block truncate border-t border-border bg-card px-1.5 py-1 text-[10px] text-muted-foreground" title="' + esc(it.name) + '">' +
+          esc(it.name) + (it.bytes ? " · " + kb(it.bytes) : "") + "</span></li>";
+    }).join("");
+    var addTile = '<li class="yj-ed-thumb yj-ed-thumb--add' + (items.length ? "" : " yj-ed-thumb--empty") + '">' +
+      '<label class="yj-ed-thumb-add' + (dis ? " opacity-40" : "") + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5"><path d="M12 5v14M5 12h14"/></svg>' +
+        '<span class="text-[11px]">' + (full ? "替换图片" : "添加图片") + "</span>" +
+        '<span class="text-[10.5px] text-muted-foreground/70">点选本地文件 · 或拖进来 · 或下方贴外链</span>' +
+        '<input data-imgfile="' + esc(key) + '" type="file" accept="image/*"' + (multi ? " multiple" : "") + ' class="hidden"' + dis + "></label></li>";
+    var urlBar = '<div class="mt-2 flex flex-wrap items-center gap-2">' +
+        '<input data-imgurl="' + esc(key) + '" type="text" value="' + esc(state.imgUrl[key] || "") + '" class="' + INPUT +
+          ' h-8 min-w-[240px] flex-1 font-normal" autocomplete="off" placeholder="或粘贴图片链接（https://… / ../data/photos/x.webp），回车添加">' +
+        '<button data-imgurlok="' + esc(key) + '" class="' + BTN_DIS + '" type="button"' + dis + ">添加链接</button>" +
+      "</div>";
+    return '<div data-imgdrop="' + esc(key) + '"><ul class="yj-ed-thumbs">' + tiles + addTile + "</ul>" + urlBar + "</div>";
+  }
+  /* 统一图片位事件：document 级委托（三个配图位容器不同，一套 data-img* 全覆盖；重绘不丢监听） */
+  function bindImgField() {
+    document.addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      var ok = t.closest("[data-imgurlok]");
+      if (ok) {
+        var inp = document.querySelector('[data-imgurl="' + ok.dataset.imgurlok + '"]');
+        imgAddUrl(ok.dataset.imgurlok, inp ? inp.value : "");
+        return;
+      }
+      var del = t.closest("[data-imgdel]");
+      if (del) {
+        var sl = imgSlot(del.dataset.imgdel);
+        if (sl) {
+          sl.removeAt(Number(del.dataset.imgidx || 0));
+          render();   /* §133：落箱后同步保存条 */
+        }
+      }
+    });
+    document.addEventListener("change", function (ev) {
+      var t = ev.target;
+      if (!t || !t.dataset || t.dataset.imgfile === undefined) return;
+      var files = [].slice.call(t.files || []);
+      t.value = "";
+      imgAddFiles(t.dataset.imgfile, files);
+    });
+    document.addEventListener("input", function (ev) {       /* 链接逐键存内存：重绘不丢正在输入的文本 */
+      var t = ev.target;
+      if (t && t.dataset && t.dataset.imgurl !== undefined) state.imgUrl[t.dataset.imgurl] = t.value;
+    });
+    document.addEventListener("keydown", function (ev) {     /* 链接框回车 = 点「添加链接」 */
+      var t = ev.target;
+      if (!t || !t.dataset || t.dataset.imgurl === undefined || ev.key !== "Enter") return;
+      ev.preventDefault();
+      imgAddUrl(t.dataset.imgurl, t.value);
+    });
+    /* 拖拽添加（2026-11-13 用户要求）：拖入本地文件 = 上传；从别的网页把图拖进来 = 抓 URL 走外链链路
+     * （text/html 里取 <img src>，没有就取 text/uri-list / 纯文本）。马匹位容器自有的文件拖入/缩略图
+     * 排序 drop 已 preventDefault → 这里靠 defaultPrevented 不重复接手。 */
+    document.addEventListener("dragover", function (ev) {
+      var zone = ev.target && ev.target.closest ? ev.target.closest("[data-imgdrop]") : null;
+      if (zone && !ev.defaultPrevented) ev.preventDefault();   /* 允许 drop（网页图/链接拖入没有 Files 类型） */
+    });
+    document.addEventListener("drop", function (ev) {
+      var zone = ev.target && ev.target.closest ? ev.target.closest("[data-imgdrop]") : null;
+      if (!zone || ev.defaultPrevented) return;
+      var key = zone.dataset.imgdrop;
+      var dt = ev.dataTransfer;
+      var fs = dt && dt.files;
+      if (fs && fs.length) { ev.preventDefault(); imgAddFiles(key, [].slice.call(fs)); return; }
+      var url = "";
+      var html = dt && dt.getData ? dt.getData("text/html") : "";
+      if (html) {
+        var m = /<img[^>]+src=["']([^"']+)["']/i.exec(html);
+        if (m) url = m[1];
+      }
+      if (!url && dt && dt.getData) {
+        var uri = dt.getData("text/uri-list") || dt.getData("text/plain") || "";
+        var lines = String(uri).split(/\r?\n/).filter(function (l) { return l && l.charAt(0) !== "#"; });
+        url = (lines[0] || "").trim();
+      }
+      if (url && /^(https?:\/\/|\.\.?\/|data\/)/i.test(url)) { ev.preventDefault(); imgAddUrl(key, url); }
+    });
+  }
 
   /* ================= M2c · 时间线人工节点（data/timeline_manual.json，保存不自动重算 §4.5） ================= */
 
@@ -2079,6 +2265,8 @@ YJ.editor = (function () {
   }
   function rmCurrent(rid) {              /* 该场当前图：草稿 set 优先 → 盘上已配置 → null（未配置）。rid = race_id */
     var c = rmGet()[String(rid)];
+    /* 草稿两种形态：本地上传 {item:{ref}}（IndexedDB 里还有二进制）/ 直填链接 {url}（不落 blob） */
+    if (c && c.mode === "set" && c.url) return { kind: "draft-url", src: rmSrc(c.url) };
     if (c && c.mode === "set" && c.item) return { kind: "draft", src: state.tl.racePhUrl[String(rid)] || "" };
     if (c && c.mode === "remove") return null;
     var m = state.tl.raceManual[String(rid)];
@@ -2132,30 +2320,8 @@ YJ.editor = (function () {
     if (state.tl.raceLog.length > 6) state.tl.raceLog.shift();
     renderTL();
   }
-  function rmUpload(files, rid) {        /* 单图位：多选只取第一张；压缩口径与马照片一致 */
-    var f = (files || [])[0];
-    if (!f || !rid) return;
-    state.tl.raceBusy = true;
-    compressImage(f).then(function (r) {
-      var ref = "r" + Date.now().toString(36) + Math.floor(Math.random() * 1e8).toString(36);
-      return blobPut(ref, r.blob).then(function () {
-        var old = rmGet()[String(rid)];
-        if (old && old.mode === "set" && old.item && old.item.ref) blobDel(old.item.ref);
-        state.tl.racePhUrl[String(rid)] = URL.createObjectURL(r.blob);
-        rmPut(rid, { mode: "set", item: { ref: ref, ext: extOf(r.type), name: f.name || "（无名文件）", bytes: r.toBytes } });
-        rmLog((f.name || "图片") + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
-          " " + mimeShort(r.type) + (r.kept ? "（原图已够小，未重压）" : r.over ? "（已尽力，仍超 100KB）" : "　q" + r.quality) + " → 草稿箱", "ok");
-      });
-    }).catch(function (e) {
-      rmLog((f.name || "图片") + "：" + (e && e.message ? e.message : "处理失败"), "err");
-    }).then(function () {
-      state.tl.raceBusy = false;
-      /* 2026-10-28 修（§133）：上传落箱必须走全量 render——此前只 renderTL()，保存条的
-       * 「提交到 GitHub」/「草稿箱」计数停留在打开页面时的旧状态（首个草稿=按钮一直灰着）。
-       * render 内部本就调 renderTL()，状态条、草稿箱抽屉一并同步。 */
-      render();
-    });
-  }
+  /* 2026-11-13 统一图片位：rmUpload / rmSetUrl 已并入 imgAddBlob / imgAddUrl（race slot 适配器），
+   * 加图 / 删图 / 撤销语义见 imgSlot("race:<键>")。 */
   function racePanelHTML() {
     if (!state.tl.racePanel) return "";
     var hid = state.tl.raceHorse;
@@ -2181,21 +2347,13 @@ YJ.editor = (function () {
     }
     var body = "";
     if (sel) {
-      var label = cur ? (cur.kind === "draft" ? "草稿新图 · 待提交" : "已配置") : "未配置";
-      body = '<div class="mt-2.5 flex flex-wrap items-start gap-3">' +
-        (cur && cur.src
-          ? '<img src="' + esc(cur.src) + '" alt="" class="h-[96px] w-[128px] flex-none rounded-md border border-border object-cover">'
-          : '<div class="flex h-[96px] w-[128px] flex-none items-center justify-center rounded-md border border-dashed border-input px-2 text-center text-[11px] text-muted-foreground">' +
-            (cur ? "草稿图预览生成中…" : "无图（节点回退马照片）") + "</div>") +
-        '<div class="min-w-0 flex-1">' +
-          '<div class="flex flex-wrap items-center gap-1.5">' +
-            '<label class="' + BTN + ' cursor-pointer select-none' + (state.tl.raceBusy ? " opacity-40" : "") + '">上传/替换配图' +
-              '<input data-rmfile="' + esc(sel) + '" type="file" accept="image/*" class="hidden"' + dis + "></label>" +
-            (cur ? '<button data-rmdel="' + esc(sel) + '" class="' + BTN_DANGER + '" type="button"' + dis + ">" +
-              (cur.kind === "draft" ? "撤销本次改动" : "移除配图") + "</button>" : "") +
-          "</div>" +
-          '<div class="mt-1.5 ' + TIP + '">当前：<b class="font-semibold text-secondary-foreground">' + esc(label) + "</b> · 入库文件名 = race_id-序号.webp · 压缩口径与马照片相同</div>" +
-        "</div>" +
+      /* 2026-11-13 统一图片位：瓦片 + 「＋ 添加/替换图片」（本地文件 / 外链，交互全站同款）。
+       * 单图位 · 上传 = 压到 ≤100KB 存 data/photos/<键>-序号.webp；外链本地化失败则原样存链接。 */
+      body = '<div class="mt-2.5">' +
+        imgFieldHTML("race:" + sel) +
+        '<div class="mt-1.5 ' + TIP + '">当前：<b class="font-semibold text-secondary-foreground">' +
+          esc(cur ? (cur.kind === "saved" ? "已配置" : cur.kind === "draft-url" ? "链接图 · 待提交" : "草稿新图 · 待提交") : "未配置") +
+          "</b> · 取图优先级：人工配图 &gt; race.photo（历史兼容）&gt; 马照片 · 移除已配置的图 = 提交时删键回退马照片</div>" +
       "</div>";
     }
     return '<div class="mt-2 rounded-lg border border-border bg-muted/30 p-3">' +
@@ -2256,33 +2414,7 @@ YJ.editor = (function () {
     persistTlDraft();
     render();   /* §133：落箱后同步保存条（同 tlApplyEdit） */
   }
-  function tlPhotoUpload(files) {
-    var arr = [].slice.call(files || []);
-    if (!arr.length) return;
-    state.tl.busy = true; state.tl.log = ["处理中…"];
-    renderTL();
-    compressImage(arr[0]).then(function (r) {
-      if (state.mode === "draft") {
-        var ref = "tl" + Date.now().toString(36) + Math.floor(Math.random() * 1e8).toString(36);
-        return blobPut(ref, r.blob).then(function () {
-          tlPhotoMetaPut(ref, { ext: extOf(r.type), name: arr[0].name || "", bytes: r.toBytes });
-          editEV().photo = "draft:tl:" + ref;   /* 提交时定正式名 ../data/photos/timeline-<n>.<ext> */
-          state.tl.tlPhotos[ref] = { url: URL.createObjectURL(r.blob) };
-          state.tl.log = [arr[0].name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h +
-            " " + mimeShort(r.type) + " → 草稿箱"];
-        });
-      }
-      return writer.savePhoto(r.blob, PHOTO_OWNER_TL).then(function (res) {
-        var b = res.body || {};
-        if (!b.ok) throw new Error((b.error || "入库失败") + "（HTTP " + res.status + "）");
-        editEV().photo = "../" + b.path;    /* 时间线页按 dist/pages 相对直读 ev.photo（不经 YJ_DATA） */
-        state.tl.log = [arr[0].name + "：" + kb(r.fromBytes) + " → " + kb(r.toBytes) + "　" + r.w + "×" + r.h + " " + mimeShort(b.mime) + " → " + b.path];
-      });
-    }).catch(function (e) { state.tl.log = ["图片失败：" + e.message]; }).then(function () {
-      state.tl.busy = false;
-      renderTL();
-    });
-  }
+  /* 2026-11-13 统一图片位：tlPhotoUpload 已并入 imgAddBlob / imgAddFiles（tl slot 适配器） */
 
   function tlEventHTML(ev, i) {
     var store = tlToStore(ev);
@@ -2427,22 +2559,9 @@ YJ.editor = (function () {
       return '<label class="block min-w-0"><span class="block text-[10.5px] font-medium text-muted-foreground">' + lab + '</span>' +
         '<input data-tf="' + k + '" type="text" value="' + esc(ev[k] || "") + '" class="' + INPUT + ' mt-1" autocomplete="off" placeholder="' + esc(ph || "") + '"' + dis + "></label>";
     }
-    /* §150 图片小格：84×60 缩略图 + ✕ 移除 + 「＋上传图片」钮；手填路径降为紧凑小输入框（兼容保留） */
-    var phCur = String(ev.photo || "").trim();
-    var phTile = phCur
-      ? '<span class="yj-ed-tlph"><img src="' + esc(photoSrc(phCur)) + '" alt="" loading="lazy" decoding="async">' +
-        '<button data-tlphdel="1" type="button" class="yj-ed-tlph-x" title="移除图片">✕</button></span>'
-      : '<span class="yj-ed-tlph yj-ed-tlph--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-6 w-6 text-muted-foreground/50"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 18l4.5-5 3 3.4L15.5 13 19 18"/></svg></span>';
-    var photoBlock = '<div class="flex min-w-0 flex-wrap items-start gap-2.5">' + phTile +
-      '<div class="flex min-w-0 flex-col gap-1.5">' +
-        '<div class="flex flex-wrap items-center gap-2">' +
-          '<label class="' + BTN + ' cursor-pointer select-none' + (dis ? " opacity-40" : "") + '">＋ 上传图片' +
-            '<input id="tlPhotoFile" type="file" accept="image/*" class="hidden"' + dis + "></label>" +
-          '<span class="' + TIP + '">浏览器内压到 ≤100KB，文件名自动生成（timeline-N.webp）</span></div>' +
-        '<input data-tf="photo" type="text" value="' + esc(ev.photo || "") + '" class="' + INPUT + ' h-7 max-w-[320px] text-[11.5px] font-normal" ' +
-          'autocomplete="off" placeholder="或手填：站内 ../data/photos/xxx.webp / http(s)"' + dis + ">" +
-        '<span class="' + TIP + '">引用比赛自动带马首图（与自动节点同规则）；清空 = 落表无图</span>' +
-      "</div></div>";
+    /* 2026-11-13 统一图片位：瓦片 + 「＋ 添加/替换图片」（本地文件 / 外链，交互与马匹照片、比赛配图同款）。
+     * 单图位 · 引用比赛自动带马首图（与自动节点同规则）· 清空（✕）= 落表无图。 */
+    var photoBlock = imgFieldHTML("tl");
     /* §150 标签胶囊流：胶囊一览（点胶囊展开该枚编辑，一次一个）+「＋加标签」；
      * 展开的编辑行沿用原三输入（label / cat / tip），改动即写 ev.tags（input 委托链路不变）。 */
     var tagEdit = (typeof state.tl.tagEdit === "number" && state.tl.tagEdit >= 0 && state.tl.tagEdit < ev.tags.length)
@@ -2518,20 +2637,25 @@ YJ.editor = (function () {
     if (!state.tl.loaded) return '<div class="hint-empty">时间线表加载中…</div>';
     var evs = state.tl.events;
     var dis = state.tl.busy ? " disabled" : "";
+    /* 工具条：空态时全部入口走下方邀请卡（含比赛配图卡），只留「放弃修改」；
+     * 有节点后邀请卡消失 → 三个入口按钮回归工具条。 */
     var toolbar = '<div class="flex flex-wrap items-center gap-2">' +
-        '<button data-tlnew="race" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 引用比赛</button>" +
-        '<button data-tlnew="free" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 自填荣誉</button>" +
-        '<button data-rmtoggle="1" class="' + BTN_DIS + '" type="button"' + dis + ">比赛配图</button>" +
+        (evs.length
+          ? '<button data-tlnew="race" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 引用比赛</button>" +
+            '<button data-tlnew="free" class="' + BTN_DIS + '" type="button"' + dis + ">＋ 自填荣誉</button>" +
+            '<button data-rmtoggle="1" class="' + BTN_DIS + '" type="button"' + dis + ">比赛配图</button>"
+          : "") +
         '<button data-tlreset="1" class="' + BTN_DIS + ' yj-ed-op--ghost" type="button"' + dis + ">放弃修改</button>" +
         (state.tl.dirty ? '<span class="' + BADGE_DIRTY + '">草稿 · 未提交</span>' : "") +
         '<span class="' + TIP + ' ml-auto">' + evs.length + " 个节点 · " + esc(TL_PATH) + "</span>" +
       "</div>";
-    /* v3 signature：空态 = 两张入口邀请卡（图标 + 标题 + 一句说明），与页首分段导航同一分组语言；
-     * 工具条保留同款入口（有节点后从这里加），空态卡只负责「第一次来就懂」 */
+    /* v3 signature：空态 = 三张入口邀请卡（图标 + 标题 + 一句说明），与页首分段导航同一分组语言；
+     * 工具条保留同款入口（有节点后从这里加），空态卡只负责「第一次来就懂」。比赛配图（§2026-11-13
+     * 用户定稿）与两个加节点入口同款卡片化，工具条不再单出按钮。 */
     var empty = evs.length ? "" :
-      '<div class="mx-auto mb-2 mt-8 flex max-w-[620px] flex-col items-center gap-3">' +
+      '<div class="mx-auto mb-2 mt-8 flex max-w-[760px] flex-col items-center gap-3">' +
         '<div class="text-[13px] font-semibold text-secondary-foreground">还没有人工节点</div>' +
-        '<div class="flex w-full items-stretch gap-3">' +
+        '<div class="flex w-full items-stretch gap-3 max-md:flex-col">' +
           '<button data-tlnew="race" type="button" class="yj-ed-card"' + dis + ">" +
             '<span class="yj-ed-card-ico">' + ICO_FLAG + "</span>" +
             "<b>引用比赛</b>" +
@@ -2540,6 +2664,10 @@ YJ.editor = (function () {
             '<span class="yj-ed-card-ico">' + ICO_AWARD + "</span>" +
             "<b>自填荣誉</b>" +
             "<span>自由登记受赏、纪念节点；date / title 必填</span></button>" +
+          '<button data-rmtoggle="1" type="button" class="yj-ed-card"' + dis + ">" +
+            '<span class="yj-ed-card-ico">' + ICO_IMG + "</span>" +
+            "<b>比赛配图</b>" +
+            "<span>给自动生成的比赛节点配专属图（外链 / 本地文件）；台账场同样可配</span></button>" +
         "</div>" +
         '<div class="' + TIP + '">节点存进 ' + esc(TL_PATH) + " · 提交后 CI 自动重算航迹线（约 2 分钟）</div>" +
       "</div>";
@@ -2679,6 +2807,7 @@ YJ.editor = (function () {
       var c = rmDrafts[rid];
       if (!c) return;
       var what = c.mode === "remove" ? "移除配图（节点回退马照片）"
+        : c.url ? "链接图 · " + c.url
         : "新配图 · " + ((c.item && c.item.name) || "图片") + " · " + kb(c.item && c.item.bytes);
       draftRows.unshift('<div class="yj-ed-entry">' +
         '<div class="flex items-baseline gap-2 min-w-0">' +
@@ -2857,7 +2986,7 @@ YJ.editor = (function () {
     state.err = "";
     state.report = null;
     state.editing = "";                                   /* 台账：同时只开一行，换马即收起 */
-    state.photos.draft = []; state.photos.mode = ""; state.photos.open = false;
+    state.photos.draft = []; state.photos.mode = "";
     state.photos.log = []; state.photos.err = ""; state.photos.drag = -1;
     hydrateHorse();                                       /* draft：把草稿箱里这匹的半成品回填进表单 */
     render();
@@ -3112,47 +3241,21 @@ YJ.editor = (function () {
     if (els.reset) els.reset.addEventListener("click", function () {
       if (state.mode === "draft" && state.horse) draftDropHorse(state.horse.id);
       state.draft = {}; state.note = ""; state.err = ""; state.editing = "";
-      state.photos.mode = ""; state.photos.draft = []; state.photos.open = false;
+      state.photos.mode = ""; state.photos.draft = [];
       state.gh = null;
       render();
     });
     bindSections();     /* 段标题（字段）点击折叠展开 */
+    bindImgField();     /* 统一图片位（data-img* 委托：马匹 / 时间线节点 / 比赛配图三处共用） */
 
-    /* ---------------- M2b 图片区（事件全部委托在容器上，重绘不丢监听；仅 horse 页有 #photos） ---------------- */
-    if (els.photos) els.photos.addEventListener("change", function (ev) {
-      var t = ev.target;
-      if (t.id === "photoFile" && t.files && t.files.length) {
-        var files = [].slice.call(t.files);
-        t.value = "";                                  /* 清掉，允许连续再选同一张 */
-        uploadQueue(files, state.horse && state.horse.id);
-      }
-    });
-    if (els.photos) els.photos.addEventListener("input", function (ev) {
-      if (ev.target.id === "photoURL") state.photos.url = ev.target.value;
-    });
-    if (els.photos) els.photos.addEventListener("keydown", function (ev) {
-      if (ev.target.id === "photoURL" && ev.key === "Enter") {
-        ev.preventDefault();
-        var u = (state.photos.url || "").trim();
-        if (u) uploadURL(u);
-      }
-    });
+    /* ---------------- M2b 图片区（加图/删图/外链走 bindImgField；这里只留排序与马位特有操作） ---------------- */
     if (els.photos) els.photos.addEventListener("click", function (ev) {
       var b = ev.target.closest ? ev.target.closest(
-        "button[data-pdel],button[data-pnone],button[data-punpin],button[data-pslot],button[data-pclose],button[data-pmv],#photoURLBtn") : null;
+        "button[data-pnone],button[data-punpin],button[data-pmv]") : null;
       if (!b) return;
-      /* 纯 UI：照片位 / 「上传/外链」钮展开入库面板，「收起」关掉 —— 不要求服务端在线 */
-      if (b.dataset.pslot !== undefined) { state.photos.open = !state.photos.open; renderPhotos(); return; }
-      if (b.dataset.pclose !== undefined) { state.photos.open = false; renderPhotos(); return; }
       if (b.dataset.pmv !== undefined) { movePhoto(Number(b.closest("[data-pi]").dataset.pi), Number(b.dataset.pmv)); render(); return; }   /* §155 触屏调序 */
-      if (b.id === "photoURLBtn") {
-        var u = (state.photos.url || "").trim();
-        if (u) uploadURL(u); else photoLog("先粘贴一个图片 URL", "err");
-        return;
-      }
       if (!state.horse) return;      /* draft 形态同样允许改图片（改动进草稿箱） */
-      if (b.dataset.pdel !== undefined) delPhoto(Number(b.dataset.pdel));
-      else if (b.dataset.pnone !== undefined) markNoPhoto();
+      if (b.dataset.pnone !== undefined) markNoPhoto();
       else if (b.dataset.punpin !== undefined) unpinPhoto();
       else return;
       render();
@@ -3180,7 +3283,7 @@ YJ.editor = (function () {
           if (f) files.push(f);
         }
       }
-      if (files.length) { ev.preventDefault(); uploadQueue(files, state.horse.id); }
+      if (files.length) { ev.preventDefault(); imgAddFiles("horse", files); }
     });
 
     /* ---------------- M2c 时间线区（仅 timeline 页 / 或 horse 页保留段时有 #tl） ---------------- */
@@ -3204,18 +3307,8 @@ YJ.editor = (function () {
         return;
       }
       if (d.tlCat !== undefined) { editEV().tags[Number(d.tlCat)].cat = t.value; renderTL(); return; }
-      if (d.rmrace !== undefined) { state.tl.raceSel = t.value; renderTL(); return; }   /* STEP2 只影响选择态 */
-      if (d.rmfile !== undefined && t.files && t.files.length) {
-        var rfiles = [].slice.call(t.files);
-        t.value = "";
-        rmUpload(rfiles, d.rmfile);
-        return;
-      }
-      if (t.id === "tlPhotoFile" && t.files && t.files.length) {
-        var files = [].slice.call(t.files);
-        t.value = "";
-        tlPhotoUpload(files);
-      }
+      if (d.rmrace !== undefined) { state.tl.raceSel = t.value; renderTL(); }   /* STEP2 只影响选择态 */
+      /* 配图（rmfile / tlPhotoFile / rmurl）已并入统一图片位 bindImgField 的 data-img* 委托 */
     });
     if (els.tl) els.tl.addEventListener("click", function (ev) {
       /* §150 标签胶囊：点胶囊本体展开编辑（✕ 按钮走下方 button 分支删除） */
@@ -3229,20 +3322,9 @@ YJ.editor = (function () {
       if (!b) return;
       var d = b.dataset;
       if (d.tlnew !== undefined) openTLEdit(-1, d.tlnew || "free");   /* race=引用比赛 / free=自填荣誉 */
-      else if (d.tlphdel !== undefined) { editEV().photo = ""; renderTL(); }   /* §150 图片小格移除 */
       else if (d.tlmove !== undefined) tlMove(Number(d.tlidx), Number(d.tlmove));
       else if (d.rmtoggle !== undefined) { state.tl.racePanel = !state.tl.racePanel; renderTL(); }
       else if (d.rmclose !== undefined) { state.tl.racePanel = false; renderTL(); }
-      else if (d.rmdel !== undefined) {
-        var rrid = d.rmdel, rc = rmGet()[rrid];
-        if (rc && rc.mode === "set") {                          /* 撤销未提交的新图 = 清掉该键草稿改动 */
-          if (rc.item && rc.item.ref) blobDel(rc.item.ref);
-          delete state.tl.racePhUrl[rrid];
-          rmPut(rrid, null);
-        } else rmPut(rrid, { mode: "remove" });                 /* 盘上已配置 → 提交时删键 */
-        /* §133：撤销草稿（1→0）/ 标记移除已配置（0→1）都改草稿数 → 全量 render 重算保存条 */
-        render();
-      }
       else if (d.tledit !== undefined) openTLEdit(Number(d.tledit));
       else if (d.tldel !== undefined) tlDelete(Number(d.tldel));
       else if (d.tlapply !== undefined) tlApplyEdit();
@@ -3296,7 +3378,7 @@ YJ.editor = (function () {
       state.draft = {};
       state.note = "";
       state.editing = "";
-      state.photos.mode = ""; state.photos.draft = []; state.photos.open = false;
+      state.photos.mode = ""; state.photos.draft = [];
       return refresh(true).then(function () { state.saving = false; render(); });
     });
   }
@@ -3386,16 +3468,16 @@ YJ.editor = (function () {
 
   return {
     init: init, probe: probe, FIELDS: FIELDS, state: state,
-    /* 台账形态：行内编辑 + 分段折叠（?tab= 直达）；渲染态就是 state.editing / state.photos.open */
+    /* 台账形态：行内编辑 + 分段折叠（?tab= 直达）；渲染态就是 state.editing */
     openSec: openSec, applyTab: applyTab, render: render,
     /* 草稿箱公共访问（§104 批量表格页复用同一条提交链路）：ov=人工字段草稿，rc=比赛编辑草稿 */
     draftRead: draftRead, draftWrite: draftWrite,
     ovGet: ovGet, ovPut: ovPut, rcGet: rcGet, rcPut: rcPut, rcN: rcN,
     vidGet: vidGet, vidPut: vidPut, vidN: vidN, vidDropAll: vidDropAll,
     submitDrafts: submitDrafts, mergeRaceEdits: mergeRaceEdits, mergeVideoManual: mergeVideoManual,
-    /* M2b：压缩 + 入库链路（门禁/夹具直接调这些） */
+    /* M2b：压缩 + 入库链路（门禁/夹具直接调这些）；2026-11-13 起加图统一走 imgAddFiles / imgAddUrl */
     compressImage: compressImage, fetchRemote: fetchRemote, webpEncodable: webpEncodable,
-    uploadFiles: uploadQueue, uploadURL: uploadURL,
+    uploadFiles: imgAddFiles, uploadUrl: imgAddUrl,
     workingPhotos: workingPhotos, photoSrc: photoSrc, renderPhotos: renderPhotos,
     /* M2c：时间线人工节点 */
     TL_CATS: TL_CATS, loadTimeline: loadTimeline, saveTimeline: saveTimeline,
