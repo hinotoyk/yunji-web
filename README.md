@@ -199,7 +199,7 @@ python run_update.py <策略>
 - **Cloudflare Pages**：`wrangler.jsonc` 指向 `./dist`（`front/public/_headers` 管缓存头）。⚠ CF 会把 `/pages/x.html` **307** 剥成 `/pages/x`，凡用 `location.pathname` 比对 `.html` 的代码必须先经外壳 `pageKey()` 归一（线上侧栏高亮全灭的坑踩过一次）。
 - **数据自动更新**（5 条 workflow，串联不抢文件）：`update-data.yml`（每天 UTC 22:00 / 北京 06:00 跑 `--ci`）→ `status.yml`（登録状态）与 `video-task.yml`（B 站回放映射）串联；`update-day.yml`（北京 21:00 快更当天赛果）。
 - 前置：Settings → Pages → Source 选 **GitHub Actions**；Settings → Actions → Workflow permissions 勾选读写；末步要 dispatch 部署的 job 必须声明 `actions: write`（否则 403）。
-- **fork 后要改的站点资产**（不在 config 里）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`、`front/package.json` 与 `wrangler.jsonc` 的 `name`、`serve.config.json` 的 `name`/`port`。`.github/workflows/*` **不用改**——仓库名走 `${{ github.repository }}`，域名只出现在注释里。逐步清单见 [docs/FORK.md](./docs/FORK.md)。
+- **fork 后要改的站点资产**（不在 config 里）：`front/public/favicon.svg`、`front/public/apple-touch-icon.png`、`front/public/friend-links.js` 的内置 `LEGACY_SITES`、`front/package.json` 与 `wrangler.jsonc` 的 `name`、`serve.config.json` 的 `name`/`port`（新站从 9094 起，9090~9093 已被四兄弟站占）、`README.md`/`AGENTS.md` 里的站名与产驹数。`.github/workflows/*` **不用改**——仓库名走 `${{ github.repository }}`，域名只出现在注释里。逐步清单见 [docs/FORK.md](./docs/FORK.md)。
 
 ## 文档导航
 
