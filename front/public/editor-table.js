@@ -75,6 +75,8 @@ YJ.editorTable = (function () {
     touchedOv: {},         /* 会话中写过的马 id */
     startRc: null,         /* 会话开始时 d.rc 快照 */
     vidBase: {},           /* §187 比赛键 → {sources:[…], origin:"auto"|"saved"}（video-map + video_manual 合并） */
+    nameById: {},          /* §188 id → 四名 {jp,en,hk,cn,main}（馬名/欧字馬名/香港馬名/自译馬名，有效值口径） */
+    nameByJp: {},          /* §188 馬名 → 四名（比赛页签 hid 空的手工行按 出走馬名 精确回退联查） */
     cur: null, editing: null,
     undoJ: [], redoJ: [],
     batch: 0, jbuf: [],     /* 复合操作（粘贴导入等）的日志合并 */
@@ -461,6 +463,7 @@ YJ.editorTable = (function () {
     jEnd();
     S.filterClear = 1;
     sh0.filter = ""; if (els.search) els.search.value = "";
+    invalidateCols();          /* §189：新行可能有更宽值 → 重列宽（3 行合成探针，成本可忽略） */
     rebuild();
     var td = revealRow(r);
     if (td) { td.scrollIntoView({ block: "nearest" }); startEdit(td); }
@@ -539,22 +542,86 @@ YJ.editorTable = (function () {
       rows.push(r);
     });
     S.sh.basic.rows = rows;
+    buildNameIdx();      /* §188 马名四名检索联查表（行值 = 有效值口径，两页签共用） */
   }
 
   /* ---------------- 视图/渲染 ---------------- */
   function rowTextBasic(r) {
-    return BASIC_LAYOUT.map(function (c) { return String(r[c.k] == null ? "" : r[c.k]); }).join("\t").toLowerCase();
+    return BASIC_LAYOUT.map(function (c) { return String(r[c.k] == null ? "" : r[c.k]); }).join("\t").toLowerCase()
+      + "\t" + nameTextOf(r, "all").toLowerCase();
   }
   function rowTextRaces(r) {
-    return RACE_LAYOUT.map(function (c) { return String(r[c.k] == null ? "" : r[c.k]); }).join("\t").toLowerCase();
+    return RACE_LAYOUT.map(function (c) { return String(r[c.k] == null ? "" : r[c.k]); }).join("\t").toLowerCase()
+      + "\t" + nameTextOf(r, "all").toLowerCase();
+  }
+
+  /* ---------------- §188 马名四名检索（原名/英文名/港译名/中文名，两页签通用） ----------------
+   * 基本信息页签：馬名/香港馬名/自译馬名 本就是表格列（全文检索天然覆盖），英文名（欧字馬名）不在列 → 补进检索文本；
+   * 比赛记录页签：行上只有 出走馬名（原名），其余三名靠 r.hid → 马匹档案联查（hid 空 = 手工追加行 → 按出走馬名精确回退）。
+   * 联查表 S.nameById/S.nameByJp 从基本信息行构建（有效值 = 草稿/已保存优先），页签切换时重建
+   * （本会话在基本信息改过港译/自译 → 切到比赛页签检索不落旧值）。列式定向：列名可为
+   * 馬名/马名（四名任一命中）、原名 / 英文名 / 港译名 / 中文名（单名专列，两页签均可用）。 */
+  var NAME_COLS = { "馬名": "all", "马名": "all", "原名": "jp", "英文名": "en", "港译名": "hk", "中文名": "cn" };
+  function buildNameIdx() {
+    var byId = {}, byJp = {};
+    (S.sh.basic.rows || []).forEach(function (r) {
+      var id = String(r.id == null ? "" : r.id);
+      var jp = String(r.馬名 == null ? "" : r.馬名).trim();
+      var h = YJ.editor.state.byId[id] || {};
+      var m = "";
+      try { m = String(YJ.util.mainName(h) || "").trim(); } catch (e) { }
+      var nv = {
+        jp: jp,
+        en: String(h.欧字馬名 == null ? "" : h.欧字馬名).trim(),
+        hk: String(r.香港馬名 == null ? "" : r.香港馬名).trim(),
+        cn: String(r.自译馬名 == null ? "" : r.自译馬名).trim(),
+        main: m.charAt(0) === "#" ? "" : m          /* 剥生产国尾缀的主名（#id 兜底不算名） */
+      };
+      if (id) byId[id] = nv;
+      if (jp) byJp[jp] = nv;
+    });
+    S.nameById = byId; S.nameByJp = byJp;
+  }
+  function nameIdxOf(r) {
+    var hid = String(r.hid == null ? "" : r.hid);
+    if (hid && S.nameById[hid]) return S.nameById[hid];
+    var nm = String(r.出走馬名 == null ? "" : r.出走馬名).trim();
+    return nm ? (S.nameByJp[nm] || null) : null;
+  }
+  /* t = all | jp | en | hk | cn → 该行马匹对应名字集合（Tab 连接，供子串匹配） */
+  function nameTextOf(r, t) {
+    var isB = S.sheet === "basic", nv, jp, hk = "", cn = "";
+    if (isB) {
+      jp = String(r.馬名 == null ? "" : r.馬名);
+      hk = String(r.香港馬名 == null ? "" : r.香港馬名);
+      cn = String(r.自译馬名 == null ? "" : r.自译馬名);
+      nv = S.nameById[String(r.id == null ? "" : r.id)] || {};
+    } else {
+      jp = String(r.出走馬名 == null ? "" : r.出走馬名);
+      nv = nameIdxOf(r) || {};
+    }
+    if (t === "en") return nv.en || "";
+    if (t === "hk") return isB ? hk : (nv.hk || "");
+    if (t === "cn") return isB ? cn : (nv.cn || "");
+    var parts = [jp, nv.main || ""];
+    if (t === "all") {
+      parts.push(nv.en || "", isB ? hk : (nv.hk || ""), isB ? cn : (nv.cn || ""));
+      if (!isB) parts.push(nv.jp || "");           /* 台账出走馬名与档案馬名偶有细微差异 → 双名都进检索 */
+    }
+    return parts.join("\t");
   }
   function computeView() {
-    var s = sh(), q = s.filter.trim().toLowerCase();
-    /* §150 筛选增强：q 形如「列名:值」时只匹配该列（列名 = 表头中文名或字段键；认不出列名则回退全文本检索） */
+    /* §188：全角冒号归一半角（中文 IME 输「列名：值」时原先会整串进全文检索） */
+    var s = sh(), q = s.filter.trim().toLowerCase().replace("：", ":");
+    /* §150 筛选增强：q 形如「列名:值」时只匹配该列（列名 = 表头中文名或字段键；认不出列名则回退全文本检索）。
+     * §188 马名四名检索：列名先查 NAME_COLS（馬名/马名 = 四名任一；原名/英文名/港译名/中文名 = 单名专列，
+     * 基本信息页签的 馬名 列也因此从「仅原名」升级为四名任一命中），再走常规列匹配 */
     var colQ = null, mq = q.match(/^([^\s:]+):(.*)$/);
     if (mq && mq[2] !== "") {
       var want = mq[1], val = mq[2].trim();
-      layout().forEach(function (c) {
+      var nt = NAME_COLS[want];
+      if (nt) colQ = { k: null, v: val, t: nt };
+      else layout().forEach(function (c) {
         if (colQ) return;
         if (c.k === want || label(c.k) === want) colQ = { k: c.k, v: val };
       });
@@ -563,7 +630,9 @@ YJ.editorTable = (function () {
     s.rows.forEach(function (r, i) {
       if (S.onlyDirty && !rowDirty(r)) return;      /* §150「只看待保存」：只列出有本页改动的行 */
       var hit;
-      if (colQ) hit = String(r[colQ.k] == null ? "" : r[colQ.k]).toLowerCase().indexOf(colQ.v) >= 0;
+      if (colQ) hit = colQ.t
+        ? nameTextOf(r, colQ.t).toLowerCase().indexOf(colQ.v) >= 0
+        : String(r[colQ.k] == null ? "" : r[colQ.k]).toLowerCase().indexOf(colQ.v) >= 0;
       else {
         var txt = S.sheet === "basic" ? rowTextBasic(r) : rowTextRaces(r);
         hit = !q || txt.indexOf(q) >= 0;
@@ -629,9 +698,10 @@ YJ.editorTable = (function () {
    * 11k+ 行全量渲染（≈45 万单元格）→ 首屏秒级阻塞、滚动整表重排。改为只渲染可视区 ± 缓冲：
    *   <tr 占位高度=start*rowH> + 真实行 [start,end) + <tr 占位高度=(total-end)*rowH>
    * 行高恒定（py-[5px] + 12px/1.5 + nowrap，实测约 29px），占位行撑住滚动条总高度，手感不变。
-   * 列宽：auto 布局下宽度由「当前可见行」决定 → 滚动时列宽会跳。首次渲染用探针行（跨全表抽样
-   *   ≤400 行）量出各列宽，锁进 <colgroup> + table-layout:fixed，此后列宽恒定；超长内容走
-   *   ellipsis + title（悬停看全名）。列显隐/切页签时 invalidateCols() 重新量。 */
+   * 列宽：auto 布局下宽度由「当前可见行」决定 → 滚动时列宽会跳。首次渲染用探针量出各列宽，
+   *   锁进 <colgroup> + table-layout:fixed，此后列宽恒定。§189 探针 = 全表扫最宽值合成行（见
+   *   lockCols 注释），列宽容纳全部行的最宽内容（表格可横滚，不出省略号）；ellipsis + title 仅作
+   *   估宽排序兜底。列显隐/切页签/增删行时 invalidateCols() 重新量。 */
   var VP = { rowH: 0, start: -1, end: -1, buf: 12, cols: 0 };
 
   function invalidateCols() {
@@ -675,7 +745,7 @@ YJ.editorTable = (function () {
       } else if (!isB && r._pend && r._pend[c.k]) {
         tip = ' title="原值：' + esc(String(r._base[c.k] == null ? "" : r._base[c.k])) + '"';
       } else if (String(r[c.k] == null ? "" : r[c.k]).length > 12) {
-        tip = ' title="' + esc(String(r[c.k])) + '"';   /* §171 列宽锁定后超长内容 ellipsis → 悬停看全名 */
+        tip = ' title="' + esc(String(r[c.k])) + '"';   /* §189 全量列宽后仅兜底（估宽误序的极罕见值） */
       }
       /* §150 基本信息页签：马名格附「↗ 去编辑」锚点（新标签开 edit.html?id=，rehome 自动回壳） */
       if (isB && c.k === "馬名" && r._st !== "del") {
@@ -688,13 +758,68 @@ YJ.editorTable = (function () {
     h.push("</tr>");
     return h.join("");
   }
-  /* 列宽探针：抽样渲染 → 量 thead 各列宽 → 锁 <colgroup> + table-layout:fixed */
+  /* 列宽探针（§189 全量改，2026-11-13）：合成「每列最宽值」行 → 量 thead 各列宽 → 锁 <colgroup> + table-layout:fixed。
+   * 前身是 ≤400 行抽样（§171）：11k 行里会漏掉真最宽值 → R=10/11 截成「1…」、長賞金、來源 netkei… 等 ellipsis。
+   * 既然表格横向可滚，列宽必须容纳**全部行**的最宽内容 → 先全表扫出每列最宽候选值（视觉长度估算：
+   * 全角类 charCode≥0x1100 记 2、半角记 1；去重后 ≤8 个全保留，>8 个取估宽前 3——比例字体按估宽排
+   * 序有细微误序，多候选兜底），再拼成 1–3 行合成行过 rowHtml/cellInner 同一渲染管线（格徽章 / 馬名
+   * 的 ↗ 链接 / 視频源芯片等固有宽度一并量准）。全表扫 = 纯字符串比较（11k×21 列 <50ms），合成行
+   * ≤3 行比原 400 行探针更快；cell 的 overflow-hidden text-ellipsis 保留为最后兜底（宽度量准则永不触发）。 */
+  function estLen(v) {
+    var s = String(v == null ? "" : v), n = 0;
+    for (var i = 0; i < s.length; i++) n += s.charCodeAt(i) >= 0x1100 ? 2 : 1;
+    return n;
+  }
   function lockCols() {
     var s = sh(), view = s.view, isB = S.sheet === "basic";
     if (!view.length || !els.tbody) return;
-    var step = Math.max(1, Math.ceil(view.length / 400));
+    var cols = layout().filter(function (c) { return !s.hidden[c.k]; });
+    /* 每列值收集（去重哈希，photo/視频源 不收值、只记最大张数/源数，走 cellInner 原生渲染量宽） */
+    var seen = {}, maxPhoto = 0, maxVid = 0;
+    view.forEach(function (v) {
+      var r = v.r;
+      cols.forEach(function (c) {
+        var k = c.k, val = r[k];
+        if (c.type === "video") {
+          var n = r._vid && r._vid.sources ? r._vid.sources.length : 0;
+          if (n > maxVid) maxVid = n;
+          return;
+        }
+        if (k === "photo") {
+          var p = Array.isArray(val) ? val.length : (val ? 1 : 0);
+          if (p > maxPhoto) maxPhoto = p;
+          return;
+        }
+        if (val == null || val === "") return;
+        var str = String(val);
+        var m = seen[k] || (seen[k] = {});
+        if (!(str in m)) m[str] = estLen(str);
+      });
+    });
+    var KEEP_ALL = 8, TOP = 3, picks = {};   /* k → [值]（估宽降序） */
+    cols.forEach(function (c) {
+      var m = seen[c.k], ks;
+      if (!m || !(ks = Object.keys(m)).length) return;
+      ks.sort(function (a, b) { return m[b] - m[a]; });
+      picks[c.k] = ks.slice(0, ks.length <= KEEP_ALL ? ks.length : TOP);
+    });
+    /* 合成行：第 j 行取各列第 j 候选（不足回退第 0），photo/視频源 最宽形态只进第 0 行 */
+    var rows = [];
+    for (var j = 0; j < TOP; j++) {
+      var any = false, r = { id: "__probe__" };
+      cols.forEach(function (c) {
+        var ps = picks[c.k];
+        if (ps) { r[c.k] = ps[Math.min(j, ps.length - 1)]; any = true; }
+      });
+      if (!any && j > 0) break;
+      if (j === 0) {
+        if (maxPhoto) r.photo = new Array(maxPhoto);
+        if (maxVid) r._vid = { sources: new Array(maxVid), origin: "draft" };
+      }
+      rows.push({ r: r, i: -1 });
+    }
     var h = [];
-    for (var i = 0; i < view.length; i += step) h.push(rowHtml(view[i], i, isB));
+    for (var i = 0; i < rows.length; i++) h.push(rowHtml(rows[i], -1, isB));
     els.tbody.innerHTML = h.join("");
     var ths = $all("thead th", els.grid);
     if (!ths.length) return;
@@ -1030,6 +1155,7 @@ YJ.editorTable = (function () {
     syncRc();
     jEnd();
     sh().filter = ""; if (els.search) els.search.value = "";
+    invalidateCols();          /* §189：导入行可能有更宽值 → 重列宽 */
     rebuild(); YJ.editor.render();
     toast("粘贴导入 " + grid.length + " 行（青底=新增；馬名未匹配的行不会提交）");
   }
@@ -1097,6 +1223,7 @@ YJ.editorTable = (function () {
     });
     S.cur = null; S.editing = null;
     invalidateCols();          /* §171 两张表列定义不同 → 列宽重新量 */
+    buildNameIdx();            /* §188：基本信息行可能本会话改过港译/自译 → 切页签重建四名联查表 */
     buildColMenu(); rebuild(); syncToolbar();
     /* 外壳侧栏跟随：页内切页签不产生 iframe load → postMessage 让外壳把高亮挪到对应编辑条目 */
     try {
@@ -1133,11 +1260,11 @@ YJ.editorTable = (function () {
       syncDirtyBtn();
       buildColMenu(); rebuild();
       document.addEventListener("yj-rc-dropped", function () {
-        S.startRc = null; hydrateRaces(); rebuild(); updateSummary();
+        S.startRc = null; hydrateRaces(); invalidateCols(); rebuild(); updateSummary();
       });
       /* §187 视频源草稿被放弃/提交清箱 → 重新水合视频列（表格行结构不动） */
       document.addEventListener("yj-vid-dropped", function () {
-        hydrateVid(); rebuild(); updateSummary();
+        hydrateVid(); invalidateCols(); rebuild(); updateSummary();
       });
       /* 草稿箱里放弃了一条**字段草稿**（editor.js::discardOne 的普通马匹分支）→ 重新水合基本信息表。
        * 2026-10-30 修：此前该分支只删 localStorage 不派发事件，表格页内存里的 S.pendOv 与
@@ -1149,6 +1276,7 @@ YJ.editorTable = (function () {
         if (id) { delete S.touchedOv[id]; delete S.pendOv[id]; }
         if (S.editing) { S.editing = null; }      /* 正在编辑的格一并丢弃（放弃草稿语义） */
         hydrateBasic();
+        invalidateCols();                          /* §189：行值回官方 → 重列宽 */
         rebuild();                                 /* 内含 syncToolbar + updateSummary */
       });
       /* 提交成功（editor.js::submitDrafts 的成功 then）→ 两张表全量重水合。

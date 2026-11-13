@@ -565,3 +565,20 @@
 @media (prefers-reduced-motion:reduce){
   .yj-trophy{animation:none}
 }
+
+/* ---------- §189 全站统一滚动条（2026-11-13 · @layer 外防候选裁剪） ----------
+ * 目标：站内所有横/竖滚动条统一成「基本信息」页竖条的定稿样式 —— 8px 胶囊 thumb（#e5e5e5 +
+ * 2px 白描边 → 视觉约 4px 细条）、透明轨道、hover 加深；与 .yj-drop-scroll / .yj-pane 同款。
+ * 生效面：页面 body 主滚动 + 各 overflow 容器（表格滚动区 / 侧栏 / 下拉 / 编辑抽屉 …）。
+ * 不受影响的既有规则（特异性高于本通配，按原样保留）：
+ *   - #sliceSeg / #yseg 隐藏滚动条（leaderboard/stats 分段条，故意无条横滑）；
+ *   - .yj-drop-scroll / .yj-pane 本就同款，纯冗余保留作锚点。
+ * Firefox：scrollbar-width/scrollbar-color 声明在 html 上、靠继承全站生效；
+ * Chromium：::-webkit-* 伪元素按元素生效，须用 * 通配（html 声明对伪元素无继承）。
+ * 站点仅亮色（tailwind darkMode 预留未启用），hex 与既有两处写死一致。 */
+html{scrollbar-width:thin;scrollbar-color:#e5e5e5 transparent}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-thumb{background:#e5e5e5;border-radius:99px;border:2px solid #fff}
+*::-webkit-scrollbar-thumb:hover{background:rgba(115,115,115,.5)}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-corner{background:transparent}
