@@ -42,6 +42,17 @@
       <div id="body" class="min-h-full"></div>
     </main>
   </div>
+
+  <!-- 站尾声明（2026-11-15）：外壳没有全宽页脚（侧栏 220px 塞不下，已否决），
+       放到首页（本页 = 默认入口）内容区最底部。父容器是 flex h-screen flex-col，
+       上面两栏是 flex-1 → 本行天然贴底（内容不满一屏时也在底部）；max-md 时容器
+       h-auto，声明跟内容顺排、滚到底可见。
+       文案口径 = 四站统一（jbis / racing-calendar 的 footer）；完整条款见仓库 NOTICE。 -->
+  <div class="w-full flex-none px-6 pb-3 pt-1 text-center text-[11px] leading-relaxed text-muted-foreground/70 max-md:px-3.5 max-md:pb-8 max-md:pt-2">
+    <div>仅供个人学习、研究 · 赛马应援 · 非商业用途 · 请以官方发布为准</div>
+    <!-- 署名行：与 jbis / racing-calendar 页脚的 .powered 同位置同语气（居中、比声明再淡半档） -->
+    <div class="mt-0.5 text-[10.5px] tracking-[.5px] text-muted-foreground/60">power by ディープ求索</div>
+  </div>
 </div>
 
 <!-- site-config.js（构建产物，D1）：YJ_SITE 运行时出处，profile 的动态 title（:388 直读）依赖它 -->
