@@ -21,10 +21,10 @@
 <!-- 站点配置（构建期由 front/scripts/gen-site-config.mjs 注入 dist/site-config.js；单源 = config/sire.json）：
      必须先于 yj-visit.js 加载（统计域名白名单读 YJ_SITE.domains）。 -->
 <script src="site-config.js"></script>
-<!-- 访问统计（§97 双线：Vercount 计数 + GoatCounter 计数/展示）：唯一注入点在 public/yj-visit.js，
-     由它按域名门控——只有 site.domains 白名单里的正式域名才加载，本地 :9090 / file:// / *.github.io 一概不加载
-     （既不计数也不显示数字，页脚链接保持 hidden）。见 docs/DESIGN.md §97（§85 不蒜子 → §87 Vercount）。 -->
-<script src="yj-visit.js?v=3"></script>
+<!-- 访问统计（§97 双线：Vercount 计数 + GoatCounter 计数/展示，GC 失败回落 Vercount）：唯一注入点 =
+     public/yj-visit.js，由它按域名门控——只有 site.domains 白名单里的正式域名才加载，本地 :9090 / file:// /
+     *.github.io 一概不加载（既不计数也不显示数字，页脚链接保持 hidden）。见 docs/DESIGN.md §97（§85 不蒜子 → §87 Vercount）。 -->
+<script src="yj-visit.js?v=4"></script>
 <!-- 全屏浮层渲染端（§149.2，2026-10-31）：内容页都在外壳 iframe 里，页内 fixed 遮罩只能盖到内容区、
      盖不到左侧栏（血统图弹窗「一边遮住一边没盖住」的根因）。约定：内容页把弹窗/灯箱请求
      postMessage 给外壳，由外壳在顶层文档渲染 → 遮罩真正全屏。渲染依赖：
@@ -124,10 +124,20 @@
            在运行时填入；未配 GoatCounter 时 yj-visit.js 直接把这个节点从 DOM 移除 —— fork 站的页面上
            不该存在指向原作者统计后台的链接。
            只显示站点级 PV：GoatCounter 公开端点无独立 UV（count_unique 已废弃）→「访客 N 人」撤下；
-           Vercount 仍在后台计数、不展示（历史连续 + 冗余对照，§97）。 -->
+           Vercount 仍在后台计数、不展示（历史连续 + 冗余对照，§97）。
+           ★ 2026-11-15 增：GoatCounter 拉数失败时改显示同行的 Vercount 回落行（见下方 #vc_container_site_pv，
+           判定与实现都在 yj-visit.js 文件头「展示回落」段）。 -->
       <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-none">
         <a id="gc_container_site_pv" target="_blank" rel="noopener"
            class="hidden">总访问 <span id="gc_value_site_pv" class="font-medium text-foreground/80"></span> 次</a>
+        <!-- Vercount 回落位（2026-11-15）：GoatCounter 取数失败（超时 / 403 / 值异常）时 yj-visit.js
+             露出这一行，页脚不空着。结构不能改：
+               · #vc_container_site_pv     = 外层，显隐**只**由 yj-visit.js 控制（内层会被 vercount 脚本
+                                            强写 display:inline，hidden 挂内层就会在 GC 正常时也露出来）；
+               · #vercount_container_site_pv / #vercount_value_site_pv = vercount 脚本的 DOM 契约，改名即失效。
+             纯文本无外链：Vercount 没有公开的站点后台可点。未配 analytics.vercount 时这行永远 hidden。 -->
+        <span id="vc_container_site_pv" class="hidden"
+              title="GoatCounter 暂不可用，当前显示 Vercount 计数">总访问 <span id="vercount_container_site_pv"><span id="vercount_value_site_pv" class="font-medium text-foreground/80"></span></span> 次</span>
       </div>
     </div>
   </aside>

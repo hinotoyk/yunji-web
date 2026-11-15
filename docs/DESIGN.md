@@ -121,6 +121,7 @@
 - **编辑台**（2026-09-29/30 → 2026-11-01）：草稿箱 + 线上单原子 commit；`?edit=1` 废除，改 PAT 校验解锁（§168）；编辑页整页门禁（§190，2026-11-11）。
 - **代码结构**（2026-xx）：取消「两管线互不 import」硬限制 → 「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 `core/constants.py`；新增 `net.bind()` 与 `runtime.install_lazy_http()`。
 - **开源化**（2026-11-12）：代码 MIT + 数据独立声明（LICENSE / NOTICE）；站点身份全部进 `config/`（`repo` / `analytics` / `cross_site` / `progeny_years` / 友链），空值 = 关闭；构建期「本站身份」自检；页面能力表（`features.json` + `yj-cap.js`，关闭的能力仍构建以显示空态）；构建入口改目录派生。
+- **访问统计展示回落**（2026-11-15）：GoatCounter 取数失败（5s 超时 / 非 2xx / count 异常）时，页脚改显示 Vercount 的站点 PV，不空着；两线只认第一次结果，未配 `analytics.vercount` 则维持旧行为（失败即隐藏）。实现与三条不可改约束见 `front/public/yj-visit.js` 文件头「展示回落」段；回归脚本 `tests/_visit-fallback.cjs`（无头，stub 端点）。
 
 ## 11. UI 规格索引（正文归档在 git）
 

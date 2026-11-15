@@ -53,7 +53,7 @@
 | `logo` | **必填** | **一个字**，如 `"雲"`（侧栏徽标） | — |
 | `domains` | 可空 `[]` | 自己的域名，如 `["www.example.com"]` | 空 → 不统计来源域名，**且构建必打 1 条 ⚠**（合法关闭态，见 §0） |
 | `repo` | 可空 `""` | 必须 `owner/repo` 格式；**先建好这个仓库再填** | **空 = 编辑台整体关闭**（同样必打 ⚠）；格式错 = 构建失败；填了不存在的仓库 → 编辑页门禁能过但 PAT 校验必失败 |
-| `analytics` | 可空 `{}` | `{"goatcounter":"账号","vercount":true}` | 空 → 不注入统计脚本；若 `domains` 非空而这里两项皆空，构建会打 ⚠ 提示「白名单过了、统计仍关」 |
+| `analytics` | 可空 `{}` | `{"goatcounter":"账号","vercount":true}` | 空 → 不注入统计脚本；若 `domains` 非空而这里两项皆空，构建会打 ⚠ 提示「白名单过了、统计仍关」；`vercount:true` 时页脚备有回落位——GoatCounter 拉数失败（超时/403/值异常）改显示 Vercount 数字 |
 | `cross_site` | 可空 `{}` | `{"jbis_rank":"…","racing_calendar":"…"}` 两个别人家的站 | 空 → 对应板块整体不出现 |
 | `ledger` 段 `url` | 可空 `""` | Google 表格导出的 CSV 地址 | 空 → 跳过台账环节 |
 
