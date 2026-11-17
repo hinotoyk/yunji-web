@@ -1,15 +1,15 @@
 {
  "_meta": {
   "schema": "video-map/v2",
-  "updated": "2026-11-16 02:08:21",
+  "updated": "2026-11-17 04:58:59",
   "mid": 3493136521235298,
-  "auto": 112,
+  "auto": 115,
   "manual": 4,
-  "unmatched": 88,
+  "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
   "match_how": {
-   "精确": 112
+   "精确": 115
   }
  },
  "videos": {
@@ -749,6 +749,42 @@
     "bvid": "BV1uYx46dEPc",
     "url": "https://www.bilibili.com/video/BV1uYx46dEPc/",
     "title": "10月31日 东京7R ランザワールド 3岁以上1胜Class 1人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
+  "race:202605050302": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1C4sH6hEtF",
+    "url": "https://www.bilibili.com/video/BV1C4sH6hEtF/",
+    "title": "11月14日 东京2R フェニックスロール 1人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
+  "race:202605050303": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1k8sH6bELa",
+    "url": "https://www.bilibili.com/video/BV1k8sH6bELa/",
+    "title": "11月14日 东京3R アルティシモ 9人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
+  "race:202605050402": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1xnsH6vESx",
+    "url": "https://www.bilibili.com/video/BV1xnsH6vESx/",
+    "title": "11月15日 东京2R オンザボー 2人气1着",
     "video_title": "",
     "page": 1,
     "subtitle": false,
