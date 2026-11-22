@@ -21612,3 +21612,33 @@
 {"ts": "2026-11-22 02:29:27", "script": "fetch_races.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.58, "retries": 1, "note": ""}
 {"ts": "2026-11-22 02:29:31", "script": "fetch_races.py", "host": "db.netkeiba.com", "path": "/trainer/result/recent/a01c8/", "status": "200", "dur_s": 0.5, "retries": 1, "note": ""}
 {"ts": "2026-11-22 02:29:37", "script": "fetch_races.py", "host": "db.netkeiba.com", "path": "/jockey/result/recent/05655/", "status": "200", "dur_s": 0.4, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:27", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseList", "status": "200", "dur_s": 3.59, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:28", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/cyuou/masyoba/1", "status": "ERR", "dur_s": 0.86, "retries": 1, "note": "403 Client Error: Forbidden for url: https://p.keibabook.co.jp/cyuou/masyoba/1"}
+{"ts": "2026-11-22 02:30:29", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.36, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:31", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.36, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:33", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:35", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:37", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:38", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.39, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:40", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:41", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.2, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:43", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.32, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:45", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.29, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:47", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:49", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.35, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:51", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.46, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:53", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:55", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:57", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.39, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:30:58", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:00", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.3, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:02", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.48, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:04", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.39, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:06", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.33, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:08", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.34, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:10", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.67, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:11", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.35, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:13", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.3, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:15", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.19, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:17", "script": "run_status.py", "host": "www.keiba.go.jp", "path": "/KeibaWeb/DataRoom/RaceHorseInfo", "status": "200", "dur_s": 0.3, "retries": 1, "note": ""}
+{"ts": "2026-11-22 02:31:19", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.72, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
