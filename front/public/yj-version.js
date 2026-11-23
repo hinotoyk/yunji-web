@@ -12,7 +12,8 @@
  *     之后 15min 内数据回源一律 no-store）→ location.reload()。
  *     sessionStorage 路 D / 内存层旧数据随失效戳一并作废。
  *   ④ 防循环：先把新 v 写回 localStorage 再 reload——第二次加载比对相等即静默。
- *     首次访问（本地无记录）只记录不刷新。
+ *     首次探测（本地无记录）也 bust + 刷一次（无法区分新访客与旧缓存访客，保守清；
+ *     新访客空操作；localStorage 写回验证失败则不刷，防隐私模式无限循环）。
  *   ⑤ 护栏：编辑页（edit*.html，可能挂着未保存草稿）不自动刷新，改弹顶部
  *     提示条由访客手动确认；iframe 内各页自行探测并刷新自身（跨站 embed
  *     如 racing-calendar ?embed=1 借此获得同样的更新感知）。
@@ -54,6 +55,7 @@
         if (!v) return;
         var prev = lastSeen();
         if (prev && prev !== String(v)) onChange(String(v));
+        else if (!prev) onFirst(String(v));
         else saveSeen(v);
       })
       .catch(function () { checking = false; });               /* 断网等 → 静默，保持现状 */
@@ -64,6 +66,20 @@
     try { if (window.YJ && YJ.cache && YJ.cache.bust) YJ.cache.bust(); } catch (e) {}
     if (isEditPage()) bar(v);
     else location.reload();
+  }
+
+  /* 首次探测（本地无版本记录）也清缓存 + 刷一次：无法区分「全新访客（无缓存，
+   * bust 是无害空操作）」和「带着旧 SWR 缓存的老访客（12h 304 续期内 0 请求，
+   * 恰好赶上本次部署前的旧数据）」——保守清掉才不漏后者（2026-11-23 ウィズクィーン
+   * 图片事故：探测已上线但首次只记录不清缓存，老缓存访客刷新后依旧看不到新图）。
+   * 隐私模式护栏：写回验证失败（localStorage 不可用/易失）→ 不 bust 不 reload，
+   * 否则每次加载都是「首次」会无限刷新。 */
+  function onFirst(v) {
+    saveSeen(v);
+    if (lastSeen() !== v) return;
+    try { if (window.YJ && YJ.cache && YJ.cache.bust) YJ.cache.bust(); } catch (e) {}
+    if (isEditPage()) return;                                  /* 编辑页护栏同 onChange */
+    location.reload();
   }
 
   /* 编辑页顶部提示条（不自动刷新，草稿不丢） */
