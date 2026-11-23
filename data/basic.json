@@ -1,7 +1,7 @@
 {
  "_meta": {
   "schema": "basic/v1",
-  "updated": "2026-11-23 06:28:08",
+  "updated": "2026-11-23 07:26:28",
   "count": 277
  },
  "horses": [
@@ -2090,7 +2090,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/39-1.webp"
+   ],
    "races_file": "data/races/39.json",
    "pedigree_file": "data/pedigree/39.json",
    "受賞歴": []
