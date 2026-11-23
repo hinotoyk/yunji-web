@@ -122,6 +122,7 @@
 - **代码结构**（2026-xx）：取消「两管线互不 import」硬限制 → 「业务隔离、代码抽离复用」；`core/paths.py` 扩展为 `core/constants.py`；新增 `net.bind()` 与 `runtime.install_lazy_http()`。
 - **开源化**（2026-11-12）：代码 MIT + 数据独立声明（LICENSE / NOTICE）；站点身份全部进 `config/`（`repo` / `analytics` / `cross_site` / `progeny_years` / 友链），空值 = 关闭；构建期「本站身份」自检；页面能力表（`features.json` + `yj-cap.js`，关闭的能力仍构建以显示空态）；构建入口改目录派生。
 - **访问统计展示回落**（2026-11-15）：GoatCounter 取数失败（5s 超时 / 非 2xx / count 异常）时，页脚改显示 Vercount 的站点 PV，不空着；两线只认第一次结果，未配 `analytics.vercount` 则维持旧行为（失败即隐藏）。实现与三条不可改约束见 `front/public/yj-visit.js` 文件头「展示回落」段；回归脚本 `tests/_visit-fallback.cjs`（无头，stub 端点）。
+- **部署版本指纹探测**（2026-11-23）：解决「线上更新后老访客拿旧数据」（yj-cache 12h SWR 的 304 续期 + 编辑台 bust 写在 commit 时而非部署完成时，一次头像更新 19 分钟后才可见）。构建期 `deployVersionPlugin`（vite.config.js）写 `dist/version.json = {v: git 短 SHA, ts}`，并向每个入口注入 `<script src="yj-version.js" defer>`；浏览器侧页面加载/切回标签页/每 5 分钟 no-store 探测，v 变化 → `YJ.cache.bust()`（清 Cache API 桶 + 失效戳，15min 内回源 no-store）→ reload（先写回新 v 防循环）；编辑页（edit*.html）有未保存草稿 → 改弹顶部提示条不自动刷新。四兄弟站同款（kzn 同构；jbis/rc 纯 Node 构建在 build 脚本里写 version.json，模块经 `window.YJ_VERSION_SITE` 分站隔离键名）。模块单一出处 = `front/public/yj-version.js` 文件头注释。
 
 ## 11. UI 规格索引（正文归档在 git）
 

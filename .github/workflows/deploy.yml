@@ -88,3 +88,24 @@ jobs:
             git pull --rebase origin main || true
             git push origin HEAD:main
           fi
+
+  # Deploy 自动重试（2026-11-23）：deploy-pages 偶发「Fetching artifact metadata failed /
+  # No artifacts named github-pages found」——工件上传明明成功，是 Actions API 拉取元数据的
+  # 瞬时故障（当天两次 edit 提交 cbf22bf/11bdf75 同款，构建/上传全绿、Deploy 步骤 0 秒失败）。
+  # 官方建议 re-run；这里自动化兜底：deploy 失败 → 同一 run 重跑 deploy-pages（工件归属本 run，
+  # 重试合法）。concurrency 同组：期间有新部署进来则本重试自动让位（cancel），旧工件不覆盖新内容。
+  # ⚠ 重试只管部署；deploy job 的「Commit recomputed」在失败时本就被跳过，落库顺延到下次成功部署。
+  deploy-retry:
+    needs: [deploy]
+    if: failure()
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy (retry once)
+        id: deployment
+        uses: actions/deploy-pages@v4

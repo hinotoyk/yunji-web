@@ -39,6 +39,8 @@
   - 判据一句话：**「缺了它，已有页面上的内容会不会算错？」会错 → 报错；只是少一块 → 静默。** 反例警示：不要因为「空 = 关闭」读起来顺，就把 `progeny_years` 也做成静默 —— 那是最难查的一类事故。
 - **页面能力可挂载（L2 · 2026-11-12 试点）**：页面级能力的「有没有」由 **`config/features.json`** 单一定义，id 表（唯一出处）= `front/scripts/features.cjs` 的 `CAPS`；**缺文件/缺字段 = 全部启用**（老站与 kzn 不受影响），只写要关的。约束：① 导航项必须带 `data-cap="<id>"`（外壳按表过滤，关掉后入口不出现）；② 页面必须引 `front/public/yj-cap.js`（关掉后直连 URL 显示「本站未启用」空态卡片，不是白屏/404）；③ 构建入口由 `front/pages/` **目录派生**而非硬编码数组（删页面文件不会 build 失败）；④ 新增页面 = 在 `CAPS` 登记 + 导航加 `data-cap` + 页面引 `yj-cap.js` + 跑 `node scripts/verify_caps.cjs`。**能力只能进一步关闭，不能强开依赖缺失的能力**（编辑台 = `features.editor` 与 `site.repo` 双门 AND）。
 
+- **部署版本指纹探测（2026-11-23 定稿）**：`front/vite.config.js` 的 `deployVersionPlugin` 构建 `dist/version.json`（git 短 SHA）并向每个入口注入 `yj-version.js`（探测 → `YJ.cache.bust()` → reload，编辑页弹提示条不自动刷）。解决「更新后老访客 12h SWR 缓存拿旧数据」。**禁止删该插件或改探测逻辑绕过 reload**（防循环靠「先写回新 v 再刷」）；机制与四兄弟站同款说明 = `docs/DESIGN.md` §10 时间线 + `front/public/yj-version.js` 文件头。
+
 - **复用抽离（硬性约定，§48 定稿）**：公共工具（esc 等）单一出处 `front/public/yj-util.js`（`YJ.util.*`，页面薄别名，禁止复制函数体）；比赛行/徽章/格式化/格级映射一律复用 `front/public/race-rows.js`；着顺浅色三件套 JS 侧 = `race-rows.js` 的 `PLACE_BG`（CSS 侧 = theme.css `.yj-nkm*`，两处互指、改色同步）。**只有全站统一语义或 ≥3 处使用才抽离，仅 2 处不动**；收口只做等值搬移/纯删除，改后照常 build+dist 核对。theme.css `@layer components` 里**不放 JS 动态拼类名、content 无字面量的类**（会被 Tailwind 按候选裁剪，如 `.yj-g*` 必须在 @layer 之外）。细则见 `docs/DESIGN.md` §4「前端编码约定」。
 
 ## 3. 数据与路径

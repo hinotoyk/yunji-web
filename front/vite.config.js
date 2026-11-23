@@ -132,6 +132,40 @@ function siteConfigPlugin() {
   };
 }
 
+// 部署版本指纹（2026-11-23 定稿，配 front/public/yj-version.js 探测模块）：
+//   ① closeBundle 写 dist/version.json = { v: <git 短 SHA>, ts }——任何更新都走
+//      push main → 部署，v 必变，浏览器侧据此感知「线上有新版」；
+//   ② transformIndexHtml 给每个入口注入 <script src="yj-version.js" defer>
+//      （pages/ 子页自动用 ../ 前缀；注入先于 autoVersionPlugin，拿到内容哈希戳）。
+// git 不可用（极怪环境）→ v 退化为时间戳，探测机制仍可用。
+function deployVersionPlugin() {
+  const fs = require('fs');
+  const path = require('path');
+  const { execSync } = require('child_process');
+  function versionJson() {
+    let v;
+    try {
+      v = execSync('git rev-parse --short HEAD', { cwd: path.resolve(__dirname, '..') }).toString().trim();
+    } catch (e) {
+      v = 'dev-' + Date.now();
+    }
+    return JSON.stringify({ v: v, ts: Date.now() });
+  }
+  return {
+    name: 'deploy-version',
+    transformIndexHtml(html, ctx) {
+      const isSub = !!(ctx && ctx.path && /(^|\/)pages\//.test(ctx.path));
+      const tag = '<script src="' + (isSub ? '../' : '') + 'yj-version.js" defer></script>\n';
+      return html.replace(/<head[^>]*>/i, function (m) { return m + '\n  ' + tag; });
+    },
+    closeBundle() {
+      const dst = path.resolve(__dirname, '../dist/version.json');
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, versionJson());
+    }
+  };
+}
+
 // 统一版本戳（2026-xx 定稿，取代手工 ?v=N；旧「手工 ?v=」硬规已废止，见 docs/DESIGN.md §4）：
 // 非 module 公共脚本在 build/dev 时由本插件自动打内容哈希戳 ?v=<sha1 前 10 位> ——
 //   内容不变 → URL 不变 → 浏览器缓存命中；内容一变 → 哈希变 → 自动取新文件。
@@ -179,6 +213,7 @@ module.exports = defineConfig({
   plugins: [
     { name: 'gen-font', apply: 'build', buildStart: genFont },
     siteConfigPlugin(),
+    deployVersionPlugin(),
     autoVersionPlugin(),
     { name: 'copy-data', apply: 'build', closeBundle: copyData },
   ],
