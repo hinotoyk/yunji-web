@@ -1,7 +1,7 @@
 {
  "_meta": {
   "schema": "basic/v1",
-  "updated": "2026-11-23 08:06:26",
+  "updated": "2026-11-23 10:33:55",
   "count": 277
  },
  "horses": [
@@ -3109,7 +3109,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/58-1.webp"
+   ],
    "races_file": "data/races/58.json",
    "pedigree_file": "data/pedigree/58.json",
    "受賞歴": []
@@ -4334,7 +4336,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "5,280万円 (2024年 北海道セレクションセール)",
-   "photo": "",
+   "photo": [
+    "data/photos/81-1.webp"
+   ],
    "races_file": "data/races/81.json",
    "pedigree_file": "data/pedigree/81.json",
    "受賞歴": []
@@ -5125,7 +5129,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/96-1.webp"
+   ],
    "races_file": "data/races/96.json",
    "pedigree_file": "data/pedigree/96.json",
    "受賞歴": []
@@ -6175,7 +6181,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/116-1.webp"
+   ],
    "races_file": "data/races/116.json",
    "pedigree_file": "data/pedigree/116.json",
    "受賞歴": []
@@ -13868,7 +13876,9 @@
     "Jpn": 0
    },
    "セリ取引価格": "-",
-   "photo": "",
+   "photo": [
+    "data/photos/267-1.webp"
+   ],
    "races_file": "data/races/267.json",
    "pedigree_file": "data/pedigree/267.json",
    "受賞歴": []
