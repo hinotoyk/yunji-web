@@ -19,7 +19,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment3.outputs.page_url || steps.deployment2.outputs.page_url || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -66,8 +66,33 @@ jobs:
         with:
           path: ./
 
+      # deploy-pages 偶发「Fetching artifact metadata failed / No artifacts named github-pages
+      # found」——工件上传明明成功，是 Actions API 拉取元数据的瞬时故障（2026-11-23 两次 edit 提交
+      # cbf22bf/11bdf75 同款：构建/上传全绿、Deploy 0 秒失败；官方建议稍后 re-run）。
+      # 兜底：continue-on-error 让本步失败不终结 job，同 job 内等 15s 后重试，最多 3 次。
+      # （不能用独立 job 重试：实测同 run 第二个声明 github-pages environment 的 job 调度即失败，
+      #  runner 未分配、0 步骤 —— Pages 环境瞬态锁定所致。）
       - name: Deploy
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before retry (attempt 2)
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 15
+
+      - name: Deploy (retry attempt 2)
+        id: deployment2
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before retry (attempt 3)
+        if: failure() && steps.deployment2.outcome == 'failure'
+        run: sleep 15
+
+      - name: Deploy (retry attempt 3)
+        id: deployment3
+        if: failure() && steps.deployment2.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
       # 方案A（2026-10-02 定稿）：重算产物落库。www.yunji.xyz（CF Pages 独立构建）直读仓库 commit
@@ -88,24 +113,3 @@ jobs:
             git pull --rebase origin main || true
             git push origin HEAD:main
           fi
-
-  # Deploy 自动重试（2026-11-23）：deploy-pages 偶发「Fetching artifact metadata failed /
-  # No artifacts named github-pages found」——工件上传明明成功，是 Actions API 拉取元数据的
-  # 瞬时故障（当天两次 edit 提交 cbf22bf/11bdf75 同款，构建/上传全绿、Deploy 步骤 0 秒失败）。
-  # 官方建议 re-run；这里自动化兜底：deploy 失败 → 同一 run 重跑 deploy-pages（工件归属本 run，
-  # 重试合法）。concurrency 同组：期间有新部署进来则本重试自动让位（cancel），旧工件不覆盖新内容。
-  # ⚠ 重试只管部署；deploy job 的「Commit recomputed」在失败时本就被跳过，落库顺延到下次成功部署。
-  deploy-retry:
-    needs: [deploy]
-    if: failure()
-    concurrency:
-      group: pages
-      cancel-in-progress: true
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Redeploy (retry once)
-        id: deployment
-        uses: actions/deploy-pages@v4
