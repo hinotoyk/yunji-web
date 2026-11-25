@@ -27,14 +27,24 @@ parse_races 成绩页 + enrich_from_sp + resolve_trainer/jockey）构建记录�
 用法:
     python fetch_day.py 20261017
     python fetch_day.py 20261017,20261018
+    python fetch_day.py auto                    # 漏赛日检测：库内最新日付+1 探测到今天，赛日全扫
+    python fetch_day.py auto,20261017           # auto 与显式日期可混用
     python fetch_day.py 20261017 --jra-only     # 跳过 NAR 地方
     python fetch_day.py 20261017 --dry-run      # 只打印命中，不写缓存
+
+漏赛日检测（auto，2026-11-25 事故催生）：
+  cron 定时 UTC 13:00（北京 21:00）取「当天」，但 GitHub 调度延迟跨过北京午夜后
+  `date +%Y%m%d` 取到次日 → 该抓的日子被静默跳过（11-22/23 两天全漏）。auto 模式在
+  跑之前先检测：从库内 races/*.json 最大日付的**次日**逐日探测 payback 日期页（每域名
+  每天 1 个请求），能解析到会场/场次 = 赛日，纳入扫描；探测异常的日子保守纳入
+  （宁可多扫不可漏，merge_races 幂等去重兜底）。多跑无害，漏跑致命。
 """
 import argparse
 import json
 import re
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, __file__.rsplit("\\", 1)[0])
@@ -122,6 +132,81 @@ def collect_race_ids(date, include_nar=True):
             for rid in vids:
                 out.append((domain, rid))
     return out
+
+
+# ---------- 漏赛日检测（auto 模式） ----------
+def max_race_date():
+    """库内 races/*.json 的最大「日付」（YYYY-MM-DD）= 数据覆盖锚点；目录空 → ""。
+    只读 日付 一个字段（不做全量解析），文件解析失败跳过（合并/校验环节会另报）。"""
+    latest = ""
+    for f in common.RACES_DATA_DIR.glob("*.json"):
+        try:
+            for r in json.loads(f.read_text(encoding="utf-8")):
+                d = str(r.get("日付") or "").strip()
+                if d > latest:
+                    latest = d
+        except (OSError, ValueError):
+            continue
+    return latest
+
+
+def probe_race_day(date8, include_nar=True):
+    """探测某日是否为赛日 → (is_race_day | None, detail)。
+    判据：日期级 payback 页解析到会场（venue_ids_from_payback），或 body 兜底读到场次
+    （与 collect_race_ids 同一套解析，不新增口径）。HTTP 400 = 非赛日（netkeiba 明确语义）；
+    其他异常 → None（未知，调用方保守纳入）。"""
+    out = []
+    for domain, url in (("JRA", JRA_PB.format(d=date8)),
+                        ("NAR", NAR_PB.format(d=date8))):
+        if domain == "NAR" and not include_nar:
+            out.append((domain, None, "跳过(--jra-only)"))
+            continue
+        try:
+            html = common.fetch(url)
+        except Exception as e:
+            if "400" in str(e):
+                out.append((domain, False, "非赛日(400)"))
+                continue
+            out.append((domain, None, f"探测异常: {e}"))
+            continue
+        venues = venue_ids_from_payback(html)
+        has = bool(venues) or bool(race_ids_from_venue(html))   # 多会场日 / 单会场日兜底
+        out.append((domain, has, f"{len(venues)}会场" if venues else ("body兜底" if has else "无会场")))
+    detail = " / ".join(f"{d}:{msg}" for d, _, msg in out)
+    vals = [v for _, v, _ in out if v is not None]
+    # 任一域「确为赛日」→ 赛日；全部明确非赛日 → 非赛日；有未知域 → None（保守纳入）
+    if True in vals:
+        return True, detail
+    if vals and all(v is False for v in vals):
+        return False, detail
+    return None, detail
+
+
+def detect_missing_days(lookback_days=7, include_nar=True):
+    """漏赛日检测：从库内最大日付的**次日**逐日探测到今天（北京时区，含），
+    返回其中赛日/未知日的 YYYYMMDD 列表。库内无数据时回退最近 lookback_days 天
+    （防止极端空库把扫描窗口无限拉长）。"""
+    today = datetime.now(timezone(timedelta(hours=8)))          # 北京时区（与 workflow 口径一致）
+    latest = max_race_date()
+    if latest:
+        start = datetime.strptime(latest, "%Y-%m-%d").replace(tzinfo=timezone(timedelta(hours=8))) + timedelta(days=1)
+        print(f"◈ 漏赛日检测：库内最新日付={latest}，探测 {start:%Y-%m-%d} ~ {today:%Y-%m-%d} …")
+    else:
+        start = (today - timedelta(days=lookback_days)).replace(hour=0, minute=0, second=0, microsecond=0)
+        print(f"◈ 漏赛日检测：库内无日付，回退探测最近 {lookback_days} 天 …")
+    days = []
+    d = start
+    while d <= today:
+        date8 = d.strftime("%Y%m%d")
+        verdict, detail = probe_race_day(date8, include_nar=include_nar)
+        if verdict is False:
+            print(f"   {date8} 非赛日（{detail}）→ 跳过")
+        else:
+            tag = "赛日 → 纳入" if verdict is True else "探测未知 → 保守纳入（宁可多扫不可漏）"
+            print(f"   {date8} {tag}（{detail}）")
+            days.append(date8)
+        d += timedelta(days=1)
+    return days
 
 
 # ---------- SP 结果页：完整出赛名单 ----------
@@ -249,14 +334,25 @@ def race_meta_from_sp(sp_html, domain):
 
 def main():
     ap = argparse.ArgumentParser(description="按指定日期快速更新：SP 页发现产驹 + 原流程取值")
-    ap.add_argument("dates", help="YYYYMMDD 或逗号分隔多个")
+    ap.add_argument("dates", help="YYYYMMDD 或逗号分隔多个；含 auto = 先做漏赛日检测（库内最新日付+1 探测到今天），再并上显式日期")
     ap.add_argument("--jra-only", action="store_true", help="跳过 NAR 地方")
     ap.add_argument("--dry-run", action="store_true", help="只打印命中，不写缓存")
     args = ap.parse_args()
 
-    dates = [d for d in re.split(r"[,，]", args.dates) if re.match(r"^\d{8}$", d or "")]
+    raw = [x.strip() for x in re.split(r"[,，]", args.dates) if x.strip()]
+    explicit = [d for d in raw if re.match(r"^\d{8}$", d)]
+    use_auto = any(x.lower() == "auto" for x in raw)
+    unknown = [x for x in raw if not re.match(r"^\d{8}$", x) and x.lower() != "auto"]
+    if unknown:
+        sys.exit(f"日期须为 YYYYMMDD 或 auto：不认识 {unknown}")
+
+    dates = list(dict.fromkeys(explicit))            # 去重保序
+    if use_auto:
+        dates = list(dict.fromkeys(detect_missing_days(include_nar=not args.jra_only) + dates))
     if not dates:
-        sys.exit("日期须为 YYYYMMDD（可用逗号分隔多个）")
+        print("\n检测窗口内无赛日，无新记录。")
+        return
+    print(f"\n◈ 本次扫描日期（{len(dates)} 天）：{', '.join(dates)}")
 
     basic = common.load_basic()
     horses = basic["horses"]

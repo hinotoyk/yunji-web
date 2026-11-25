@@ -1,6 +1,7 @@
 name: update-day
 
-# 数据快速更新（按天）：每天北京时间 21:00 跑「当天」产驹出赛（SP 结果页，更新快、不依赖 netkeiba 马匹成绩页滞后）。
+# 数据快速更新（按天）：每天北京时间 21:00 跑 auto 漏赛日检测（库内最新日付+1 探测到今天，
+# 赛日全扫）——不依赖「当天」的字面取值，GitHub cron 延迟跨日也不会漏抓（2026-11-25 事故教训）。
 # 与 update-data.yml（每天北京 06:00，全量 CI）并存：本任务用 --day 快速补当天，06:00 CI 继续做全量判变+校验；
 # 两者落库按 race_id/馬名+日付 幂等去重，互不覆盖。
 # 前置要求：仓库 Settings → Actions → Workflow permissions → 勾选 "Read and write permissions"
@@ -10,7 +11,7 @@ on:
   workflow_dispatch:              # 手动触发：可指定任意日期（含历史补数据）
     inputs:
       dates:
-        description: 日期（YYYYMMDD 或逗号分隔多个；留空=今天）
+        description: 日期（YYYYMMDD 或逗号分隔多个；留空=auto 漏赛日检测）
         required: false
         type: string
         default: ''
@@ -35,11 +36,14 @@ jobs:
       - name: 安装依赖
         run: pip install requests beautifulsoup4 lxml
 
-      - name: 组装 --day 参数（定时跑今天，北京时区；手动可指定任意日期）
+      - name: 组装 --day 参数（定时跑 auto 漏赛日检测；手动可指定任意日期）
         id: args
         run: |
           D="${{ inputs.dates }}"
-          D="${D:-$(TZ=Asia/Shanghai date +%Y%m%d)}"
+          # 定时统一跑 auto：从库内最新日付+1 逐日探测 netkeiba 到今天，赛日全扫。
+          # 不再取「当天」——GitHub cron 延迟跨过北京午夜时 date 会取到次日，导致漏抓
+          # （2026-11-25 事故：11-22/23 两天被静默跳过）。auto 与 merge_races 幂等去重配合，多扫无害。
+          D="${D:-auto}"
           J=""
           [ "${{ inputs.jra_only }}" = "true" ] && J="--jra-only"
           echo "cmd=--day $D $J" >> "$GITHUB_OUTPUT"

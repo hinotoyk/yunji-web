@@ -145,7 +145,7 @@
 
 ## 维护与排障
 
-日常三条自动线，人工只在失败时介入：`update-data`（每日 06:00 全量对账）→ 串联 `status`（登録状态）与 `video-task`（B 站回放匹配）；`update-day`（每日 21:00 当天赛果快更）。
+日常三条自动线，人工只在失败时介入：`update-data`（每日 06:00 全量对账）→ 串联 `status`（登録状态）与 `video-task`（B 站回放匹配）；`update-day`（每日 21:00 跑 `--day auto`：从库内最新日付的次日逐日探测 netkeiba 到今天，赛日全扫——GitHub cron 延迟跨日也不会漏抓）。
 
 **更新数据**（统一入口，未配 `--year` 时按配置里的生年处理）：
 
@@ -154,7 +154,8 @@
 | `python run_update.py --ci` | 基本 + 比赛 + 校验 + 派生 + 提交（CI 每日用这条） |
 | `python run_update.py --basic` | 新马对账建档 + 补缺 + 合并 |
 | `python run_update.py --races [--since N]` | 详情判变 + 成绩增量 + 台账海外 + 合并 |
-| `python run_update.py --day 20261020` | 按天快更赛果（幂等，与全量互不覆盖） |
+| `python run_update.py --day 20261020[,20261021]` | 按天快更赛果（幂等，与全量互不覆盖） |
+| `python run_update.py --day auto` | 漏赛日检测 + 快更：库内最新日付+1 逐日探测到今天，赛日全扫（CI 每日用这条） |
 | `python run_update.py --check [--fix]` | 一致性校验（附「数据体检」报告，不阻断流程） |
 
 ⚠ `--init` / `--races-force` 会删空或覆盖 `data/`，先备份。人工值只写 `data/manual_overrides.json`：`data/basic.json` 是合并产物，手改会被下一轮 merge 覆盖。
@@ -180,6 +181,7 @@ node scripts/verify_caps.cjs               # 页面能力表（改过 features.j
 | 线上侧栏高亮全灭 | Cloudflare 把 `/pages/x.html` 剥成 `/pages/x`，路径比对要先经外壳 `pageKey()` 归一 |
 | 编辑台打不开 / 403 | `site.repo` 与 PAT 所属仓库不一致（双站防串是故意的） |
 | 某匹马数据一直缺 | `python run_update.py --horse <id>` 定向跑；再看 `data/fetch_log.jsonl` 里该 host 的状态码 |
+| 最新比赛日期停在几天前 | `python run_update.py --day auto` 补扫漏掉的赛日；根因多为 GitHub cron 延迟跨日（2026-11-25 事故，auto 已兜住） |
 | 全量跑到一半被掐断 | 连续 20 分钟无输出判卡死，属有意设计：不完整缓存不许合并提交 |
 | 访客数不涨 | `site.domains` 是否含当前域名；统计后台是否开了计数端点 |
 
