@@ -22352,3 +22352,57 @@
 {"ts": "2026-11-25 05:26:03", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0967659/kanzen", "status": "200", "dur_s": 0.82, "retries": 1, "note": ""}
 {"ts": "2026-11-25 05:26:05", "script": "run_status.py", "host": "p.keibabook.co.jp", "path": "/db/uma/0964690/kanzen", "status": "200", "dur_s": 0.98, "retries": 1, "note": ""}
 {"ts": "2026-11-25 05:26:07", "script": "run_status.py", "host": "www.studbook.jp", "path": "/users/ja/SearchChichiShushiList", "status": "ERR", "dur_s": 0.62, "retries": 1, "note": "403 Client Error: Forbidden for url: https://www.studbook.jp/users/ja/SearchChic"}
+{"ts": "2026-11-25 22:21:50", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.2, "retries": 1, "note": "400 Client Error: Bad Request for url: https://race.netkeiba.com/top/payback_lis"}
+{"ts": "2026-11-25 22:21:50", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.64, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:51", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.18, "retries": 1, "note": "400 Client Error: Bad Request for url: https://race.netkeiba.com/top/payback_lis"}
+{"ts": "2026-11-25 22:21:51", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.22, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:51", "script": "fetch_day.py", "host": "race.netkeiba.com", "path": "/top/payback_list.html", "status": "ERR", "dur_s": 0.18, "retries": 1, "note": "400 Client Error: Bad Request for url: https://race.netkeiba.com/top/payback_lis"}
+{"ts": "2026-11-25 22:21:52", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.69, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:52", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:54", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 2.07, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:55", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.5, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:55", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:21:58", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:02", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.23, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:05", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.44, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:09", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.29, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:12", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.37, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:15", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:20", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 2.32, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:24", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.29, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:27", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.65, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:31", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.33, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:33", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.22, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:37", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.43, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:40", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.76, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:44", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.32, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:48", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.27, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:52", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.72, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:56", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.68, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:22:59", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:03", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.69, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:07", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.96, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:11", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.98, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:15", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.24, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:18", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.61, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:21", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.44, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:25", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.4, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:28", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.47, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:32", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.96, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:36", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:40", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.79, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:43", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.23, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:46", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:50", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:53", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.38, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:23:58", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 1.51, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:01", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.28, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:04", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.21, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:04", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.25, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:04", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.21, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:05", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.21, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:05", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/top/payback_list.html", "status": "200", "dur_s": 0.21, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:08", "script": "fetch_day.py", "host": "db.netkeiba.com", "path": "/horse/result/2023104926/", "status": "200", "dur_s": 3.18, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:08", "script": "fetch_day.py", "host": "nar.netkeiba.com", "path": "/race/result.html", "status": "200", "dur_s": 0.21, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:12", "script": "fetch_day.py", "host": "db.netkeiba.com", "path": "/trainer/result/recent/05791/", "status": "200", "dur_s": 0.26, "retries": 1, "note": ""}
+{"ts": "2026-11-25 22:24:19", "script": "fetch_day.py", "host": "db.netkeiba.com", "path": "/jockey/result/recent/a02bb/", "status": "200", "dur_s": 0.47, "retries": 1, "note": ""}
