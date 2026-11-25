@@ -1,15 +1,15 @@
 {
  "_meta": {
   "schema": "video-map/v2",
-  "updated": "2026-11-24 06:24:58",
+  "updated": "2026-11-25 05:23:59",
   "mid": 3493136521235298,
-  "auto": 115,
+  "auto": 116,
   "manual": 4,
-  "unmatched": 86,
+  "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
   "match_how": {
-   "精确": 115
+   "精确": 116
   }
  },
  "videos": {
@@ -1144,6 +1144,18 @@
     "bvid": "BV1qwW76MEQP",
     "url": "https://www.bilibili.com/video/BV1qwW76MEQP/",
     "title": "11月8日 京都3R ゴールデンプロミス 3人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
+  "race:202608050504": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1JtyaznEXA",
+    "url": "https://www.bilibili.com/video/BV1JtyaznEXA/",
+    "title": "11月21日 京都4R ゾンネシュトラール 2人气1着",
     "video_title": "",
     "page": 1,
     "subtitle": false,
