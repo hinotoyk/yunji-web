@@ -495,6 +495,12 @@
 
   /* 保存条模式点 / 状态点 */
   .yj-ed-chipdot { @apply inline-block h-[7px] w-[7px] flex-none rounded-full; }
+
+  /* 首页快捷标签（左栏顶部战绩筛选，2026-11-27）：pill + 右侧计数（小一号、淡一档）。
+   * 三个档位是嵌套关系（G1 马 ⊂ 重赏马 ⊂ 有胜），计数由 races-bundle 派生后回填。
+   * 选中态/零值态在 @layer 外（.yj-ftag.is-on / .yj-ftag--zero —— is-on 是 JS 拼接的动态类） */
+  .yj-ftag { @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-[3px] text-[11.5px] font-semibold leading-[1.6] text-secondary-foreground transition-[background-color,border-color,color] duration-150 hover:border-primary/45 hover:bg-primary/5 hover:text-primary active:scale-[.98]; }
+  .yj-ftag b { @apply text-[10.5px] font-bold tabular-nums text-muted-foreground; }
 }
 
 /* ---------- 等级徽章配色（.yj-g*）：必须置于 @layer 之外 ----------
@@ -552,6 +558,16 @@
 @media (prefers-reduced-motion:reduce){
   .yj-view-in,.yj-cp-ok,.yj-ov-bar i{animation:none}
 }
+
+/* ---------- 首页筛选选中态（profile 概览色块 / 快捷标签 · @layer 外防候选裁剪） ----------
+ * 2026-11-27：概览三组卡与左栏快捷标签都变成筛选入口，is-on 由 syncFilterUI 动态 toggle；
+ * 面积图/年份图 resize 重排会重建 innerHTML，所以 tmHTML/ovPaint 生成时也按 FIL 带上 is-on。
+ * 描边用 inset box-shadow（不外扩、不吃相邻块的间距），色值 = tailwind primary #0aa7a0 同源。 */
+.yj-ftag.is-on{border-color:#0aa7a0;background-color:rgba(10,167,160,.1);color:#0a7a75;box-shadow:inset 0 0 0 1px rgba(10,167,160,.55)}
+.yj-ftag.is-on b{color:#0a7a75}
+.yj-ftag--zero{opacity:.45}
+#ovStats .yj-tile[data-f],#ovStats .yj-tm[data-f]{cursor:pointer}
+.yj-tile.is-on,.yj-tm.is-on{box-shadow:inset 0 0 0 2px rgba(10,167,160,.92)}
 
 /* ---------- §160 奖杯「金光闪闪」（stats / datechart 重赏 KPI、日历胜格、月卡共用 · @layer 外防候选裁剪） ----------
  * 图案本体 = 页面 JS 注入的内联 SVG（class yj-trophy，内嵌 linearGradient #yj-tg：

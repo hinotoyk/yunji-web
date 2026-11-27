@@ -210,6 +210,11 @@ YJ.selector = (function () {
     /* items: 通用选项模式（筛选条维度下拉）：[{v,l,n}] 传入后不加载马匹数据，
      * 下拉行 = 色块名 + 场数，搜索/键盘/多选添加/排除已选等交互与选马器完全同款 */
     const items = opts.items || null;
+    /* filter: 外部过滤谓词 h → bool（profile 首页概览卡 / 快捷标签联动用）；
+     * 与搜索词是 AND 关系（先按谓词筛，再在结果里搜）；可通过 el.__selFilter 运行时替换。
+     * onCount: 每次渲染后回报 (筛选后匹数, 总数) —— 宿主显示筛选摘要条用 */
+    let pred = opts.filter || null;
+    const onCount = opts.onCount || null;
     /* doubleName: 双格式马名（基本信息 PC 常驻列表 + mb 下拉用）——
      * 主名=日文(无则英文) + 副名=港译(无则自译)；其余实例不传即保持单格式 */
     const doubleName = !!opts.doubleName;
@@ -265,19 +270,25 @@ YJ.selector = (function () {
         clear.classList.toggle("on", !!q);
         clear.classList.toggle("hidden", !q);
       }
-      /* multi + excluded：空输入也排除已选马，其余行为与原版一致 */
+      /* 三层 AND：外部谓词 pred（概览卡/快捷标签）→ 排除已选（multi）→ 搜索词匹配。
+       * items 模式没有马对象，pred 对它无意义（传入也不生效） */
+      const pool = (!items && pred) ? horses.filter(function (h) { return pred(h); }) : horses;
       list = items
         ? items.filter(function (it) { return (!excluded || !excluded(it)) && (!q || String(it.l).toLowerCase().indexOf(q) >= 0); })
-        : horses.filter(function (h) { return (!excluded || !excluded(h)) && (!q || matches(h, q)); });
+        : pool.filter(function (h) { return (!excluded || !excluded(h)) && (!q || matches(h, q)); });
       if (cnt) {
-        cnt.textContent = q ? list.length : (items ? items.length : horses.length);
+        /* 筛选态（有 pred）即便没有搜索词也显示筛选后匹数，否则计数与列表对不上 */
+        cnt.textContent = (q || (!items && pred)) ? list.length : (items ? items.length : horses.length);
         cnt.classList.toggle("on", !!q);
         if (q) { cnt.classList.add("text-primary","bg-accent"); } else { cnt.classList.remove("text-primary","bg-accent"); }
       }
+      if (onCount && !items) onCount(list.length, horses.length);
       hl = -1;
       /* 与正式版 testpage 一致：聚焦即展开全部列表（即使未输入） */
       if (!list.length) {
-        drop.innerHTML = '<div class="empty px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">' + (items ? '未找到匹配选项' : '未找到匹配的马匹') + '</div>';
+        var emptyTxt = items ? '未找到匹配选项'
+          : (pred && !q ? '当前筛选下没有马匹' : '未找到匹配的马匹');
+        drop.innerHTML = '<div class="empty px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">' + emptyTxt + '</div>';
         if (!persistent) drop.classList.remove("hidden");
         return;
       }
@@ -300,7 +311,13 @@ YJ.selector = (function () {
             (sxBar ? '<span class="sxbar absolute inset-y-0 left-0 w-2 ' + sxBar + '"></span>' : '') +
             '<div class="top flex items-start gap-2 min-w-0">' + nameHTML(h, doubleName) + chip + '<span class="mt ml-auto flex flex-none items-center gap-1.25 whitespace-nowrap text-[11px] text-muted-foreground max-md:text-[10.5px]">' + metaHTML(h) + '</span></div>' + sub + '</div>';
         }).join("");
-      drop.innerHTML = '<div class="dhead border-b border-border bg-muted/35 px-3.5 pb-1.25 pt-[7px] text-[10.5px] tracking-[.5px] text-muted-foreground">' + (q ? '匹配 <b class="font-bold text-primary">' + list.length + '</b> ' + (items ? '项' : '匹') : (items ? '共 <b class="font-bold text-primary">' + items.length + '</b> 项' : '共 <b class="font-bold text-primary">' + horses.length + '</b> 匹')) + '</div>' + rows;
+      /* 表头：搜索态报「匹配 N」；仅筛选态报「筛选 N / 共 M」（让用户知道池子被筛过）；
+       * 两者都无 → 报总数 */
+      var headTxt;
+      if (q) headTxt = '匹配 <b class="font-bold text-primary">' + list.length + '</b> ' + (items ? '项' : '匹');
+      else if (!items && pred) headTxt = '筛选 <b class="font-bold text-primary">' + list.length + '</b> / 共 <b class="font-bold text-primary">' + horses.length + '</b> 匹';
+      else headTxt = (items ? '共 <b class="font-bold text-primary">' + items.length + '</b> 项' : '共 <b class="font-bold text-primary">' + horses.length + '</b> 匹');
+      drop.innerHTML = '<div class="dhead border-b border-border bg-muted/35 px-3.5 pb-1.25 pt-[7px] text-[10.5px] tracking-[.5px] text-muted-foreground">' + headTxt + '</div>' + rows;
       if (!persistent) drop.classList.remove("hidden");
     }
 
@@ -350,6 +367,9 @@ YJ.selector = (function () {
     selFn = select;
     /* 对外刷新钩子：外部（如筛选条 tag 变化）重渲染下拉（排除已选），不重建实例、保留焦点 */
     el.__selRefresh = render;
+    /* 对外换过滤谓词（null = 取消筛选）：按当前搜索词立即重渲染，计数/空态/onCount 同步。
+     * profile 概览卡与快捷标签都走这里 —— 不重建实例，故选中态/焦点/滚动位置不被重置。 */
+    el.__selFilter = function (fn) { pred = fn || null; render(input.value); };
 
     input.addEventListener("focus", function () {
       if (selected) { selected = false; input.value = ""; }
