@@ -1,15 +1,15 @@
 {
  "_meta": {
   "schema": "video-map/v2",
-  "updated": "2026-11-27 04:29:29",
+  "updated": "2026-11-28 04:18:29",
   "mid": 3493136521235298,
-  "auto": 116,
+  "auto": 118,
   "manual": 4,
   "unmatched": 85,
   "multi_p": 4,
   "suspect": 0,
   "match_how": {
-   "精确": 116
+   "精确": 118
   }
  },
  "videos": {
@@ -649,6 +649,18 @@
     "match": "auto"
    }
   ],
+  "race:202603030608": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1pR1szrEf8",
+    "url": "https://www.bilibili.com/video/BV1pR1szrEf8/",
+    "title": "11月23日 福岛8R 3岁以上1胜Class スウィッチインラヴ 3人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
   "race:202604020607": [
    {
     "source": "bilibili",
@@ -1156,6 +1168,18 @@
     "bvid": "BV1JtyaznEXA",
     "url": "https://www.bilibili.com/video/BV1JtyaznEXA/",
     "title": "11月21日 京都4R ゾンネシュトラール 2人气1着",
+    "video_title": "",
+    "page": 1,
+    "subtitle": false,
+    "match": "auto"
+   }
+  ],
+  "race:202608050608": [
+   {
+    "source": "bilibili",
+    "bvid": "BV1nc1xzqEcC",
+    "url": "https://www.bilibili.com/video/BV1nc1xzqEcC/",
+    "title": "11月22日 京都8R 3岁以上2胜Class スカイストライプス（云纹碧天） 1人气1着",
     "video_title": "",
     "page": 1,
     "subtitle": false,
